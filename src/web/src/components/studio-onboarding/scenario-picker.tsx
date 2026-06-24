@@ -1,7 +1,8 @@
 "use client";
 
+import { DEFAULT_WEB_LOCALE, formatAgentCount, onboardingLabel } from "@/lib/locale";
 import { cn } from "@/lib/utils";
-import { SCENARIO_PRESETS, type ScenarioId } from "./scenario-presets";
+import { getScenarioPresets, type ScenarioId } from "./scenario-presets";
 
 export function ScenarioPicker({
   selected,
@@ -12,22 +13,24 @@ export function ScenarioPicker({
   onSelect: (id: ScenarioId) => void;
   onBrowseTemplates?: () => void;
 }) {
+  const scenarios = getScenarioPresets(DEFAULT_WEB_LOCALE);
+
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h2 className="text-base font-semibold tracking-tight">What will your company focus on?</h2>
+        <h2 className="text-base font-semibold tracking-tight">{onboardingLabel("focusQuestion")}</h2>
         {onBrowseTemplates && (
           <button
             type="button"
             onClick={onBrowseTemplates}
             className="text-[11px] text-muted-foreground hover:text-foreground transition-colors underline underline-offset-2"
           >
-            Browse templates <span aria-hidden="true">&rsaquo;</span>
+            {onboardingLabel("browseTemplates")} <span aria-hidden="true">&rsaquo;</span>
           </button>
         )}
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {SCENARIO_PRESETS.map((s) => (
+        {scenarios.map((s) => (
           <button
             key={s.id}
             onClick={() => onSelect(s.id)}
@@ -41,7 +44,7 @@ export function ScenarioPicker({
             <div className="flex items-center justify-between w-full">
               <span className="text-lg">{s.icon}</span>
               <span className="text-[10px] text-muted-foreground/70">
-                {s.members.length} agent{s.members.length > 1 ? "s" : ""}
+                {formatAgentCount(s.members.length)}
               </span>
             </div>
             <span className="text-sm font-medium">{s.label}</span>

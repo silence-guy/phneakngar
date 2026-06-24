@@ -17,6 +17,8 @@ vi.mock("@alook/shared", () => ({
       claimTask: vi.fn(),
       startTask: vi.fn(),
       completeTask: vi.fn(),
+      detectTaskVisibleOutcome: vi.fn().mockResolvedValue("completed_without_visible_output"),
+      updateTaskVisibleOutcomeStatus: vi.fn(),
       failTask: vi.fn(),
       supersedeTask: vi.fn(),
       markFailedAsSuperseded: vi.fn(),
@@ -106,6 +108,16 @@ describe("TaskService", () => {
     vi.clearAllMocks();
     // Default: no kill tasks to claim
     taskQ.claimKillTasks.mockResolvedValue([]);
+    taskQ.detectTaskVisibleOutcome.mockResolvedValue("completed_without_visible_output");
+    taskQ.updateTaskVisibleOutcomeStatus.mockImplementation(
+      async (_db: unknown, id: string, workspaceId: string, visibleOutcomeStatus: string) => ({
+        id,
+        agentId: "a1",
+        workspaceId,
+        status: "completed",
+        visibleOutcomeStatus,
+      }),
+    );
   });
 
   // ── enqueueTask ──────────────────────────────────────────────────
@@ -145,6 +157,8 @@ describe("TaskService", () => {
         context: undefined,
         traceId: null,
         parentTaskId: null,
+        localeOverride: null,
+        retryOfTaskId: null,
       });
       expect(result).toEqual({ id: "t1" });
     });
@@ -362,6 +376,13 @@ describe("TaskService", () => {
       expect(broadcastToUser).not.toHaveBeenCalled();
       // lifecycle side-effects still run
       expect(taskQ.completeTask).toHaveBeenCalled();
+      expect(taskQ.detectTaskVisibleOutcome).toHaveBeenCalledWith({}, "t1", "w1");
+      expect(taskQ.updateTaskVisibleOutcomeStatus).toHaveBeenCalledWith(
+        {},
+        "t1",
+        "w1",
+        "completed_without_visible_output",
+      );
       expect(agentQ.updateAgentStatus).toHaveBeenCalled();
     });
 
@@ -380,6 +401,12 @@ describe("TaskService", () => {
       await service.completeTask("t1", "w1", JSON.stringify({}), "sess-1");
 
       expect(messageQ.createMessage).not.toHaveBeenCalled();
+      expect(taskQ.updateTaskVisibleOutcomeStatus).toHaveBeenCalledWith(
+        {},
+        "t1",
+        "w1",
+        "completed_without_visible_output",
+      );
     });
 
     it("calls reconcileAgentStatus", async () => {
@@ -859,10 +886,11 @@ describe("TaskService", () => {
       await expect(service.retryTask("t1", "w1")).rejects.toThrow("task not found");
     });
 
-    it("throws when workspace mismatch", async () => {
-      taskQ.getTask.mockResolvedValue({ ...failedTask, workspaceId: "other" });
+    it("queries the original task with workspace scope", async () => {
+      taskQ.getTask.mockResolvedValue(null);
 
       await expect(service.retryTask("t1", "w1")).rejects.toThrow("task not found");
+      expect(taskQ.getTask).toHaveBeenCalledWith({}, "t1", "w1");
     });
 
     it("throws when task is not failed", async () => {
@@ -886,6 +914,8 @@ describe("TaskService", () => {
         workspaceId: "w1",
         prompt: "do stuff",
         type: "user_dm_message",
+        localeOverride: null,
+        retryOfTaskId: "t1",
       }));
       expect(oldTask.status).toBe("superseded");
       expect(newTask.status).toBe("queued");
@@ -909,6 +939,21 @@ describe("TaskService", () => {
 
       expect(taskQ.createTask).toHaveBeenCalledWith({}, expect.objectContaining({
         context: { attachment_ids: ["a1"] },
+      }));
+    });
+
+    it("preserves locale override from original task", async () => {
+      const taskWithLocale = { ...failedTask, localeOverride: "en" };
+      taskQ.getTask.mockResolvedValue(taskWithLocale);
+      taskQ.markFailedAsSuperseded.mockResolvedValue({ ...taskWithLocale, status: "superseded" });
+      agentQ.getAgent.mockResolvedValue({ id: "a1", runtimeId: "r1" });
+      taskQ.createTask.mockResolvedValue({ id: "t2", status: "queued" });
+
+      await service.retryTask("t1", "w1");
+
+      expect(taskQ.createTask).toHaveBeenCalledWith({}, expect.objectContaining({
+        localeOverride: "en",
+        retryOfTaskId: "t1",
       }));
     });
 

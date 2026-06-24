@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const mockRunNpmUpdate = vi.fn();
 vi.mock("../lib/update.js", () => ({
+  isValidCliVersion: (version: string) => /^\d+\.\d+\.\d+(?:-[0-9A-Za-z]+(?:\.[0-9A-Za-z]+)*)?(?:\+[0-9A-Za-z]+(?:\.[0-9A-Za-z]+)*)?$/.test(version),
   runNpmUpdate: (...args: any[]) => mockRunNpmUpdate(...args),
 }));
 vi.mock("../lib/logger.js", () => {
@@ -88,6 +89,17 @@ describe("update-handler", () => {
     await handleCliUpdate("1.0.0", onSuccess);
 
     expect(mockRunNpmUpdate).not.toHaveBeenCalled();
+    expect(onSuccess).not.toHaveBeenCalled();
+  });
+
+  it("rejects unsafe version specs before update attempt", async () => {
+    const onSuccess = vi.fn();
+
+    await handleCliUpdate("1.0.0 --ignore-scripts", onSuccess);
+
+    expect(mockReadFileSync).not.toHaveBeenCalled();
+    expect(mockRunNpmUpdate).not.toHaveBeenCalled();
+    expect(mockWriteFileSync).not.toHaveBeenCalled();
     expect(onSuccess).not.toHaveBeenCalled();
   });
 

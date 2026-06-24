@@ -39,8 +39,9 @@ vi.mock("@/lib/middleware/helpers", () => {
   };
 });
 
+const mockInvalidate = vi.fn();
 vi.mock("@/lib/cache", () => ({
-  invalidate: vi.fn(),
+  invalidate: (...args: unknown[]) => mockInvalidate(...args),
   cacheKeys: { machineToken: (t: string) => `mt:${t.slice(0, 20)}` },
 }));
 
@@ -59,6 +60,21 @@ describe("DELETE /api/machine-tokens/[id]", () => {
     const res = await DELETE(req, { params: Promise.resolve({ id: "tok1" }) } as any);
 
     expect(res.status).toBe(204);
-    expect(mockDeleteMachineToken).toHaveBeenCalledWith({}, "tok1", "u1");
+    expect(mockDeleteMachineToken).toHaveBeenCalledWith({}, "tok1", "u1", "w1");
+    expect(mockInvalidate).toHaveBeenCalledWith("mt:al_testtoken123");
+  });
+
+  it("does not invalidate cache for tokens outside the selected workspace", async () => {
+    mockListMachineTokens.mockResolvedValue([{ id: "tok-in-workspace", token: "al_keep" }]);
+    mockDeleteMachineToken.mockResolvedValue(undefined);
+
+    const req = new NextRequest("http://localhost/api/machine-tokens/tok-other", {
+      method: "DELETE",
+    });
+    const res = await DELETE(req, { params: Promise.resolve({ id: "tok-other" }) } as any);
+
+    expect(res.status).toBe(204);
+    expect(mockDeleteMachineToken).toHaveBeenCalledWith({}, "tok-other", "u1", "w1");
+    expect(mockInvalidate).not.toHaveBeenCalled();
   });
 });

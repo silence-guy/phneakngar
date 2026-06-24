@@ -49,6 +49,12 @@ describe("CreateEmailAccountSchema", () => {
   it("rejects poll interval too long", () => {
     expect(() => CreateEmailAccountSchema.parse({ ...valid, pollIntervalSeconds: 7200 })).toThrow()
   })
+
+  it("rejects unsafe mail hosts", () => {
+    expect(() => CreateEmailAccountSchema.parse({ ...valid, imapHost: "127.0.0.1" })).toThrow()
+    expect(() => CreateEmailAccountSchema.parse({ ...valid, smtpHost: "http://smtp.gmail.com" })).toThrow()
+    expect(() => CreateEmailAccountSchema.parse({ ...valid, imapHost: "imap" })).toThrow()
+  })
 })
 
 describe("UpdateEmailAccountSchema", () => {
@@ -65,6 +71,11 @@ describe("UpdateEmailAccountSchema", () => {
 
   it("rejects invalid email when provided", () => {
     expect(() => UpdateEmailAccountSchema.parse({ emailAddress: "bad" })).toThrow()
+  })
+
+  it("rejects unsafe host updates", () => {
+    expect(() => UpdateEmailAccountSchema.parse({ imapHost: "localhost" })).toThrow()
+    expect(() => UpdateEmailAccountSchema.parse({ smtpHost: "192.168.1.20" })).toThrow()
   })
 })
 
@@ -87,5 +98,10 @@ describe("TestEmailConnectionSchema", () => {
   it("rejects missing IMAP host", () => {
     const { imapHost, ...rest } = valid
     expect(() => TestEmailConnectionSchema.parse(rest)).toThrow()
+  })
+
+  it("rejects unsafe test hosts", () => {
+    expect(() => TestEmailConnectionSchema.parse({ ...valid, imapHost: "10.0.0.5" })).toThrow()
+    expect(() => TestEmailConnectionSchema.parse({ ...valid, smtpHost: "smtp.localhost" })).toThrow()
   })
 })

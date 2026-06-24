@@ -114,11 +114,18 @@ export async function listMachineTokens(
 export async function deleteMachineToken(
   db: Database,
   id: string,
-  userId: string
+  userId: string,
+  workspaceId: string,
 ) {
   await db
     .delete(machineToken)
-    .where(and(eq(machineToken.id, id), eq(machineToken.userId, userId)));
+    .where(
+      and(
+        eq(machineToken.id, id),
+        eq(machineToken.userId, userId),
+        eq(machineToken.workspaceId, workspaceId),
+      ),
+    );
 }
 
 export async function updateMachineTokenLastUsed(db: Database, id: string) {

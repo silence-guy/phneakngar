@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { mkdirSync, writeFileSync, readFileSync, existsSync, rmSync } from "fs";
 import { join } from "path";
+import { tmpdir } from "os";
 import PostalMime from "postal-mime";
 import { Command } from "commander";
 
@@ -544,6 +545,7 @@ async function runPull(args: string[]): Promise<{ out: string[]; err: string[]; 
 }
 
 const FORWARD_TMP = "/tmp/alook-email-forward-test";
+const EMAIL_PULL_TMP = join(tmpdir(), "alook-emails", "w1", "ag_1");
 
 function makeOriginalEmail(overrides: Partial<Record<string, unknown>> = {}) {
   return {
@@ -809,6 +811,11 @@ describe("email pull with --email_id", () => {
   beforeEach(() => {
     getJSONMock.mockReset();
     getTextMock.mockReset();
+    rmSync(EMAIL_PULL_TMP, { recursive: true, force: true });
+  });
+
+  afterEach(() => {
+    rmSync(EMAIL_PULL_TMP, { recursive: true, force: true });
   });
 
   it("registers --email_id option on pull command", () => {
@@ -842,6 +849,53 @@ describe("email pull with --email_id", () => {
 
     expect(exitCode).toBeNull();
     expect(getJSONMock).toHaveBeenCalledWith("/api/email/em_123");
+  });
+
+  it("sanitizes attachment filenames before writing files", async () => {
+    getJSONMock.mockResolvedValueOnce({
+      id: "em_traversal",
+      agent_id: "ag_1",
+      from_email: "sender@example.com",
+      to_email: "agent@alook.ai",
+      subject: "Traversal",
+      r2_key: "emails/em_traversal",
+      is_whitelisted: true,
+      forwarded: false,
+      message_id: "",
+      in_reply_to: "",
+      references: "",
+      html_body: "",
+      attachments: [],
+      status: "unread",
+      created_at: "2026-05-26T00:00:00Z",
+    });
+    const boundary = "----=_Traversal";
+    getTextMock.mockResolvedValueOnce([
+      "From: sender@example.com",
+      "To: agent@alook.ai",
+      "Subject: Traversal",
+      `Content-Type: multipart/mixed; boundary="${boundary}"`,
+      "",
+      `--${boundary}`,
+      "Content-Type: text/plain",
+      "",
+      "Body",
+      `--${boundary}`,
+      "Content-Type: application/octet-stream",
+      'Content-Disposition: attachment; filename="../../owned.txt"',
+      "Content-Transfer-Encoding: base64",
+      "",
+      Buffer.from("owned").toString("base64"),
+      `--${boundary}--`,
+    ].join("\r\n"));
+
+    const { exitCode } = await runPull(["--agent_id", "ag_1", "--email_id", "em_traversal"]);
+
+    expect(exitCode).toBeNull();
+    const safePath = join(EMAIL_PULL_TMP, "em_traversal", "attachments", "owned.txt");
+    expect(existsSync(safePath)).toBe(true);
+    expect(readFileSync(safePath, "utf-8")).toBe("owned");
+    expect(existsSync(join(EMAIL_PULL_TMP, "owned.txt"))).toBe(false);
   });
 
   it("errors when --email_id combined with --status", async () => {

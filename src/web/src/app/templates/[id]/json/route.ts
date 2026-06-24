@@ -2,11 +2,12 @@ import { NextResponse } from "next/server";
 import { getTemplateById } from "@/lib/templates";
 
 export async function GET(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
-  const template = getTemplateById(id);
+  const locale = new URL(req.url).searchParams.get("locale");
+  const template = getTemplateById(id, locale);
 
   if (!template) {
     return NextResponse.json(

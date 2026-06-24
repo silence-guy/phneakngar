@@ -1,7 +1,17 @@
 import type { Database, ClaimedTaskRow } from "@alook/shared";
-import { queries, TASK_TYPES, toAlookAddress } from "@alook/shared";
+import {
+  buildAgentPromptLanguagePolicy,
+  queries,
+  resolveAgentLanguageMode,
+  TASK_TYPES,
+  toAlookAddress,
+} from "@alook/shared";
 import { taskToResponse } from "@/lib/api/responses";
 import { cached, cacheKeys } from "@/lib/cache";
+
+function stringOrNull(value: unknown): string | null {
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
 
 export class TaskPayloadBuilder {
   constructor(private db: Database) {}
@@ -45,7 +55,7 @@ export class TaskPayloadBuilder {
       : [];
     const convoMap = new Map(convos.map((c) => [c.id, c]));
 
-    const memberCache = new Map<string, { globalInstruction: string } | null>();
+    const memberCache = new Map<string, { globalInstruction: string; preferredLocale: string | null } | null>();
     const userCache = new Map<string, { name: string; email: string } | null>();
 
     const results = [];
@@ -56,6 +66,7 @@ export class TaskPayloadBuilder {
       }
 
       const agent = agentMap.get(task.agentId) ?? null;
+      const taskContext = task.context as Record<string, unknown> | null | undefined;
       const emailAddresses: string[] = [];
       if (agent) {
         if (agent.emailHandle) emailAddresses.push(toAlookAddress(agent.emailHandle));
@@ -71,7 +82,10 @@ export class TaskPayloadBuilder {
             600,
             () => queries.member.getMemberByUserAndWorkspace(this.db, agent.ownerId!, workspaceId),
           );
-          memberCache.set(agent.ownerId, m ? { globalInstruction: m.globalInstruction } : null);
+          memberCache.set(agent.ownerId, m ? {
+            globalInstruction: m.globalInstruction,
+            preferredLocale: m.preferredLocale ?? null,
+          } : null);
         }
         const cachedMember = memberCache.get(agent.ownerId);
         if (cachedMember?.globalInstruction) {
@@ -115,6 +129,16 @@ export class TaskPayloadBuilder {
         }
       }
 
+      const ownerPreferredLocale = agent?.ownerId
+        ? memberCache.get(agent.ownerId)?.preferredLocale ?? null
+        : null;
+      const agentPreferredLocale = stringOrNull(agent?.preferredLocale) ?? stringOrNull(ownerPreferredLocale);
+      const languagePolicy = buildAgentPromptLanguagePolicy({
+        taskLocaleOverride: stringOrNull(task.localeOverride) ?? stringOrNull(taskContext?.taskLocaleOverride),
+        agentPreferredLocale,
+        agentLanguagePolicy: stringOrNull(agent?.languagePolicy),
+      });
+
       const rawColleagues = colleaguesByAgent.get(task.agentId) ?? [];
       const colleagues = rawColleagues.map((c) => ({
         name: c.name,
@@ -127,6 +151,7 @@ export class TaskPayloadBuilder {
         ...taskToResponse(task),
         channel: taskChannel,
         sender,
+        language_policy: languagePolicy,
         agent: agent
           ? {
               instructions,
@@ -136,6 +161,8 @@ export class TaskPayloadBuilder {
               email_addresses: emailAddresses,
               user_email: null as string | null,
               user_name: ownerName,
+              preferred_locale: agentPreferredLocale ? resolveAgentLanguageMode(agentPreferredLocale) : null,
+              language_policy: agent.languagePolicy || null,
               colleagues,
             }
           : null,

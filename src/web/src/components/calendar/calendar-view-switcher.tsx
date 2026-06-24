@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { CALENDAR_LABELS, calendarViewLabel } from "./calendar-labels";
 
 export type CalendarView = "month" | "week" | "agenda";
 
@@ -19,7 +20,7 @@ export function CalendarViewSwitcher({ view, onChange }: CalendarViewSwitcherPro
   return (
     <div
       role="radiogroup"
-      aria-label="Calendar view"
+      aria-label={CALENDAR_LABELS.view.group}
       className="inline-flex items-center rounded-md border border-border bg-background p-0.5"
     >
       {(["month", "week", "agenda"] as const).map((v) => {
@@ -38,7 +39,7 @@ export function CalendarViewSwitcher({ view, onChange }: CalendarViewSwitcherPro
                 : "text-muted-foreground hover:text-foreground"
             )}
           >
-            {v}
+            {calendarViewLabel(v)}
           </button>
         );
       })}

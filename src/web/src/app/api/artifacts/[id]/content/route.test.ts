@@ -59,8 +59,31 @@ describe("GET /api/artifacts/[id]/content", () => {
 
     expect(res.status).toBe(200);
     expect(res.headers.get("Content-Type")).toBe("text/markdown");
+    expect(res.headers.get("Content-Disposition")).toContain("inline;");
+    expect(res.headers.get("X-Content-Type-Options")).toBe("nosniff");
     expect(await res.text()).toBe("hello");
     expect(mockBucketGet).toHaveBeenCalledWith("artifacts/w1/ag1/c1/art_1/brief.md");
+  });
+
+  it("forces active content to download as octet-stream", async () => {
+    mockGetArtifact.mockResolvedValue({
+      id: "art_1",
+      agentId: "ag1",
+      r2Key: "artifacts/w1/ag1/c1/art_1/page.html",
+      filename: "page.html",
+      contentType: "text/html; charset=utf-8",
+      size: 29,
+    });
+    mockGetAgent.mockResolvedValue({ id: "ag1" });
+    mockBucketGet.mockResolvedValue({ body: new Blob(["<script>alert(1)</script>"]).stream() });
+
+    const res = await GET(new NextRequest("http://localhost/api/artifacts/art_1/content?workspace_id=w1"), { params: { id: "art_1" } } as any);
+
+    expect(res.status).toBe(200);
+    expect(res.headers.get("Content-Type")).toBe("application/octet-stream");
+    expect(res.headers.get("Content-Disposition")).toContain("attachment;");
+    expect(res.headers.get("Content-Security-Policy")).toBe("sandbox");
+    expect(res.headers.get("X-Content-Type-Options")).toBe("nosniff");
   });
 
   it("serves non-ASCII filenames with RFC 5987 content disposition", async () => {

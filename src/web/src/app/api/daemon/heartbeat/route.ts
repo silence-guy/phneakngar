@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { queries, HeartbeatRequestSchema, OFFLINE_THRESHOLD_MS } from "@alook/shared";
 import { getDb } from "@/lib/db";
 import { withAuth } from "@/lib/middleware/auth";
+import { withDaemonMachine } from "@/lib/middleware/daemon";
 import { writeJSON, writeError, parseBody } from "@/lib/middleware/helpers";
 import { broadcastToUser } from "@/lib/broadcast";
 import { log } from "@/lib/logger";
@@ -16,6 +17,9 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
   }
 
   const db = getDb(ctx.env.DB);
+  const daemonAuth = await withDaemonMachine(db, ctx, body.daemon_id);
+  if (daemonAuth instanceof Response) return daemonAuth;
+
   let wasOffline = false;
   try {
     const existing = await queries.machine.getMachineByDaemon(db, body.daemon_id, ctx.workspaceId!);

@@ -75,6 +75,7 @@ vi.mock("@alook/shared", async () => {
     parseIcs: real.parseIcs,
     extractAttachmentMeta: real.extractAttachmentMeta,
     DEV_WEB_URL: "http://localhost:3000",
+    EMAIL_NOTIFY_SECRET_HEADER: real.EMAIL_NOTIFY_SECRET_HEADER,
     queries: {
       emailAccount: {
         getEmailAccount: (...args: any[]) => mockGetEmailAccount(...args),
@@ -142,6 +143,7 @@ function createMockEnv() {
       SEND_EMAIL: {} as SendEmail,
       IMAP_POLLER: {} as DurableObjectNamespace,
       ENCRYPTION_KEY: "test-secret",
+      EMAIL_NOTIFY_SECRET: "notify-secret",
     },
     putR2,
     webFetch,
@@ -200,14 +202,17 @@ describe("alarm — normal UID-based flow", () => {
     expect(putR2).toHaveBeenCalledTimes(2)
     expect(webFetch).toHaveBeenCalledTimes(2)
 
-    const notify1 = JSON.parse(webFetch.mock.calls[0][1].body)
+    const init1 = webFetch.mock.calls[0][1]
+    expect((init1.headers as Record<string, string>)["X-Alook-Email-Notify-Secret"]).toBe("notify-secret")
+
+    const notify1 = JSON.parse(init1.body as string)
     expect(notify1.agentId).toBe("ag_test1")
     expect(notify1.from).toBe("alice@example.com")
     expect(notify1.subject).toBe("Hi")
     expect(notify1.isWhitelisted).toBe(true)
     expect(notify1.messageId).toBe("<msg1>")
 
-    const notify2 = JSON.parse(webFetch.mock.calls[1][1].body)
+    const notify2 = JSON.parse(webFetch.mock.calls[1][1].body as string)
     expect(notify2.from).toBe("bob@example.com")
     expect(notify2.subject).toBe("Hey")
 
@@ -263,7 +268,10 @@ describe("alarm — whitelist filtering", () => {
     await ctx.storage.put("accountId", "aea_test1")
     await durable.alarm()
 
-    const notify = JSON.parse(webFetch.mock.calls[0][1].body)
+    const init = webFetch.mock.calls[0][1]
+    expect((init.headers as Record<string, string>)["X-Alook-Email-Notify-Secret"]).toBe("notify-secret")
+
+    const notify = JSON.parse(init.body as string)
     expect(notify.isWhitelisted).toBe(true)
   })
 
@@ -279,7 +287,10 @@ describe("alarm — whitelist filtering", () => {
     await ctx.storage.put("accountId", "aea_test1")
     await durable.alarm()
 
-    const notify = JSON.parse(webFetch.mock.calls[0][1].body)
+    const init = webFetch.mock.calls[0][1]
+    expect((init.headers as Record<string, string>)["X-Alook-Email-Notify-Secret"]).toBe("notify-secret")
+
+    const notify = JSON.parse(init.body as string)
     expect(notify.isWhitelisted).toBe(false)
   })
 })

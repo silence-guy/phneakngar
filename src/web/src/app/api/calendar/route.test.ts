@@ -196,7 +196,7 @@ describe("POST /api/calendar", () => {
   });
 
   it("rejects repeat_stop_date earlier than the first scheduled occurrence", async () => {
-    mockGetAgent.mockResolvedValue({ id: "ag_1" });
+    mockGetAgent.mockResolvedValue({ id: "ag_1", ownerId: "u1" });
     const res = await post({
       agent_id: "ag_1",
       title: "test",
@@ -217,8 +217,19 @@ describe("POST /api/calendar", () => {
     expect(res.status).toBe(404);
   });
 
+  it("404s when the agent is visible but not owned by the user", async () => {
+    mockGetAgent.mockResolvedValue({ id: "ag_shared", ownerId: "u2", visibility: "public" });
+    const res = await post({
+      agent_id: "ag_shared",
+      title: "test",
+      scheduled_at: "2026-04-17T09:00:00.000Z",
+    });
+    expect(res.status).toBe(404);
+    expect(mockCreate).not.toHaveBeenCalled();
+  });
+
   it("creates the event with repeat_stop_at derived from repeat_stop_date", async () => {
-    mockGetAgent.mockResolvedValue({ id: "ag_1" });
+    mockGetAgent.mockResolvedValue({ id: "ag_1", ownerId: "u1" });
     mockCreate.mockImplementation((_db, data) => ({
       id: "ce_1",
       ...data,
@@ -240,7 +251,7 @@ describe("POST /api/calendar", () => {
   });
 
   it("passes description through to create and echoes it in the response", async () => {
-    mockGetAgent.mockResolvedValue({ id: "ag_1" });
+    mockGetAgent.mockResolvedValue({ id: "ag_1", ownerId: "u1" });
     mockCreate.mockImplementation((_db, data) => ({
       id: "ce_1",
       title: data.title,
@@ -258,7 +269,7 @@ describe("POST /api/calendar", () => {
   });
 
   it("sets description to null when omitted", async () => {
-    mockGetAgent.mockResolvedValue({ id: "ag_1" });
+    mockGetAgent.mockResolvedValue({ id: "ag_1", ownerId: "u1" });
     mockCreate.mockImplementation((_db, data) => ({ id: "ce_1", ...data }));
     const res = await post({
       agent_id: "ag_1",
@@ -270,7 +281,7 @@ describe("POST /api/calendar", () => {
   });
 
   it("normalizes empty-HTML description to null", async () => {
-    mockGetAgent.mockResolvedValue({ id: "ag_1" });
+    mockGetAgent.mockResolvedValue({ id: "ag_1", ownerId: "u1" });
     mockCreate.mockImplementation((_db, data) => ({ id: "ce_1", ...data }));
     const res = await post({
       agent_id: "ag_1",

@@ -105,7 +105,7 @@ describe("POST /api/daemon/register", () => {
     ],
   };
 
-  const authCtx = { env: {}, userId: "u1", email: "u@t.com" };
+  const authCtx = { env: {}, userId: "u1", email: "u@t.com", authType: "machine" as const, workspaceId: "w1" };
 
   it("upserts machine + runtimes and returns 200", async () => {
     const POST = await loadRoute(authCtx);
@@ -281,11 +281,11 @@ describe("POST /api/daemon/register", () => {
     const res = await POST(makeReq(bodyWithoutVersion));
 
     expect(res.status).toBe(200);
-    expect(mockGetMachineByDaemon).not.toHaveBeenCalled();
+    expect(mockGetMachineByDaemon).toHaveBeenCalledTimes(1);
   });
 
   it("returns 400 when no workspace_id is provided or resolved", async () => {
-    const POST = await loadRoute(authCtx);
+    const POST = await loadRoute({ env: {}, userId: "u1", email: "u@t.com", authType: "user" as const });
 
     const body = {
       daemon_id: "d1",

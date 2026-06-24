@@ -4,6 +4,12 @@ import { seedTestData, cleanupTestData, type TestSeed, tokenRequest, sqlRun, sql
 
 let seed: TestSeed
 
+const EMAIL_NOTIFY_SECRET = process.env.EMAIL_NOTIFY_SECRET ?? "test-notify-secret"
+const emailNotifyHeaders = {
+  "Content-Type": "application/json",
+  "X-Alook-Email-Notify-Secret": EMAIL_NOTIFY_SECRET,
+}
+
 beforeAll(() => {
   seed = seedTestData()
 }, 60_000)
@@ -182,6 +188,7 @@ describe("email notify with meetingInfo", () => {
   it("creates scheduled meeting for whitelisted sender with ICS", async () => {
     const res = await req("/api/email/notify", {
       method: "POST",
+      headers: emailNotifyHeaders,
       body: JSON.stringify({
         agentId: seed.agentId,
         workspaceId: seed.workspaceId,
@@ -213,6 +220,7 @@ describe("email notify with meetingInfo", () => {
   it("creates pending meeting for non-whitelisted sender", async () => {
     const res = await req("/api/email/notify", {
       method: "POST",
+      headers: emailNotifyHeaders,
       body: JSON.stringify({
         agentId: seed.agentId,
         workspaceId: seed.workspaceId,
@@ -245,6 +253,7 @@ describe("email notify with meetingInfo", () => {
 
     const res = await req("/api/email/notify", {
       method: "POST",
+      headers: emailNotifyHeaders,
       body: JSON.stringify({
         agentId: seed.agentId,
         workspaceId: seed.workspaceId,

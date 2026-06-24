@@ -40,4 +40,20 @@ describe("issueCommand", () => {
     expect(longs).toContain("--description");
     expect(longs).toContain("--body-file");
   });
+
+  it("shows Khmer status labels in help without replacing status values", () => {
+    const list = cmd.commands.find((c) => c.name() === "list")!;
+    const update = cmd.commands.find((c) => c.name() === "update")!;
+    const listStatus = (list as unknown as { options: { long: string; description: string }[] }).options.find(
+      (o) => o.long === "--status",
+    );
+    const updateStatus = (update as unknown as { options: { long: string; description: string }[] }).options.find(
+      (o) => o.long === "--status",
+    );
+
+    expect(listStatus?.description).toContain("todo (ត្រូវធ្វើ)");
+    expect(listStatus?.description).toContain("in_progress (កំពុងដំណើរការ)");
+    expect(updateStatus?.description).toContain("done (រួចរាល់)");
+    expect(updateStatus?.description).toContain("failed (បរាជ័យ)");
+  });
 });

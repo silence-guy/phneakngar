@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { Locale } from "@alook/shared";
 import {
   hasCustomEmailErrors,
   hasWorkspaceFormErrors,
@@ -36,6 +37,30 @@ describe("validateCustomEmailFields", () => {
       smtpUsername: "",
       smtpPassword: "",
     });
+
+    expect(errors).toEqual({
+      emailAddress: "ត្រូវបញ្ចូលអាសយដ្ឋានអ៊ីមែល",
+      imapHost: "ត្រូវបញ្ចូល IMAP host",
+      imapPassword: "ត្រូវបញ្ចូល IMAP credentials",
+      smtpHost: "ត្រូវបញ្ចូល SMTP host",
+      smtpPassword: "ត្រូវបញ្ចូល SMTP credentials",
+    });
+    expect(hasCustomEmailErrors(errors)).toBe(true);
+  });
+
+  it("keeps English fallback messages available", () => {
+    const errors = validateCustomEmailFields(
+      {
+        emailAddress: "",
+        imapHost: "",
+        imapUsername: "",
+        imapPassword: "",
+        smtpHost: "",
+        smtpUsername: "",
+        smtpPassword: "",
+      },
+      Locale.EN,
+    );
 
     expect(errors).toEqual({
       emailAddress: "Email address is required",

@@ -49,14 +49,14 @@ import { GET, POST } from "./route";
 
 const ACCOUNT_ROW = {
   id: "acc1", agentId: "a1", workspaceId: "w1", emailAddress: "x@t.com", displayName: "X",
-  imapHost: "imap", imapPort: 993, imapTls: 1, smtpHost: "smtp", smtpPort: 465, smtpTls: 1,
+  imapHost: "imap.example.com", imapPort: 993, imapTls: 1, smtpHost: "smtp.example.com", smtpPort: 465, smtpTls: 1,
   pollIntervalSeconds: 60, lastSyncedAt: null, status: "active", errorMessage: null,
   createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
 };
 
 const VALID_BODY = {
-  emailAddress: "x@t.com", displayName: "X", imapHost: "imap", imapPort: 993,
-  imapUsername: "u", imapPassword: "p", imapTls: true, smtpHost: "smtp", smtpPort: 465,
+  emailAddress: "x@t.com", displayName: "X", imapHost: "imap.example.com", imapPort: 993,
+  imapUsername: "u", imapPassword: "p", imapTls: true, smtpHost: "smtp.example.com", smtpPort: 465,
   smtpUsername: "su", smtpPassword: "sp", smtpTls: 1, pollIntervalSeconds: 60,
 };
 
@@ -115,6 +115,14 @@ describe("POST /api/agents/[id]/email-accounts", () => {
     mockGetAgent.mockResolvedValue(null);
     const res = await post(VALID_BODY);
     expect(res.status).toBe(404);
+  });
+
+  it("400 on unsafe mail host", async () => {
+    mockGetAgent.mockResolvedValue({ id: "a1" });
+    const res = await post({ ...VALID_BODY, imapHost: "127.0.0.1" });
+    expect(res.status).toBe(400);
+    expect(mockCreateAccount).not.toHaveBeenCalled();
+    expect(mockEmailWorkerFetch).not.toHaveBeenCalled();
   });
 
   it("400 on invalid body", async () => {

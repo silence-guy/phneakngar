@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { queries } from "@alook/shared";
 import { withAuth } from "@/lib/middleware/auth";
+import { withWorkspaceMember } from "@/lib/middleware/workspace";
 import { writeJSON, writeError } from "@/lib/middleware/helpers";
 import { getDb } from "@/lib/db";
 
@@ -10,10 +11,10 @@ export const GET = withAuth(async (req: NextRequest, ctx) => {
   const agentId = ctx.params?.id;
   if (!agentId) return writeError("agent id required", 400);
 
-  const workspaceId = new URL(req.url).searchParams.get("workspace_id");
-  if (!workspaceId) return writeError("workspace_id required", 400);
+  const ws = await withWorkspaceMember(req, ctx);
+  if (ws instanceof Response) return ws;
 
-  const agent = await queries.agent.getAgent(db, agentId, workspaceId, ctx.userId);
+  const agent = await queries.agent.getAgent(db, agentId, ws.workspaceId, ctx.userId);
   if (!agent) return writeError("agent not found", 404);
 
   const KNOWN_RUNTIMES = ["claude", "codex", "opencode"] as const;
@@ -29,7 +30,7 @@ export const GET = withAuth(async (req: NextRequest, ctx) => {
     runtime = "claude";
   }
 
-  const skills = await queries.agentSkill.getSkills(db, agentId, runtime, workspaceId);
+  const skills = await queries.agentSkill.getSkills(db, agentId, runtime, ws.workspaceId);
 
   return writeJSON({ skills });
 });

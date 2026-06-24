@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useReducer } from "react";
 import type { Editor } from "@tiptap/react";
 import { cn } from "@/lib/utils";
+import { EMAIL_LABELS } from "@/components/email-labels";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import {
@@ -118,7 +119,7 @@ export function EmailToolbar({ editor }: EmailToolbarProps) {
     try {
       new URL(trimmed);
     } catch {
-      setUrlError("Please enter a valid URL");
+      setUrlError(EMAIL_LABELS.toolbar.validUrl);
       return;
     }
     setUrlError("");
@@ -143,28 +144,28 @@ export function EmailToolbar({ editor }: EmailToolbarProps) {
     <div className="flex items-center gap-0.5 px-3 py-1 overflow-x-auto">
       {/* Inline formatting */}
       <ToolbarButton
-        title="Bold"
+        title={EMAIL_LABELS.toolbar.bold}
         active={editor.isActive("bold")}
         onAction={() => editor.chain().focus().toggleBold().run()}
       >
         <Bold className={iconSize} />
       </ToolbarButton>
       <ToolbarButton
-        title="Italic"
+        title={EMAIL_LABELS.toolbar.italic}
         active={editor.isActive("italic")}
         onAction={() => editor.chain().focus().toggleItalic().run()}
       >
         <Italic className={iconSize} />
       </ToolbarButton>
       <ToolbarButton
-        title="Underline"
+        title={EMAIL_LABELS.toolbar.underline}
         active={editor.isActive("underline")}
         onAction={() => editor.chain().focus().toggleUnderline().run()}
       >
         <Underline className={iconSize} />
       </ToolbarButton>
       <ToolbarButton
-        title="Strikethrough"
+        title={EMAIL_LABELS.toolbar.strikethrough}
         active={editor.isActive("strike")}
         onAction={() => editor.chain().focus().toggleStrike().run()}
       >
@@ -175,14 +176,14 @@ export function EmailToolbar({ editor }: EmailToolbarProps) {
 
       {/* Headings */}
       <ToolbarButton
-        title="Heading 1"
+        title={EMAIL_LABELS.toolbar.heading1}
         active={editor.isActive("heading", { level: 1 })}
         onAction={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
       >
         <Heading1 className={iconSize} />
       </ToolbarButton>
       <ToolbarButton
-        title="Heading 2"
+        title={EMAIL_LABELS.toolbar.heading2}
         active={editor.isActive("heading", { level: 2 })}
         onAction={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
       >
@@ -193,14 +194,14 @@ export function EmailToolbar({ editor }: EmailToolbarProps) {
 
       {/* Lists */}
       <ToolbarButton
-        title="Bullet List"
+        title={EMAIL_LABELS.toolbar.bulletList}
         active={editor.isActive("bulletList")}
         onAction={() => editor.chain().focus().toggleBulletList().run()}
       >
         <List className={iconSize} />
       </ToolbarButton>
       <ToolbarButton
-        title="Ordered List"
+        title={EMAIL_LABELS.toolbar.orderedList}
         active={editor.isActive("orderedList")}
         onAction={() => editor.chain().focus().toggleOrderedList().run()}
       >
@@ -211,21 +212,21 @@ export function EmailToolbar({ editor }: EmailToolbarProps) {
 
       {/* Alignment */}
       <ToolbarButton
-        title="Align Left"
+        title={EMAIL_LABELS.toolbar.alignLeft}
         active={editor.isActive({ textAlign: "left" })}
         onAction={() => editor.chain().focus().setTextAlign("left").run()}
       >
         <AlignLeft className={iconSize} />
       </ToolbarButton>
       <ToolbarButton
-        title="Align Center"
+        title={EMAIL_LABELS.toolbar.alignCenter}
         active={editor.isActive({ textAlign: "center" })}
         onAction={() => editor.chain().focus().setTextAlign("center").run()}
       >
         <AlignCenter className={iconSize} />
       </ToolbarButton>
       <ToolbarButton
-        title="Align Right"
+        title={EMAIL_LABELS.toolbar.alignRight}
         active={editor.isActive({ textAlign: "right" })}
         onAction={() => editor.chain().focus().setTextAlign("right").run()}
       >
@@ -270,9 +271,9 @@ export function EmailToolbar({ editor }: EmailToolbarProps) {
             <Link className={iconSize} />
           )}
         </TooltipTrigger>
-        <TooltipContent>{editor.isActive("link") ? "Remove Link" : "Insert Link"}</TooltipContent>
+        <TooltipContent>{editor.isActive("link") ? EMAIL_LABELS.toolbar.removeLink : EMAIL_LABELS.toolbar.insertLink}</TooltipContent>
       </Tooltip>
-      <ToolbarButton title="Insert Image" onAction={handleImage}>
+      <ToolbarButton title={EMAIL_LABELS.toolbar.insertImage} onAction={handleImage}>
         <ImageIcon className={iconSize} />
       </ToolbarButton>
 
@@ -280,7 +281,7 @@ export function EmailToolbar({ editor }: EmailToolbarProps) {
 
       {/* Horizontal Rule */}
       <ToolbarButton
-        title="Horizontal Rule"
+        title={EMAIL_LABELS.toolbar.horizontalRule}
         onAction={() => editor.chain().focus().setHorizontalRule().run()}
       >
         <Minus className={iconSize} />
@@ -290,7 +291,7 @@ export function EmailToolbar({ editor }: EmailToolbarProps) {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {dialogMode === "link" ? "Insert Link" : "Insert Image"}
+              {dialogMode === "link" ? EMAIL_LABELS.toolbar.insertLink : EMAIL_LABELS.toolbar.insertImage}
             </DialogTitle>
           </DialogHeader>
           {dialogMode === "link" && selectionEmpty && (
@@ -301,7 +302,7 @@ export function EmailToolbar({ editor }: EmailToolbarProps) {
               onKeyDown={(e) => {
                 if (e.key === "Enter") handleDialogSubmit();
               }}
-              placeholder="Display text"
+              placeholder={EMAIL_LABELS.toolbar.displayText}
             />
           )}
           <div className="space-y-1">
@@ -320,7 +321,7 @@ export function EmailToolbar({ editor }: EmailToolbarProps) {
           </div>
           <DialogFooter>
             <Button onClick={handleDialogSubmit} disabled={!urlValue.trim()}>
-              Insert
+              {EMAIL_LABELS.toolbar.insert}
             </Button>
           </DialogFooter>
         </DialogContent>

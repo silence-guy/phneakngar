@@ -47,6 +47,7 @@ export const GET = withAuth(async (req: NextRequest, ctx) => {
     parent_task_id: t.parentTaskId,
     prompt: t.prompt,
     status: t.status,
+    visible_outcome_status: t.visibleOutcomeStatus ?? null,
     type: t.type,
     conversation_id: t.conversationId,
     created_at: t.createdAt,

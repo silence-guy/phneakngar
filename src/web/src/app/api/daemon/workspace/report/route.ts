@@ -6,7 +6,7 @@ import { getDb, withD1Retry } from "@/lib/db";
 import { broadcastToUser } from "@/lib/broadcast";
 
 export const POST = withAuth(async (req: NextRequest, ctx) => {
-  if (!ctx.workspaceId) {
+  if (ctx.authType !== "machine" || !ctx.workspaceId) {
     return writeError("Forbidden: machine token required", 403);
   }
 
@@ -15,7 +15,9 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
   const [body, err] = await parseBody(req, WorkspaceFileReportSchema);
   if (err) return err;
 
-  const row = await withD1Retry(() => queries.workspaceFileRequest.getRequest(db, body.request_id));
+  const row = await withD1Retry(() =>
+    queries.workspaceFileRequest.getRequestForWorkspace(db, ctx.workspaceId!, body.request_id),
+  );
   if (!row) return writeError("request not found", 404);
 
   const result = {
@@ -26,7 +28,10 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
     path: body.path,
   };
 
-  await withD1Retry(() => queries.workspaceFileRequest.completeRequest(db, row.id, result));
+  const completed = await withD1Retry(() =>
+    queries.workspaceFileRequest.completeRequestForWorkspace(db, ctx.workspaceId!, row.id, result),
+  );
+  if (!completed) return writeError("request not found", 404);
 
   broadcastToUser(ctx.userId, {
     type: "workspace.files",

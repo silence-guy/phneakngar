@@ -1,9 +1,9 @@
 import { describe, it, expect } from "vitest";
 import { GET } from "./route";
 
-function makeRequest(id: string) {
+function makeRequest(id: string, search = "") {
   return GET(
-    new Request(`http://localhost/templates/${id}/json`),
+    new Request(`http://localhost/templates/${id}/json${search}`),
     { params: Promise.resolve({ id }) },
   );
 }
@@ -15,10 +15,20 @@ describe("GET /templates/[id]/json", () => {
     expect(res.headers.get("content-type")).toContain("application/json");
 
     const data = await res.json();
-    expect(data.name).toBe("Open Source Maintainer");
+    expect(data.name).toBe("អ្នកថែទាំគម្រោង Open Source");
     expect(data.scenario).toBe("software-dev");
     expect(Array.isArray(data.members)).toBe(true);
     expect(data.members.length).toBeGreaterThanOrEqual(2);
+    expect(data.members[0]?.instructions).toContain("Default user-facing language: Khmer (km-KH)");
+  });
+
+  it("returns English template JSON when locale=en", async () => {
+    const res = await makeRequest("open-source-maintainer", "?locale=en");
+    expect(res.status).toBe(200);
+
+    const data = await res.json();
+    expect(data.name).toBe("Open Source Maintainer");
+    expect(data.members[0]?.instructions).not.toContain("km-KH");
   });
 
   it("returns 404 JSON for nonexistent template slug", async () => {

@@ -1,3 +1,8 @@
+import { Locale, defaultLocale, resolveLocale } from "@alook/shared";
+import type { Locale as SharedLocale } from "@alook/shared";
+import { uniqueNamesGenerator, names } from "unique-names-generator";
+import { randomConfig, serializeAvatarConfig } from "@/components/avatar";
+
 export type ScenarioId = "software-dev" | "content-research" | "personal-assistant" | "sales-outreach" | "customer-support" | "custom";
 
 export type MemberRole = "leader" | "researcher" | "engineer" | "assistant";
@@ -16,6 +21,8 @@ export interface ScenarioPreset {
   icon: string;
   members: ScenarioMemberPreset[];
 }
+
+export type ScenarioLocale = SharedLocale;
 
 // --- Leader: scenario-specific ---
 
@@ -103,6 +110,70 @@ const ASSISTANT_SUPPORT = `You are the customer support specialist. You draft re
 - Lead with acknowledgment, then solution or clear next steps. Use simple language.
 - If you can't resolve immediately, set realistic expectations: what you'll do, by when.
 - Track open issues proactively. Escalate complex or sensitive cases with full context.`;
+
+const KHMER_AGENT_LANGUAGE_POLICY = `Default user-facing language: Khmer (km-KH).
+Write user-visible messages, emails, DM replies, issue comments, summaries, and follow-ups in natural Khmer.
+Keep CLI commands, JSON keys, status values, task type values, routes, file paths, code identifiers, package names, API names, logs, environment variables, and exact quotes in their original English form.
+When a technical English term is useful, write the Khmer phrase first and include the English term in parentheses on first mention.
+If the recipient clearly uses another language, match that recipient for that reply.`;
+
+const KHMER_RELATIONSHIP_NOTICE =
+  "Brief and report in Khmer by default. Keep acceptance criteria, CLI commands, file paths, and status values exact.";
+
+const KHMER_ROLE_DESCRIPTIONS: Record<MemberRole, string> = {
+  leader: "សម្របសម្រួលការងារ បែងចែកភារកិច្ច និងឆ្លើយតបជាភាសាខ្មែរ",
+  researcher: "ស្រាវជ្រាវ បញ្ជាក់ភស្តុតាង និងសង្ខេបអ្វីដែលបានរកឃើញជាភាសាខ្មែរ",
+  engineer: "សរសេរកូដ ដំណើរការតេស្ត និងពន្យល់ការអនុវត្តជាភាសាខ្មែរ",
+  assistant: "រៀបចំអ៊ីមែល កាលវិភាគ ការតាមដាន និងការងារប្រតិបត្តិការជាភាសាខ្មែរ",
+};
+
+const KHMER_SCENARIO_COPY: Record<ScenarioId, Pick<ScenarioPreset, "label" | "description">> = {
+  "software-dev": {
+    label: "អភិវឌ្ឍន៍កម្មវិធី",
+    description: "បង្កើត តេស្ត និងដាក់ចេញកូដជាមួយក្រុមភ្នាក់ងារ AI",
+  },
+  "content-research": {
+    label: "មាតិកា និងស្រាវជ្រាវ",
+    description: "ស្រាវជ្រាវប្រធានបទ សរសេរមាតិកា និងគ្រប់គ្រងការបោះពុម្ពផ្សាយ",
+  },
+  "personal-assistant": {
+    label: "ជំនួយការផ្ទាល់ខ្លួន",
+    description: "ភ្នាក់ងារ AI មួយសម្រាប់អ៊ីមែល ស្រាវជ្រាវ កាលវិភាគ និងការងារប្រចាំថ្ងៃ",
+  },
+  "sales-outreach": {
+    label: "លក់ និងទំនាក់ទំនង",
+    description: "ស្វែងរកអតិថិជនសក្តានុពល តាមដាន និងរៀបចំការទំនាក់ទំនងជាក្រុម",
+  },
+  "customer-support": {
+    label: "គាំទ្រអតិថិជន",
+    description: "គ្រប់គ្រងសំណើ គ្រោងសារ និងតាមដានដំណោះស្រាយ",
+  },
+  custom: {
+    label: "ផ្ទាល់ខ្លួន",
+    description: "បង្កើតក្រុមភ្នាក់ងារ AI ដោយខ្លួនឯងពីដំបូង",
+  },
+};
+
+function withKhmerAgentPolicy(instructions: string): string {
+  return `${KHMER_AGENT_LANGUAGE_POLICY}\n\n${instructions}`;
+}
+
+function localizeScenarioPreset(preset: ScenarioPreset, locale?: string | null): ScenarioPreset {
+  if (resolveLocale(locale) !== Locale.KM) return preset;
+  const copy = KHMER_SCENARIO_COPY[preset.id];
+  return {
+    ...preset,
+    ...copy,
+    members: preset.members.map((member) => ({
+      ...member,
+      description: KHMER_ROLE_DESCRIPTIONS[member.role],
+      instructions: withKhmerAgentPolicy(member.instructions),
+      relationship: member.relationship
+        ? `${KHMER_RELATIONSHIP_NOTICE}\n\n${member.relationship}`
+        : undefined,
+    })),
+  };
+}
 
 export const SCENARIO_PRESETS: ScenarioPreset[] = [
   {
@@ -203,8 +274,20 @@ export const SCENARIO_PRESETS: ScenarioPreset[] = [
   },
 ];
 
-import { uniqueNamesGenerator, names } from "unique-names-generator";
-import { randomConfig, serializeAvatarConfig } from "@/components/avatar";
+export const SCENARIO_PRESETS_KM: ScenarioPreset[] = SCENARIO_PRESETS.map((preset) =>
+  localizeScenarioPreset(preset, Locale.KM),
+);
+
+export function getScenarioPresets(locale: string | null = defaultLocale): ScenarioPreset[] {
+  return resolveLocale(locale) === Locale.KM ? SCENARIO_PRESETS_KM : SCENARIO_PRESETS;
+}
+
+export function getScenarioPresetById(
+  id: ScenarioId,
+  locale: string | null = defaultLocale,
+): ScenarioPreset | undefined {
+  return getScenarioPresets(locale).find((preset) => preset.id === id);
+}
 
 export function shuffleMembers(count: number): { name: string; avatarUrl: string }[] {
   const used = new Set<string>();

@@ -54,10 +54,32 @@ describe("POST /api/email/upload", () => {
     expect(body.filename).toBe("test.txt");
     expect(body.size).toBe(11);
     expect(body.contentType).toBe("text/plain");
-    expect(body.key).toContain("emails/drafts/");
+    expect(body.key).toContain("emails/drafts/ws1/u1/");
     expect(body.key).toContain("/test.txt");
 
     expect(mockR2Put).toHaveBeenCalledTimes(1);
+  });
+
+  it("sanitizes path-like filenames before storing", async () => {
+    mockR2Put.mockResolvedValue(undefined);
+
+    const formData = new FormData();
+    formData.append("file", new File(["secret"], "../../secret.txt", { type: "text/plain" }));
+
+    const req = new NextRequest("http://localhost/api/email/upload?workspace_id=ws1", {
+      method: "POST",
+      body: formData,
+    });
+
+    const res = await POST(req, {} as any);
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body.filename).toBe("secret.txt");
+    expect(body.key).toContain("emails/drafts/ws1/u1/");
+    expect(body.key).toContain("/secret.txt");
+    expect(body.key).not.toContain("..");
+    expect(mockR2Put.mock.calls[0][0]).toBe(body.key);
   });
 
   it("returns 400 when no file is provided", async () => {

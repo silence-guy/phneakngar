@@ -62,6 +62,7 @@ describe("GET /api/workspaces/[id]", () => {
       id: "w1",
       name: "Acme",
       slug: "acme",
+      defaultLocale: "en",
       createdAt: "2024-01-01T00:00:00Z",
       updatedAt: "2024-01-01T00:00:00Z",
     });
@@ -74,6 +75,7 @@ describe("GET /api/workspaces/[id]", () => {
     expect(body.id).toBe("w1");
     expect(body.name).toBe("Acme");
     expect(body.slug).toBe("acme");
+    expect(body.default_locale).toBe("en");
     expect(mockGetWorkspace).toHaveBeenCalledWith({}, "w1", "u1");
   });
 
@@ -121,6 +123,7 @@ describe("PATCH /api/workspaces/[id]", () => {
       id: "w1",
       name: "New Name",
       slug: "my-workspace",
+      defaultLocale: "km",
       createdAt: "2024-01-01T00:00:00Z",
       updatedAt: "2024-01-02T00:00:00Z",
     });
@@ -138,6 +141,29 @@ describe("PATCH /api/workspaces/[id]", () => {
     expect(mockUpdateWorkspace).toHaveBeenCalledWith({}, "w1", { name: "New Name" });
   });
 
+  it("updates workspace default locale successfully", async () => {
+    mockUpdateWorkspace.mockResolvedValue({
+      id: "w1",
+      name: "My Workspace",
+      slug: "my-workspace",
+      defaultLocale: "en",
+      createdAt: "2024-01-01T00:00:00Z",
+      updatedAt: "2024-01-02T00:00:00Z",
+    });
+
+    const req = new NextRequest("http://localhost/api/workspaces/w1", {
+      method: "PATCH",
+      body: JSON.stringify({ default_locale: "en" }),
+      headers: { "Content-Type": "application/json" },
+    });
+    const res = await PATCH(req, { params: Promise.resolve({ id: "w1" }) } as any);
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body.default_locale).toBe("en");
+    expect(mockUpdateWorkspace).toHaveBeenCalledWith({}, "w1", { defaultLocale: "en" });
+  });
+
   it("returns 404 when workspace not found on update", async () => {
     mockUpdateWorkspace.mockResolvedValue(null);
 
@@ -150,7 +176,7 @@ describe("PATCH /api/workspaces/[id]", () => {
     expect(res.status).toBe(404);
   });
 
-  it("returns 400 when neither name nor slug is provided", async () => {
+  it("returns 400 when no workspace fields are provided", async () => {
     const req = new NextRequest("http://localhost/api/workspaces/w1", {
       method: "PATCH",
       body: JSON.stringify({}),

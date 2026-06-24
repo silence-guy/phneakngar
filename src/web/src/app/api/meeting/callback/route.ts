@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server"
 import { nanoid } from "nanoid"
-import { queries, MeetingStatus, DEV_WEB_URL, buildMimeMessage, toAlookAddress } from "@alook/shared"
+import { queries, MeetingStatus, DEV_WEB_URL, buildMimeMessage, toAlookAddress, EMAIL_NOTIFY_SECRET_HEADER } from "@alook/shared"
 import { withAuth } from "@/lib/middleware/auth"
 import { writeJSON, writeError } from "@/lib/middleware/helpers"
 import { getDb } from "@/lib/db"
@@ -114,7 +114,10 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
         })
         const notifyInit: RequestInit = {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            [EMAIL_NOTIFY_SECRET_HEADER]: cfEnv.EMAIL_NOTIFY_SECRET,
+          },
           body: notifyPayload,
         }
 

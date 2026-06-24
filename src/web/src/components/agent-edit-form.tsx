@@ -17,6 +17,7 @@ import { useWorkspace } from "@/contexts/workspace-context";
 import { useAgentContext } from "@/contexts/agent-context";
 import { getAgent as getAgentApi, updateAgent as updateAgentApi } from "@/lib/api";
 import { toast } from "sonner";
+import { agentFormLabel } from "@/lib/locale";
 import {
   GeneralFields,
   AllowedSendersTab,
@@ -77,7 +78,7 @@ function RuntimeTab({
   return (
     <>
       <div className="space-y-1.5">
-        <Label className="text-xs text-muted-foreground">Runtime</Label>
+        <Label className="text-xs text-muted-foreground">{agentFormLabel("runtime")}</Label>
         <RuntimeSelect
           value={runtimeId}
           onValueChange={(newId) => {
@@ -93,11 +94,11 @@ function RuntimeTab({
       </div>
 
       <div className="space-y-1.5">
-        <Label className="text-xs text-muted-foreground">Model</Label>
+        <Label className="text-xs text-muted-foreground">{agentFormLabel("model")}</Label>
         <Input
           value={model}
           onChange={(e) => setModel(e.target.value)}
-          placeholder="Default (runtime model)"
+          placeholder={agentFormLabel("defaultRuntimeModel")}
           list="agent-model-options-edit"
         />
         {providerModels.length > 0 && (
@@ -108,7 +109,7 @@ function RuntimeTab({
           </datalist>
         )}
         <p className="text-xs text-muted-foreground/70">
-          Optional. Leave blank to use the runtime&apos;s default model.
+          {agentFormLabel("modelDefaultHint")}
         </p>
       </div>
     </>
@@ -192,7 +193,7 @@ export function AgentEditForm({
       setSavedInstructions(current);
       patchAgent(agent.id, { instructions: current });
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to save instructions");
+      toast.error(err instanceof Error ? err.message : agentFormLabel("failedToSaveInstructions"));
     } finally {
       savingInstructionsRef.current = false;
       if (instructionsRef.current !== savedInstructionsRef.current) {
@@ -268,11 +269,11 @@ export function AgentEditForm({
   };
 
   const tabs: { id: TabId; label: string }[] = [
-    { id: "general", label: "General" },
-    { id: "instruction", label: "Instruction" },
-    { id: "runtime", label: "Runtime" },
-    { id: "email", label: "Email" },
-    { id: "permission", label: "Permission" },
+    { id: "general", label: agentFormLabel("general") },
+    { id: "instruction", label: agentFormLabel("instruction") },
+    { id: "runtime", label: agentFormLabel("runtime") },
+    { id: "email", label: agentFormLabel("email") },
+    { id: "permission", label: agentFormLabel("permission") },
   ];
 
   const isFormTab = activeTab === "general" || activeTab === "runtime" || activeTab === "email";
@@ -321,7 +322,7 @@ export function AgentEditForm({
               <MarkdownEditor
                 value={instructions}
                 onChange={handleInstructionChange}
-                placeholder="Write instructions for this agent..."
+                placeholder={agentFormLabel("writeInstructionsPlaceholder")}
                 minHeight="calc(100vh - 240px)"
                 contentType="markdown"
                 variant="seamless"
@@ -330,7 +331,7 @@ export function AgentEditForm({
             <div className="flex items-center gap-2 px-6 py-3 border-t border-border/50">
               <UsageRing ratio={instructionRatio} />
               <p className="text-xs text-muted-foreground">
-                Agent-specific instruction. Your global instruction is prepended automatically.
+                {agentFormLabel("instructionHelp")}
               </p>
             </div>
           </div>
@@ -379,17 +380,17 @@ export function AgentEditForm({
                       <div className="mb-2.5 flex items-center gap-1.5">
                         <LockIcon className="size-3 text-muted-foreground/60" />
                         <span className="text-xs font-medium text-muted-foreground/60">
-                          Set at creation
+                          {agentFormLabel("setAtCreation")}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="text-xs text-muted-foreground">
-                          Email
+                          {agentFormLabel("email")}
                         </span>
                         <span className="text-xs text-muted-foreground">
                           {agent.email_handle
                             ? toAlookAddress(agent.email_handle)
-                            : "Not configured"}
+                            : agentFormLabel("notConfigured")}
                         </span>
                       </div>
                     </div>
@@ -414,10 +415,10 @@ export function AgentEditForm({
                     size="sm"
                     onClick={onCancel}
                   >
-                    Cancel
+                    {agentFormLabel("cancel")}
                   </Button>
                   <Button type="submit" size="sm" disabled={saving || !name}>
-                    {saving ? "Saving..." : "Save"}
+                    {saving ? agentFormLabel("saving") : agentFormLabel("save")}
                   </Button>
                 </div>
               </form>

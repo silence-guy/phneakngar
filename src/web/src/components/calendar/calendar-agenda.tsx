@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { agentColor } from "./calendar-colors";
 import { dateKey } from "./calendar-month-grid";
 import { formatRepeatDisplay } from "./repeat-interval-utils";
+import { CALENDAR_LABELS, collapsedTodayLabel } from "./calendar-labels";
 
 export interface CalendarAgendaProps {
   events: CalendarEvent[];
@@ -41,7 +42,7 @@ export function groupByDay(
 }
 
 function formatDay(d: Date): string {
-  return d.toLocaleDateString(undefined, {
+  return d.toLocaleDateString("km-KH", {
     weekday: "short",
     month: "short",
     day: "numeric",
@@ -86,9 +87,9 @@ export function CalendarAgenda({
     return (
       <div className="flex flex-1 items-center justify-center py-12">
         <div className="text-center">
-          <p className="text-sm text-muted-foreground">No events in view.</p>
+          <p className="text-sm text-muted-foreground">{CALENDAR_LABELS.empty.noEvents}</p>
           <p className="mt-2 text-xs text-muted-foreground">
-            Switch to month view or create a new event above.
+            {CALENDAR_LABELS.empty.switchView}
           </p>
         </div>
       </div>
@@ -113,7 +114,7 @@ export function CalendarAgenda({
               {formatDay(g.day)}
               {isToday && (
                 <span className="ml-2 rounded-full bg-foreground text-background px-1.5 py-0.5 text-[10px]">
-                  Today
+                  {CALENDAR_LABELS.actions.today}
                 </span>
               )}
             </h3>
@@ -144,7 +145,7 @@ export function CalendarAgenda({
                     )}
                     {ev.collapsed_count != null && ev.collapsed_count > 1 && (
                       <span className="shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
-                        &times; {ev.collapsed_count} today
+                        {collapsedTodayLabel(ev.collapsed_count)}
                       </span>
                     )}
                   </button>

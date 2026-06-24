@@ -50,11 +50,13 @@ import {
   type RepeatUnit,
   parseRepeatInterval,
   formatRepeatInterval,
+  formatRepeatDisplay,
   unitLabel,
   isValidUnit,
   REPEAT_UNITS,
   PRESET_INTERVALS,
 } from "./repeat-interval-utils";
+import { CALENDAR_LABELS } from "./calendar-labels";
 
 interface CreateFormValues {
   agent_id: string;
@@ -186,8 +188,8 @@ function RecurringScopeDialog({
         <div className="flex flex-col gap-1.5 py-1">
           {(
             [
-              { value: "this", label: "This event only" },
-              { value: "following", label: "This and following events" },
+              { value: "this", label: CALENDAR_LABELS.repeat.thisOnly },
+              { value: "following", label: CALENDAR_LABELS.repeat.thisAndFollowing },
             ] as const
           ).map((opt) => {
             const selected = scope === opt.value;
@@ -224,7 +226,7 @@ function RecurringScopeDialog({
             onClick={() => onOpenChange(false)}
             disabled={loading}
           >
-            Cancel
+            {CALENDAR_LABELS.actions.cancel}
           </Button>
           <Button
             size="sm"
@@ -276,7 +278,7 @@ export function CalendarEventSheet({
       .then((ev) => { if (!cancelled) setFetchedEvent(ev); })
       .catch(() => {
         if (cancelled) return;
-        toast.error("Calendar event not found");
+        toast.error(CALENDAR_LABELS.event.notFound);
         onOpenChangeRef.current(false);
       })
       .finally(() => { if (!cancelled) setFetchLoading(false); });
@@ -387,24 +389,24 @@ export function CalendarEventSheet({
   }, [agentId, title, description, dateValue, timeValue, repeat, stopDate, resolvedEvent]);
 
   function validate(): string | null {
-    if (!agentId) return "Select an agent";
-    if (!title.trim()) return "Title is required";
+    if (!agentId) return CALENDAR_LABELS.validation.selectAgent;
+    if (!title.trim()) return CALENDAR_LABELS.validation.titleRequired;
     if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(timeValue)) {
-      return "Time must be HH:MM in 24-hour format";
+      return CALENDAR_LABELS.validation.timeFormat;
     }
     if (repeatEnabled) {
       const n = parseInt(repeatCount, 10);
-      if (!n || n < 1) return "Repeat count must be a positive number";
+      if (!n || n < 1) return CALENDAR_LABELS.validation.repeatCount;
     }
     if (stopDate && !repeat) {
-      return "Stop date requires a repeat interval";
+      return CALENDAR_LABELS.validation.stopRequiresRepeat;
     }
     const scheduled = combineDateTime(dateValue, timeValue);
     if (stopDate) {
       const stopEnd = new Date(stopDate);
       stopEnd.setHours(23, 59, 59, 999);
       if (stopEnd < scheduled) {
-        return "Stop date must be on or after the first occurrence";
+        return CALENDAR_LABELS.validation.stopAfterStart;
       }
     }
     return null;
@@ -538,16 +540,16 @@ export function CalendarEventSheet({
   );
 
   const a11yTitle = mode === "edit"
-    ? title.trim() || "Untitled event"
-    : title.trim() || "New calendar event";
+    ? title.trim() || CALENDAR_LABELS.event.untitled
+    : title.trim() || CALENDAR_LABELS.event.newA11yTitle;
 
   const titleInput = readonly ? (
     <p className="w-full px-0 py-1 font-news text-xl sm:text-2xl md:text-3xl font-medium leading-[1.2] tracking-tight">
-      {title || "Untitled event"}
+      {title || CALENDAR_LABELS.event.untitled}
     </p>
   ) : (
     <AutoResizeTextarea
-      aria-label="Event title"
+      aria-label={CALENDAR_LABELS.event.titleAria}
       value={title}
       onChange={(e) => setTitle(e.target.value)}
       onKeyDown={(e) => {
@@ -556,7 +558,7 @@ export function CalendarEventSheet({
           focusDescription();
         }
       }}
-      placeholder={mode === "edit" ? "Untitled event" : "New event"}
+      placeholder={mode === "edit" ? CALENDAR_LABELS.event.untitled : CALENDAR_LABELS.event.newTitle}
       autoFocus={mode === "create"}
       rows={1}
       className={cn(
@@ -571,7 +573,7 @@ export function CalendarEventSheet({
     <div className="flex flex-col gap-1.5">
       <PropertyRow icon={<CalendarDays className="size-3.5" />}>
         <span className="text-sm text-foreground">
-          {dateValue.toLocaleDateString(undefined, { weekday: "short", year: "numeric", month: "short", day: "numeric" })}
+          {dateValue.toLocaleDateString("km-KH", { weekday: "short", year: "numeric", month: "short", day: "numeric" })}
         </span>
       </PropertyRow>
       <PropertyRow icon={<CalendarDays className="size-3.5" />}>
@@ -579,13 +581,15 @@ export function CalendarEventSheet({
       </PropertyRow>
       <PropertyRow icon={<RepeatIcon className="size-3.5" />}>
         <span className="text-sm text-foreground">
-          {repeatEnabled ? `Every ${repeatCount} ${unitLabel(repeatUnit, parseInt(repeatCount, 10) || 1)}` : "Does not repeat"}
+          {repeatEnabled
+            ? formatRepeatDisplay(formatRepeatInterval(parseInt(repeatCount, 10) || 1, repeatUnit))
+            : CALENDAR_LABELS.repeat.doesNotRepeat}
         </span>
       </PropertyRow>
       {repeatEnabled && stopDate && (
         <PropertyRow icon={<CalendarOff className="size-3.5" />}>
           <span className="text-sm text-foreground">
-            Until {stopDate.toLocaleDateString()}
+            {CALENDAR_LABELS.repeat.until} {stopDate.toLocaleDateString("km-KH")}
           </span>
         </PropertyRow>
       )}
@@ -599,7 +603,7 @@ export function CalendarEventSheet({
           items={agents.map((a) => ({ value: a.id, label: a.name }))}
         >
           <SelectTrigger className="h-7 w-auto border-none bg-transparent px-1.5 shadow-none text-sm text-foreground hover:bg-accent transition-colors rounded-md">
-            <SelectValue placeholder={agents.length === 0 ? "No agents" : "Select agent"} />
+            <SelectValue placeholder={agents.length === 0 ? CALENDAR_LABELS.event.noAgents : CALENDAR_LABELS.event.selectAgent} />
           </SelectTrigger>
           <SelectContent>
             {agents.map((a) => (
@@ -615,7 +619,7 @@ export function CalendarEventSheet({
         <CalendarDatePicker
           value={dateValue}
           onChange={(d) => setDateValue(d)}
-          ariaLabel="Event date"
+          ariaLabel={CALENDAR_LABELS.actions.eventDate}
           hideIcon
           className={GHOST_CONTROL}
         />
@@ -627,7 +631,7 @@ export function CalendarEventSheet({
             value={timeValue}
             onChange={setTimeValue}
             iconOnly
-            ariaLabel="Pick time slot"
+            ariaLabel={CALENDAR_LABELS.actions.pickTimeSlot}
             className="inline-flex size-6 items-center justify-center rounded-md border-0 bg-transparent p-0 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground group-hover:bg-accent group-hover:text-foreground"
           />
         }
@@ -640,7 +644,7 @@ export function CalendarEventSheet({
           value={timeValue}
           onChange={(e) => setTimeValue(e.target.value)}
           placeholder="HH:MM"
-          aria-label="Event time (24-hour)"
+          aria-label={CALENDAR_LABELS.actions.eventTime24h}
           className={TIME_INPUT}
         />
       </PropertyRow>
@@ -665,31 +669,31 @@ export function CalendarEventSheet({
               }
             }}
             items={[
-              { value: "", label: "Does not repeat" },
+              { value: "", label: CALENDAR_LABELS.repeat.doesNotRepeat },
               ...PRESET_INTERVALS.map((o) => ({ value: o.value, label: o.label })),
-              { value: "__custom__", label: "Custom…" },
+              { value: "__custom__", label: CALENDAR_LABELS.repeat.custom },
             ]}
           >
             <SelectTrigger className="h-7 w-auto border-none bg-transparent px-1.5 shadow-none text-sm text-foreground hover:bg-accent transition-colors rounded-md">
-              <SelectValue placeholder="Does not repeat" />
+              <SelectValue placeholder={CALENDAR_LABELS.repeat.doesNotRepeat} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Does not repeat</SelectItem>
+              <SelectItem value="">{CALENDAR_LABELS.repeat.doesNotRepeat}</SelectItem>
               {PRESET_INTERVALS.map((o) => (
                 <SelectItem key={o.value} value={o.value}>
                   {o.label}
                 </SelectItem>
               ))}
-              <SelectItem value="__custom__">Custom…</SelectItem>
+              <SelectItem value="__custom__">{CALENDAR_LABELS.repeat.custom}</SelectItem>
             </SelectContent>
           </Select>
         ) : (
           <div className="-ml-1.5 flex items-center gap-0.5">
-            <span className="px-1 text-sm text-foreground">Every</span>
+            <span className="px-1 text-sm text-foreground">{CALENDAR_LABELS.repeat.every}</span>
             <input
               type="text"
               inputMode="numeric"
-              aria-label="Repeat count"
+              aria-label={CALENDAR_LABELS.repeat.count}
               value={repeatCount}
               onChange={(e) => {
                 setRepeatCount(e.target.value.replace(/[^\d]/g, ""));
@@ -720,7 +724,7 @@ export function CalendarEventSheet({
             </Select>
             <button
               type="button"
-              aria-label="Remove repeat"
+              aria-label={CALENDAR_LABELS.repeat.remove}
               onClick={() => {
                 setRepeatEnabled(false);
                 setRepeatCount("1");
@@ -741,9 +745,9 @@ export function CalendarEventSheet({
             value={stopDate}
             onChange={(d) => setStopDate(d)}
             onClear={() => setStopDate(null)}
-            placeholder="No end date"
+            placeholder={CALENDAR_LABELS.repeat.noEndDate}
             min={dateValue}
-            ariaLabel="Stop date"
+            ariaLabel={CALENDAR_LABELS.repeat.stopDate}
             hideIcon
             className={GHOST_CONTROL}
           />
@@ -763,7 +767,7 @@ export function CalendarEventSheet({
         contentType="markdown"
         value={description}
         onChange={setDescription}
-        placeholder="Add a description…"
+        placeholder={CALENDAR_LABELS.event.descriptionPlaceholder}
         className="markdown"
         minHeight={mode === "edit" ? "10rem" : "8rem"}
         variant="seamless"
@@ -815,13 +819,13 @@ export function CalendarEventSheet({
                   variant="outline"
                   onClick={() => handleOpenChange(false)}
                 >
-                  Cancel
+                  {CALENDAR_LABELS.actions.cancel}
                 </Button>
                 <Button type="submit" disabled={submitting || !agents.length}>
-                  {submitting ? "Creating..." : (
+                  {submitting ? CALENDAR_LABELS.actions.creating : (
                     <>
                       {inlineSubmitHint}
-                      Create event
+                      {CALENDAR_LABELS.actions.createEvent}
                     </>
                   )}
                 </Button>
@@ -839,7 +843,7 @@ export function CalendarEventSheet({
                   onClick={handleDeleteClick}
                   disabled={deleting || saving}
                 >
-                  {deleting ? "Deleting..." : "Delete"}
+                  {deleting ? CALENDAR_LABELS.actions.deleting : CALENDAR_LABELS.actions.delete}
                 </Button>
                 <div className="flex items-center gap-2 sm:justify-end">
                   <Button
@@ -847,16 +851,16 @@ export function CalendarEventSheet({
                     onClick={() => handleOpenChange(false)}
                     disabled={saving}
                   >
-                    Cancel
+                    {CALENDAR_LABELS.actions.cancel}
                   </Button>
                   <Button
                     onClick={handleEditSave}
                     disabled={saving || !dirty}
                   >
-                    {saving ? "Saving..." : (
+                    {saving ? CALENDAR_LABELS.actions.saving : (
                       <>
                         {inlineSubmitHint}
-                        Save
+                        {CALENDAR_LABELS.actions.save}
                       </>
                     )}
                   </Button>
@@ -871,20 +875,20 @@ export function CalendarEventSheet({
         onOpenChange={setScopeOpen}
         onConfirm={handleScopeConfirm}
         loading={saving}
-        title="Update recurring event"
-        description="How should this change apply?"
-        confirmLabel="Update"
-        loadingLabel="Saving..."
+        title={CALENDAR_LABELS.repeat.updateTitle}
+        description={CALENDAR_LABELS.repeat.updateDescription}
+        confirmLabel={CALENDAR_LABELS.actions.update}
+        loadingLabel={CALENDAR_LABELS.actions.saving}
       />
       <RecurringScopeDialog
         open={deleteScopeOpen}
         onOpenChange={setDeleteScopeOpen}
         onConfirm={handleDeleteScopeConfirm}
         loading={deleting}
-        title="Delete recurring event"
-        description="How much of the series should be removed?"
-        confirmLabel="Delete"
-        loadingLabel="Deleting..."
+        title={CALENDAR_LABELS.repeat.deleteTitle}
+        description={CALENDAR_LABELS.repeat.deleteDescription}
+        confirmLabel={CALENDAR_LABELS.actions.delete}
+        loadingLabel={CALENDAR_LABELS.actions.deleting}
         confirmVariant="destructive"
       />
     </>

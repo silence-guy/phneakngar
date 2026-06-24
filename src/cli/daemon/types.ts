@@ -1,3 +1,5 @@
+import type { AgentPromptLanguagePolicy } from "@alook/shared";
+
 interface TaskSender {
   name: string;
   email: string;
@@ -16,6 +18,8 @@ export interface Task {
   type: string;
   contextKey?: string | null;
   context?: Record<string, unknown>;
+  localeOverride?: string | null;
+  languagePolicy?: AgentPromptLanguagePolicy;
   agent?: TaskAgentData;
   sender?: TaskSender;
   repos?: RepoData[];
@@ -47,6 +51,8 @@ interface TaskAgentData {
   userEmail?: string | null;
   userName?: string | null;
   runtimeConfig?: Record<string, unknown>;
+  preferredLocale?: string | null;
+  languagePolicy?: string | null;
   colleagues?: ColleagueData[];
 }
 
@@ -163,6 +169,8 @@ export function fromApiTask(api: import("@alook/shared").TaskApi): Task {
     type: api.type,
     contextKey: api.context_key ?? null,
     context: (api.context as Record<string, unknown>) ?? undefined,
+    localeOverride: api.locale_override ?? null,
+    languagePolicy: api.language_policy ?? undefined,
     agent: api.agent
       ? {
           name: api.agent.name,
@@ -172,6 +180,8 @@ export function fromApiTask(api: import("@alook/shared").TaskApi): Task {
           userEmail: api.agent.user_email ?? undefined,
           userName: api.agent.user_name ?? undefined,
           runtimeConfig: api.agent.runtime_config ?? undefined,
+          preferredLocale: api.agent.preferred_locale ?? undefined,
+          languagePolicy: api.agent.language_policy ?? undefined,
           colleagues: api.agent.colleagues?.map((c) => ({
             name: c.name,
             email: c.email,

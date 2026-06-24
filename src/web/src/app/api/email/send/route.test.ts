@@ -25,6 +25,7 @@ vi.mock("@opennextjs/cloudflare", () => ({
         put: (...args: unknown[]) => mockEmailBucketPut(...args),
       },
       WORKER_SELF_REFERENCE: { fetch: (...args: unknown[]) => mockWorkerSelfRefFetch(...args) },
+      EMAIL_NOTIFY_SECRET: "notify-secret",
     },
   })),
 }));
@@ -77,7 +78,7 @@ vi.mock("@alook/shared", async () => {
 vi.mock("@/lib/middleware/auth", () => ({
   withAuth: vi.fn((handler: any) => async (req: any, ctx?: any) => {
     const params = ctx?.params instanceof Promise ? await ctx.params : ctx?.params;
-    return handler(req, { env: { DB: {}, EMAIL_WORKER: { fetch: (...args: unknown[]) => mockEmailWorkerFetch(...args) }, EMAIL_BUCKET: { get: (...args: unknown[]) => mockEmailBucketGet(...args), put: (...args: unknown[]) => mockEmailBucketPut(...args) }, WORKER_SELF_REFERENCE: { fetch: (...args: unknown[]) => mockWorkerSelfRefFetch(...args) } }, userId: "u1", email: "u@t.com", params });
+    return handler(req, { env: { DB: {}, EMAIL_WORKER: { fetch: (...args: unknown[]) => mockEmailWorkerFetch(...args) }, EMAIL_BUCKET: { get: (...args: unknown[]) => mockEmailBucketGet(...args), put: (...args: unknown[]) => mockEmailBucketPut(...args) }, WORKER_SELF_REFERENCE: { fetch: (...args: unknown[]) => mockWorkerSelfRefFetch(...args) }, EMAIL_NOTIFY_SECRET: "notify-secret" }, userId: "u1", email: "u@t.com", params });
   }),
 }));
 
@@ -161,7 +162,7 @@ describe("POST /api/email/send", () => {
     mockCreateEmail.mockResolvedValue({ id: "e1" });
 
     const attachments = [
-      { key: "emails/drafts/x/doc.txt", filename: "doc.txt", size: 12, contentType: "text/plain" },
+      { key: "emails/drafts/ws1/u1/x/doc.txt", filename: "doc.txt", size: 12, contentType: "text/plain" },
     ];
 
     const req = makeReq({
@@ -178,12 +179,34 @@ describe("POST /api/email/send", () => {
     // Verify attachmentKeys sent to email worker
     const fetchBody = JSON.parse(mockEmailWorkerFetch.mock.calls[0][1].body);
     expect(fetchBody.attachmentKeys).toEqual([
-      { key: "emails/drafts/x/doc.txt", filename: "doc.txt", contentType: "text/plain" },
+      { key: "emails/drafts/ws1/u1/x/doc.txt", filename: "doc.txt", contentType: "text/plain" },
     ]);
 
     // Verify full attachments stored in DB record
     const createArgs = mockCreateEmail.mock.calls[0]![1] as any;
     expect(createArgs.attachments).toBe(JSON.stringify(attachments));
+  });
+
+  it("rejects attachment keys outside the authenticated user's draft scope", async () => {
+    mockGetAgent.mockResolvedValue({ id: "a1", emailHandle: "test-agent" });
+
+    const req = makeReq({
+      agentId: "a1",
+      to: "user@example.com",
+      subject: "Bad attachment",
+      htmlBody: "<p>Nope</p>",
+      attachments: [
+        { key: "emails/drafts/ws1/u2/x/doc.txt", filename: "doc.txt", size: 12, contentType: "text/plain" },
+      ],
+    });
+
+    const res = await POST(req, {} as any);
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.error).toBe("invalid attachment key");
+    expect(mockEmailWorkerFetch).not.toHaveBeenCalled();
+    expect(mockEmailBucketGet).not.toHaveBeenCalled();
+    expect(mockCreateEmail).not.toHaveBeenCalled();
   });
 
   it("returns error when EMAIL_WORKER fails", async () => {
@@ -263,6 +286,7 @@ describe("POST /api/email/send", () => {
 
       const [url, init] = mockWorkerSelfRefFetch.mock.calls[0];
       expect(url).toBe("http://internal/api/email/notify");
+      expect(init.headers["X-Alook-Email-Notify-Secret"]).toBe("notify-secret");
       const payload = JSON.parse(init.body);
       expect(payload.agentId).toBe("a2");
       expect(payload.workspaceId).toBe("ws1");
@@ -373,7 +397,7 @@ describe("POST /api/email/send", () => {
       mockEmailBucketPut.mockResolvedValue(undefined);
 
       const attachments = [
-        { key: "emails/drafts/x/doc.txt", filename: "doc.txt", size: 10, contentType: "text/plain" },
+        { key: "emails/drafts/ws1/u1/x/doc.txt", filename: "doc.txt", size: 10, contentType: "text/plain" },
       ];
 
       const req = makeReq({
@@ -387,7 +411,7 @@ describe("POST /api/email/send", () => {
       const res = await POST(req, {} as any);
       expect(res.status).toBe(200);
 
-      expect(mockEmailBucketGet).toHaveBeenCalledWith("emails/drafts/x/doc.txt");
+      expect(mockEmailBucketGet).toHaveBeenCalledWith("emails/drafts/ws1/u1/x/doc.txt");
       expect(mockEmailBucketPut).toHaveBeenCalledOnce();
       const [putKey, putBody, putOpts] = mockEmailBucketPut.mock.calls[0];
       expect(putKey).toMatch(/^emails\/.+\/raw$/);
@@ -413,9 +437,9 @@ describe("POST /api/email/send", () => {
       mockEmailBucketPut.mockResolvedValue(undefined);
 
       const attachments = [
-        { key: "emails/drafts/x/a.txt", filename: "a.txt", size: 8, contentType: "text/plain" },
-        { key: "emails/drafts/x/b.txt", filename: "b.txt", size: 8, contentType: "text/plain" },
-        { key: "emails/drafts/x/c.txt", filename: "c.txt", size: 10, contentType: "text/plain" },
+        { key: "emails/drafts/ws1/u1/x/a.txt", filename: "a.txt", size: 8, contentType: "text/plain" },
+        { key: "emails/drafts/ws1/u1/x/b.txt", filename: "b.txt", size: 8, contentType: "text/plain" },
+        { key: "emails/drafts/ws1/u1/x/c.txt", filename: "c.txt", size: 10, contentType: "text/plain" },
       ];
 
       const req = makeReq({
@@ -430,9 +454,9 @@ describe("POST /api/email/send", () => {
       expect(res.status).toBe(200);
 
       expect(mockEmailBucketGet).toHaveBeenCalledTimes(3);
-      expect(mockEmailBucketGet).toHaveBeenCalledWith("emails/drafts/x/a.txt");
-      expect(mockEmailBucketGet).toHaveBeenCalledWith("emails/drafts/x/b.txt");
-      expect(mockEmailBucketGet).toHaveBeenCalledWith("emails/drafts/x/c.txt");
+      expect(mockEmailBucketGet).toHaveBeenCalledWith("emails/drafts/ws1/u1/x/a.txt");
+      expect(mockEmailBucketGet).toHaveBeenCalledWith("emails/drafts/ws1/u1/x/b.txt");
+      expect(mockEmailBucketGet).toHaveBeenCalledWith("emails/drafts/ws1/u1/x/c.txt");
 
       const putBody = mockEmailBucketPut.mock.calls[0][1] as string;
       expect(putBody).toContain('filename="a.txt"');
@@ -456,7 +480,7 @@ describe("POST /api/email/send", () => {
       mockEmailBucketPut.mockResolvedValue(undefined);
 
       const attachments = [
-        { key: "emails/drafts/x/large.bin", filename: "large.bin", size: 100 * 1024, contentType: "application/octet-stream" },
+        { key: "emails/drafts/ws1/u1/x/large.bin", filename: "large.bin", size: 100 * 1024, contentType: "application/octet-stream" },
       ];
 
       const req = makeReq({
@@ -470,7 +494,7 @@ describe("POST /api/email/send", () => {
       const res = await POST(req, {} as any);
       expect(res.status).toBe(200);
 
-      expect(mockEmailBucketGet).toHaveBeenCalledWith("emails/drafts/x/large.bin");
+      expect(mockEmailBucketGet).toHaveBeenCalledWith("emails/drafts/ws1/u1/x/large.bin");
       const putBody = mockEmailBucketPut.mock.calls[0][1] as string;
       expect(putBody).toContain('filename="large.bin"');
     });
@@ -489,8 +513,8 @@ describe("POST /api/email/send", () => {
       mockEmailBucketPut.mockResolvedValue(undefined);
 
       const attachments = [
-        { key: "emails/drafts/x/exists.txt", filename: "exists.txt", size: 8, contentType: "text/plain" },
-        { key: "emails/drafts/x/missing.txt", filename: "missing.txt", size: 5, contentType: "text/plain" },
+        { key: "emails/drafts/ws1/u1/x/exists.txt", filename: "exists.txt", size: 8, contentType: "text/plain" },
+        { key: "emails/drafts/ws1/u1/x/missing.txt", filename: "missing.txt", size: 5, contentType: "text/plain" },
       ];
 
       const req = makeReq({

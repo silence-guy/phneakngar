@@ -101,8 +101,30 @@ export async function listTaskErrorMessages(
 export async function listTaskMessagesSince(
   db: Database,
   taskId: string,
-  afterSeq: number
+  afterSeq: number,
+  workspaceId?: string,
 ) {
+  if (workspaceId) {
+    return db
+      .select({
+        id: taskMessage.id,
+        taskId: taskMessage.taskId,
+        seq: taskMessage.seq,
+        type: taskMessage.type,
+        tool: taskMessage.tool,
+        content: taskMessage.content,
+        callId: taskMessage.callId,
+        input: taskMessage.input,
+        output: taskMessage.output,
+        createdAt: taskMessage.createdAt,
+      })
+      .from(taskMessage)
+      .innerJoin(agentTaskQueue, eq(taskMessage.taskId, agentTaskQueue.id))
+      // Read-side UI exclusion only; rows are still stored for analysis (see listTaskMessages).
+      .where(and(eq(taskMessage.taskId, taskId), eq(agentTaskQueue.workspaceId, workspaceId), gt(taskMessage.seq, afterSeq), notInArray(taskMessage.type, ["tool-result", "tool-use", "thinking"])))
+      .orderBy(asc(taskMessage.seq));
+  }
+
   return db
     .select()
     .from(taskMessage)

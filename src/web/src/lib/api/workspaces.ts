@@ -9,7 +9,7 @@ export const createWorkspace = (name: string, slug?: string) =>
     body: JSON.stringify({ name, slug: slug || name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "workspace" }),
   });
 
-export const updateWorkspace = (workspaceId: string, data: { name?: string; slug?: string }) =>
+export const updateWorkspace = (workspaceId: string, data: { name?: string; slug?: string; default_locale?: "km" | "en" }) =>
   apiFetch<Workspace>(`/api/workspaces/${workspaceId}${wsQuery(workspaceId)}`, { method: "PATCH", body: JSON.stringify(data) });
 
 export const deleteWorkspace = (workspaceId: string, confirmName: string) =>
@@ -26,13 +26,25 @@ export const listMembers = (workspaceId: string) =>
 export const removeMember = (workspaceId: string, memberId: string) =>
   apiFetch<void>(`/api/workspaces/${workspaceId}/members/${memberId}${wsQuery(workspaceId)}`, { method: "DELETE" });
 
-export const getMemberMe = (workspaceId: string) =>
-  apiFetch<{ global_instruction: string }>(`/api/members/me${wsQuery(workspaceId)}`);
+export interface MemberMeSettings {
+  global_instruction: string;
+  preferred_locale: "km" | "en";
+}
 
-export const updateMemberMe = (workspaceId: string, globalInstruction: string) =>
-  apiFetch<{ global_instruction: string }>(`/api/members/me${wsQuery(workspaceId)}`, {
+export const getMemberMe = (workspaceId: string) =>
+  apiFetch<MemberMeSettings>(`/api/members/me${wsQuery(workspaceId)}`);
+
+export const updateMemberMe = (
+  workspaceId: string,
+  globalInstruction: string,
+  preferredLocale?: "km" | "en",
+) =>
+  apiFetch<MemberMeSettings>(`/api/members/me${wsQuery(workspaceId)}`, {
     method: "PATCH",
-    body: JSON.stringify({ global_instruction: globalInstruction }),
+    body: JSON.stringify({
+      global_instruction: globalInstruction,
+      ...(preferredLocale ? { preferred_locale: preferredLocale } : {}),
+    }),
   });
 
 // Invites
@@ -116,6 +128,27 @@ export interface WorkspaceOverview {
 
 export const getWorkspaceOverview = (workspaceId: string) =>
   apiFetch<WorkspaceOverview>(`/api/workspaces/${workspaceId}/overview${wsQuery(workspaceId)}`);
+
+export interface WorkspaceHealthReport {
+  status: "ok" | "warning" | "critical";
+  generated_at: string;
+  checks: {
+    machines: { status: "ok" | "warning" | "critical"; total: number; online: number; offline: number };
+    runtimes: { status: "ok" | "warning" | "critical"; total: number; providers: string[] };
+    queue: { status: "ok" | "warning" | "critical"; queued: number; stale: number; failed_today: number };
+    configuration: {
+      status: "ok" | "warning" | "critical";
+      total_agents: number;
+      assigned_agents: number;
+      unassigned_agents: number;
+      agents_with_missing_runtime: number;
+    };
+  };
+  issues: Array<{ code: string; severity: "warning" | "critical"; message: string }>;
+}
+
+export const getWorkspaceHealth = (workspaceId: string) =>
+  apiFetch<WorkspaceHealthReport>(`/api/workspaces/${workspaceId}/health${wsQuery(workspaceId)}`);
 
 // Auth
 export const signOut = async () => {

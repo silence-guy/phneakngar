@@ -20,6 +20,7 @@
   --font-display: var(--font-dm-sans);
   --font-news: var(--font-literata);
   --font-brand: var(--font-caveat);
+  --font-khmer: var(--font-noto-sans-khmer), var(--font-dm-sans), system-ui, sans-serif;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -151,6 +152,16 @@
   --sidebar-accent-foreground: oklch(0.93 0.006 80);
   --sidebar-border: oklch(1 0.005 80 / 10%);
   --sidebar-ring: oklch(0.55 0.01 60);
+}
+
+html[lang="km"] body {
+  font-family: var(--font-khmer);
+  line-height: 1.75;
+  text-rendering: optimizeLegibility;
+}
+
+html[lang="km"] :is(code, kbd, pre, samp, .font-mono) {
+  font-family: var(--font-dm-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
 }
 
 /* ── Object-mimicry card grain texture (shared) ── */

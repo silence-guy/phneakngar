@@ -105,12 +105,13 @@ describe("getLatestTokenForUser", () => {
 });
 
 describe("deleteMachineToken", () => {
-  it("deletes by id and userId", async () => {
+  it("deletes by id, userId, and workspaceId", async () => {
     const chain: any = {};
     chain.delete = vi.fn(() => chain);
     chain.where = vi.fn(() => Promise.resolve());
-    await mt.deleteMachineToken(chain, "mt_1", "u");
+    await mt.deleteMachineToken(chain, "mt_1", "u", "w1");
     expect(chain.delete).toHaveBeenCalled();
+    expect(chain.where).toHaveBeenCalledTimes(1);
   });
 });
 

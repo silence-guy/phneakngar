@@ -96,7 +96,7 @@ describe("GET /api/tasks/[id]/messages", () => {
       { id: "m1", seq: 1, type: "text", content: "hello", output: "" },
       { id: "m2", seq: 2, type: "text", content: "world", output: "" },
     ]);
-    expect(mockListTaskMessages).toHaveBeenCalledWith({}, "t1");
+    expect(mockListTaskMessages).toHaveBeenCalledWith({}, "t1", "w1");
   });
 
   it("filters by since parameter", async () => {
@@ -118,7 +118,7 @@ describe("GET /api/tasks/[id]/messages", () => {
     expect(body).toEqual([
       { id: "m3", seq: 6, type: "text", content: "new msg", output: "" },
     ]);
-    expect(mockListTaskMessagesSince).toHaveBeenCalledWith({}, "t1", 5);
+    expect(mockListTaskMessagesSince).toHaveBeenCalledWith({}, "t1", 5, "w1");
     expect(mockListTaskMessages).not.toHaveBeenCalled();
   });
 

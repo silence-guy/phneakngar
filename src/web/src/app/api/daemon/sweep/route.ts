@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { SweepRequestSchema } from "@alook/shared";
 import { getDb } from "@/lib/db";
 import { withAuth } from "@/lib/middleware/auth";
+import { withDaemonMachine } from "@/lib/middleware/daemon";
 import { writeJSON, writeError, parseBody } from "@/lib/middleware/helpers";
 import { sweepStaleState } from "@/lib/services/sweep";
 import { promoteDueCalendarEventsForWorkspace } from "@/lib/services/calendar";
@@ -10,7 +11,7 @@ import { log } from "@/lib/logger";
 export const POST = withAuth(async (req: NextRequest, ctx) => {
   const { throttled } = await import("@/lib/cache");
 
-  const [, err] = await parseBody(req, SweepRequestSchema);
+  const [body, err] = await parseBody(req, SweepRequestSchema);
   if (err) return err;
 
   if (!ctx.workspaceId) {
@@ -18,6 +19,8 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
   }
 
   const db = getDb(ctx.env.DB);
+  const daemonAuth = await withDaemonMachine(db, ctx, body.daemon_id);
+  if (daemonAuth instanceof Response) return daemonAuth;
 
   try {
     await sweepStaleState(db, ctx.workspaceId);

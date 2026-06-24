@@ -5,6 +5,7 @@ import { withAuth } from "@/lib/middleware/auth";
 import { writeJSON, writeError, parseBody } from "@/lib/middleware/helpers";
 import { messageToResponse } from "@/lib/api/responses";
 import { broadcastToUser } from "@/lib/broadcast";
+import { withDaemonTaskAccess } from "@/lib/middleware/daemon";
 
 // Agent-authored DM endpoint (`alook sync send-dm`). The agent calls this to
 // push exactly what the user should see — a `role:"assistant"` chat bubble that
@@ -33,6 +34,14 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
     return writeError("conversation not found", 404);
   }
 
+  if (body.task_id) {
+    const taskAccess = await withDaemonTaskAccess(db, ctx, body.task_id);
+    if (taskAccess instanceof Response) return taskAccess;
+    if (taskAccess.task.conversationId !== id) {
+      return writeError("task does not belong to conversation", 403);
+    }
+  }
+
   const message = await queries.message.createMessage(db, {
     conversationId: id,
     role: "assistant",
@@ -52,6 +61,9 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
   }).catch(() => {});
 
   queries.inbox.updateUnreadLatestMessage(db, id, conversation.userId, message.id).catch(() => {});
+  if (body.task_id) {
+    queries.task.updateTaskVisibleOutcomeStatus(db, body.task_id, ctx.workspaceId, "visible_output").catch(() => {});
+  }
 
   return writeJSON({ message: messageToResponse(message) }, 201);
 });

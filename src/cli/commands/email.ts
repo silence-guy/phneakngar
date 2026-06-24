@@ -11,6 +11,7 @@ import { resolveClientOpts } from "../lib/resolve-client.js";
 import { contentToBuffer, uploadFile } from "../lib/file-utils.js";
 import type { UploadedFile } from "../lib/file-utils.js";
 import { gatherContextEnvVars } from "../lib/context-env.js";
+import { sanitizeEmailAttachmentFilename } from "@alook/shared";
 
 const log = createLogger({ module: "email" });
 
@@ -47,6 +48,17 @@ interface WhitelistEntry {
   created_at: string;
 }
 
+function uniqueAttachmentFilename(rawFilename: string | null | undefined, index: number, usedFilenames: Set<string>) {
+  const baseFilename = sanitizeEmailAttachmentFilename(rawFilename || `attachment-${index}.bin`);
+  let filename = baseFilename;
+  let duplicate = 1;
+  while (usedFilenames.has(filename)) {
+    filename = `${index}-${duplicate}-${baseFilename}`;
+    duplicate++;
+  }
+  usedFilenames.add(filename);
+  return filename;
+}
 
 export function emailCommand(): Command {
   const cmd = new Command("email").description("Manage agent emails");
@@ -186,11 +198,7 @@ export function emailCommand(): Command {
 
             for (let i = 0; i < parsed.attachments.length; i++) {
               const att = parsed.attachments[i];
-              let filename = att.filename || `attachment-${i}.bin`;
-              if (usedFilenames.has(filename)) {
-                filename = `${i}-${filename}`;
-              }
-              usedFilenames.add(filename);
+              const filename = uniqueAttachmentFilename(att.filename, i, usedFilenames);
               const attPath = join(attDir, filename);
               writeFileSync(attPath, contentToBuffer(att.content));
               downloadedPaths.push(attPath);

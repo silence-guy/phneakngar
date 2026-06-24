@@ -1,4 +1,4 @@
-import { eq, and, asc, sql } from "drizzle-orm";
+import { eq, and, asc, sql, ne } from "drizzle-orm";
 import { channel, conversation } from "../schema";
 import type { Database } from "../index";
 import { deleteUnreadByChannel } from "./inbox";
@@ -55,6 +55,26 @@ export async function getChannelById(
     .from(channel)
     .where(and(eq(channel.id, id), eq(channel.workspaceId, workspaceId)));
   return rows[0] ?? null;
+}
+
+export async function channelHasConversationsForOtherUsers(
+  db: Database,
+  workspaceId: string,
+  channelName: string,
+  userId: string
+) {
+  const rows = await db
+    .select({ id: conversation.id })
+    .from(conversation)
+    .where(
+      and(
+        eq(conversation.workspaceId, workspaceId),
+        eq(conversation.channel, channelName),
+        ne(conversation.userId, userId)
+      )
+    )
+    .limit(1);
+  return rows.length > 0;
 }
 
 export async function deleteChannel(

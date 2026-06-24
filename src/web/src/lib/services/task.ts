@@ -22,7 +22,14 @@ export class TaskService {
     workspaceId: string,
     prompt: string,
     type: string = TASK_TYPES.USER_DM_MESSAGE,
-    opts?: { contextKey?: string | null; context?: Record<string, unknown>; traceId?: string | null; parentTaskId?: string | null },
+    opts?: {
+      contextKey?: string | null;
+      context?: Record<string, unknown>;
+      traceId?: string | null;
+      parentTaskId?: string | null;
+      localeOverride?: string | null;
+      retryOfTaskId?: string | null;
+    },
   ) {
     const agent = await agentQueries.getAgent(this.db, agentId, workspaceId);
     if (!agent) {
@@ -33,7 +40,7 @@ export class TaskService {
     }
 
     if (opts?.traceId && opts.parentTaskId) {
-      const traceCount = await taskQueries.countTasksByTrace(this.db, opts.traceId);
+      const traceCount = await taskQueries.countTasksByTrace(this.db, opts.traceId, workspaceId);
       if (traceCount >= MAX_TASKS_PER_TRACE) {
         throw new Error(`Trace limit reached (${MAX_TASKS_PER_TRACE} tasks). This may indicate an infinite loop between agents.`);
       }
@@ -51,6 +58,8 @@ export class TaskService {
       context: opts?.context,
       traceId: opts?.traceId ?? null,
       parentTaskId: opts?.parentTaskId ?? null,
+      localeOverride: opts?.localeOverride ?? null,
+      retryOfTaskId: opts?.retryOfTaskId ?? null,
     });
     invalidate(cacheKeys.activeTaskCounts(workspaceId)).catch(() => {});
     // Push task to daemon via WS (best-effort). Awaited to ensure task state
@@ -153,7 +162,7 @@ export class TaskService {
     });
 
     if (!task) {
-      const existing = await taskQueries.getTask(this.db, taskId);
+      const existing = await taskQueries.getTask(this.db, taskId, workspaceId);
       const status = existing?.status ?? "unknown";
       log.warn(`completeTask failed: task is in '${status}' status`, { taskId });
       throw new Error(`cannot complete task in '${status}' status`);
@@ -165,16 +174,29 @@ export class TaskService {
     // `role:"assistant"` message — it only settles the task lifecycle. `output`
     // is still persisted on the task row (in `result`) for debugging.
     // (failTask still surfaces an error bubble — a failed run must not go silent.)
-    await this.reconcileAgentStatus(task.agentId, task.workspaceId);
-    this.maybeUpsertUnread(task, workspaceId, null).catch(() => {});
-    return task;
+    let taskWithOutcome = task;
+    try {
+      const visibleOutcomeStatus = await taskQueries.detectTaskVisibleOutcome(this.db, taskId, workspaceId);
+      taskWithOutcome = await taskQueries.updateTaskVisibleOutcomeStatus(
+        this.db,
+        taskId,
+        workspaceId,
+        visibleOutcomeStatus,
+      ) ?? task;
+    } catch (err) {
+      log.warn("completeTask: failed to classify visible outcome", { taskId, err });
+    }
+
+    await this.reconcileAgentStatus(taskWithOutcome.agentId, taskWithOutcome.workspaceId);
+    this.maybeUpsertUnread(taskWithOutcome, workspaceId, null).catch(() => {});
+    return taskWithOutcome;
   }
 
   async failTask(taskId: string, workspaceId: string, error: string) {
     const task = await taskQueries.failTask(this.db, taskId, workspaceId, error);
 
     if (!task) {
-      const existing = await taskQueries.getTask(this.db, taskId);
+      const existing = await taskQueries.getTask(this.db, taskId, workspaceId);
       const status = existing?.status ?? "unknown";
       log.warn(`failTask failed: task is in '${status}' status`, { taskId });
       throw new Error(`cannot fail task in '${status}' status`);
@@ -294,7 +316,7 @@ export class TaskService {
     const task = await taskQueries.supersedeTask(this.db, taskId, workspaceId);
 
     if (!task) {
-      const existing = await taskQueries.getTask(this.db, taskId);
+      const existing = await taskQueries.getTask(this.db, taskId, workspaceId);
       const status = existing?.status ?? "unknown";
       log.warn(`supersedeTask failed: task is in '${status}' status`, { taskId });
       throw new Error(`cannot supersede task in '${status}' status`);
@@ -305,9 +327,8 @@ export class TaskService {
   }
 
   async retryTask(taskId: string, workspaceId: string) {
-    const original = await taskQueries.getTask(this.db, taskId);
+    const original = await taskQueries.getTask(this.db, taskId, workspaceId);
     if (!original) throw new Error("task not found");
-    if (original.workspaceId !== workspaceId) throw new Error("task not found");
     if (original.status !== "failed") throw new Error("only failed tasks can be retried");
 
     const marked = await taskQueries.markFailedAsSuperseded(this.db, taskId, workspaceId);
@@ -324,6 +345,8 @@ export class TaskService {
         context: original.context as Record<string, unknown> | undefined,
         traceId: original.traceId ?? null,
         parentTaskId: original.parentTaskId ?? null,
+        localeOverride: original.localeOverride ?? null,
+        retryOfTaskId: original.id,
       },
     );
 

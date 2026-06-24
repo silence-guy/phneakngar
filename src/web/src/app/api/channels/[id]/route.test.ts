@@ -4,6 +4,7 @@ import { NextRequest } from "next/server";
 const mockGetChannelById = vi.fn();
 const mockRenameChannel = vi.fn();
 const mockDeleteChannel = vi.fn();
+const mockChannelHasConversationsForOtherUsers = vi.fn();
 const mockChannelToResponse = vi.fn((c: any) => ({
   id: c.id,
   workspace_id: c.workspaceId,
@@ -26,6 +27,8 @@ vi.mock("@alook/shared", async () => {
         getChannelById: (...args: any[]) => mockGetChannelById(...args),
         renameChannel: (...args: any[]) => mockRenameChannel(...args),
         deleteChannel: (...args: any[]) => mockDeleteChannel(...args),
+        channelHasConversationsForOtherUsers: (...args: any[]) =>
+          mockChannelHasConversationsForOtherUsers(...args),
       },
     },
   };
@@ -67,7 +70,10 @@ function deleteReq(id: string) {
 }
 
 describe("PATCH /api/channels/[id]", () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockChannelHasConversationsForOtherUsers.mockResolvedValue(false);
+  });
 
   it("renames a channel", async () => {
     mockGetChannelById.mockResolvedValue(CH);
@@ -79,6 +85,7 @@ describe("PATCH /api/channels/[id]", () => {
 
     expect(res.status).toBe(200);
     expect(body.name).toBe("projects");
+    expect(mockChannelHasConversationsForOtherUsers).toHaveBeenCalledWith({}, "w1", "work", "u1");
     expect(mockRenameChannel).toHaveBeenCalledWith({}, "ch_1", "w1", "projects");
   });
 
@@ -156,6 +163,18 @@ describe("PATCH /api/channels/[id]", () => {
     expect((await res.json()).error).toBe("invalid request body");
   });
 
+  it("returns 403 when the channel has another user's conversations", async () => {
+    mockGetChannelById.mockResolvedValue(CH);
+    mockChannelHasConversationsForOtherUsers.mockResolvedValue(true);
+
+    const [req, ctx] = patchReq("ch_1", { name: "projects" });
+    const res = await PATCH(req, ctx as any);
+
+    expect(res.status).toBe(403);
+    expect((await res.json()).error).toBe("channel contains conversations owned by another user");
+    expect(mockRenameChannel).not.toHaveBeenCalled();
+  });
+
   it("returns 409 for duplicate channel name", async () => {
     mockGetChannelById.mockResolvedValue(CH);
     mockRenameChannel.mockRejectedValue(new Error("UNIQUE constraint failed: channel.name"));
@@ -179,7 +198,10 @@ describe("PATCH /api/channels/[id]", () => {
 });
 
 describe("DELETE /api/channels/[id]", () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockChannelHasConversationsForOtherUsers.mockResolvedValue(false);
+  });
 
   it("deletes a channel", async () => {
     mockGetChannelById.mockResolvedValue(CH);
@@ -191,6 +213,7 @@ describe("DELETE /api/channels/[id]", () => {
 
     expect(res.status).toBe(200);
     expect(body).toEqual({ ok: true });
+    expect(mockChannelHasConversationsForOtherUsers).toHaveBeenCalledWith({}, "w1", "work", "u1");
     expect(mockDeleteChannel).toHaveBeenCalledWith({}, "ch_1", "w1");
   });
 
@@ -202,6 +225,18 @@ describe("DELETE /api/channels/[id]", () => {
 
     expect(res.status).toBe(404);
     expect((await res.json()).error).toBe("channel not found");
+  });
+
+  it("returns 403 when the channel has another user's conversations", async () => {
+    mockGetChannelById.mockResolvedValue(CH);
+    mockChannelHasConversationsForOtherUsers.mockResolvedValue(true);
+
+    const [req, ctx] = deleteReq("ch_1");
+    const res = await DELETE(req, ctx as any);
+
+    expect(res.status).toBe(403);
+    expect((await res.json()).error).toBe("channel contains conversations owned by another user");
+    expect(mockDeleteChannel).not.toHaveBeenCalled();
   });
 
   it("returns 400 when deleting the default channel", async () => {

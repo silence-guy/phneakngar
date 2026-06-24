@@ -310,11 +310,12 @@ describe("UserResponse shape", () => {
 });
 
 describe("WorkspaceResponse shape", () => {
-  it("has expected keys: id, name, slug, onboarded, created_at, updated_at", () => {
-    const res = workspaceToResponse({ id: "w1", name: "WS", slug: "ws", ...baseFields() });
+  it("has expected keys: id, name, slug, onboarded, default_locale, created_at, updated_at", () => {
+    const res = workspaceToResponse({ id: "w1", name: "WS", slug: "ws", defaultLocale: "en", ...baseFields() });
     expect(Object.keys(res).sort()).toEqual(
-      ["created_at", "id", "name", "onboarded", "slug", "updated_at"]
+      ["created_at", "default_locale", "id", "name", "onboarded", "slug", "updated_at"]
     );
+    expect(res.default_locale).toBe("en");
   });
 });
 
@@ -326,8 +327,8 @@ describe("AgentResponse shape", () => {
       maxConcurrentTasks: 3, ...baseFields(),
     });
     expect(Object.keys(res).sort()).toEqual([
-      "avatar_url", "created_at", "description", "email_handle", "id", "instructions", "max_concurrent_tasks",
-      "name", "owner_id", "runtime_config", "runtime_id", "runtime_mode", "status",
+      "avatar_url", "created_at", "description", "email_handle", "id", "instructions", "language_policy", "max_concurrent_tasks",
+      "name", "owner_id", "preferred_locale", "runtime_config", "runtime_id", "runtime_mode", "status",
       "updated_at", "visibility", "workspace_id",
     ]);
   });

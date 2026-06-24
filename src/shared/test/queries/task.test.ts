@@ -39,6 +39,11 @@ describe("task query module exports", () => {
   it("exports failStaleRunningTasks", () => {
     expect(typeof taskQueries.failStaleRunningTasks).toBe("function");
   });
+
+  it("exports visible outcome helpers", () => {
+    expect(typeof taskQueries.detectTaskVisibleOutcome).toBe("function");
+    expect(typeof taskQueries.updateTaskVisibleOutcomeStatus).toBe("function");
+  });
 });
 
 describe("task query function signatures", () => {
@@ -76,7 +81,7 @@ describe("countTasksByTrace", () => {
     chain.select = vi.fn(() => chain);
     chain.from = vi.fn(() => chain);
     chain.where = vi.fn(() => Promise.resolve([{ value: 7 }]));
-    const result = await taskQueries.countTasksByTrace(chain, "trace_1");
+    const result = await taskQueries.countTasksByTrace(chain, "trace_1", "ws_1");
     expect(result).toBe(7);
   });
 
@@ -85,7 +90,7 @@ describe("countTasksByTrace", () => {
     chain.select = vi.fn(() => chain);
     chain.from = vi.fn(() => chain);
     chain.where = vi.fn(() => Promise.resolve([]));
-    const result = await taskQueries.countTasksByTrace(chain, "trace_empty");
+    const result = await taskQueries.countTasksByTrace(chain, "trace_empty", "ws_1");
     expect(result).toBe(0);
   });
 });

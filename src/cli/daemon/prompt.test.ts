@@ -29,6 +29,46 @@ describe("buildPrompt", () => {
     expect(parsed.instruction).toBe("Fix the login bug");
   });
 
+  it("injects the default Khmer language policy and preserves technical tokens", () => {
+    const parsed = JSON.parse(buildPrompt(makeTask("Fix the login bug")));
+    expect(parsed.language_policy.default_user_facing_language).toBe("km-KH");
+    expect(parsed.language_policy.apply_to).toContain("User-facing");
+
+    const policyText = JSON.stringify(parsed.language_policy);
+    expect(policyText).toContain("Use Khmer by default");
+    expect(policyText).toContain("alook sync send-dm");
+    expect(policyText).toContain("alook issue update");
+    expect(policyText).toContain("JSON keys");
+    expect(policyText).toContain("issue_id");
+    expect(policyText).toContain("in_progress");
+    expect(policyText).toContain("review");
+    expect(policyText).toContain("file paths");
+    expect(policyText).toContain("logs");
+  });
+
+  it("uses explicit task language policy when provided", () => {
+    const task = makeTask("Summarize in English");
+    task.languagePolicy = {
+      default_user_facing_language: "en",
+      apply_to: "User-facing replies.",
+      preserve_english_for: ["commands", "JSON keys"],
+      guidance: "Use English for user-facing output.",
+      custom_policy: "Use plain executive summaries.",
+    };
+
+    const parsed = JSON.parse(buildPrompt(task));
+    expect(parsed.language_policy).toEqual(task.languagePolicy);
+  });
+
+  it("uses task locale override when no resolved language policy is attached", () => {
+    const task = makeTask("Choose language from context");
+    task.localeOverride = "auto";
+
+    const parsed = JSON.parse(buildPrompt(task));
+    expect(parsed.language_policy.default_user_facing_language).toBe("auto");
+    expect(parsed.language_policy.guidance).toContain("Choose the user-facing language");
+  });
+
   it("handles empty prompt", () => {
     const task = makeTask("");
     const parsed = JSON.parse(buildPrompt(task));
@@ -46,6 +86,7 @@ describe("buildPrompt", () => {
         type: "email_inbound",
         received_at: parsed.received_at,
         instruction: "Check inbox",
+        language_policy: parsed.language_policy,
       }),
     );
   });
@@ -333,6 +374,7 @@ describe("buildPrompt", () => {
     const task = makeTask("Check inbox", "some_other_type");
     const parsed = JSON.parse(buildPrompt(task));
     expect(parsed.notice).toBeUndefined();
+    expect(parsed.language_policy.default_user_facing_language).toBe("km-KH");
   });
 
   it("adds issue guidance for issue_event tasks", () => {
@@ -399,13 +441,37 @@ describe("buildMergedPrompt", () => {
 
     expect(result.type).toBe("merge_tasks");
     expect(result.notice).toContain("simultaneously");
+    expect(result.language_policy.default_user_facing_language).toBe("km-KH");
     expect(result.tasks).toHaveLength(3);
+    expect(result.tasks.map((subTask: any) => subTask.language_policy.default_user_facing_language)).toEqual([
+      "km-KH",
+      "km-KH",
+      "km-KH",
+    ]);
     // Sorted by received_at ascending (B=12:00:01, A=12:00:02, C=12:00:03).
     expect(result.tasks[0].instruction).toBe("New email from X: subject");
     expect(result.tasks[0].email_id).toBe("em_abc");
     expect(result.tasks[1].instruction).toBe("DM message");
     expect(result.tasks[1].attachments).toHaveLength(1);
     expect(result.tasks[2].instruction).toBe("Another DM");
+  });
+
+  it("uses auto policy for the envelope when merged tasks disagree on language", () => {
+    const khmerTask = makeTask("Reply in Khmer", "user_dm_message");
+    const englishTask = makeTask("Reply in English", "email_notification");
+    englishTask.languagePolicy = {
+      default_user_facing_language: "en",
+      apply_to: "User-facing replies.",
+      preserve_english_for: ["commands", "JSON keys"],
+      guidance: "Use English for user-facing output.",
+    };
+
+    const result = JSON.parse(buildMergedPrompt([khmerTask, englishTask], new Map()));
+    expect(result.language_policy.default_user_facing_language).toBe("auto");
+    expect(result.tasks.map((subTask: any) => subTask.language_policy.default_user_facing_language)).toEqual([
+      "km-KH",
+      "en",
+    ]);
   });
 
   it("produces valid JSON with self-contained sub-tasks", () => {
@@ -415,5 +481,6 @@ describe("buildMergedPrompt", () => {
     expect(result.tasks).toHaveLength(1);
     expect(result.tasks[0].type).toBe("user_dm_message");
     expect(result.tasks[0].instruction).toBe("Single task");
+    expect(result.tasks[0].language_policy.default_user_facing_language).toBe("km-KH");
   });
 });

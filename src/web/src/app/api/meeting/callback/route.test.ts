@@ -14,6 +14,7 @@ vi.mock("@opennextjs/cloudflare", () => ({
       DB: {},
       EMAIL_BUCKET: { put: (...args: unknown[]) => mockBucketPut(...args) },
       WORKER_SELF_REFERENCE: { fetch: (...args: unknown[]) => mockSelfRefFetch(...args) },
+      EMAIL_NOTIFY_SECRET: "notify-secret",
     },
   })),
 }));
@@ -42,7 +43,7 @@ vi.mock("@alook/shared", async () => {
 vi.mock("@/lib/middleware/auth", () => ({
   withAuth: vi.fn((handler: any) => async (req: any, ctx?: any) => {
     const params = ctx?.params instanceof Promise ? await ctx.params : ctx?.params;
-    return handler(req, { env: { DB: {}, EMAIL_BUCKET: { put: (...args: unknown[]) => mockBucketPut(...args) }, WORKER_SELF_REFERENCE: { fetch: (...args: unknown[]) => mockSelfRefFetch(...args) } }, userId: "u1", email: "u@t.com", workspaceId: "w1", params });
+    return handler(req, { env: { DB: {}, EMAIL_BUCKET: { put: (...args: unknown[]) => mockBucketPut(...args) }, WORKER_SELF_REFERENCE: { fetch: (...args: unknown[]) => mockSelfRefFetch(...args) }, EMAIL_NOTIFY_SECRET: "notify-secret" }, userId: "u1", email: "u@t.com", workspaceId: "w1", params });
   }),
 }));
 
@@ -122,8 +123,10 @@ describe("POST /api/meeting/callback", () => {
 
     // Should call email notify with correct r2Key
     expect(mockSelfRefFetch).toHaveBeenCalledTimes(1);
+    const notifyInit = mockSelfRefFetch.mock.calls[0][1] as RequestInit;
+    expect((notifyInit.headers as Record<string, string>)["X-Alook-Email-Notify-Secret"]).toBe("notify-secret");
     const notifyBody = JSON.parse(
-      (mockSelfRefFetch.mock.calls[0][1] as RequestInit).body as string
+      notifyInit.body as string
     );
     expect(notifyBody.r2Key).toBe("emails/test-nanoid-123/raw");
     expect(notifyBody.from).toBe("no-reply@alook.ai");

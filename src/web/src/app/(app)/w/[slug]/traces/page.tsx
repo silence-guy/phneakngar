@@ -88,6 +88,7 @@ function AgentAvatar({ name, avatarUrl, size = 14 }: { name?: string; avatarUrl?
 function TraceRow({ trace, slug }: { trace: TraceListItem; slug: string }) {
   const duration = formatDuration(trace.started_at, trace.completed_at);
   const statusLabel = trace.status === "active" ? "Active" : trace.status === "failed" ? "Failed" : "Completed";
+  const silentTaskLabel = trace.silent_task_count === 1 ? "1 no-output task" : `${trace.silent_task_count} no-output tasks`;
 
   return (
     <Link
@@ -123,6 +124,14 @@ function TraceRow({ trace, slug }: { trace: TraceListItem; slug: string }) {
               <>
                 <span className="text-muted-foreground/40">&middot;</span>
                 <span className="text-xs text-muted-foreground">{duration}</span>
+              </>
+            )}
+            {trace.silent_task_count > 0 && (
+              <>
+                <span className="text-muted-foreground/40">&middot;</span>
+                <span className="rounded-sm border border-border/60 px-1.5 py-0.5 text-[10px] leading-none text-muted-foreground">
+                  {silentTaskLabel}
+                </span>
               </>
             )}
             {trace.helper_agents.length > 0 && (

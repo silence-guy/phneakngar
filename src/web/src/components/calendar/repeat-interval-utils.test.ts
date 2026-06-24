@@ -43,35 +43,35 @@ describe("formatRepeatInterval", () => {
 
 describe("unitLabel", () => {
   it("returns singular for count=1", () => {
-    expect(unitLabel("day", 1)).toBe("day");
-    expect(unitLabel("min", 1)).toBe("minute");
-    expect(unitLabel("hour", 1)).toBe("hour");
-    expect(unitLabel("week", 1)).toBe("week");
-    expect(unitLabel("month", 1)).toBe("month");
+    expect(unitLabel("day", 1)).toBe("ថ្ងៃ");
+    expect(unitLabel("min", 1)).toBe("នាទី");
+    expect(unitLabel("hour", 1)).toBe("ម៉ោង");
+    expect(unitLabel("week", 1)).toBe("សប្តាហ៍");
+    expect(unitLabel("month", 1)).toBe("ខែ");
   });
 
   it("returns plural for count>1", () => {
-    expect(unitLabel("day", 3)).toBe("days");
-    expect(unitLabel("min", 30)).toBe("minutes");
-    expect(unitLabel("hour", 24)).toBe("hours");
-    expect(unitLabel("week", 2)).toBe("weeks");
-    expect(unitLabel("month", 12)).toBe("months");
+    expect(unitLabel("day", 3)).toBe("ថ្ងៃ");
+    expect(unitLabel("min", 30)).toBe("នាទី");
+    expect(unitLabel("hour", 24)).toBe("ម៉ោង");
+    expect(unitLabel("week", 2)).toBe("សប្តាហ៍");
+    expect(unitLabel("month", 12)).toBe("ខែ");
   });
 });
 
 describe("formatRepeatDisplay", () => {
   it("formats count=1 without number", () => {
-    expect(formatRepeatDisplay("1day")).toBe("Every day");
-    expect(formatRepeatDisplay("1hour")).toBe("Every hour");
-    expect(formatRepeatDisplay("1week")).toBe("Every week");
-    expect(formatRepeatDisplay("1month")).toBe("Every month");
-    expect(formatRepeatDisplay("1min")).toBe("Every minute");
+    expect(formatRepeatDisplay("1day")).toBe("រៀងរាល់ថ្ងៃ");
+    expect(formatRepeatDisplay("1hour")).toBe("រៀងរាល់ម៉ោង");
+    expect(formatRepeatDisplay("1week")).toBe("រៀងរាល់សប្តាហ៍");
+    expect(formatRepeatDisplay("1month")).toBe("រៀងរាល់ខែ");
+    expect(formatRepeatDisplay("1min")).toBe("រៀងរាល់នាទី");
   });
 
   it("formats count>1 with number and plural", () => {
-    expect(formatRepeatDisplay("2week")).toBe("Every 2 weeks");
-    expect(formatRepeatDisplay("30min")).toBe("Every 30 minutes");
-    expect(formatRepeatDisplay("12month")).toBe("Every 12 months");
+    expect(formatRepeatDisplay("2week")).toBe("រៀងរាល់ 2 សប្តាហ៍");
+    expect(formatRepeatDisplay("30min")).toBe("រៀងរាល់ 30 នាទី");
+    expect(formatRepeatDisplay("12month")).toBe("រៀងរាល់ 12 ខែ");
   });
 
   it("returns raw string for unparseable input", () => {

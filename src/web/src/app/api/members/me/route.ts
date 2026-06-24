@@ -19,7 +19,10 @@ export const GET = withAuth(async (req: NextRequest, ctx) => {
   );
   if (!member) return writeError("member not found", 404);
 
-  return writeJSON({ global_instruction: member.globalInstruction });
+  return writeJSON({
+    global_instruction: member.globalInstruction,
+    preferred_locale: member.preferredLocale ?? "km",
+  });
 });
 
 export const PATCH = withAuth(async (req: NextRequest, ctx) => {
@@ -31,12 +34,10 @@ export const PATCH = withAuth(async (req: NextRequest, ctx) => {
 
   const db = getDb(ctx.env.DB);
 
-  const updated = await queries.member.updateMemberGlobalInstruction(
-    db,
-    ctx.userId,
-    ws.workspaceId,
-    body.global_instruction
-  );
+  const updated = await queries.member.updateMemberSettings(db, ctx.userId, ws.workspaceId, {
+    globalInstruction: body.global_instruction,
+    preferredLocale: body.preferred_locale,
+  });
   if (!updated) return writeError("member not found", 404);
 
   await Promise.all([
@@ -44,5 +45,8 @@ export const PATCH = withAuth(async (req: NextRequest, ctx) => {
     invalidate(cacheKeys.allMembers(ws.workspaceId)),
   ]);
 
-  return writeJSON({ global_instruction: updated.globalInstruction });
+  return writeJSON({
+    global_instruction: updated.globalInstruction,
+    preferred_locale: updated.preferredLocale ?? "km",
+  });
 });

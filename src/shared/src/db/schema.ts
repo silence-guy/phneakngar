@@ -78,6 +78,7 @@ export const workspace = sqliteTable("workspace", {
   name: text("name").notNull(),
   slug: text("slug").unique().notNull(),
   onboarded: integer("onboarded").notNull().default(0),
+  defaultLocale: text("default_locale").notNull().default("km"),
   createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
   updatedAt: text("updated_at").notNull().$defaultFn(() => new Date().toISOString()),
 });
@@ -94,6 +95,7 @@ export const member = sqliteTable(
       .references(() => user.id, { onDelete: "cascade" }),
     role: text("role").notNull().default("member"),
     globalInstruction: text("global_instruction").notNull().default(""),
+    preferredLocale: text("preferred_locale").notNull().default("km"),
     createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
   },
   (t) => [unique("member_workspace_user").on(t.workspaceId, t.userId)]
@@ -251,6 +253,8 @@ export const agent = sqliteTable(
     tools: text("tools", { mode: "json" }),
     triggers: text("triggers", { mode: "json" }),
     emailHandle: text("email_handle").unique(),
+    preferredLocale: text("preferred_locale"),
+    languagePolicy: text("language_policy"),
     createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
     updatedAt: text("updated_at").notNull().$defaultFn(() => new Date().toISOString()),
   },
@@ -372,6 +376,9 @@ export const agentTaskQueue = sqliteTable(
     error: text("error"),
     traceId: text("trace_id"),
     parentTaskId: text("parent_task_id"),
+    localeOverride: text("locale_override"),
+    visibleOutcomeStatus: text("visible_outcome_status").notNull().default("pending"),
+    retryOfTaskId: text("retry_of_task_id"),
   },
   (t) => [
     index("idx_task_queue_pending")
@@ -386,6 +393,7 @@ export const agentTaskQueue = sqliteTable(
       .on(t.conversationId, t.status),
     index("idx_task_queue_trace").on(t.traceId),
     index("idx_task_queue_parent").on(t.parentTaskId),
+    index("idx_task_queue_visible_outcome").on(t.workspaceId, t.visibleOutcomeStatus, t.completedAt),
     index("idx_task_queue_workspace_type_status").on(t.workspaceId, t.type, t.status),
     index("idx_task_queue_workspace_status_dispatched").on(t.workspaceId, t.status, t.dispatchedAt),
     index("idx_task_queue_inbox").on(t.workspaceId, t.status, t.completedAt),

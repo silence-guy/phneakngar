@@ -34,9 +34,9 @@ export const GET = withAuth(async (req, ctx) => {
     if (isNaN(afterSeq)) {
       return writeError("invalid since parameter", 400);
     }
-    messages = await queries.taskMessage.listTaskMessagesSince(db, id, afterSeq);
+    messages = await queries.taskMessage.listTaskMessagesSince(db, id, afterSeq, ws.workspaceId);
   } else {
-    messages = await queries.taskMessage.listTaskMessages(db, id);
+    messages = await queries.taskMessage.listTaskMessages(db, id, ws.workspaceId);
   }
 
   return writeJSON(messages.map(taskMessageToResponse));

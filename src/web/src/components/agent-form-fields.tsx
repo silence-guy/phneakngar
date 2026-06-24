@@ -45,6 +45,7 @@ import { ApiError } from "@/lib/errors";
 import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
 import { AutoResizeTextarea } from "@/components/ui/auto-resize-textarea";
+import { agentFormLabel } from "@/lib/locale";
 
 export function nameToHandle(name: string): string {
   return name
@@ -107,7 +108,7 @@ export function GeneralFields({
             id="agent-name"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="Agent name"
+            placeholder={agentFormLabel("agentNamePlaceholder")}
             required
             autoFocus
             aria-invalid={Boolean(errors?.name)}
@@ -118,7 +119,7 @@ export function GeneralFields({
             <button
               type="button"
               onClick={onShuffle}
-              aria-label="Randomize name"
+              aria-label={agentFormLabel("randomizeName")}
               className="absolute right-0 top-1/2 -translate-y-1/2 rounded p-1.5 text-muted-foreground/50 hover:text-foreground hover:bg-accent transition-colors"
             >
               <Dices className="size-4" />
@@ -137,7 +138,7 @@ export function GeneralFields({
         id="agent-description"
         value={description}
         onChange={(e) => setDescription(e.target.value)}
-        placeholder="Add a description…"
+        placeholder={agentFormLabel("descriptionPlaceholder")}
         rows={1}
         className="w-full border-0 bg-transparent px-0 py-0.5 text-sm text-foreground shadow-none outline-none placeholder:text-muted-foreground/40 focus-visible:ring-0"
       />
@@ -146,11 +147,11 @@ export function GeneralFields({
 
       {/* Runtime */}
       {(runtimeAsRadio || runtimes.length > 0) && <div id="agent-runtime-select" className="space-y-1.5">
-        <Label className="text-xs text-muted-foreground">Runtime</Label>
+        <Label className="text-xs text-muted-foreground">{agentFormLabel("runtime")}</Label>
         {runtimeAsRadio ? (
-          <div className="space-y-1.5" role="radiogroup" aria-label="Runtime">
+          <div className="space-y-1.5" role="radiogroup" aria-label={agentFormLabel("runtime")}>
             {runtimes.length === 0 ? (
-              <p className="text-xs text-muted-foreground">No runtimes — start a daemon first</p>
+              <p className="text-xs text-muted-foreground">{agentFormLabel("noRuntimes")}</p>
             ) : (
               runtimes.map((rt) => {
                 const isOnline = rt.status === "online";
@@ -189,7 +190,7 @@ export function GeneralFields({
                       <span className="text-xs text-muted-foreground">{machine}</span>
                     )}
                     {!isOnline && (
-                      <span className="text-xs text-muted-foreground ml-auto">offline</span>
+                      <span className="text-xs text-muted-foreground ml-auto">{agentFormLabel("offline")}</span>
                     )}
                   </label>
                 );
@@ -228,12 +229,12 @@ export function GeneralFields({
         <AdvancedSection>
           {setInstructions && (
             <div className="space-y-1">
-              <Label className="text-xs text-muted-foreground">Instructions</Label>
+              <Label className="text-xs text-muted-foreground">{agentFormLabel("instructions")}</Label>
               <AutoResizeTextarea
                 id="agent-instructions"
                 value={instructions ?? ""}
                 onChange={(e) => setInstructions(e.target.value)}
-                placeholder="System prompt or instructions..."
+                placeholder={agentFormLabel("instructionsPlaceholder")}
                 rows={3}
                 className="w-full border-0 bg-transparent px-0 py-1 text-sm text-foreground shadow-none outline-none placeholder:text-muted-foreground/40 focus-visible:ring-0"
               />
@@ -241,12 +242,12 @@ export function GeneralFields({
           )}
 
           <div className="space-y-1">
-            <Label className="text-xs text-muted-foreground">Model</Label>
+            <Label className="text-xs text-muted-foreground">{agentFormLabel("model")}</Label>
             <input
               id="agent-model"
               value={model}
               onChange={(e) => setModel(e.target.value)}
-              placeholder="Default (runtime model)"
+              placeholder={agentFormLabel("defaultRuntimeModel")}
               list="agent-model-options"
               className="w-full border-0 bg-transparent px-0 py-0.5 text-sm text-foreground shadow-none outline-none placeholder:text-muted-foreground/40 focus-visible:ring-0"
             />
@@ -278,7 +279,7 @@ function AdvancedSection({ children }: { children: React.ReactNode }) {
         className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
       >
         <ChevronDown className={cn("size-3.5 transition-transform", open && "rotate-180")} />
-        Advanced
+        {agentFormLabel("advanced")}
       </button>
       {open && <div className="mt-3 space-y-4">{children}</div>}
     </div>
@@ -301,12 +302,12 @@ export function EmailHandleField({
   const effectiveHandle = emailHandle || derivedHandle;
   const handleError =
     effectiveHandle && !isValidHandle(effectiveHandle)
-      ? "Must be 3+ characters, letters/numbers/hyphens only"
+      ? agentFormLabel("invalidHandle")
       : "";
 
   return (
     <div className="space-y-1">
-      <Label className="text-xs text-muted-foreground">Email</Label>
+      <Label className="text-xs text-muted-foreground">{agentFormLabel("email")}</Label>
       <div className="flex items-center">
         <input
           id="agent-handle"
@@ -328,7 +329,7 @@ export function EmailHandleField({
 
 export function getHandleError(effectiveHandle: string): string {
   if (effectiveHandle && !isValidHandle(effectiveHandle)) {
-    return "Must be 3+ characters, letters/numbers/hyphens only";
+    return agentFormLabel("invalidHandle");
   }
   return "";
 }
@@ -353,7 +354,7 @@ export function AllowedSendersTab({ agentId }: { agentId: string }) {
         if (!cancelled) setWhitelist(entries);
       })
       .catch(() => {
-        if (!cancelled) setError("Failed to load whitelist");
+        if (!cancelled) setError(agentFormLabel("failedToLoadWhitelist"));
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -395,7 +396,7 @@ export function AllowedSendersTab({ agentId }: { agentId: string }) {
       setWhitelist((prev) => [...prev, entry]);
       setNewEmail("");
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Failed to add email";
+      const msg = e instanceof Error ? e.message : agentFormLabel("failedToAddEmail");
       setError(msg);
     } finally {
       setAdding(false);
@@ -410,23 +411,21 @@ export function AllowedSendersTab({ agentId }: { agentId: string }) {
       await removeWhitelistEmail(agentId, entryId, workspaceId);
     } catch {
       setWhitelist(prev);
-      setError("Failed to remove email");
+      setError(agentFormLabel("failedToRemoveEmail"));
     }
   };
 
   return (
     <div className="mx-auto max-w-md space-y-4">
       <div>
-        <h3 className="text-sm font-medium">Allowed Senders</h3>
+        <h3 className="text-sm font-medium">{agentFormLabel("allowedSendersTitle")}</h3>
         <p className="text-xs text-muted-foreground mt-1">
-          Only emails from these addresses will trigger this agent. Applies to
-          all configured email addresses (alook.ai handle and custom email).
+          {agentFormLabel("allowedSendersDescription")}
         </p>
         {hasSiblingAgents && (
           <p className="text-xs text-muted-foreground/70 mt-1.5 flex items-center gap-1">
             <InfoIcon className="size-3 shrink-0" />
-            Agents in this workspace can already email each other — no whitelist
-            entry needed.
+            {agentFormLabel("agentsCanEmailEachOther")}
           </p>
         )}
       </div>
@@ -452,7 +451,7 @@ export function AllowedSendersTab({ agentId }: { agentId: string }) {
           disabled={!isValidEmail || adding}
           onClick={handleAdd}
         >
-          {adding ? "Adding..." : "Add"}
+          {adding ? agentFormLabel("adding") : agentFormLabel("add")}
         </Button>
       </div>
 
@@ -469,7 +468,7 @@ export function AllowedSendersTab({ agentId }: { agentId: string }) {
         </div>
       ) : whitelist.length === 0 ? (
         <p className="text-sm text-muted-foreground py-4 text-center">
-          No allowed senders — all inbound emails will be rejected.
+          {agentFormLabel("noAllowedSenders")}
         </p>
       ) : (
         <div className="space-y-1.5">
@@ -535,7 +534,7 @@ export function AgentAccessTab({
         if (e instanceof ApiError && e.status === 403) {
           setError(e.message);
         } else {
-          setError("Failed to load access list");
+          setError(agentFormLabel("failedToLoadAccessList"));
         }
       })
       .finally(() => {
@@ -565,12 +564,12 @@ export function AgentAccessTab({
       await updateAgentApi(agentId, { visibility: newVisibility }, workspaceId);
       toast.success(
         newVisibility === "public"
-          ? "Agent is now public"
-          : "Agent is now private"
+          ? agentFormLabel("agentIsPublic")
+          : agentFormLabel("agentIsPrivate")
       );
     } catch {
       setVisibility(prev);
-      toast.error("Failed to update visibility");
+      toast.error(agentFormLabel("failedToUpdateVisibility"));
     } finally {
       setSavingVisibility(false);
     }
@@ -602,9 +601,9 @@ export function AgentAccessTab({
         ]);
       }
       setSelectedUserId("");
-      toast.success("Access granted");
+      toast.success(agentFormLabel("accessGranted"));
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Failed to grant access");
+      setError(e instanceof Error ? e.message : agentFormLabel("failedToGrantAccess"));
     } finally {
       setAdding(false);
     }
@@ -635,12 +634,12 @@ export function AgentAccessTab({
       );
       toast.success(
         removeWhitelist
-          ? "Access revoked and removed from whitelist"
-          : "Access revoked"
+          ? agentFormLabel("accessRevokedAndRemovedFromWhitelist")
+          : agentFormLabel("accessRevoked")
       );
     } catch {
       setAccessList(prev);
-      setError("Failed to revoke access");
+      setError(agentFormLabel("failedToRevokeAccess"));
     }
   };
 
@@ -649,20 +648,20 @@ export function AgentAccessTab({
       <div className="space-y-4 rounded-lg border border-border/50 p-4">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-sm font-medium">Visibility</h3>
+            <h3 className="text-sm font-medium">{agentFormLabel("visibility")}</h3>
             <p className="text-xs text-muted-foreground mt-0.5">
               {visibility === "public"
-                ? "All workspace members can use this agent"
-                : "Only authorized members can use this agent"}
+                ? agentFormLabel("visibilityPublicDescription")
+                : agentFormLabel("visibilityPrivateDescription")}
             </p>
           </div>
           <div className="flex items-center gap-2">
             <span className="text-xs text-muted-foreground">
               {savingVisibility
-                ? "Saving…"
+                ? agentFormLabel("saving")
                 : visibility === "public"
-                  ? "Public"
-                  : "Private"}
+                  ? agentFormLabel("public")
+                  : agentFormLabel("private")}
             </span>
             <Switch
               checked={visibility === "public"}
@@ -677,7 +676,7 @@ export function AgentAccessTab({
 
       {visibility === "private" && (
         <div className="space-y-3">
-          <h3 className="text-sm font-medium">Authorized Members</h3>
+          <h3 className="text-sm font-medium">{agentFormLabel("authorizedMembers")}</h3>
           {error && <p className="text-xs text-destructive">{error}</p>}
 
           {loading ? (
@@ -705,7 +704,7 @@ export function AgentAccessTab({
                       )}
                     </div>
                     <span className="ml-2 shrink-0 text-xs text-muted-foreground">
-                      Owner
+                      {agentFormLabel("owner")}
                     </span>
                   </div>
                 )}
@@ -746,7 +745,7 @@ export function AgentAccessTab({
                     }}
                   >
                     <SelectTrigger className="flex-1 text-xs">
-                      <SelectValue placeholder="Add a member..." />
+                      <SelectValue placeholder={agentFormLabel("addMember")} />
                     </SelectTrigger>
                     <SelectContent>
                       {availableMembers.map((m) => (
@@ -759,7 +758,7 @@ export function AgentAccessTab({
                 </div>
               ) : (
                 <p className="text-xs text-muted-foreground">
-                  All workspace members have been added. Invite new members from workspace settings.
+                  {agentFormLabel("allMembersAdded")}
                 </p>
               )}
             </>
@@ -775,13 +774,13 @@ export function AgentAccessTab({
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Remove Member Access</DialogTitle>
+            <DialogTitle>{agentFormLabel("removeMemberAccess")}</DialogTitle>
             <DialogDescription>
-              Remove{" "}
+              {agentFormLabel("removeMemberAccessPrefix")}
               <span className="font-medium text-foreground">
                 {revokeTarget?.name || revokeTarget?.email}
-              </span>{" "}
-              from this agent?
+              </span>
+              {agentFormLabel("removeMemberAccessSuffix")}
             </DialogDescription>
           </DialogHeader>
           <label className="flex items-center gap-2 cursor-pointer px-1">
@@ -791,14 +790,14 @@ export function AgentAccessTab({
               onChange={(e) => setRemoveWhitelist(e.target.checked)}
               className="size-4 rounded border-border accent-primary"
             />
-            <span className="text-sm">Also remove from email whitelist</span>
+            <span className="text-sm">{agentFormLabel("alsoRemoveFromEmailWhitelist")}</span>
           </label>
           <DialogFooter>
             <DialogClose render={<Button variant="outline" size="sm" />}>
-              Cancel
+              {agentFormLabel("cancel")}
             </DialogClose>
             <Button size="sm" variant="destructive" onClick={confirmRevoke}>
-              Remove
+              {agentFormLabel("remove")}
             </Button>
           </DialogFooter>
         </DialogContent>

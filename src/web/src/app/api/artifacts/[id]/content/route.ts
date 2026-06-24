@@ -15,6 +15,19 @@ function contentDisposition(disposition: "inline" | "attachment", filename: stri
   return `${disposition}; filename="${fallback}"; filename*=UTF-8''${encodeURIComponent(filename)}`;
 }
 
+function isActiveContentType(contentType: string): boolean {
+  const mime = contentType.split(";", 1)[0]?.trim().toLowerCase() ?? "";
+  return new Set([
+    "application/javascript",
+    "application/ecmascript",
+    "application/xhtml+xml",
+    "image/svg+xml",
+    "text/ecmascript",
+    "text/html",
+    "text/javascript",
+  ]).has(mime);
+}
+
 export const GET = withAuth(async (req: NextRequest, ctx) => {
   const ws = await withWorkspaceMember(req, ctx);
   if (ws instanceof Response) return ws;
@@ -39,15 +52,15 @@ export const GET = withAuth(async (req: NextRequest, ctx) => {
   }
 
   const download = req.nextUrl.searchParams.get("download");
+  const activeContent = isActiveContentType(row.contentType);
+  const disposition = download !== null || activeContent ? "attachment" : "inline";
   const headers: Record<string, string> = {
-    "Content-Type": row.contentType,
+    "Content-Type": activeContent ? "application/octet-stream" : row.contentType,
     "Content-Length": String(row.size),
+    "Content-Disposition": contentDisposition(disposition, row.filename),
+    "Content-Security-Policy": "sandbox",
+    "X-Content-Type-Options": "nosniff",
   };
-  if (download !== null) {
-    headers["Content-Disposition"] = contentDisposition("attachment", row.filename);
-  } else {
-    headers["Content-Disposition"] = contentDisposition("inline", row.filename);
-  }
 
   return new Response(object.body, { headers });
 });

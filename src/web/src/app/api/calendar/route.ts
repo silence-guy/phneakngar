@@ -141,7 +141,9 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
     ws.workspaceId,
     ctx.userId
   );
-  if (!agent) return writeError("agent not found in workspace", 404);
+  if (!agent || agent.ownerId !== ctx.userId) {
+    return writeError("agent not found in workspace", 404);
+  }
 
   const scheduledAtDate = new Date(body.scheduled_at);
   const scheduledAtIso = scheduledAtDate.toISOString();

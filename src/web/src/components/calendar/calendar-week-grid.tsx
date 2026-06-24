@@ -15,6 +15,7 @@ import {
   type LayoutEvent,
 } from "./calendar-week-utils";
 import { dateKey, sameDay } from "./calendar-month-grid";
+import { CALENDAR_LABELS, CALENDAR_WEEKDAY_NARROW } from "./calendar-labels";
 
 const HOUR_HEIGHT_DEFAULT = 48;
 const HOUR_HEIGHT_COMPACT = 36;
@@ -33,9 +34,9 @@ function formatHourLabel(hour: number, compact: boolean): string {
 
 function formatDayHeader(date: Date, compact: boolean): string {
   if (compact) {
-    return ["S", "M", "T", "W", "T", "F", "S"][date.getDay()]!;
+    return CALENDAR_WEEKDAY_NARROW[date.getDay()]!;
   }
-  const weekday = date.toLocaleDateString("en-US", { weekday: "short" });
+  const weekday = date.toLocaleDateString("km-KH", { weekday: "short" });
   return `${weekday} ${date.getDate()}`;
 }
 
@@ -191,7 +192,7 @@ export function CalendarWeekGrid({
           <div className="flex items-center gap-1">
             <button
               type="button"
-              aria-label="Previous week"
+              aria-label={CALENDAR_LABELS.actions.previousWeek}
               onClick={onPrevWeek}
               className="flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
             >
@@ -204,11 +205,11 @@ export function CalendarWeekGrid({
               disabled={isCurrentWeek}
               className="h-7 px-2.5 text-xs"
             >
-              Today
+              {CALENDAR_LABELS.actions.today}
             </Button>
             <button
               type="button"
-              aria-label="Next week"
+              aria-label={CALENDAR_LABELS.actions.nextWeek}
               onClick={onNextWeek}
               className="flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
             >
@@ -218,7 +219,7 @@ export function CalendarWeekGrid({
           <CalendarDatePicker
             value={focusedDate}
             onChange={onJumpToDate}
-            ariaLabel="Jump to date"
+            ariaLabel={CALENDAR_LABELS.actions.jumpToDate}
           />
         </div>
       </div>
@@ -235,7 +236,7 @@ export function CalendarWeekGrid({
 
         <div
           role="grid"
-          aria-label={`Week of ${weekLabel}`}
+          aria-label={`${CALENDAR_LABELS.view.week} ${weekLabel}`}
           aria-busy={loading || undefined}
           className={cn(
             "flex flex-1 flex-col min-h-0 transition-opacity",
@@ -352,7 +353,7 @@ export function CalendarWeekGrid({
                           key={`${event.id}@${event.occurrence_at}`}
                           type="button"
                           role="button"
-                          aria-label={`${event.title} at ${timeStr}${agentName ? ` \u2014 ${agentName}` : ""}`}
+                          aria-label={`${event.title} នៅម៉ោង ${timeStr}${agentName ? ` \u2014 ${agentName}` : ""}`}
                           onClick={(e) => {
                             e.stopPropagation();
                             onSelectEvent(event);

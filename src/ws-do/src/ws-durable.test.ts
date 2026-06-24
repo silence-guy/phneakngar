@@ -66,6 +66,7 @@ const mockGetValidSession = vi.fn<(db: unknown, token: string) => Promise<string
 const mockGetMachineTokenByToken = vi.fn()
 const mockGetLatestTokenForUser = vi.fn()
 const mockGetRuntimeIdsByDaemon = vi.fn()
+const mockGetMachineByDaemon = vi.fn()
 const mockCreateDb = vi.fn().mockReturnValue({})
 
 vi.mock("@alook/shared", () => {
@@ -85,6 +86,7 @@ vi.mock("@alook/shared", () => {
         getMachineTokenByToken: (...a: any[]) => mockGetMachineTokenByToken(...a),
         getLatestTokenForUser: (...a: any[]) => mockGetLatestTokenForUser(...a),
       },
+      machine: { getMachineByDaemon: (...a: any[]) => mockGetMachineByDaemon(...a) },
       runtime: { getRuntimeIdsByDaemon: (...a: any[]) => mockGetRuntimeIdsByDaemon(...a) },
     },
   }
@@ -113,6 +115,7 @@ function createDO() {
 describe("WebSocketDurableObject", () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockGetMachineByDaemon.mockResolvedValue({ ownerId: "u1" })
   })
 
   describe("fetch — WebSocket upgrade", () => {
@@ -137,7 +140,7 @@ describe("WebSocketDurableObject", () => {
       expect(res.status).toBe(426)
     })
 
-    it("attaches an unauthenticated ConnectionState on upgrade", async () => {
+    it("attaches an unauthenticated user ConnectionState on upgrade", async () => {
       const { durable, ctx } = createDO()
       const req = new Request("http://internal/?userId=u1", {
         headers: { Upgrade: "websocket" },
@@ -147,7 +150,20 @@ describe("WebSocketDurableObject", () => {
 
       const acceptCall = (ctx.acceptWebSocket as ReturnType<typeof vi.fn>).mock.calls[0]
       const serverWs = acceptCall[0]
-      expect(serverWs.deserializeAttachment()).toEqual({ type: "user", userId: "", authenticated: false })
+      expect(serverWs.deserializeAttachment()).toEqual({ type: "user", userId: "u1", authenticated: false })
+    })
+
+    it("attaches an unauthenticated daemon ConnectionState on daemon upgrade", async () => {
+      const { durable, ctx } = createDO()
+      const req = new Request("http://internal/?daemonId=my-daemon", {
+        headers: { Upgrade: "websocket" },
+      })
+
+      await durable.fetch(req)
+
+      const acceptCall = (ctx.acceptWebSocket as ReturnType<typeof vi.fn>).mock.calls[0]
+      const serverWs = acceptCall[0]
+      expect(serverWs.deserializeAttachment()).toEqual({ type: "daemon", daemonId: "my-daemon", userId: "", authenticated: false })
     })
   })
 
@@ -221,7 +237,7 @@ describe("WebSocketDurableObject", () => {
       mockGetValidSession.mockResolvedValue("user-42")
 
       const ws = createMockWebSocket()
-      ws.serializeAttachment({ type: "user", userId: "", authenticated: false })
+      ws.serializeAttachment({ type: "user", userId: "user-42", authenticated: false })
 
       await durable.webSocketMessage(ws as any, JSON.stringify({ type: "auth", token: "valid-token" }))
 
@@ -230,12 +246,26 @@ describe("WebSocketDurableObject", () => {
       expect(ws.deserializeAttachment()).toEqual({ type: "user", userId: "user-42", authenticated: true })
     })
 
+    it("closes when a valid session token is used on another user's route", async () => {
+      const { durable } = createDO()
+      mockGetValidSession.mockResolvedValue("attacker-user")
+
+      const ws = createMockWebSocket()
+      ws.serializeAttachment({ type: "user", userId: "victim-user", authenticated: false })
+
+      await durable.webSocketMessage(ws as any, JSON.stringify({ type: "auth", token: "valid-token" }))
+
+      expect(ws.close).toHaveBeenCalledWith(1008, "Unauthorized")
+      expect(ws.send).not.toHaveBeenCalled()
+      expect(ws.deserializeAttachment()).toEqual({ type: "user", userId: "victim-user", authenticated: false })
+    })
+
     it("closes with 1008 on invalid token", async () => {
       const { durable } = createDO()
       mockGetValidSession.mockResolvedValue(null)
 
       const ws = createMockWebSocket()
-      ws.serializeAttachment({ type: "user", userId: "", authenticated: false })
+      ws.serializeAttachment({ type: "user", userId: "user-42", authenticated: false })
 
       await durable.webSocketMessage(ws as any, JSON.stringify({ type: "auth", token: "bad" }))
 
@@ -247,7 +277,7 @@ describe("WebSocketDurableObject", () => {
       const { durable } = createDO()
 
       const ws = createMockWebSocket()
-      ws.serializeAttachment({ type: "user", userId: "", authenticated: false })
+      ws.serializeAttachment({ type: "user", userId: "user-42", authenticated: false })
 
       await durable.webSocketMessage(ws as any, JSON.stringify({ type: "auth" }))
 
@@ -260,7 +290,7 @@ describe("WebSocketDurableObject", () => {
       const { durable } = createDO()
 
       const ws = createMockWebSocket()
-      ws.serializeAttachment({ type: "user", userId: "", authenticated: false })
+      ws.serializeAttachment({ type: "user", userId: "user-42", authenticated: false })
 
       await durable.webSocketMessage(ws as any, JSON.stringify({ type: "auth", token: "" }))
 
@@ -273,7 +303,7 @@ describe("WebSocketDurableObject", () => {
       const { durable } = createDO()
 
       const ws = createMockWebSocket()
-      ws.serializeAttachment({ type: "user", userId: "", authenticated: false })
+      ws.serializeAttachment({ type: "user", userId: "user-42", authenticated: false })
 
       await durable.webSocketMessage(ws as any, JSON.stringify({ type: "some-event" }))
 
@@ -285,13 +315,13 @@ describe("WebSocketDurableObject", () => {
       mockGetValidSession.mockResolvedValue(null)
 
       const ws = createMockWebSocket()
-      ws.serializeAttachment({ type: "user", userId: "", authenticated: false })
+      ws.serializeAttachment({ type: "user", userId: "user-42", authenticated: false })
 
       await durable.webSocketMessage(ws as any, JSON.stringify({ type: "auth", token: "expired-token" }))
 
       expect(ws.close).toHaveBeenCalledWith(1008, "Unauthorized")
       expect(ws.send).not.toHaveBeenCalled()
-      expect(ws.deserializeAttachment()).toEqual({ type: "user", userId: "", authenticated: false })
+      expect(ws.deserializeAttachment()).toEqual({ type: "user", userId: "user-42", authenticated: false })
     })
 
     it("closes on invalid JSON", async () => {
@@ -324,7 +354,7 @@ describe("WebSocketDurableObject", () => {
       })
 
       const ws = createMockWebSocket()
-      ws.serializeAttachment({ type: "daemon", daemonId: "", userId: "", authenticated: false })
+      ws.serializeAttachment({ type: "daemon", daemonId: "my-daemon", userId: "", authenticated: false })
 
       await durable.webSocketMessage(
         ws as any,
@@ -343,7 +373,7 @@ describe("WebSocketDurableObject", () => {
       mockGetRuntimeIdsByDaemon.mockResolvedValue(["rt_1"])
 
       const ws = createMockWebSocket()
-      ws.serializeAttachment({ type: "daemon", daemonId: "", authenticated: false })
+      ws.serializeAttachment({ type: "daemon", daemonId: "my-daemon", userId: "", authenticated: false })
 
       await durable.webSocketMessage(
         ws as any,
@@ -351,7 +381,51 @@ describe("WebSocketDurableObject", () => {
       )
 
       expect(ws.send).toHaveBeenCalledWith(JSON.stringify({ type: "auth.ok" }))
+      expect(mockGetMachineByDaemon).toHaveBeenCalledWith({}, "my-daemon", "sp_ws1")
       expect(mockGetRuntimeIdsByDaemon).toHaveBeenCalledWith({}, "my-daemon", "sp_ws1")
+      expect(ws.deserializeAttachment()).toEqual({ type: "daemon", daemonId: "my-daemon", userId: "u1", authenticated: true })
+    })
+
+    it("rejects daemon auth when the routed daemon id does not match the auth message", async () => {
+      const { durable } = createDO()
+      mockGetMachineTokenByToken.mockResolvedValue({
+        id: "mt_1", userId: "u1", status: "active", workspaceId: "sp_ws1",
+      })
+      mockGetRuntimeIdsByDaemon.mockResolvedValue(["rt_1"])
+
+      const ws = createMockWebSocket()
+      ws.serializeAttachment({ type: "daemon", daemonId: "other-daemon", userId: "", authenticated: false })
+
+      await durable.webSocketMessage(
+        ws as any,
+        JSON.stringify({ type: "auth", machineToken: "al_active123", daemonId: "my-daemon" }),
+      )
+
+      expect(ws.close).toHaveBeenCalledWith(1008, "Unauthorized")
+      expect(mockGetMachineTokenByToken).not.toHaveBeenCalled()
+      expect(mockGetMachineByDaemon).not.toHaveBeenCalled()
+      expect(mockGetRuntimeIdsByDaemon).not.toHaveBeenCalled()
+    })
+
+    it("rejects daemon token when the machine record belongs to another user", async () => {
+      const { durable } = createDO()
+      mockGetMachineTokenByToken.mockResolvedValue({
+        id: "mt_1", userId: "u1", status: "active", workspaceId: "sp_ws1",
+      })
+      mockGetMachineByDaemon.mockResolvedValue({ ownerId: "other-user" })
+
+      const ws = createMockWebSocket()
+      ws.serializeAttachment({ type: "daemon", daemonId: "my-daemon", userId: "", authenticated: false })
+
+      await durable.webSocketMessage(
+        ws as any,
+        JSON.stringify({ type: "auth", machineToken: "al_active123", daemonId: "my-daemon" }),
+      )
+
+      expect(ws.close).toHaveBeenCalledWith(1008, "Unauthorized")
+      expect(mockGetMachineByDaemon).toHaveBeenCalledWith({}, "my-daemon", "sp_ws1")
+      expect(mockGetRuntimeIdsByDaemon).not.toHaveBeenCalled()
+      expect(ws.send).not.toHaveBeenCalled()
     })
 
     it("rejects daemon with active token but no runtimes", async () => {
@@ -362,7 +436,7 @@ describe("WebSocketDurableObject", () => {
       mockGetRuntimeIdsByDaemon.mockResolvedValue([])
 
       const ws = createMockWebSocket()
-      ws.serializeAttachment({ type: "daemon", daemonId: "", authenticated: false })
+      ws.serializeAttachment({ type: "daemon", daemonId: "my-daemon", userId: "", authenticated: false })
 
       await durable.webSocketMessage(
         ws as any,
@@ -378,7 +452,7 @@ describe("WebSocketDurableObject", () => {
       mockGetMachineTokenByToken.mockResolvedValue(null)
 
       const ws = createMockWebSocket()
-      ws.serializeAttachment({ type: "daemon", daemonId: "", authenticated: false })
+      ws.serializeAttachment({ type: "daemon", daemonId: "my-daemon", userId: "", authenticated: false })
 
       await durable.webSocketMessage(
         ws as any,
@@ -392,7 +466,7 @@ describe("WebSocketDurableObject", () => {
       const { durable } = createDO()
 
       const ws = createMockWebSocket()
-      ws.serializeAttachment({ type: "daemon", daemonId: "", authenticated: false })
+      ws.serializeAttachment({ type: "daemon", daemonId: "my-daemon", userId: "", authenticated: false })
 
       await durable.webSocketMessage(
         ws as any,

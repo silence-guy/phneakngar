@@ -1,7 +1,7 @@
 import { DurableObject } from "cloudflare:workers"
 import PostalMime from "postal-mime"
 import { nanoid } from "nanoid"
-import { createDb, queries, createLogger, parseIcs, extractAttachmentMeta } from "@alook/shared"
+import { createDb, queries, createLogger, parseIcs, extractAttachmentMeta, DEV_WEB_URL, EMAIL_NOTIFY_SECRET_HEADER } from "@alook/shared"
 import type { MeetingInfo } from "@alook/shared"
 import { decrypt } from "@alook/shared/crypto"
 import { ImapClient, ImapAuthError } from "./lib/imap-client"
@@ -284,6 +284,7 @@ export class ImapPollerDO extends DurableObject<EmailEnv> {
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
       "X-Trace-Id": traceId,
+      [EMAIL_NOTIFY_SECRET_HEADER]: this.env.EMAIL_NOTIFY_SECRET,
     }
 
     const init: RequestInit = { method: "POST", headers, body }
@@ -293,7 +294,6 @@ export class ImapPollerDO extends DurableObject<EmailEnv> {
       if (!res.ok) throw new Error(`WEB_SERVICE responded ${res.status}`)
     } catch (serviceErr) {
       try {
-        const { DEV_WEB_URL } = await import("@alook/shared")
         const fallback = await fetch(`${DEV_WEB_URL}/api/email/notify`, init)
         if (!fallback.ok) throw new Error(`fallback responded ${fallback.status}`)
       } catch {

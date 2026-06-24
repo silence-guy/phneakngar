@@ -47,6 +47,7 @@ import { AvatarRenderer, parseAvatarUrl } from "@/components/avatar";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Kbd } from "@/components/ui/kbd";
 import { AutoResizeTextarea } from "@/components/ui/auto-resize-textarea";
+import { ISSUE_LABELS, issueDispatchDescription, issueStatusLabel } from "./issue-labels";
 
 // --- Constants ---
 
@@ -58,11 +59,6 @@ const GHOST_CONTROL =
 
 
 const SELECTOR_STATUSES = ["todo", "in_progress", "review", "done"] as const;
-
-function statusLabel(status: string) {
-  if (status === "done") return "Complete";
-  return status.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-}
 
 // --- Sub-components ---
 
@@ -133,8 +129,8 @@ function MessageRow({ message }: { message: Message }) {
 
 function CommentRow({ comment, agents }: { comment: IssueComment; agents: Agent[] }) {
   const authorLabel = comment.author_type === "agent"
-    ? agents.find((a) => a.id === comment.author_id)?.name ?? "Agent"
-    : "You";
+    ? agents.find((a) => a.id === comment.author_id)?.name ?? ISSUE_LABELS.agent
+    : ISSUE_LABELS.you;
   return (
     <div className="rounded-lg border border-border/60 bg-background p-3">
       <div className="mb-1 flex items-center justify-between gap-2 text-xs text-muted-foreground">
@@ -354,11 +350,11 @@ export function IssueSheet({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ content: commentContent.trim() }),
       });
-      if (!res.ok) throw new Error("Failed to send comment");
+      if (!res.ok) throw new Error(ISSUE_LABELS.sendCommentFailed);
       setCommentContent("");
       onCommented?.();
     } catch {
-      toast.error("Failed to send comment");
+      toast.error(ISSUE_LABELS.sendCommentFailed);
     } finally {
       setCommentSubmitting(false);
     }
@@ -416,7 +412,7 @@ export function IssueSheet({
         );
 
         if (timeline.length === 0 && !isTaskActive) {
-          return <div className="text-xs text-muted-foreground">No activity yet.</div>;
+          return <div className="text-xs text-muted-foreground">{ISSUE_LABELS.noActivity}</div>;
         }
 
         return (
@@ -449,7 +445,7 @@ export function IssueSheet({
                           <div className="flex items-center gap-2 text-xs">
                             {t.agent && <AgentAvatar agent={{ avatar_url: t.agent.avatarUrl, name: t.agent.name } as Agent} size={16} />}
                             <span className={isRunning ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground"}>
-                              {t.agent?.name ?? "Agent"} {isRunning ? "is working" : "— queued"}
+                              {t.agent?.name ?? ISSUE_LABELS.agent} {isRunning ? ISSUE_LABELS.working : `- ${ISSUE_LABELS.queued}`}
                             </span>
                           </div>
                         </div>
@@ -461,7 +457,7 @@ export function IssueSheet({
                   <div className="relative">
                     <div className="absolute -left-4 top-2.5 size-2.5 rounded-full border-2 border-background bg-emerald-500 animate-pulse" />
                     <div className="rounded-md border border-emerald-500/30 bg-emerald-500/10 px-3 py-2.5">
-                      <div className="flex items-center gap-2 text-xs text-emerald-600 dark:text-emerald-400">Working</div>
+                      <div className="flex items-center gap-2 text-xs text-emerald-600 dark:text-emerald-400">{ISSUE_LABELS.working}</div>
                     </div>
                   </div>
                 );
@@ -477,7 +473,7 @@ export function IssueSheet({
     <div className="flex flex-col rounded-xl border bg-background/60 transition-colors duration-200 focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50">
       <textarea
         ref={commentRef}
-        placeholder="Leave a comment..."
+        placeholder={ISSUE_LABELS.commentPlaceholder}
         value={commentContent}
         onChange={(e) => setCommentContent(e.target.value)}
         className="w-full resize-none bg-transparent px-3.5 py-2.5 text-sm leading-relaxed outline-none placeholder:text-muted-foreground field-sizing-content min-h-15 max-h-32 thin-scrollbar overflow-y-auto"
@@ -505,7 +501,7 @@ export function IssueSheet({
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           onKeyDown={onTitleKeyDown}
-          placeholder={mode === "create" ? "New issue" : "Untitled"}
+          placeholder={mode === "create" ? ISSUE_LABELS.newIssue : ISSUE_LABELS.untitled}
           autoFocus={mode === "create"}
           rows={1}
           className="w-full rounded-none border-0 bg-transparent px-0 py-1 font-news text-2xl md:text-3xl font-medium leading-[1.2] tracking-tight shadow-none outline-none focus-visible:border-0 focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/40 placeholder:font-normal"
@@ -530,7 +526,7 @@ export function IssueSheet({
                 {selectedAgent ? (
                   <span className="truncate">{selectedAgent.name}</span>
                 ) : (
-                  <span className="text-muted-foreground/70">Unassigned</span>
+                  <span className="text-muted-foreground/70">{ISSUE_LABELS.unassigned}</span>
                 )}
               </PopoverTrigger>
               <PopoverContent align="start" className="max-h-64 w-72 overflow-y-auto thin-scrollbar p-1">
@@ -540,7 +536,7 @@ export function IssueSheet({
                     onClick={() => { setAgentId(""); setAssigneeOpen(false); }}
                     className="flex w-full items-center justify-between gap-2 rounded-md px-2 py-2 text-left text-sm transition-colors hover:bg-accent hover:text-accent-foreground"
                   >
-                    <span className="text-muted-foreground">None (unassigned)</span>
+                    <span className="text-muted-foreground">{ISSUE_LABELS.noneUnassigned}</span>
                     {!agentId ? <Check className="size-3.5 shrink-0" /> : null}
                   </button>
                 )}
@@ -566,7 +562,7 @@ export function IssueSheet({
             </Popover>
           ) : (
             <span className="text-xs truncate">
-              {detailAgent ? detailAgent.name : <span className="text-muted-foreground/70">Unassigned</span>}
+              {detailAgent ? detailAgent.name : <span className="text-muted-foreground/70">{ISSUE_LABELS.unassigned}</span>}
             </span>
           )}
         </PropertyRow>
@@ -577,7 +573,7 @@ export function IssueSheet({
             <Select
               value={issue.status}
               onValueChange={(val) => { if (val) handleStatusChange(val); }}
-              items={(isTodoDraft ? (["todo", "done"] as const) : SELECTOR_STATUSES).map((s) => ({ value: s, label: statusLabel(s) }))}
+              items={(isTodoDraft ? (["todo", "done"] as const) : SELECTOR_STATUSES).map((s) => ({ value: s, label: issueStatusLabel(s) }))}
             >
               <SelectTrigger className="h-7 w-auto border-none bg-transparent px-1.5 shadow-none text-xs text-foreground hover:bg-accent transition-colors rounded-md">
                 <SelectValue />
@@ -587,7 +583,7 @@ export function IssueSheet({
                   ? (["todo", "done"] as const)
                   : SELECTOR_STATUSES
                 ).map((s) => (
-                  <SelectItem key={s} value={s}>{statusLabel(s)}</SelectItem>
+                  <SelectItem key={s} value={s}>{issueStatusLabel(s)}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -601,7 +597,7 @@ export function IssueSheet({
               href={`/w/${slug}/agents/${issue.agent_id}?conv=${issue.conversation_id}${issue.latest_task_id ? `&task=${issue.latest_task_id}` : ""}`}
               className={cn(GHOST_CONTROL, "inline-flex items-center rounded-md")}
             >
-              Chat
+              {ISSUE_LABELS.chat}
             </Link>
           </PropertyRow>
         )}
@@ -613,7 +609,7 @@ export function IssueSheet({
               href={`/w/${slug}/traces/${detail.traceId}`}
               className={cn(GHOST_CONTROL, "inline-flex items-center rounded-md")}
             >
-              Thread
+              {ISSUE_LABELS.thread}
             </Link>
           </PropertyRow>
         )}
@@ -630,7 +626,7 @@ export function IssueSheet({
           key={issue?.id ?? "new"}
           value={description}
           onChange={setDescription}
-          placeholder="Describe the issue..."
+          placeholder={ISSUE_LABELS.describeIssue}
           minHeight={mode === "create" ? "10rem" : "4rem"}
           variant="seamless"
           contentType="markdown"
@@ -664,14 +660,14 @@ export function IssueSheet({
           className="absolute top-3 right-3 z-10 sm:hidden"
         >
           <XIcon />
-          <span className="sr-only">Close</span>
+          <span className="sr-only">{ISSUE_LABELS.close}</span>
         </SheetClose>
 
         {/* Timeline floating panel — desktop only, detail mode only, not for todo drafts */}
         {mode === "detail" && !isTodoDraft && (
           <div className="hidden lg:flex absolute right-full top-0 bottom-0 mr-2 w-90 flex-col rounded-xl border bg-background shadow-lg overflow-hidden">
             <div className="shrink-0 flex items-center border-b px-4 py-2.5">
-              <span className="text-xs font-medium text-muted-foreground">Activity</span>
+              <span className="text-xs font-medium text-muted-foreground">{ISSUE_LABELS.activity}</span>
             </div>
             <div ref={timelineRef} className="flex-1 min-h-0 overflow-y-auto thin-scrollbar px-4 py-4 space-y-3">
               {timelineContent}
@@ -686,7 +682,7 @@ export function IssueSheet({
 
         {/* Hidden accessible title */}
         <SheetTitle className="sr-only">
-          {mode === "create" ? "New Issue" : (issue?.title ?? "Issue")}
+          {mode === "create" ? ISSUE_LABELS.newIssueTitle : (issue?.title ?? ISSUE_LABELS.issueTitle)}
         </SheetTitle>
 
         <div className="flex flex-1 min-h-0 flex-col" onKeyDownCapture={onKeyDownCapture}>
@@ -701,7 +697,7 @@ export function IssueSheet({
                   mobileTab === "issue" ? "bg-accent text-foreground" : "text-muted-foreground hover:text-foreground"
                 )}
               >
-                Issue
+                {ISSUE_LABELS.issue}
               </button>
               <button
                 type="button"
@@ -711,7 +707,7 @@ export function IssueSheet({
                   mobileTab === "activity" ? "bg-accent text-foreground" : "text-muted-foreground hover:text-foreground"
                 )}
               >
-                Activity
+                {ISSUE_LABELS.activity}
               </button>
             </div>
           )}
@@ -749,7 +745,7 @@ export function IssueSheet({
                 onClick={() => onOpenChange(false)}
                 disabled={submitting}
               >
-                Cancel
+                {ISSUE_LABELS.cancel}
               </Button>
               <Button
                 size="sm"
@@ -758,7 +754,7 @@ export function IssueSheet({
               >
                 {submitting && <Loader2 className="mr-1.5 size-3.5 animate-spin" />}
                 <Kbd className="mr-1 hidden sm:inline-flex bg-background/20 text-inherit opacity-60">⇧ + ⏎</Kbd>
-                Create
+                {ISSUE_LABELS.create}
               </Button>
             </SheetFooter>
           )}
@@ -769,10 +765,10 @@ export function IssueSheet({
       <ConfirmDialog
         open={!!confirmAgent}
         onOpenChange={(open) => { if (!open) setConfirmAgent(null); }}
-        title="Run issue?"
-        description={`This issue will be assigned to ${confirmAgent?.name ?? "the agent"} and start running immediately.`}
-        confirmLabel="Run"
-        loadingLabel="Running..."
+        title={ISSUE_LABELS.runIssueTitle}
+        description={issueDispatchDescription(confirmAgent?.name)}
+        confirmLabel={ISSUE_LABELS.run}
+        loadingLabel={ISSUE_LABELS.running}
         confirmVariant="default"
         loading={dispatching}
         onConfirm={async () => {
@@ -783,7 +779,7 @@ export function IssueSheet({
             setConfirmAgent(null);
             onDispatched?.(issue.id);
           } catch (e) {
-            toast.error(e instanceof Error ? e.message : "Failed to dispatch issue");
+            toast.error(e instanceof Error ? e.message : ISSUE_LABELS.dispatchFailed);
             setConfirmAgent(null);
           } finally {
             setDispatching(false);

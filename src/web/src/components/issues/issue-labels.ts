@@ -1,0 +1,90 @@
+export const ISSUE_STATUS_LABELS: Record<string, string> = {
+  todo: "ត្រូវធ្វើ",
+  in_progress: "កំពុងដំណើរការ",
+  review: "រង់ចាំពិនិត្យ",
+  done: "រួចរាល់",
+  closed: "បានបិទ",
+  canceled: "បានបោះបង់",
+  failed: "បរាជ័យ",
+};
+
+export const ISSUE_EVENT_LABELS: Record<string, string> = {
+  created: "បានបង្កើតបញ្ហា",
+  status_changed: "បានធ្វើបច្ចុប្បន្នភាពបញ្ហា",
+  dispatch_failed: "បញ្ជូនដំណើរការបរាជ័យ",
+};
+
+export const ISSUE_LABELS = {
+  agent: "ភ្នាក់ងារ",
+  you: "អ្នក",
+  unknown: "មិនស្គាល់",
+  unassigned: "មិនទាន់ចាត់តាំង",
+  noneUnassigned: "គ្មាន (មិនទាន់ចាត់តាំង)",
+  noActivity: "មិនទាន់មានសកម្មភាពទេ។",
+  working: "កំពុងធ្វើការ",
+  queued: "កំពុងរង់ចាំ",
+  commentPlaceholder: "ទុកមតិយោបល់...",
+  sendCommentFailed: "ផ្ញើមតិយោបល់មិនបាន",
+  newIssue: "បញ្ហាថ្មី",
+  untitled: "គ្មានចំណងជើង",
+  describeIssue: "ពិពណ៌នាបញ្ហា...",
+  chat: "ជជែក",
+  thread: "ខ្សែការងារ",
+  close: "បិទ",
+  activity: "សកម្មភាព",
+  issue: "បញ្ហា",
+  newIssueTitle: "បញ្ហាថ្មី",
+  issueTitle: "បញ្ហា",
+  cancel: "បោះបង់",
+  create: "បង្កើត",
+  runIssueTitle: "ដំណើរការបញ្ហានេះ?",
+  run: "ដំណើរការ",
+  running: "កំពុងដំណើរការ...",
+  dispatchFailed: "បញ្ជូនបញ្ហាមិនបាន",
+  activeTasks: "កិច្ចការកំពុងសកម្ម",
+  collapseTasksPanel: "បង្រួមផ្ទាំងកិច្ចការ",
+  active: "កំពុងសកម្ម",
+  connectionLostRetrying: "ការតភ្ជាប់បានដាច់ - កំពុងព្យាយាមម្តងទៀត...",
+} as const;
+
+function fallbackLabel(value: string): string {
+  return value.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+export function issueStatusLabel(status: string): string {
+  return ISSUE_STATUS_LABELS[status] ?? fallbackLabel(status);
+}
+
+export function issueEventLabel(event: string): string {
+  return ISSUE_EVENT_LABELS[event] ?? event;
+}
+
+export function issueStampLabel(event: string, toStatus?: string): string | null {
+  if (event === "created") return "ថ្មី";
+  if (event === "status_changed") return issueStatusLabel(toStatus ?? "done");
+  return null;
+}
+
+export function issueAssignedMeta(assigneeName: string): string {
+  return `បានចាត់តាំងទៅ ${assigneeName}`;
+}
+
+export function issueStatusTransitionMeta(fromStatus: string, toStatus: string): string {
+  return `${issueStatusLabel(fromStatus)} → ${issueStatusLabel(toStatus)}`;
+}
+
+export function issueDispatchDescription(agentName: string | undefined): string {
+  return `បញ្ហានេះនឹងត្រូវបានចាត់តាំងទៅ ${agentName ?? "ភ្នាក់ងារ"} ហើយចាប់ផ្តើមដំណើរការភ្លាមៗ។`;
+}
+
+export function activeTaskCountLabel(count: number): string {
+  return `${count} ${ISSUE_LABELS.active}`;
+}
+
+export function activeTaskPanelTitle(count: number): string {
+  return `កិច្ចការ ${count} ${ISSUE_LABELS.active}`;
+}
+
+export function viewAllTasksLabel(count: number): string {
+  return `មើលកិច្ចការ ${count} ទាំងអស់`;
+}

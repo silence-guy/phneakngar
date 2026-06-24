@@ -32,8 +32,16 @@ describe("workspace-file-request query module exports", () => {
     expect(typeof wfrQueries.completeRequest).toBe("function");
   });
 
+  it("exports completeRequestForWorkspace", () => {
+    expect(typeof wfrQueries.completeRequestForWorkspace).toBe("function");
+  });
+
   it("exports getRequest", () => {
     expect(typeof wfrQueries.getRequest).toBe("function");
+  });
+
+  it("exports getRequestForWorkspace", () => {
+    expect(typeof wfrQueries.getRequestForWorkspace).toBe("function");
   });
 
   it("exports expireStale", () => {
@@ -62,6 +70,16 @@ describe("getRequest", () => {
   });
 });
 
+describe("getRequestForWorkspace", () => {
+  it("returns request when found through workspace scoped query", async () => {
+    const row = { id: "wfr_1", workspaceId: "w1", status: "pending", path: "/test" };
+    const mockDb = createMockDb([row]);
+    const result = await wfrQueries.getRequestForWorkspace(mockDb, "w1", "wfr_1");
+    expect(result).toEqual(row);
+    expect(mockDb.where).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe("completeRequest", () => {
   it("returns null when no row updated", async () => {
     const chain: any = {};
@@ -71,5 +89,19 @@ describe("completeRequest", () => {
     chain.returning = vi.fn(() => Promise.resolve([]));
     const result = await wfrQueries.completeRequest(chain, "wfr_missing", { ok: true });
     expect(result).toBeNull();
+  });
+});
+
+describe("completeRequestForWorkspace", () => {
+  it("returns updated scoped row", async () => {
+    const row = { id: "wfr_1", workspaceId: "w1" };
+    const chain: any = {};
+    chain.update = vi.fn(() => chain);
+    chain.set = vi.fn(() => chain);
+    chain.where = vi.fn(() => chain);
+    chain.returning = vi.fn(() => Promise.resolve([row]));
+    const result = await wfrQueries.completeRequestForWorkspace(chain, "w1", "wfr_1", { ok: true });
+    expect(result).toEqual(row);
+    expect(chain.where).toHaveBeenCalledTimes(1);
   });
 });

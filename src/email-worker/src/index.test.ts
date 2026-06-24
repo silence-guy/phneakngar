@@ -59,6 +59,8 @@ vi.mock("@alook/shared", async () => {
     buildMimeMessage: real.buildMimeMessage,
     extractAttachmentMeta: real.extractAttachmentMeta,
     filterDownloadableAttachments: real.filterDownloadableAttachments,
+    isEmailDraftAttachmentKeyForScope: real.isEmailDraftAttachmentKeyForScope,
+    EMAIL_NOTIFY_SECRET_HEADER: real.EMAIL_NOTIFY_SECRET_HEADER,
     createDb: (d1: unknown) => mockCreateDb(d1),
     createLogger: () => noopLogger,
     parseEmailHandle: (address: string) => {
@@ -122,7 +124,7 @@ function setup(overrides?: {
     }
   )
 
-  const env = { DB: {} as D1Database, EMAIL_BUCKET: bucket, WEB_SERVICE: fetcher, SEND_EMAIL: sendEmail, IMAP_POLLER: {} as DurableObjectNamespace, ENCRYPTION_KEY: "test-secret" }
+  const env = { DB: {} as D1Database, EMAIL_BUCKET: bucket, WEB_SERVICE: fetcher, SEND_EMAIL: sendEmail, IMAP_POLLER: {} as DurableObjectNamespace, ENCRYPTION_KEY: "test-secret", EMAIL_NOTIFY_SECRET: "notify-secret" }
 
   return { env, message, put, wsFetch, setReject, forward, rawText }
 }
@@ -201,6 +203,7 @@ describe("whitelisted path", () => {
     const [url, init] = wsFetch.mock.calls[0]
     expect(url).toBe("http://internal/api/email/notify")
     expect(init.method).toBe("POST")
+    expect(init.headers["X-Alook-Email-Notify-Secret"]).toBe("notify-secret")
     const body = JSON.parse(init.body)
     expect(body.agentId).toBe("agent-1")
     expect(body.workspaceId).toBe("ws-1")
@@ -370,7 +373,7 @@ describe("RFC 2047 subject decoding", () => {
     const { bucket, put } = createMockR2()
     const { fetcher, fetch: wsFetch } = createMockFetcher()
     const { sendEmail } = createMockSendEmail()
-    const env = { DB: {} as D1Database, EMAIL_BUCKET: bucket, WEB_SERVICE: fetcher, SEND_EMAIL: sendEmail, IMAP_POLLER: {} as DurableObjectNamespace, ENCRYPTION_KEY: "test-secret" }
+    const env = { DB: {} as D1Database, EMAIL_BUCKET: bucket, WEB_SERVICE: fetcher, SEND_EMAIL: sendEmail, IMAP_POLLER: {} as DurableObjectNamespace, ENCRYPTION_KEY: "test-secret", EMAIL_NOTIFY_SECRET: "notify-secret" }
 
     await handler.email(message, env)
 
@@ -450,7 +453,7 @@ describe("POST /send/otp", () => {
     const { fetcher } = createMockFetcher()
     const { sendEmail, send } = createMockSendEmail()
     return {
-      env: { DB: {} as D1Database, EMAIL_BUCKET: bucket, WEB_SERVICE: fetcher, SEND_EMAIL: sendEmail, IMAP_POLLER: {} as DurableObjectNamespace, ENCRYPTION_KEY: "test-secret" },
+      env: { DB: {} as D1Database, EMAIL_BUCKET: bucket, WEB_SERVICE: fetcher, SEND_EMAIL: sendEmail, IMAP_POLLER: {} as DurableObjectNamespace, ENCRYPTION_KEY: "test-secret", EMAIL_NOTIFY_SECRET: "notify-secret" },
       send,
     }
   }
@@ -509,7 +512,7 @@ describe("POST /send/agent", () => {
     const { fetcher } = createMockFetcher()
     const { sendEmail, send } = createMockSendEmail()
     return {
-      env: { DB: {} as D1Database, EMAIL_BUCKET: bucket, WEB_SERVICE: fetcher, SEND_EMAIL: sendEmail, IMAP_POLLER: {} as DurableObjectNamespace, ENCRYPTION_KEY: "test-secret" },
+      env: { DB: {} as D1Database, EMAIL_BUCKET: bucket, WEB_SERVICE: fetcher, SEND_EMAIL: sendEmail, IMAP_POLLER: {} as DurableObjectNamespace, ENCRYPTION_KEY: "test-secret", EMAIL_NOTIFY_SECRET: "notify-secret" },
       send,
       put,
       bucket,
@@ -578,7 +581,7 @@ describe("POST /send/agent", () => {
         subject: "With attachment",
         htmlBody: "<p>See attached</p>",
         attachmentKeys: [
-          { key: "emails/drafts/x/doc.txt", filename: "doc.txt", contentType: "text/plain" },
+          { key: "emails/drafts/ws-1/x/doc.txt", filename: "doc.txt", contentType: "text/plain" },
         ],
       }),
       env,
@@ -612,8 +615,8 @@ describe("POST /send/agent", () => {
 
     ;((env.EMAIL_BUCKET as any).get as ReturnType<typeof vi.fn>) = vi.fn((key: string) => {
       fetchOrder.push(key)
-      if (key === "emails/drafts/x/missing.txt") return Promise.resolve(null)
-      const content = key === "emails/drafts/x/a.txt" ? file1 : file2
+      if (key === "emails/drafts/ws-1/x/missing.txt") return Promise.resolve(null)
+      const content = key === "emails/drafts/ws-1/x/a.txt" ? file1 : file2
       return Promise.resolve({ arrayBuffer: () => Promise.resolve(content.buffer) })
     })
 
@@ -625,9 +628,9 @@ describe("POST /send/agent", () => {
         subject: "Multi-attach",
         htmlBody: "<p>Files</p>",
         attachmentKeys: [
-          { key: "emails/drafts/x/a.txt", filename: "a.txt", contentType: "text/plain" },
-          { key: "emails/drafts/x/missing.txt", filename: "missing.txt", contentType: "text/plain" },
-          { key: "emails/drafts/x/b.txt", filename: "b.txt", contentType: "text/plain" },
+          { key: "emails/drafts/ws-1/x/a.txt", filename: "a.txt", contentType: "text/plain" },
+          { key: "emails/drafts/ws-1/x/missing.txt", filename: "missing.txt", contentType: "text/plain" },
+          { key: "emails/drafts/ws-1/x/b.txt", filename: "b.txt", contentType: "text/plain" },
         ],
       }),
       env,
@@ -636,15 +639,41 @@ describe("POST /send/agent", () => {
     expect(res.status).toBe(200)
     // All R2 fetches were initiated (parallel)
     expect(fetchOrder).toHaveLength(3)
-    expect(fetchOrder).toContain("emails/drafts/x/a.txt")
-    expect(fetchOrder).toContain("emails/drafts/x/missing.txt")
-    expect(fetchOrder).toContain("emails/drafts/x/b.txt")
+    expect(fetchOrder).toContain("emails/drafts/ws-1/x/a.txt")
+    expect(fetchOrder).toContain("emails/drafts/ws-1/x/missing.txt")
+    expect(fetchOrder).toContain("emails/drafts/ws-1/x/b.txt")
 
     // Only non-null attachments included in the raw MIME (missing.txt skipped)
     const sendArg = send.mock.calls[0][0] as { raw: string }
     expect(sendArg.raw).toContain('filename="a.txt"')
     expect(sendArg.raw).toContain('filename="b.txt"')
     expect(sendArg.raw).not.toContain('filename="missing.txt"')
+  })
+
+  it("rejects attachment keys outside the workspace draft scope", async () => {
+    mockGetAgent.mockResolvedValue({ id: "agent-1", workspaceId: "ws-1", emailHandle: "jarvis" })
+    const { env } = agentSendEnv()
+    const bucketGet = vi.fn()
+    ;((env.EMAIL_BUCKET as any).get as ReturnType<typeof vi.fn>) = bucketGet
+
+    const res = await handler.fetch(
+      makeAgentSendRequest({
+        agentId: "agent-1",
+        workspaceId: "ws-1",
+        to: "user@example.com",
+        subject: "Bad attachment",
+        htmlBody: "<p>Nope</p>",
+        attachmentKeys: [
+          { key: "emails/drafts/ws-2/x/doc.txt", filename: "doc.txt", contentType: "text/plain" },
+        ],
+      }),
+      env,
+    )
+
+    expect(res.status).toBe(400)
+    const json = await res.json() as { error: string }
+    expect(json.error).toBe("invalid attachment key")
+    expect(bucketGet).not.toHaveBeenCalled()
   })
 
   it("returns 404 when agent not found in workspace", async () => {
@@ -782,7 +811,7 @@ describe("POST /send/agent with custom SMTP", () => {
     const { fetcher } = createMockFetcher()
     const { sendEmail, send } = createMockSendEmail()
     return {
-      env: { DB: {} as D1Database, EMAIL_BUCKET: bucket, WEB_SERVICE: fetcher, SEND_EMAIL: sendEmail, IMAP_POLLER: {} as DurableObjectNamespace, ENCRYPTION_KEY: "test-secret" },
+      env: { DB: {} as D1Database, EMAIL_BUCKET: bucket, WEB_SERVICE: fetcher, SEND_EMAIL: sendEmail, IMAP_POLLER: {} as DurableObjectNamespace, ENCRYPTION_KEY: "test-secret", EMAIL_NOTIFY_SECRET: "notify-secret" },
       send,
       put,
     }
@@ -886,7 +915,7 @@ describe("POST /send/agent with custom SMTP", () => {
         htmlBody: "<p>See file</p>",
         customAccountId: "aea_1",
         attachmentKeys: [
-          { key: "emails/drafts/x/report.pdf", filename: "report.pdf", contentType: "application/pdf" },
+          { key: "emails/drafts/ws-1/x/report.pdf", filename: "report.pdf", contentType: "application/pdf" },
         ],
       }),
       env,
@@ -936,7 +965,7 @@ describe("fetch() routing", () => {
     const { bucket } = createMockR2()
     const { fetcher } = createMockFetcher()
     const { sendEmail } = createMockSendEmail()
-    return { DB: {} as D1Database, EMAIL_BUCKET: bucket, WEB_SERVICE: fetcher, SEND_EMAIL: sendEmail, IMAP_POLLER: {} as DurableObjectNamespace, ENCRYPTION_KEY: "test-secret" }
+    return { DB: {} as D1Database, EMAIL_BUCKET: bucket, WEB_SERVICE: fetcher, SEND_EMAIL: sendEmail, IMAP_POLLER: {} as DurableObjectNamespace, ENCRYPTION_KEY: "test-secret", EMAIL_NOTIFY_SECRET: "notify-secret" }
   }
 
   it("returns 404 for unknown paths", async () => {
@@ -969,7 +998,7 @@ describe("IMAP management routes", () => {
     const mockGet = vi.fn().mockReturnValue(mockStub)
     const imapPoller = { idFromName: mockIdFromName, get: mockGet } as unknown as DurableObjectNamespace
     return {
-      env: { DB: {} as D1Database, EMAIL_BUCKET: bucket, WEB_SERVICE: fetcher, SEND_EMAIL: sendEmail, IMAP_POLLER: imapPoller, ENCRYPTION_KEY: "test-secret" },
+      env: { DB: {} as D1Database, EMAIL_BUCKET: bucket, WEB_SERVICE: fetcher, SEND_EMAIL: sendEmail, IMAP_POLLER: imapPoller, ENCRYPTION_KEY: "test-secret", EMAIL_NOTIFY_SECRET: "notify-secret" },
       doFetch,
       mockIdFromName,
       mockGet,

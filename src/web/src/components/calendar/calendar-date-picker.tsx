@@ -9,6 +9,7 @@ import {
 import { cn } from "@/lib/utils";
 import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
 import { buildMonthCells, sameDay } from "./calendar-month-grid";
+import { CALENDAR_LABELS, CALENDAR_WEEKDAY_NARROW } from "./calendar-labels";
 
 export interface CalendarDatePickerProps {
   value: Date | null;
@@ -28,7 +29,7 @@ export interface CalendarDatePickerProps {
 }
 
 function formatDisplay(d: Date): string {
-  return d.toLocaleDateString(undefined, {
+  return d.toLocaleDateString("km-KH", {
     month: "short",
     day: "numeric",
     year: "numeric",
@@ -36,7 +37,7 @@ function formatDisplay(d: Date): string {
 }
 
 function monthYearLabel(y: number, m: number): string {
-  return new Date(y, m, 1).toLocaleDateString(undefined, {
+  return new Date(y, m, 1).toLocaleDateString("km-KH", {
     month: "long",
     year: "numeric",
   });
@@ -45,10 +46,10 @@ function monthYearLabel(y: number, m: number): string {
 export function CalendarDatePicker({
   value,
   onChange,
-  placeholder = "Jump to date",
+  placeholder = CALENDAR_LABELS.actions.jumpToDate,
   min,
   className,
-  ariaLabel = "Pick a date",
+  ariaLabel = CALENDAR_LABELS.actions.pickDate,
   hideIcon = false,
   onClear,
 }: CalendarDatePickerProps) {
@@ -97,7 +98,7 @@ export function CalendarDatePicker({
         <div className="flex items-center justify-between pb-2">
           <button
             type="button"
-            aria-label="Previous month"
+            aria-label={CALENDAR_LABELS.actions.previousMonth}
             onClick={() => {
               setViewMonth((m) => (m === 0 ? 11 : m - 1));
               if (viewMonth === 0) setViewYear((y) => y - 1);
@@ -111,7 +112,7 @@ export function CalendarDatePicker({
           </span>
           <button
             type="button"
-            aria-label="Next month"
+            aria-label={CALENDAR_LABELS.actions.nextMonth}
             onClick={() => {
               setViewMonth((m) => (m === 11 ? 0 : m + 1));
               if (viewMonth === 11) setViewYear((y) => y + 1);
@@ -123,7 +124,7 @@ export function CalendarDatePicker({
         </div>
 
         <div className="grid grid-cols-7 pb-1 text-[10px] text-muted-foreground">
-          {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
+          {CALENDAR_WEEKDAY_NARROW.map((d, i) => (
             <div
               key={i}
               className="flex h-6 items-center justify-center font-medium"
@@ -173,7 +174,7 @@ export function CalendarDatePicker({
               }}
               className="text-[11px] text-muted-foreground hover:text-foreground transition-colors"
             >
-              Clear
+              {CALENDAR_LABELS.actions.clear}
             </button>
           ) : (
             <span aria-hidden />
@@ -183,7 +184,7 @@ export function CalendarDatePicker({
             onClick={() => handleSelect(new Date())}
             className="text-[11px] text-muted-foreground hover:text-foreground transition-colors"
           >
-            Today
+            {CALENDAR_LABELS.actions.today}
           </button>
         </div>
       </PopoverContent>

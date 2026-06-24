@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { nanoid } from "nanoid";
+import { buildEmailDraftAttachmentKey, sanitizeEmailAttachmentFilename } from "@alook/shared";
 import { withAuth } from "@/lib/middleware/auth";
 import { withWorkspaceMember } from "@/lib/middleware/workspace";
 import { writeJSON, writeError } from "@/lib/middleware/helpers";
@@ -29,7 +30,8 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
   }
 
   const draftId = nanoid();
-  const key = `emails/drafts/${draftId}/${file.name}`;
+  const filename = sanitizeEmailAttachmentFilename(file.name);
+  const key = buildEmailDraftAttachmentKey(ws.workspaceId, ctx.userId, draftId, filename);
 
   await bucket.put(key, await file.arrayBuffer(), {
     httpMetadata: { contentType: file.type || "application/octet-stream" },
@@ -37,7 +39,7 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
 
   return writeJSON({
     key,
-    filename: file.name,
+    filename,
     size: file.size,
     contentType: file.type || "application/octet-stream",
   });

@@ -1,3 +1,4 @@
+import { buildAgentPromptLanguagePolicy, type AgentPromptLanguagePolicy } from "@alook/shared";
 import type { Task, Attachment } from "./types.js";
 import { localISOString } from "./execenv/timeline.js";
 
@@ -31,6 +32,19 @@ const ISSUE_NOTICE =
   " 4. NEVER set 'review' unless there is concrete completed work for the owner to review. Sending a plan to a colleague is NOT completed work." +
   " NEVER exit without doing at least one of: updating the status, or leaving a comment explaining what you did and what you're waiting for.";
 
+function languagePolicyFor(task: Task): AgentPromptLanguagePolicy {
+  return task.languagePolicy ?? buildAgentPromptLanguagePolicy({ taskLocaleOverride: task.localeOverride });
+}
+
+function mergedLanguagePolicyFor(tasks: Task[]): AgentPromptLanguagePolicy {
+  const policies = tasks.map(languagePolicyFor);
+  const [first] = policies;
+  if (first && policies.every((policy) => JSON.stringify(policy) === JSON.stringify(first))) {
+    return first;
+  }
+  return buildAgentPromptLanguagePolicy({ taskLocaleOverride: "auto" });
+}
+
 function buildEmailDmNotice(name: string, email: string): string {
   return (
     `This task was triggered by an incoming email on a conversation with ${name} (${email}).` +
@@ -49,6 +63,7 @@ export function buildTaskObject(task: Task, attachments?: Attachment[]): Record<
     type: task.type,
     received_at: receivedAt,
     instruction: task.prompt,
+    language_policy: languagePolicyFor(task),
   };
   if (task.type === "user_dm_message") {
     obj.notice = DM_RESPONSE_NOTICE;
@@ -136,6 +151,7 @@ export function buildMergedPrompt(tasks: Task[], attachmentsMap: Map<string, Att
   return JSON.stringify({
     type: "merge_tasks",
     notice: "These messages arrived simultaneously. Process each one completely.",
+    language_policy: mergedLanguagePolicyFor(tasks),
     tasks: subTasks,
   });
 }

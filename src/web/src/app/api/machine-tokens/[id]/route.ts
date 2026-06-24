@@ -19,7 +19,7 @@ export const DELETE = withAuth(async (req, ctx) => {
   const tokens = await queries.machineToken.listMachineTokens(db, ctx.userId, ws.workspaceId);
   const target = tokens.find((t) => t.id === id);
 
-  await queries.machineToken.deleteMachineToken(db, id, ctx.userId);
+  await queries.machineToken.deleteMachineToken(db, id, ctx.userId, ws.workspaceId);
 
   if (target) {
     await invalidate(cacheKeys.machineToken(target.token));

@@ -1,3 +1,5 @@
+import { agentFormLabel } from "@/lib/locale";
+
 export interface AgentCreateRequiredFields {
   name: string;
   runtimeId: string;
@@ -8,18 +10,21 @@ export interface AgentCreateFieldErrors {
   runtimeId?: string;
 }
 
-export function validateAgentCreateRequiredFields({
-  name,
-  runtimeId,
-}: AgentCreateRequiredFields): AgentCreateFieldErrors {
+export function validateAgentCreateRequiredFields(
+  {
+    name,
+    runtimeId,
+  }: AgentCreateRequiredFields,
+  locale?: string | null,
+): AgentCreateFieldErrors {
   const errors: AgentCreateFieldErrors = {};
 
   if (!name.trim()) {
-    errors.name = "Name is required";
+    errors.name = agentFormLabel("nameRequired", locale);
   }
 
   if (!runtimeId) {
-    errors.runtimeId = "Select an online runtime";
+    errors.runtimeId = agentFormLabel("runtimeRequired", locale);
   }
 
   return errors;

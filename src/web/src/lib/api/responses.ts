@@ -37,6 +37,7 @@ export function workspaceToResponse(w: WorkspaceRow) {
     name: w.name,
     slug: w.slug,
     onboarded: !!w.onboarded,
+    default_locale: w.defaultLocale ?? "km",
     created_at: formatTimestamp(w.createdAt),
     updated_at: formatTimestamp(w.updatedAt),
   };
@@ -60,6 +61,8 @@ export function agentToResponse(a: AgentRow) {
     avatar_url: a.avatarUrl ?? null,
     visibility: a.visibility ?? "private",
     owner_id: a.ownerId ?? null,
+    preferred_locale: a.preferredLocale ?? null,
+    language_policy: a.languagePolicy ?? null,
     created_at: formatTimestamp(a.createdAt),
     updated_at: formatTimestamp(a.updatedAt),
   };
@@ -106,6 +109,9 @@ export function taskToResponse(t: {
   createdAt: Date | string;
   traceId?: string | null;
   parentTaskId?: string | null;
+  localeOverride?: string | null;
+  visibleOutcomeStatus?: string | null;
+  retryOfTaskId?: string | null;
 }) {
   return TaskApiBaseSchema.parse({
     id: t.id,
@@ -127,6 +133,9 @@ export function taskToResponse(t: {
     created_at: formatTimestamp(t.createdAt),
     trace_id: t.traceId ?? null,
     parent_task_id: t.parentTaskId ?? null,
+    locale_override: t.localeOverride ?? null,
+    visible_outcome_status: t.visibleOutcomeStatus ?? null,
+    retry_of_task_id: t.retryOfTaskId ?? null,
   });
 }
 
@@ -325,6 +334,7 @@ export function memberToResponse(m: {
   userName: string;
   userEmail: string;
   userImage: string | null;
+  preferredLocale?: string | null;
 }) {
   return {
     id: m.id,
@@ -333,6 +343,7 @@ export function memberToResponse(m: {
     name: m.userName,
     email: m.userEmail,
     image: m.userImage,
+    preferred_locale: m.preferredLocale ?? null,
     created_at: formatTimestamp(m.createdAt),
   };
 }

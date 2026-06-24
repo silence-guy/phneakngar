@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { queries, semverGte } from "@alook/shared"
 import { getDb, withD1Retry } from "@/lib/db"
 import { withAuth } from "@/lib/middleware/auth";
+import { withDaemonMachine } from "@/lib/middleware/daemon";
 import { writeJSON, parseBody } from "@/lib/middleware/helpers";
 import { runtimeToResponse } from "@/lib/api/responses";
 import { RegisterDaemonRequestSchema } from "@alook/shared";
@@ -31,6 +32,9 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
   if (ctx.workspaceId && ctx.workspaceId !== workspaceId) {
     return writeJSON({ error: "workspace_id does not match token" }, 403);
   }
+
+  const daemonAuth = await withDaemonMachine(db, ctx, daemonId);
+  if (daemonAuth instanceof Response) return daemonAuth;
 
   const membership = await withD1Retry(() => queries.member.getMemberByUserAndWorkspace(
     db,

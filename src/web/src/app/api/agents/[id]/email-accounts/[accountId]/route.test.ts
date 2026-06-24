@@ -51,7 +51,7 @@ import { PATCH, DELETE } from "./route";
 
 const ROW = {
   id: "acc1", agentId: "a1", workspaceId: "w1", emailAddress: "x@t.com", displayName: "X",
-  imapHost: "imap", imapPort: 993, imapTls: 1, smtpHost: "smtp", smtpPort: 465, smtpTls: 1,
+  imapHost: "imap.example.com", imapPort: 993, imapTls: 1, smtpHost: "smtp.example.com", smtpPort: 465, smtpTls: 1,
   pollIntervalSeconds: 60, lastSyncedAt: null, status: "active", errorMessage: null,
   createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
 };
@@ -96,6 +96,14 @@ describe("PATCH /api/agents/[id]/email-accounts/[accountId]", () => {
   it("400 when params missing", async () => {
     const res = await patch({ displayName: "x" }, { id: "a1" } as any);
     expect(res.status).toBe(400);
+  });
+
+  it("400 on unsafe mail host update", async () => {
+    mockGetScoped.mockResolvedValue(ROW);
+    const res = await patch({ smtpHost: "localhost" });
+    expect(res.status).toBe(400);
+    expect(mockUpdate).not.toHaveBeenCalled();
+    expect(mockEmailWorkerFetch).not.toHaveBeenCalled();
   });
 
   it("404 when account not scoped to agent/workspace (IDOR guard)", async () => {

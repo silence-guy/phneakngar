@@ -58,11 +58,51 @@ export async function completeRequest(
   return rows[0] ?? null;
 }
 
+export async function completeRequestForWorkspace(
+  db: Database,
+  workspaceId: string,
+  id: string,
+  result: unknown,
+) {
+  const rows = await db
+    .update(workspaceFileRequest)
+    .set({
+      status: "completed",
+      result: JSON.stringify(result),
+      updatedAt: new Date().toISOString(),
+    })
+    .where(
+      and(
+        eq(workspaceFileRequest.workspaceId, workspaceId),
+        eq(workspaceFileRequest.id, id),
+      ),
+    )
+    .returning();
+  return rows[0] ?? null;
+}
+
 export async function getRequest(db: Database, id: string) {
   const rows = await db
     .select()
     .from(workspaceFileRequest)
     .where(eq(workspaceFileRequest.id, id));
+  return rows[0] ?? null;
+}
+
+export async function getRequestForWorkspace(
+  db: Database,
+  workspaceId: string,
+  id: string,
+) {
+  const rows = await db
+    .select()
+    .from(workspaceFileRequest)
+    .where(
+      and(
+        eq(workspaceFileRequest.workspaceId, workspaceId),
+        eq(workspaceFileRequest.id, id),
+      ),
+    );
   return rows[0] ?? null;
 }
 

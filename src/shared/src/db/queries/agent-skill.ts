@@ -61,7 +61,11 @@ export async function syncAgentSkills(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const statements: any[] = [
     db.delete(agentSkill).where(
-      and(eq(agentSkill.agentId, agentId), eq(agentSkill.runtime, runtime))
+      and(
+        eq(agentSkill.workspaceId, workspaceId),
+        eq(agentSkill.agentId, agentId),
+        eq(agentSkill.runtime, runtime),
+      )
     ),
   ];
   for (let i = 0; i < rows.length; i += BATCH_SIZE) {

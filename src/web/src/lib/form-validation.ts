@@ -1,3 +1,5 @@
+import { agentFormLabel } from "@/lib/locale";
+
 export interface WorkspaceFormValidationInput {
   name: string;
   slug: string;
@@ -47,35 +49,38 @@ export interface CustomEmailErrors {
   smtpPassword?: string;
 }
 
-export function validateCustomEmailFields({
-  emailAddress,
-  imapHost,
-  imapUsername,
-  imapPassword,
-  smtpHost,
-  smtpUsername,
-  smtpPassword,
-}: CustomEmailValidationInput): CustomEmailErrors {
+export function validateCustomEmailFields(
+  {
+    emailAddress,
+    imapHost,
+    imapUsername,
+    imapPassword,
+    smtpHost,
+    smtpUsername,
+    smtpPassword,
+  }: CustomEmailValidationInput,
+  locale?: string | null,
+): CustomEmailErrors {
   const errors: CustomEmailErrors = {};
 
   if (!emailAddress.trim()) {
-    errors.emailAddress = "Email address is required";
+    errors.emailAddress = agentFormLabel("emailAddressRequired", locale);
   }
 
   if (!imapHost.trim()) {
-    errors.imapHost = "IMAP host is required";
+    errors.imapHost = agentFormLabel("imapHostRequired", locale);
   }
 
   if (!imapUsername.trim() || !imapPassword.trim()) {
-    errors.imapPassword = "IMAP credentials are required";
+    errors.imapPassword = agentFormLabel("imapCredentialsRequired", locale);
   }
 
   if (!smtpHost.trim()) {
-    errors.smtpHost = "SMTP host is required";
+    errors.smtpHost = agentFormLabel("smtpHostRequired", locale);
   }
 
   if (!smtpUsername.trim() || !smtpPassword.trim()) {
-    errors.smtpPassword = "SMTP credentials are required";
+    errors.smtpPassword = agentFormLabel("smtpCredentialsRequired", locale);
   }
 
   return errors;

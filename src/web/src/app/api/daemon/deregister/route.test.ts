@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 
 const mockSetMachineLastSeenNull = vi.fn();
+const mockGetMachineByDaemon = vi.fn();
 const mockBroadcastToUser = vi.fn();
 
 function sharedMocks() {
@@ -13,6 +14,7 @@ function sharedMocks() {
       createDb: vi.fn(() => ({})),
       queries: {
         machine: {
+          getMachineByDaemon: (...a: any[]) => mockGetMachineByDaemon(...a),
           setMachineLastSeenNull: (...a: any[]) =>
             mockSetMachineLastSeenNull(...a),
         },
@@ -35,7 +37,10 @@ function makeReq(body: unknown) {
 }
 
 describe("POST /api/daemon/deregister", () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockGetMachineByDaemon.mockResolvedValue(null);
+  });
 
   async function loadRoute(authCtx: Record<string, unknown>) {
     vi.resetModules();
@@ -69,7 +74,7 @@ describe("POST /api/daemon/deregister", () => {
     return POST;
   }
 
-  const daemonAuth = { env: {}, userId: "u1", email: "u@t.com", workspaceId: "w1" };
+  const daemonAuth = { env: {}, userId: "u1", email: "u@t.com", authType: "machine" as const, workspaceId: "w1" };
   const jwtAuth = { env: {}, userId: "u1", email: "u@t.com" };
 
   it("sets machine last_seen_at to null", async () => {

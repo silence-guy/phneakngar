@@ -26,6 +26,7 @@ import {
   hasAgentCreateFieldErrors,
   validateAgentCreateRequiredFields,
 } from "@/components/agent-create-form-validation";
+import { agentFormLabel } from "@/lib/locale";
 
 interface AgentCreateFormProps {
   runtimes: Runtime[];
@@ -89,8 +90,8 @@ async function runTour() {
       {
         element: "#agent-name",
         popover: {
-          title: "Name your agent",
-          description: "Give your agent a name — this is how you'll identify it.",
+          title: agentFormLabel("nameTourTitle"),
+          description: agentFormLabel("nameTourDescription"),
           side: "bottom" as const,
           align: "start" as const,
         },
@@ -99,8 +100,8 @@ async function runTour() {
         element: "#agent-runtime-select",
         disableActiveInteraction: false,
         popover: {
-          title: "Choose a runtime",
-          description: "Select which machine and provider will run this agent.",
+          title: agentFormLabel("runtimeTourTitle"),
+          description: agentFormLabel("runtimeTourDescription"),
           side: "bottom" as const,
           align: "start" as const,
         },
@@ -253,14 +254,14 @@ export function AgentCreateForm({
 
         <div className="flex items-center gap-2 pt-2">
           <Button type="button" variant="ghost" size="sm" onClick={onCancel}>
-            Cancel
+            {agentFormLabel("cancel")}
           </Button>
           <Button
             type="submit"
             size="sm"
             disabled={saving || !!handleError}
           >
-            {saving ? "Creating..." : "Create"}
+            {saving ? agentFormLabel("creating") : agentFormLabel("create")}
           </Button>
         </div>
       </form>

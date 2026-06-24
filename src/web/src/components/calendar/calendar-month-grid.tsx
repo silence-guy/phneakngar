@@ -7,6 +7,11 @@ import { Button } from "@/components/ui/button";
 import { CalendarDayPopover } from "./calendar-day-popover";
 import { CalendarDatePicker } from "./calendar-date-picker";
 import { agentColor, agentDot, agentInk } from "./calendar-colors";
+import {
+  CALENDAR_LABELS,
+  CALENDAR_WEEKDAY_LABELS,
+  recurringTitlePrefix,
+} from "./calendar-labels";
 
 export function buildMonthCells(year: number, month: number): { date: Date; inMonth: boolean }[] {
   const first = new Date(year, month, 1);
@@ -118,7 +123,7 @@ export function CalendarMonthGrid({
   headerExtras,
 }: CalendarMonthGridProps) {
   const cells = buildMonthCells(year, month);
-  const monthLabel = new Date(year, month, 1).toLocaleDateString(undefined, {
+  const monthLabel = new Date(year, month, 1).toLocaleDateString("km-KH", {
     month: "long",
     year: "numeric",
   });
@@ -147,7 +152,7 @@ export function CalendarMonthGrid({
           <div className="flex items-center gap-1">
             <button
               type="button"
-              aria-label="Previous month"
+              aria-label={CALENDAR_LABELS.actions.previousMonth}
               onClick={onPrev}
               className="flex size-9 sm:size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
             >
@@ -160,11 +165,11 @@ export function CalendarMonthGrid({
               disabled={todayDisabled}
               className="h-7 px-2.5 text-xs"
             >
-              Today
+              {CALENDAR_LABELS.actions.today}
             </Button>
             <button
               type="button"
-              aria-label="Next month"
+              aria-label={CALENDAR_LABELS.actions.nextMonth}
               onClick={onNext}
               className="flex size-9 sm:size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
             >
@@ -174,15 +179,15 @@ export function CalendarMonthGrid({
           <CalendarDatePicker
             value={focusedDate}
             onChange={onJumpToDate}
-            ariaLabel="Jump to date"
+            ariaLabel={CALENDAR_LABELS.actions.jumpToDate}
           />
         </div>
       </div>
 
       <div className="grid grid-cols-7 text-[11px] text-muted-foreground">
-        {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
+        {CALENDAR_WEEKDAY_LABELS.map((d) => (
           <div key={d} className="px-1 sm:px-2 py-1 font-medium">
-            <span className="sm:hidden">{d[0]}</span>
+            <span className="sm:hidden">{d.slice(0, 1)}</span>
             <span className="hidden sm:inline">{d}</span>
           </div>
         ))}
@@ -199,7 +204,7 @@ export function CalendarMonthGrid({
         )}
         <div
           role="grid"
-          aria-label={`Calendar ${monthLabel}`}
+          aria-label={`${CALENDAR_LABELS.view.group} ${monthLabel}`}
           aria-busy={loading || undefined}
           className={cn(
             "grid grid-cols-7 gap-px rounded-lg border border-border/50 bg-border/40 overflow-hidden transition-opacity",
@@ -269,7 +274,7 @@ export function CalendarMonthGrid({
                           }
                         }}
                         className="flex items-center gap-1.5 rounded-sm px-1 py-0.5 text-[9px] sm:text-[10px] font-medium text-foreground/85 hover:bg-accent/60 transition-colors cursor-pointer"
-                        title={`${isRecurring ? "Recurring · " : ""}${ev.title}${
+                        title={`${recurringTitlePrefix(isRecurring)}${ev.title}${
                           agentNameById.get(ev.agent_id)
                             ? ` — ${agentNameById.get(ev.agent_id)}`
                             : ""

@@ -1,9 +1,9 @@
 import { readFileSync, writeFileSync, unlinkSync } from "fs";
-import { runNpmUpdate } from "../lib/update.js";
+import { isValidCliVersion, runNpmUpdate } from "../lib/update.js";
 import { createLogger } from "../lib/logger.js";
+import { lastUpdateMarkerPath } from "./config.js";
 
 const log = createLogger({ module: "updater" });
-import { lastUpdateMarkerPath } from "./config.js";
 
 let updating = false;
 let retryCount = 0;
@@ -52,6 +52,11 @@ export async function handleCliUpdate(
 
   if (process.env.ALOOK_CMD_PREFIX) {
     log.info(`Skipping auto-update in app mode — user should run: npx @alook/app@latest update`);
+    return;
+  }
+
+  if (!isValidCliVersion(version)) {
+    log.error(`Skipping CLI update with invalid target version: ${version}`);
     return;
   }
 

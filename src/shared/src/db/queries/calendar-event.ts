@@ -70,7 +70,10 @@ export async function getCalendarEvent(
     const rows = await db
       .select({ calendarEvent })
       .from(calendarEvent)
-      .innerJoin(agent, eq(calendarEvent.agentId, agent.id))
+      .innerJoin(
+        agent,
+        and(eq(calendarEvent.agentId, agent.id), eq(agent.workspaceId, workspaceId))
+      )
       .where(and(...conditions));
     return rows[0]?.calendarEvent ?? null;
   }
@@ -132,7 +135,10 @@ export async function listCalendarEvents(
     const rows = await db
       .select({ calendarEvent })
       .from(calendarEvent)
-      .innerJoin(agent, eq(calendarEvent.agentId, agent.id))
+      .innerJoin(
+        agent,
+        and(eq(calendarEvent.agentId, agent.id), eq(agent.workspaceId, workspaceId))
+      )
       .where(and(...conditions))
       .orderBy(asc(calendarEvent.scheduledAt));
     return rows.map(r => r.calendarEvent);

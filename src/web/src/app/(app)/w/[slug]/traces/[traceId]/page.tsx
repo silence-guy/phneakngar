@@ -64,6 +64,17 @@ const STATUS_LABELS: Record<string, string> = {
   superseded: "Cancelled",
 };
 
+const OUTCOME_LABELS: Record<string, string> = {
+  visible_output: "Visible output",
+  completed_without_visible_output: "No visible output",
+  not_required: "Output not required",
+};
+
+function outcomeLabel(status: TraceTask["visible_outcome_status"]) {
+  if (!status || status === "pending" || status === "visible_output") return null;
+  return OUTCOME_LABELS[status] ?? status;
+}
+
 function AgentAvatar({ name, avatarUrl, size = 14 }: { name?: string; avatarUrl?: string | null; size?: number }) {
   const config = parseAvatarUrl(avatarUrl);
   if (config) return <AvatarRenderer config={config} size={size} className="rounded-full shrink-0" />;
@@ -121,6 +132,7 @@ function flattenTree(nodes: TreeNode[]): TreeNode[] {
 
 function TaskNode({ node, slug }: { node: TreeNode; slug: string }) {
   const duration = formatDuration(node.created_at, node.completed_at);
+  const visibleOutcomeLabel = outcomeLabel(node.visible_outcome_status);
 
   return (
     <Link
@@ -157,6 +169,14 @@ function TaskNode({ node, slug }: { node: TreeNode; slug: string }) {
                 <span className="text-xs text-muted-foreground">{duration}</span>
               </>
             )}
+            {visibleOutcomeLabel && (
+              <>
+                <span className="text-muted-foreground/40">&middot;</span>
+                <span className="rounded-sm border border-border/60 px-1.5 py-0.5 text-[10px] leading-none text-muted-foreground">
+                  {visibleOutcomeLabel}
+                </span>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -189,6 +209,7 @@ export default function TraceDetailPage() {
 
   const tree = buildTree(tasks);
   const flat = flattenTree(tree);
+  const silentTaskCount = tasks.filter((task) => task.visible_outcome_status === "completed_without_visible_output").length;
 
   return (
     <div className="flex flex-col h-full">
@@ -200,6 +221,11 @@ export default function TraceDetailPage() {
           <ArrowLeft className="size-3.5" />
         </Link>
         <span className="text-xs text-muted-foreground">#{channel}</span>
+        {silentTaskCount > 0 && (
+          <span className="rounded-sm border border-border/60 px-1.5 py-0.5 text-[10px] leading-none text-muted-foreground">
+            {silentTaskCount === 1 ? "1 no-output task" : `${silentTaskCount} no-output tasks`}
+          </span>
+        )}
       </div>
 
       <div className="flex-1 overflow-y-auto thin-scrollbar">

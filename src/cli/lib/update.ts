@@ -3,19 +3,32 @@ import { getCurrentVersion } from "./version.js";
 
 export { getCurrentVersion };
 
+const EXACT_SEMVER_RE = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9A-Za-z]+(?:\.[0-9A-Za-z]+)*)?(?:\+[0-9A-Za-z]+(?:\.[0-9A-Za-z]+)*)?$/;
+
+export function isValidCliVersion(version: string): boolean {
+  return EXACT_SEMVER_RE.test(version);
+}
+
 export function fetchLatestVersion(): Promise<string | null> {
   return fetch("https://registry.npmjs.org/@alook/cli/latest")
     .then((res) => {
       if (!res.ok) return null;
       return res.json() as Promise<{ version?: string }>;
     })
-    .then((data) => data?.version ?? null)
+    .then((data) => {
+      const version = data?.version ?? null;
+      return version && isValidCliVersion(version) ? version : null;
+    })
     .catch(() => null);
 }
 
 export function runNpmUpdate(
   targetVersion: string,
 ): Promise<{ success: boolean; output: string }> {
+  if (!isValidCliVersion(targetVersion)) {
+    return Promise.resolve({ success: false, output: "invalid target version" });
+  }
+
   return new Promise((resolve) => {
     const chunks: Buffer[] = [];
     const child = spawn("npm", ["install", "-g", `@alook/cli@${targetVersion}`], {

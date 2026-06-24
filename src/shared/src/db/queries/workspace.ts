@@ -9,6 +9,7 @@ export async function getWorkspace(db: Database, id: string, userId: string) {
       name: workspace.name,
       slug: workspace.slug,
       onboarded: workspace.onboarded,
+      defaultLocale: workspace.defaultLocale,
       createdAt: workspace.createdAt,
       updatedAt: workspace.updatedAt,
     })
@@ -30,6 +31,7 @@ export async function listWorkspaces(db: Database, userId: string) {
       name: workspace.name,
       slug: workspace.slug,
       onboarded: workspace.onboarded,
+      defaultLocale: workspace.defaultLocale,
       createdAt: workspace.createdAt,
       updatedAt: workspace.updatedAt,
     })
@@ -50,7 +52,7 @@ export async function createWorkspace(
   return rows[0]!;
 }
 
-export async function updateWorkspace(db: Database, id: string, data: { name?: string; slug?: string }) {
+export async function updateWorkspace(db: Database, id: string, data: { name?: string; slug?: string; defaultLocale?: string }) {
   const rows = await db
     .update(workspace)
     .set({ ...data, updatedAt: new Date().toISOString() })

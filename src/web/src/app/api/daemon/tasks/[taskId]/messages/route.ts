@@ -3,6 +3,7 @@ import { queries } from "@alook/shared"
 import { getDb, withD1Retry } from "@/lib/db";
 import type { TaskMessageResponse } from "@alook/shared"
 import { withAuth } from "@/lib/middleware/auth";
+import { withDaemonTaskAccess } from "@/lib/middleware/daemon";
 import { writeJSON, writeError, parseBody } from "@/lib/middleware/helpers";
 import { taskMessageToResponse } from "@/lib/api/responses";
 import { ReportMessagesRequestSchema } from "@alook/shared";
@@ -21,6 +22,9 @@ export const GET = withAuth(async (_req, ctx) => {
     return writeError("task_id is required", 400);
   }
 
+  const taskAccess = await withDaemonTaskAccess(db, ctx, taskId);
+  if (taskAccess instanceof Response) return taskAccess;
+
   const messages = await withD1Retry(() => queries.taskMessage.listTaskMessages(db, taskId, ctx.workspaceId));
   return writeJSON(messages.map(taskMessageToResponse));
 });
@@ -37,13 +41,12 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
     return writeError("task_id is required", 400);
   }
 
-  const task = await withD1Retry(() => queries.task.getTask(db, taskId, ctx.workspaceId));
-  if (!task) {
-    return writeError("task not found", 404);
-  }
-
   const [body, err] = await parseBody(req, ReportMessagesRequestSchema);
   if (err) return err;
+
+  const taskAccess = await withDaemonTaskAccess(db, ctx, taskId);
+  if (taskAccess instanceof Response) return taskAccess;
+  const task = taskAccess.task;
 
   // What we persist (INTENTIONAL — do not "clean up" as dead storage):
   //   - We DROP only "log" and "status" — pure transient runtime noise, never

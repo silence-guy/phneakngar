@@ -1,6 +1,6 @@
 import { nanoid } from "nanoid"
 import PostalMime from "postal-mime"
-import { createDb, queries, parseEmailHandle, toAlookAddress, DEV_WEB_URL, createLogger, buildMimeMessage, extractAttachmentMeta } from "@alook/shared"
+import { createDb, queries, parseEmailHandle, toAlookAddress, DEV_WEB_URL, createLogger, buildMimeMessage, extractAttachmentMeta, isEmailDraftAttachmentKeyForScope, EMAIL_NOTIFY_SECRET_HEADER } from "@alook/shared"
 import { decrypt } from "@alook/shared/crypto"
 import { WorkerMailer, type AuthType } from "worker-mailer"
 import { EmailMessage } from "cloudflare:email"
@@ -26,6 +26,7 @@ async function notifyWeb(env: EmailEnv, payload: Record<string, unknown>, traceI
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     "X-Trace-Id": traceId,
+    [EMAIL_NOTIFY_SECRET_HEADER]: env.EMAIL_NOTIFY_SECRET,
   }
 
   const init: RequestInit = { method: "POST", headers, body }
@@ -135,6 +136,11 @@ export default {
 
     const htmlBody = body.htmlBody ?? ""
     const attachmentKeys = body.attachmentKeys ?? []
+    for (const attachment of attachmentKeys) {
+      if (!isEmailDraftAttachmentKeyForScope(attachment.key, body.workspaceId)) {
+        return Response.json({ error: "invalid attachment key" }, { status: 400 })
+      }
+    }
 
     // Fetch attachment content from R2 in parallel
     const attachments = (await Promise.all(

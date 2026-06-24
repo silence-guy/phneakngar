@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { queries, SkillSyncRequestSchema } from "@alook/shared";
 import { withAuth } from "@/lib/middleware/auth";
+import { withDaemonMachine } from "@/lib/middleware/daemon";
 import { parseBody, writeJSON, writeError } from "@/lib/middleware/helpers";
 import { getDb, withD1Retry } from "@/lib/db";
 
@@ -14,11 +15,18 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
   const [body, err] = await parseBody(req, SkillSyncRequestSchema);
   if (err) return err;
 
+  if (!body.daemon_id) return writeError("daemon_id required", 400);
+
+  const daemonAuth = await withDaemonMachine(db, ctx, body.daemon_id);
+  if (daemonAuth instanceof Response) return daemonAuth;
+
+  const { workspaceId } = daemonAuth;
+
   if (body.scope === "global") {
     await withD1Retry(() =>
       queries.agentSkill.syncGlobalSkills(
         db,
-        ctx.workspaceId!,
+        workspaceId,
         body.runtime,
         body.skills,
         body.daemon_id,
@@ -31,7 +39,7 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
         db,
         body.agent_id!,
         body.runtime,
-        ctx.workspaceId!,
+        workspaceId,
         body.skills,
       )
     );

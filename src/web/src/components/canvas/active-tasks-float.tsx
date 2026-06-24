@@ -10,6 +10,12 @@ import { AvatarRenderer, parseAvatarUrl } from "@/components/avatar";
 import type { WorkspaceActiveTask } from "@/lib/api";
 import { relativeTime } from "@/lib/time";
 import { useAgentChatSheet } from "@/contexts/agent-chat-sheet-context";
+import {
+  ISSUE_LABELS,
+  activeTaskCountLabel,
+  activeTaskPanelTitle,
+  viewAllTasksLabel,
+} from "@/components/issues/issue-labels";
 
 function AgentAvatar({ name, avatarUrl, size = 20 }: { name?: string; avatarUrl?: string | null; size?: number }) {
   const config = parseAvatarUrl(avatarUrl);
@@ -62,7 +68,7 @@ function TaskRow({
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5 leading-tight">
           <span className="text-sm font-medium truncate">
-            {task.agent?.name ?? "Unknown"}
+            {task.agent?.name ?? ISSUE_LABELS.unknown}
           </span>
           <span className="text-xs text-muted-foreground shrink-0">
             #{task.channel}
@@ -113,7 +119,7 @@ export function ActiveTasksFloat() {
         className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-background/90 backdrop-blur-sm ring-1 ring-foreground/8 shadow-sm text-xs font-medium text-muted-foreground hover:text-foreground transition-colors animate-[fade-up_300ms_ease-out_both]"
       >
         <span className="size-1.5 rounded-full bg-primary animate-pulse" />
-        {taskCount} active
+        {activeTaskCountLabel(taskCount)}
       </button>
     );
   }
@@ -121,19 +127,19 @@ export function ActiveTasksFloat() {
   return (
     <div
       role="region"
-      aria-label="Active tasks"
+      aria-label={ISSUE_LABELS.activeTasks}
       className="w-80 rounded-lg ring-1 ring-foreground/8 shadow-sm bg-background/90 backdrop-blur-sm animate-[fade-up_300ms_ease-out_both]"
     >
       <div className="flex items-center justify-between px-3 py-2 border-b border-border/50">
         <div className="flex items-center gap-2 text-sm font-medium" aria-live="polite">
           <span className="size-1.5 rounded-full bg-primary animate-pulse" />
           <span>
-            {taskCount} task{taskCount !== 1 ? "s" : ""} active
+            {activeTaskPanelTitle(taskCount)}
           </span>
         </div>
         <button
           type="button"
-          aria-label="Collapse tasks panel"
+          aria-label={ISSUE_LABELS.collapseTasksPanel}
           className="size-6 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
           onClick={() => setExpanded(false)}
         >
@@ -150,7 +156,7 @@ export function ActiveTasksFloat() {
             href={`/w/${slug}/traces?status=active`}
             className="block text-xs text-muted-foreground hover:text-foreground text-center py-1.5 transition-colors"
           >
-            View all {taskCount} tasks
+            {viewAllTasksLabel(taskCount)}
           </Link>
         )}
       </div>

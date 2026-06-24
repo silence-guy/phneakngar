@@ -58,6 +58,38 @@ describe("createChannel", () => {
   });
 });
 
+describe("channelHasConversationsForOtherUsers", () => {
+  it("returns true when another user has conversations in the channel", async () => {
+    const chain: any = {};
+    chain.select = vi.fn(() => chain);
+    chain.from = vi.fn(() => chain);
+    chain.where = vi.fn(() => chain);
+    chain.limit = vi.fn(() => Promise.resolve([{ id: "c_other" }]));
+
+    const result = await channelQueries.channelHasConversationsForOtherUsers(
+      chain,
+      "ws_1",
+      "work",
+      "u1",
+    );
+
+    expect(result).toBe(true);
+    expect(chain.limit).toHaveBeenCalledWith(1);
+  });
+
+  it("returns false when no other user conversations exist", async () => {
+    const chain: any = {};
+    chain.select = vi.fn(() => chain);
+    chain.from = vi.fn(() => chain);
+    chain.where = vi.fn(() => chain);
+    chain.limit = vi.fn(() => Promise.resolve([]));
+
+    await expect(
+      channelQueries.channelHasConversationsForOtherUsers(chain, "ws_1", "work", "u1"),
+    ).resolves.toBe(false);
+  });
+});
+
 describe("deleteChannel", () => {
   it("returns null when channel not found", async () => {
     const chain: any = {};

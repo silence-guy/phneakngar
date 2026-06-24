@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { queries, DEV_EMAIL_WORKER_URL, DEV_WEB_URL, SendEmailRequestSchema, parseEmailHandle, toAlookAddress, buildMimeMessage, extractThreadId, buildEmailMapKey } from "@alook/shared";
+import { queries, DEV_EMAIL_WORKER_URL, DEV_WEB_URL, SendEmailRequestSchema, parseEmailHandle, toAlookAddress, buildMimeMessage, extractThreadId, buildEmailMapKey, isEmailDraftAttachmentKeyForScope, EMAIL_NOTIFY_SECRET_HEADER } from "@alook/shared";
 import { nanoid } from "nanoid";
 import { getDb } from "@/lib/db"
 import { withAuth } from "@/lib/middleware/auth";
@@ -99,6 +99,11 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
   }
 
   const attachments = body.attachments ?? [];
+  for (const attachment of attachments) {
+    if (!isEmailDraftAttachmentKeyForScope(attachment.key, ws.workspaceId, ctx.userId)) {
+      return writeError("invalid attachment key", 400);
+    }
+  }
 
   // Local delivery shortcut: same-workspace @alook.ai → @alook.ai
   const senderHandle = parseEmailHandle(fromAddress);
@@ -160,7 +165,14 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
         ...(body.sourceTaskId ? { sourceTaskId: body.sourceTaskId } : {}),
         ...(!isSelfSend && validatedConversationId ? { senderConversationId: validatedConversationId, senderAgentId: body.agentId } : {}),
       });
-      const notifyInit = { method: "POST", headers: { "Content-Type": "application/json" }, body: notifyPayload };
+      const notifyInit = {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          [EMAIL_NOTIFY_SECRET_HEADER]: cfEnv.EMAIL_NOTIFY_SECRET,
+        },
+        body: notifyPayload,
+      };
       let notifyRes: Response;
       try {
         notifyRes = await cfEnv.WORKER_SELF_REFERENCE!.fetch("http://internal/api/email/notify", notifyInit);

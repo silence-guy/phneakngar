@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { queries } from "@alook/shared"
 import { getDb } from "@/lib/db"
 import { withAuth } from "@/lib/middleware/auth";
+import { withDaemonTaskAccess } from "@/lib/middleware/daemon";
 import { writeJSON, writeError, parseBody } from "@/lib/middleware/helpers";
 import { taskToResponse } from "@/lib/api/responses";
 import { TaskService } from "@/lib/services/task";
@@ -23,6 +24,9 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
 
   const [body, err] = await parseBody(req, FailTaskRequestSchema);
   if (err) return err;
+
+  const taskAccess = await withDaemonTaskAccess(db, ctx, taskId);
+  if (taskAccess instanceof Response) return taskAccess;
 
   const taskService = new TaskService(db);
   try {

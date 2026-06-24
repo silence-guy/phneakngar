@@ -1,6 +1,7 @@
 import { queries } from "@alook/shared"
 import { getDb, withD1Retry } from "@/lib/db"
 import { withAuth } from "@/lib/middleware/auth";
+import { withDaemonTaskAccess } from "@/lib/middleware/daemon";
 import { writeJSON, writeError } from "@/lib/middleware/helpers";
 
 export const GET = withAuth(async (_req, ctx) => {
@@ -14,6 +15,9 @@ export const GET = withAuth(async (_req, ctx) => {
   if (!taskId) {
     return writeError("task_id is required", 400);
   }
+
+  const taskAccess = await withDaemonTaskAccess(db, ctx, taskId);
+  if (taskAccess instanceof Response) return taskAccess;
 
   const status = await withD1Retry(() => queries.task.getTaskStatus(db, taskId, ctx.workspaceId));
   if (!status) {

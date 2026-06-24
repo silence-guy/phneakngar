@@ -28,6 +28,22 @@ export async function withWorkspaceMember(
     )
   }
 
+  if (auth.authType === "machine") {
+    if (!auth.workspaceId) {
+      return NextResponse.json(
+        { error: "machine token is not bound to a workspace" },
+        { status: 403 }
+      )
+    }
+    if (workspaceId !== auth.workspaceId) {
+      return NextResponse.json(
+        { error: "workspace_id does not match token" },
+        { status: 403 }
+      )
+    }
+    return { workspaceId, memberRole: "member" }
+  }
+
   const { env } = await getCloudflareContext({ async: true })
   const db = getDb((env as Env).DB)
 
@@ -36,9 +52,6 @@ export async function withWorkspaceMember(
     1800,
     () => queries.member.getMemberByUserAndWorkspace(db, auth.userId, workspaceId),
   )
-  if (!membership && auth.workspaceId === workspaceId) {
-    return { workspaceId, memberRole: "member" }
-  }
   if (!membership) {
     return NextResponse.json(
       { error: "workspace not found" },

@@ -8,6 +8,7 @@ import { useWorkspace } from "@/contexts/workspace-context";
 import { AnimatedAvatar, parseAvatarUrl } from "@/components/avatar";
 import { Logo } from "@/components/logo";
 import { Skeleton } from "@/components/ui/skeleton";
+import { appShellLabel } from "@/lib/locale";
 import { cn } from "@/lib/utils";
 
 export function MobileTopBar() {
@@ -46,7 +47,7 @@ export function MobileTopBar() {
         <div
           role="button"
           tabIndex={0}
-          aria-label="Open sidebar"
+          aria-label={appShellLabel("openSidebar")}
           onClick={openSidebar}
           onKeyDown={(e) => {
             if (e.key === "Enter" || e.key === " ") {
@@ -62,7 +63,7 @@ export function MobileTopBar() {
 
       <button
         onClick={() => router.push(`/w/${slug}/home`)}
-        aria-label="Home"
+        aria-label={appShellLabel("home")}
         className={cn(
           "shrink-0 p-1 rounded-md transition-colors",
           isHomeActive
@@ -75,7 +76,7 @@ export function MobileTopBar() {
 
       <button
         onClick={() => router.push(`/w/${slug}/calendar`)}
-        aria-label="Calendar"
+        aria-label={appShellLabel("calendar")}
         className={cn(
           "shrink-0 p-1 rounded-md transition-colors",
           isCalendarActive
@@ -88,7 +89,7 @@ export function MobileTopBar() {
 
       <button
         onClick={() => router.push(`/w/${slug}/issues`)}
-        aria-label="Issues"
+        aria-label={appShellLabel("issues")}
         className={cn(
           "shrink-0 p-1 rounded-md transition-colors",
           isIssuesActive

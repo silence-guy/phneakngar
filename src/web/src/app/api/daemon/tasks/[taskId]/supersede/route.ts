@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { queries } from "@alook/shared";
 import { getDb } from "@/lib/db";
 import { withAuth } from "@/lib/middleware/auth";
+import { withDaemonTaskAccess } from "@/lib/middleware/daemon";
 import { writeJSON, writeError } from "@/lib/middleware/helpers";
 import { taskToResponse } from "@/lib/api/responses";
 import { TaskService } from "@/lib/services/task";
@@ -19,6 +20,9 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
   if (!taskId) {
     return writeError("task_id is required", 400);
   }
+
+  const taskAccess = await withDaemonTaskAccess(db, ctx, taskId);
+  if (taskAccess instanceof Response) return taskAccess;
 
   const taskService = new TaskService(db);
   try {

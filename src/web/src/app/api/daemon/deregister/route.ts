@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { queries } from "@alook/shared"
 import { getDb } from "@/lib/db"
 import { withAuth } from "@/lib/middleware/auth";
+import { withDaemonMachine } from "@/lib/middleware/daemon";
 import { writeJSON, writeError, parseBody } from "@/lib/middleware/helpers";
 import { DeregisterRequestSchema } from "@alook/shared";
 import { broadcastToUser } from "@/lib/broadcast";
@@ -17,6 +18,9 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
   if (!ctx.workspaceId) {
     return writeError("Forbidden: machine token required", 403);
   }
+
+  const daemonAuth = await withDaemonMachine(db, ctx, body.daemon_id);
+  if (daemonAuth instanceof Response) return daemonAuth;
 
   // Set machine last_seen_at to null — non-critical, daemon is already shutting down
   try {

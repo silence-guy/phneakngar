@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { IssueStatus, TASK_TYPES } from "./constants";
+import { isPublicNetworkHost } from "./network-host";
 
 // ---------------------------------------------------------------------------
 // Task status
@@ -14,6 +15,29 @@ export const TaskStatusSchema = z.enum([
   "cancelled",
   "superseded",
 ]);
+
+export const PersistedLocaleSchema = z.enum(["km", "en"]);
+export type PersistedLocale = z.infer<typeof PersistedLocaleSchema>;
+
+export const AgentLanguageModeSchema = z.enum(["km", "en", "bilingual", "auto"]);
+export type AgentLanguageModeApi = z.infer<typeof AgentLanguageModeSchema>;
+
+export const TaskVisibleOutcomeStatusSchema = z.enum([
+  "pending",
+  "visible_output",
+  "completed_without_visible_output",
+  "not_required",
+]);
+export type TaskVisibleOutcomeStatus = z.infer<typeof TaskVisibleOutcomeStatusSchema>;
+
+export const AgentPromptLanguagePolicyApiSchema = z.object({
+  default_user_facing_language: z.enum(["km-KH", "en", "auto", "bilingual"]),
+  apply_to: z.string(),
+  preserve_english_for: z.array(z.string()).readonly(),
+  guidance: z.string(),
+  custom_policy: z.string().optional(),
+});
+export type AgentPromptLanguagePolicyApi = z.infer<typeof AgentPromptLanguagePolicyApiSchema>;
 
 // ---------------------------------------------------------------------------
 // Raw SQL row from agent_task_queue (boundary: DB -> App)
@@ -40,6 +64,9 @@ export const ClaimedTaskRowSchema = z.object({
   error: z.string().nullable(),
   traceId: z.string().nullable().optional(),
   parentTaskId: z.string().nullable().optional(),
+  localeOverride: z.string().nullable().optional(),
+  visibleOutcomeStatus: TaskVisibleOutcomeStatusSchema.default("pending"),
+  retryOfTaskId: z.string().nullable().optional(),
 });
 export type ClaimedTaskRow = z.infer<typeof ClaimedTaskRowSchema>;
 
@@ -63,6 +90,8 @@ export const TaskAgentDataApiSchema = z.object({
   user_email: z.string().nullable().optional(),
   user_name: z.string().nullable().optional(),
   colleagues: z.array(ColleagueDataApiSchema).default([]),
+  preferred_locale: AgentLanguageModeSchema.nullable().optional(),
+  language_policy: z.string().nullable().optional(),
 });
 export type TaskAgentDataApi = z.infer<typeof TaskAgentDataApiSchema>;
 
@@ -90,6 +119,10 @@ export const TaskApiBaseSchema = z.object({
   context: z.unknown().nullable().optional(),
   trace_id: z.string().nullable().optional(),
   parent_task_id: z.string().nullable().optional(),
+  locale_override: z.string().nullable().optional(),
+  visible_outcome_status: TaskVisibleOutcomeStatusSchema.nullable().optional(),
+  retry_of_task_id: z.string().nullable().optional(),
+  language_policy: AgentPromptLanguagePolicyApiSchema.optional(),
   channel: z.string().nullable().optional(),
 });
 export type TaskApiBase = z.infer<typeof TaskApiBaseSchema>;
@@ -621,15 +654,20 @@ export type EmailNotifyRequest = z.infer<typeof EmailNotifyRequestSchema>;
 // Custom Email Account schemas
 // ---------------------------------------------------------------------------
 
+const EmailHostSchema = (label: string) => z.string()
+  .trim()
+  .min(1, `${label} host is required`)
+  .refine(isPublicNetworkHost, `${label} host must be a public hostname`);
+
 export const CreateEmailAccountSchema = z.object({
   emailAddress: z.string().email("valid email required"),
   displayName: z.string().default(""),
-  imapHost: z.string().min(1, "IMAP host is required"),
+  imapHost: EmailHostSchema("IMAP"),
   imapPort: z.number().int().min(1).max(65535).default(993),
   imapUsername: z.string().min(1, "IMAP username is required"),
   imapPassword: z.string().min(1, "IMAP password is required"),
   imapTls: z.boolean().default(true),
-  smtpHost: z.string().min(1, "SMTP host is required"),
+  smtpHost: EmailHostSchema("SMTP"),
   smtpPort: z.number().int().min(1).max(65535).default(587),
   smtpUsername: z.string().min(1, "SMTP username is required"),
   smtpPassword: z.string().min(1, "SMTP password is required"),
@@ -641,12 +679,12 @@ export type CreateEmailAccountRequest = z.infer<typeof CreateEmailAccountSchema>
 export const UpdateEmailAccountSchema = z.object({
   emailAddress: z.string().email().optional(),
   displayName: z.string().optional(),
-  imapHost: z.string().min(1).optional(),
+  imapHost: EmailHostSchema("IMAP").optional(),
   imapPort: z.number().int().min(1).max(65535).optional(),
   imapUsername: z.string().min(1).optional(),
   imapPassword: z.string().min(1).optional(),
   imapTls: z.boolean().optional(),
-  smtpHost: z.string().min(1).optional(),
+  smtpHost: EmailHostSchema("SMTP").optional(),
   smtpPort: z.number().int().min(1).max(65535).optional(),
   smtpUsername: z.string().min(1).optional(),
   smtpPassword: z.string().min(1).optional(),
@@ -656,12 +694,12 @@ export const UpdateEmailAccountSchema = z.object({
 export type UpdateEmailAccountRequest = z.infer<typeof UpdateEmailAccountSchema>;
 
 export const TestEmailConnectionSchema = z.object({
-  imapHost: z.string().min(1),
+  imapHost: EmailHostSchema("IMAP"),
   imapPort: z.number().int().min(1).max(65535).default(993),
   imapUsername: z.string().min(1),
   imapPassword: z.string().min(1),
   imapTls: z.boolean().default(true),
-  smtpHost: z.string().min(1),
+  smtpHost: EmailHostSchema("SMTP"),
   smtpPort: z.number().int().min(1).max(65535).default(587),
   smtpUsername: z.string().min(1),
   smtpPassword: z.string().min(1),
@@ -674,8 +712,12 @@ export type TestEmailConnectionRequest = z.infer<typeof TestEmailConnectionSchem
 // ---------------------------------------------------------------------------
 
 export const UpdateMemberRequestSchema = z.object({
-  global_instruction: z.string().max(50000).trim(),
-});
+  global_instruction: z.string().max(50000).trim().optional(),
+  preferred_locale: PersistedLocaleSchema.optional(),
+}).refine(
+  (body) => body.global_instruction !== undefined || body.preferred_locale !== undefined,
+  { message: "global_instruction or preferred_locale is required" },
+);
 export type UpdateMemberRequest = z.infer<typeof UpdateMemberRequestSchema>;
 
 // ---------------------------------------------------------------------------
@@ -693,6 +735,7 @@ export type CreateWorkspaceRequest = z.infer<
 export const UpdateWorkspaceRequestSchema = z.object({
   name: z.string().min(1, "name is required").max(100).trim().optional(),
   slug: z.string().min(1, "slug is required").max(100).trim().toLowerCase().optional(),
+  default_locale: PersistedLocaleSchema.optional(),
 });
 export type UpdateWorkspaceRequest = z.infer<typeof UpdateWorkspaceRequestSchema>;
 

@@ -8,6 +8,7 @@ import type { Agent } from "@alook/shared";
 import { InboxPopover } from "@/components/inbox-popover";
 import { FlagPopover } from "@/components/flag-popover";
 import { Logo } from "@/components/logo";
+import { appShellLabel } from "@/lib/locale";
 import { cn } from "@/lib/utils";
 import { Monitor, SunMoon, Plus, CalendarDays, Settings, ArrowLeftRight, Home, CircleDot, Folder, Ungroup, ArrowRightToLine } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -326,7 +327,7 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void } = {}) {
         }}
       >
         <Folder className="size-3.5 mr-1.5" />
-        Create group
+        {appShellLabel("createGroup")}
       </ContextMenuItem>
       {folders.length > 0 && (
         <>
@@ -344,7 +345,7 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void } = {}) {
                 onClick={() => addToFolder(f.id, agentId)}
               >
                 <ArrowRightToLine className="size-3.5 mr-1.5" />
-                Move to {label}{folderAgents.length > 2 ? "…" : ""}
+                {appShellLabel("moveTo")} {label}{folderAgents.length > 2 ? "…" : ""}
               </ContextMenuItem>
             );
           })}
@@ -409,7 +410,7 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void } = {}) {
           }>
             <Home className="size-4" />
           </TooltipTrigger>
-          <TooltipContent side="right">Home</TooltipContent>
+          <TooltipContent side="right">{appShellLabel("home")}</TooltipContent>
         </Tooltip>
 
         <InboxPopover isActive={isInbox} onNavigate={onNavigate} />
@@ -430,7 +431,7 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void } = {}) {
           }>
             <CircleDot className="size-4" />
           </TooltipTrigger>
-          <TooltipContent side="right">Issues</TooltipContent>
+          <TooltipContent side="right">{appShellLabel("issues")}</TooltipContent>
         </Tooltip>
 
         <Tooltip>
@@ -447,7 +448,7 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void } = {}) {
           }>
             <CalendarDays className="size-4" />
           </TooltipTrigger>
-          <TooltipContent side="right">Calendar</TooltipContent>
+          <TooltipContent side="right">{appShellLabel("calendar")}</TooltipContent>
         </Tooltip>
 
       </div>
@@ -510,7 +511,7 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void } = {}) {
                         <ContextMenuContent>
                           <ContextMenuItem onClick={() => dissolveFolder(folder.id)}>
                             <Ungroup className="size-3.5 mr-1.5" />
-                            Ungroup agents
+                            {appShellLabel("ungroupAgents")}
                           </ContextMenuItem>
                         </ContextMenuContent>
                       </ContextMenu>
@@ -598,14 +599,14 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void } = {}) {
                   disabled={selectedAgentIds.size < 2}
                   className="flex items-center justify-center h-7 rounded-lg bg-primary text-primary-foreground text-xs font-medium disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
                 >
-                  Done ({selectedAgentIds.size})
+                  {appShellLabel("done")} ({selectedAgentIds.size})
                 </button>
                 <button
                   type="button"
                   onClick={handleSelectionCancel}
                   className="flex items-center justify-center h-7 rounded-lg bg-secondary text-secondary-foreground text-xs cursor-pointer hover:bg-accent"
                 >
-                  Cancel
+                  {appShellLabel("cancel")}
                 </button>
               </div>
             )}
@@ -633,7 +634,7 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void } = {}) {
               <Plus className="size-4" />
             </TooltipTrigger>
             <TooltipContent side="right" sideOffset={8}>
-              Create your first agent
+              {appShellLabel("createFirstAgent")}
             </TooltipContent>
           </Tooltip>
         ) : (
@@ -655,7 +656,7 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void } = {}) {
             >
               <Plus className="size-4" />
             </TooltipTrigger>
-            <TooltipContent>New agent</TooltipContent>
+            <TooltipContent>{appShellLabel("newAgent")}</TooltipContent>
           </Tooltip>
         )}
       </div>
@@ -698,7 +699,7 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void } = {}) {
           }>
             <Monitor className="size-4" />
           </TooltipTrigger>
-          <TooltipContent side="right">Runtimes</TooltipContent>
+          <TooltipContent side="right">{appShellLabel("runtimes")}</TooltipContent>
         </Tooltip>
 
         <Tooltip>
@@ -711,7 +712,7 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void } = {}) {
           }>
             <SunMoon className="size-4" />
           </TooltipTrigger>
-          <TooltipContent side="right">Toggle theme</TooltipContent>
+          <TooltipContent side="right">{appShellLabel("toggleTheme")}</TooltipContent>
         </Tooltip>
 
         <Tooltip>
@@ -728,7 +729,7 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void } = {}) {
           }>
             <Settings className="size-4" />
           </TooltipTrigger>
-          <TooltipContent side="right">Settings</TooltipContent>
+          <TooltipContent side="right">{appShellLabel("settings")}</TooltipContent>
         </Tooltip>
 
         <Tooltip>
@@ -741,7 +742,7 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void } = {}) {
           }>
             <ArrowLeftRight className="size-4" />
           </TooltipTrigger>
-          <TooltipContent side="right">Switch workspace</TooltipContent>
+          <TooltipContent side="right">{appShellLabel("switchWorkspace")}</TooltipContent>
         </Tooltip>
 
         <NavUser />

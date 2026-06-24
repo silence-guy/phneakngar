@@ -118,6 +118,7 @@ describe("GET /api/traces/[traceId]", () => {
         parentTaskId: null,
         prompt: "Root task",
         status: "completed",
+        visibleOutcomeStatus: "visible_output",
         type: "user_dm_message",
         conversationId: "conv_1",
         createdAt: "2026-01-01T00:00:00Z",
@@ -129,6 +130,7 @@ describe("GET /api/traces/[traceId]", () => {
         parentTaskId: "task_1",
         prompt: "Sub task",
         status: "completed",
+        visibleOutcomeStatus: "completed_without_visible_output",
         type: "email_notification",
         conversationId: "conv_1",
         createdAt: "2026-01-01T00:00:10Z",
@@ -159,6 +161,7 @@ describe("GET /api/traces/[traceId]", () => {
       parent_task_id: null,
       prompt: "Root task",
       status: "completed",
+      visible_outcome_status: "visible_output",
       type: "user_dm_message",
       conversation_id: "conv_1",
       created_at: "2026-01-01T00:00:00Z",
@@ -169,6 +172,7 @@ describe("GET /api/traces/[traceId]", () => {
       email_handle: "agent2",
       avatarUrl: "https://img/a2.png",
     });
+    expect(body.tasks[1].visible_outcome_status).toBe("completed_without_visible_output");
   });
 
   it("returns default channel when no conversation found", async () => {

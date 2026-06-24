@@ -7,7 +7,7 @@ import { NextRequest } from "next/server";
 // invalid payloads are rejected before hitting any DB logic.
 // ---------------------------------------------------------------------------
 
-const daemonAuth = { env: {}, userId: "u1", email: "u@t.com", workspaceId: "w1" };
+const daemonAuth = { env: {}, userId: "u1", email: "u@t.com", authType: "machine" as const, workspaceId: "w1" };
 
 function baseMocks() {
   return {
@@ -83,6 +83,7 @@ describe("daemon route body validation", () => {
               getMemberByUserAndWorkspace: vi.fn().mockResolvedValue({ id: "m1" }),
             },
             machine: {
+              getMachineByDaemon: vi.fn().mockResolvedValue(null),
               upsertMachine: vi.fn().mockResolvedValue({ daemonId: "d1", workspaceId: "w1" }),
             },
             runtime: {
@@ -156,6 +157,7 @@ describe("daemon route body validation", () => {
               getMemberByUserAndWorkspace: vi.fn().mockResolvedValue({ id: "m1" }),
             },
             machine: {
+              getMachineByDaemon: vi.fn().mockResolvedValue(null),
               upsertMachine: vi.fn().mockResolvedValue({ daemonId: "d1", workspaceId: "w1" }),
             },
             runtime: {
@@ -205,6 +207,7 @@ describe("daemon route body validation", () => {
               getMemberByUserAndWorkspace: vi.fn().mockResolvedValue({ id: "m1" }),
             },
             machine: {
+              getMachineByDaemon: vi.fn().mockResolvedValue(null),
               upsertMachine: vi.fn().mockResolvedValue({ daemonId: "d1", workspaceId: "w1" }),
             },
             runtime: {
@@ -257,6 +260,7 @@ describe("daemon route body validation", () => {
               getRuntimeIdsByDaemon: vi.fn().mockResolvedValue(["r1"]),
             },
             machine: {
+              getMachineByDaemon: vi.fn().mockResolvedValue(null),
               updateMachineLastSeen: vi.fn().mockResolvedValue(undefined),
             },
             agent: {
@@ -345,6 +349,7 @@ describe("daemon route body validation", () => {
           createDb: vi.fn(() => ({})),
           queries: {
             machine: {
+              getMachineByDaemon: vi.fn().mockResolvedValue(null),
               setMachineLastSeenNull: vi.fn().mockResolvedValue(undefined),
             },
           },
@@ -517,7 +522,10 @@ describe("daemon route body validation", () => {
           createDb: vi.fn(() => ({})),
           queries: {
             task: {
-              getTask: vi.fn().mockResolvedValue({ id: "t1", workspaceId: "w1", conversationId: "c1" }),
+              getTask: vi.fn().mockResolvedValue({ id: "t1", workspaceId: "w1", runtimeId: "rt1", conversationId: "c1" }),
+            },
+            runtime: {
+              getAgentRuntimeForWorkspace: vi.fn().mockResolvedValue({ id: "rt1" }),
             },
             taskMessage: {
               createTaskMessage: vi.fn().mockResolvedValue(undefined),
@@ -566,7 +574,10 @@ describe("daemon route body validation", () => {
           createDb: vi.fn(() => ({})),
           queries: {
             task: {
-              getTask: vi.fn().mockResolvedValue({ id: "t1", workspaceId: "w1", conversationId: "c1" }),
+              getTask: vi.fn().mockResolvedValue({ id: "t1", workspaceId: "w1", runtimeId: "rt1", conversationId: "c1" }),
+            },
+            runtime: {
+              getAgentRuntimeForWorkspace: vi.fn().mockResolvedValue({ id: "rt1" }),
             },
             taskMessage: { createTaskMessage: createMock },
             conversation: {
@@ -621,7 +632,10 @@ describe("daemon route body validation", () => {
           createDb: vi.fn(() => ({})),
           queries: {
             task: {
-              getTask: vi.fn().mockResolvedValue({ id: "t1", workspaceId: "w1", conversationId: "c1" }),
+              getTask: vi.fn().mockResolvedValue({ id: "t1", workspaceId: "w1", runtimeId: "rt1", conversationId: "c1" }),
+            },
+            runtime: {
+              getAgentRuntimeForWorkspace: vi.fn().mockResolvedValue({ id: "rt1" }),
             },
             taskMessage: { createTaskMessage: vi.fn().mockResolvedValue(undefined) },
             conversation: {

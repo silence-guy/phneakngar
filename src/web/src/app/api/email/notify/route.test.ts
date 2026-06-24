@@ -11,9 +11,12 @@ const mockFindByKey = vi.fn();
 const mockCreateMapping = vi.fn();
 const mockEnqueueTask = vi.fn();
 const mockGetUser = vi.fn();
+const mockGetCloudflareContext = vi.hoisted(() => vi.fn(() => ({
+  env: { DB: {}, EMAIL_NOTIFY_SECRET: "notify-secret" },
+})));
 
 vi.mock("@opennextjs/cloudflare", () => ({
-  getCloudflareContext: vi.fn(() => ({ env: { DB: {} } })),
+  getCloudflareContext: mockGetCloudflareContext,
 }));
 vi.mock("@/lib/db", () => ({ getDb: vi.fn(() => ({})) }));
 
@@ -79,9 +82,13 @@ vi.mock("@/lib/api/responses", () => ({
 
 import { POST } from "./route";
 
-function makeNotifyReq(body: Record<string, unknown>) {
+function makeNotifyReq(body: Record<string, unknown>, secret: string | null = "notify-secret") {
+  const headers = new Headers();
+  if (secret !== null) headers.set("X-Alook-Email-Notify-Secret", secret);
+
   return new NextRequest("http://localhost/api/email/notify", {
     method: "POST",
+    headers,
     body: JSON.stringify(body),
   });
 }
@@ -101,6 +108,7 @@ const baseBody = {
 describe("POST /api/email/notify", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockGetCloudflareContext.mockReturnValue({ env: { DB: {}, EMAIL_NOTIFY_SECRET: "notify-secret" } });
     mockCreateEmail.mockImplementation((_db: unknown, data: Record<string, unknown>) => Promise.resolve({
       id: "e1",
       fromEmail: data.fromEmail ?? "",
@@ -115,6 +123,26 @@ describe("POST /api/email/notify", () => {
     mockCreateMessage.mockResolvedValue({ id: "m1", conversationId: "c1", role: "event", content: "", taskId: null, createdAt: "2026-01-01T00:00:00Z" });
     mockFindByKey.mockResolvedValue(null);
     mockCreateMapping.mockResolvedValue(undefined);
+  });
+
+  it("rejects requests without the notify secret header", async () => {
+    const res = await POST(makeNotifyReq(baseBody, null));
+    expect(res.status).toBe(401);
+    expect(mockCreateEmail).not.toHaveBeenCalled();
+  });
+
+  it("rejects requests with the wrong notify secret header", async () => {
+    const res = await POST(makeNotifyReq(baseBody, "wrong-secret"));
+    expect(res.status).toBe(401);
+    expect(mockCreateEmail).not.toHaveBeenCalled();
+  });
+
+  it("fails closed when the notify secret is not configured", async () => {
+    mockGetCloudflareContext.mockReturnValueOnce({ env: { DB: {} } } as any);
+
+    const res = await POST(makeNotifyReq(baseBody));
+    expect(res.status).toBe(500);
+    expect(mockCreateEmail).not.toHaveBeenCalled();
   });
 
   it("creates new conversation when no mapping found", async () => {

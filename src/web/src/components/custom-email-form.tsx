@@ -12,6 +12,7 @@ import {
   SheetBody,
 } from "@/components/ui/sheet";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import { agentFormLabel } from "@/lib/locale";
 import { cn } from "@/lib/utils";
 import {
   listEmailAccounts,
@@ -115,7 +116,7 @@ function EmailFieldsForm({ fields, applyPreset, errors, onClearError }: {
 
       <div className="grid gap-3">
         <div>
-          <Label className="text-xs">Email Address *</Label>
+          <Label className="text-xs">{agentFormLabel("emailAddress")}</Label>
           <Input placeholder="you@gmail.com" value={fields.emailAddress}
             onChange={(e) => {
               fields.setEmailAddress(e.target.value);
@@ -131,15 +132,15 @@ function EmailFieldsForm({ fields, applyPreset, errors, onClearError }: {
           )}
         </div>
         <div>
-          <Label className="text-xs">Display Name</Label>
-          <Input placeholder="My Agent" value={fields.displayName}
+          <Label className="text-xs">{agentFormLabel("displayName")}</Label>
+          <Input placeholder={agentFormLabel("agentNamePlaceholder")} value={fields.displayName}
             onChange={(e) => fields.setDisplayName(e.target.value)} className="h-8 text-sm" />
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-2">
-          <Label className="text-xs font-medium">IMAP (Receive)</Label>
+          <Label className="text-xs font-medium">{agentFormLabel("imapReceive")}</Label>
           <Input placeholder="imap.gmail.com" value={fields.imapHost}
             onChange={(e) => {
               fields.setImapHost(e.target.value);
@@ -155,9 +156,9 @@ function EmailFieldsForm({ fields, applyPreset, errors, onClearError }: {
           )}
           <Input type="number" placeholder="993" value={fields.imapPort}
             onChange={(e) => fields.setImapPort(Number(e.target.value))} className="h-8 text-sm" />
-          <Input placeholder={fields.emailAddress || "Username (defaults to email)"} value={fields.imapUsername}
+          <Input placeholder={fields.emailAddress || agentFormLabel("usernameDefaultsToEmail")} value={fields.imapUsername}
             onChange={(e) => fields.setImapUsername(e.target.value)} className="h-8 text-sm" />
-          <Input type="password" placeholder="App Password" value={fields.imapPassword}
+          <Input type="password" placeholder={agentFormLabel("appPassword")} value={fields.imapPassword}
             onChange={(e) => {
               fields.setImapPassword(e.target.value);
               if (e.target.value.trim()) onClearError("imapPassword");
@@ -172,7 +173,7 @@ function EmailFieldsForm({ fields, applyPreset, errors, onClearError }: {
           )}
         </div>
         <div className="space-y-2">
-          <Label className="text-xs font-medium">SMTP (Send)</Label>
+          <Label className="text-xs font-medium">{agentFormLabel("smtpSend")}</Label>
           <Input placeholder="smtp.gmail.com" value={fields.smtpHost}
             onChange={(e) => {
               fields.setSmtpHost(e.target.value);
@@ -188,9 +189,9 @@ function EmailFieldsForm({ fields, applyPreset, errors, onClearError }: {
           )}
           <Input type="number" placeholder="587" value={fields.smtpPort}
             onChange={(e) => fields.setSmtpPort(Number(e.target.value))} className="h-8 text-sm" />
-          <Input placeholder={fields.emailAddress || "Username (defaults to email)"} value={fields.smtpUsername}
+          <Input placeholder={fields.emailAddress || agentFormLabel("usernameDefaultsToEmail")} value={fields.smtpUsername}
             onChange={(e) => fields.setSmtpUsername(e.target.value)} className="h-8 text-sm" />
-          <Input type="password" placeholder="App Password" value={fields.smtpPassword}
+          <Input type="password" placeholder={agentFormLabel("appPassword")} value={fields.smtpPassword}
             onChange={(e) => {
               fields.setSmtpPassword(e.target.value);
               if (e.target.value.trim()) onClearError("smtpPassword");
@@ -281,11 +282,11 @@ export function CustomEmailForm({ agentId, workspaceId, onDataChange, getDataRef
       await createEmailAccount(agentId, data, workspaceId);
       const domain = fields.emailAddress.split("@")[1] ?? "";
       trackCustomEmailConnected({ email_domain: domain });
-      toast.success("Custom email configured");
+      toast.success(agentFormLabel("customEmailConfigured"));
       setOpen(false);
       await load();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to save");
+      toast.error(err instanceof Error ? err.message : agentFormLabel("failedToSave"));
     } finally {
       setSaving(false);
     }
@@ -296,10 +297,10 @@ export function CustomEmailForm({ agentId, workspaceId, onDataChange, getDataRef
     setDeleting(true);
     try {
       await deleteEmailAccount(agentId, existing.id, workspaceId);
-      toast.success("Custom email removed");
+      toast.success(agentFormLabel("customEmailRemoved"));
       setAccounts([]);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to remove");
+      toast.error(err instanceof Error ? err.message : agentFormLabel("failedToRemove"));
     } finally {
       setDeleting(false);
     }
@@ -310,10 +311,10 @@ export function CustomEmailForm({ agentId, workspaceId, onDataChange, getDataRef
     setSyncing(true);
     try {
       await syncEmailAccount(agentId, existing.id, workspaceId);
-      toast.success("Sync triggered");
+      toast.success(agentFormLabel("syncTriggered"));
       setTimeout(() => load(), 2000);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Sync failed");
+      toast.error(err instanceof Error ? err.message : agentFormLabel("syncFailed"));
     } finally {
       setSyncing(false);
     }
@@ -322,12 +323,12 @@ export function CustomEmailForm({ agentId, workspaceId, onDataChange, getDataRef
   const triggerDesc = isCreateMode
     ? (fields.emailAddress
       ? fields.emailAddress
-      : "Connect your own mailbox via IMAP/SMTP")
+      : agentFormLabel("customEmailTriggerDescription"))
     : loading
-      ? "Loading..."
+      ? agentFormLabel("loading")
       : existing
         ? existing.email_address
-        : "Connect your own mailbox via IMAP/SMTP";
+        : agentFormLabel("customEmailTriggerDescription");
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
@@ -340,7 +341,7 @@ export function CustomEmailForm({ agentId, workspaceId, onDataChange, getDataRef
         }
       >
         <div>
-          <span className="text-sm font-medium">Custom Email</span>
+          <span className="text-sm font-medium">{agentFormLabel("customEmail")}</span>
           <p className="text-xs text-muted-foreground">{triggerDesc}</p>
         </div>
         {!isCreateMode && existing ? (
@@ -362,12 +363,12 @@ export function CustomEmailForm({ agentId, workspaceId, onDataChange, getDataRef
         side="right"
         className="data-[side=right]:sm:inset-y-2 data-[side=right]:sm:right-2 data-[side=right]:sm:h-auto data-[side=right]:sm:rounded-xl data-[side=right]:sm:border"
       >
-        <SheetTitle className="sr-only">Custom Email</SheetTitle>
+        <SheetTitle className="sr-only">{agentFormLabel("customEmail")}</SheetTitle>
         <SheetBody className="px-8 pt-10 pb-6">
           <div className="space-y-4">
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="font-heading text-lg font-semibold">Custom Email</h2>
+                <h2 className="font-heading text-lg font-semibold">{agentFormLabel("customEmail")}</h2>
                 <Tooltip>
                   <TooltipTrigger
                     render={
@@ -381,11 +382,11 @@ export function CustomEmailForm({ agentId, workspaceId, onDataChange, getDataRef
                   >
                     <CircleHelp className="size-4" />
                   </TooltipTrigger>
-                  <TooltipContent>How to get IMAP/SMTP credentials</TooltipContent>
+                  <TooltipContent>{agentFormLabel("credentialHelp")}</TooltipContent>
                 </Tooltip>
               </div>
               <p className="text-sm text-muted-foreground mt-1">
-                Connect your own mailbox to send and receive email as your identity.
+                {agentFormLabel("customEmailDescription")}
               </p>
             </div>
 
@@ -411,7 +412,7 @@ export function CustomEmailForm({ agentId, workspaceId, onDataChange, getDataRef
                       >
                         <RefreshCw className={cn("size-3.5", syncing && "animate-spin")} />
                       </TooltipTrigger>
-                      <TooltipContent>Sync now</TooltipContent>
+                      <TooltipContent>{agentFormLabel("syncNow")}</TooltipContent>
                     </Tooltip>
                     <Tooltip>
                       <TooltipTrigger
@@ -427,7 +428,7 @@ export function CustomEmailForm({ agentId, workspaceId, onDataChange, getDataRef
                       >
                         {deleting ? <Loader2 className="size-3.5 animate-spin" /> : <XIcon className="size-3.5" />}
                       </TooltipTrigger>
-                      <TooltipContent>Remove</TooltipContent>
+                      <TooltipContent>{agentFormLabel("remove")}</TooltipContent>
                     </Tooltip>
                   </div>
                 </div>
@@ -436,13 +437,13 @@ export function CustomEmailForm({ agentId, workspaceId, onDataChange, getDataRef
                 )}
                 {existing.last_synced_at && (
                   <p className="text-xs text-muted-foreground">
-                    Last synced: {new Date(existing.last_synced_at).toLocaleString()}
+                    {agentFormLabel("lastSynced")}: {new Date(existing.last_synced_at).toLocaleString()}
                   </p>
                 )}
                 <div className="rounded-md border border-border/50 px-3 py-2 text-xs text-muted-foreground space-y-1">
                   <div className="flex justify-between"><span>IMAP</span><span>{existing.imap_host}:{existing.imap_port}</span></div>
                   <div className="flex justify-between"><span>SMTP</span><span>{existing.smtp_host}:{existing.smtp_port}</span></div>
-                  <div className="flex justify-between"><span>Poll interval</span><span>{existing.poll_interval_seconds}s</span></div>
+                  <div className="flex justify-between"><span>{agentFormLabel("pollInterval")}</span><span>{existing.poll_interval_seconds}s</span></div>
                 </div>
               </div>
             ) : (
@@ -456,12 +457,12 @@ export function CustomEmailForm({ agentId, workspaceId, onDataChange, getDataRef
                 {!isCreateMode && (
                   <Button type="button" size="sm" className="w-full" onClick={handleCreate} disabled={saving}>
                     {saving && <Loader2 className="size-3 animate-spin mr-1" />}
-                    Save & Connect
+                    {agentFormLabel("saveAndConnect")}
                   </Button>
                 )}
                 {isCreateMode && (
                   <p className="text-xs text-muted-foreground">
-                    Will be connected after creating the agent.
+                    {agentFormLabel("willConnectAfterCreating")}
                   </p>
                 )}
               </div>

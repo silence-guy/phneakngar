@@ -33,12 +33,21 @@ export class WebSocketDurableObject extends DurableObject<Env> {
       return new Response("Expected WebSocket", { status: 426 })
     }
 
+    const daemonId = url.searchParams.get("daemonId")
+    const userId = url.searchParams.get("userId")
+    if (!daemonId && !userId) {
+      return new Response("userId or daemonId required", { status: 400 })
+    }
+
     const pair = new WebSocketPair()
     const [client, server] = Object.values(pair)
 
     this.ctx.acceptWebSocket(server)
 
-    server.serializeAttachment({ type: "user", userId: "", authenticated: false } as ConnectionState)
+    const initialState: ConnectionState = daemonId
+      ? { type: "daemon", daemonId, userId: "", authenticated: false }
+      : { type: "user", userId: userId!, authenticated: false }
+    server.serializeAttachment(initialState)
 
     this.ctx.setWebSocketAutoResponse(
       new WebSocketRequestResponsePair("ping", "pong")
@@ -59,6 +68,12 @@ export class WebSocketDurableObject extends DurableObject<Env> {
 
     if (msg.type === "auth") {
       if (msg.machineToken && msg.daemonId) {
+        if (state?.type !== "daemon" || state.daemonId !== msg.daemonId) {
+          log.warn("daemon websocket route mismatch", { daemonId: msg.daemonId })
+          ws.close(1008, "Unauthorized")
+          return
+        }
+
         const authResult = await this.validateMachineToken(msg.machineToken, msg.daemonId)
         if (!authResult) {
           log.warn("daemon websocket auth failed", { daemonId: msg.daemonId })
@@ -73,12 +88,12 @@ export class WebSocketDurableObject extends DurableObject<Env> {
         return
       }
 
-      if (!msg.token) {
+      if (!msg.token || state?.type !== "user") {
         ws.close(1008, "Unauthorized")
         return
       }
       const userId = await this.validateToken(msg.token)
-      if (!userId) {
+      if (!userId || userId !== state.userId) {
         log.warn("websocket auth failed")
         ws.close(1008, "Unauthorized")
         return
@@ -166,6 +181,10 @@ export class WebSocketDurableObject extends DurableObject<Env> {
     const mt = await queries.machineToken.getMachineTokenByToken(db, token)
     if (!mt) return null
     if (mt.status !== "active" || !mt.workspaceId) return null
+
+    const machine = await queries.machine.getMachineByDaemon(db, daemonId, mt.workspaceId)
+    if (!machine || machine.ownerId !== mt.userId) return null
+
     const runtimes = await queries.runtime.getRuntimeIdsByDaemon(db, daemonId, mt.workspaceId)
     return runtimes.length > 0 ? { userId: mt.userId } : null
   }

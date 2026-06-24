@@ -40,6 +40,7 @@ export const GET = withAuth(async (req: NextRequest, ctx) => {
     helper_agents: t.helperAgentIds.map(id => ({ id, ...agentMap.get(id) })),
     status: t.status,
     task_count: t.taskCount,
+    silent_task_count: t.silentTaskCount ?? 0,
     started_at: t.startedAt,
     completed_at: t.completedAt,
     channel: t.channel,

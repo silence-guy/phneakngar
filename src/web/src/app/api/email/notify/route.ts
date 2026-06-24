@@ -1,13 +1,19 @@
 import { NextRequest } from "next/server"
-import { queries, MeetingStatus, EmailNotifyRequestSchema } from "@alook/shared"
+import { queries, MeetingStatus, EmailNotifyRequestSchema, EMAIL_NOTIFY_SECRET_HEADER } from "@alook/shared"
 import { getDb } from "@/lib/db"
 import { withEnv } from "@/lib/middleware/env"
-import { writeJSON, parseBody } from "@/lib/middleware/helpers"
+import { writeJSON, writeError, parseBody } from "@/lib/middleware/helpers"
 import { broadcastToUser } from "@/lib/broadcast"
 import { invalidate, cacheKeys } from "@/lib/cache"
 import { dispatchEmailToAgent } from "@/lib/services/email-dispatch"
 
 export const POST = withEnv(async (req: NextRequest, ctx) => {
+  const secret = ctx.env.EMAIL_NOTIFY_SECRET
+  if (!secret) return writeError("email notify secret not configured", 500)
+  if (req.headers.get(EMAIL_NOTIFY_SECRET_HEADER) !== secret) {
+    return writeError("unauthorized", 401)
+  }
+
   const db = getDb(ctx.env.DB)
 
   const [body, valErr] = await parseBody(req, EmailNotifyRequestSchema);

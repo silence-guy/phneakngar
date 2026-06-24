@@ -15,6 +15,7 @@ declare namespace Cloudflare {
     BETTER_AUTH_SECRET: string
     BETTER_AUTH_URL: string
     ENCRYPTION_KEY: string
+    EMAIL_NOTIFY_SECRET: string
     RATE_LIMIT_KV: KVNamespace
     CACHE_KV: KVNamespace
     AUTH_OTP_RATE_LIMIT_MAX?: string

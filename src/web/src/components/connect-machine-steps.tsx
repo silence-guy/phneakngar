@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { Check, Play, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { connectMachineLabel } from "@/lib/locale";
 import { cliCmd, getAppMode } from "@/lib/utils";
 import { isTauri, tauriInvoke } from "@alook/shared";
 
@@ -48,7 +49,7 @@ export function ConnectMachineSteps({
 
   const copyRegister = () => {
     navigator.clipboard.writeText(command);
-    toast.success("Copied to clipboard");
+    toast.success(connectMachineLabel("copiedToClipboard"));
   };
 
   const executeRegister = async () => {
@@ -57,12 +58,12 @@ export function ConnectMachineSteps({
     try {
       const result = await tauriInvoke<{ success: boolean; message: string }>("register_cli", { token: generatedToken });
       if (result.success) {
-        toast.success("Registered successfully");
+        toast.success(connectMachineLabel("registeredSuccessfully"));
       } else {
-        toast.error(result.message || "Registration failed");
+        toast.error(result.message || connectMachineLabel("registrationFailed"));
       }
     } catch {
-      toast.error("Failed to execute registration");
+      toast.error(connectMachineLabel("failedToExecuteRegistration"));
     } finally {
       setExecuting(false);
     }
@@ -72,22 +73,22 @@ export function ConnectMachineSteps({
     return (
       <div className="flex items-center gap-2 text-sm text-emerald-600">
         <Check className="size-4" />
-        Computer connected
+        {connectMachineLabel("computerConnected")}
       </div>
     );
   }
 
   return (
     <div className="space-y-3">
-      <p className="text-sm font-medium">Connect a computer</p>
+      <p className="text-sm font-medium">{connectMachineLabel("connectComputer")}</p>
       <p className="text-xs text-muted-foreground">
         {isDesktopApp
-          ? "Click to register your machine with Alook."
-          : "Run this in your terminal to link your machine."}
+          ? connectMachineLabel("desktopDescription")
+          : connectMachineLabel("terminalDescription")}
       </p>
       {generatingToken ? (
         <div className="rounded-md bg-muted p-2.5 font-mono text-xs text-muted-foreground animate-pulse">
-          Generating token...
+          {connectMachineLabel("generatingToken")}
         </div>
       ) : generatedToken ? (
         <div className="space-y-2">
@@ -100,9 +101,9 @@ export function ConnectMachineSteps({
               title={cliPrefix ? `${cliPrefix} register --token <token>` : undefined}
             >
               {executing ? (
-                <><Loader2 className="size-3 animate-spin mr-1" /> Registering...</>
+                <><Loader2 className="size-3 animate-spin mr-1" /> {connectMachineLabel("registering")}</>
               ) : (
-                <><Play className="size-3 mr-1" /> Register</>
+                <><Play className="size-3 mr-1" /> {connectMachineLabel("register")}</>
               )}
             </Button>
           ) : (
@@ -118,10 +119,10 @@ export function ConnectMachineSteps({
                 >
                   {command}
                 </TooltipTrigger>
-                <TooltipContent>Click to copy</TooltipContent>
+                <TooltipContent>{connectMachineLabel("clickToCopy")}</TooltipContent>
               </Tooltip>
               <Button size="sm" onClick={copyRegister} className="w-full">
-                Copy Command
+                {connectMachineLabel("copyCommand")}
               </Button>
             </>
           )}

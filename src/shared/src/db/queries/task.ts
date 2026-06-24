@@ -1,8 +1,8 @@
 import { eq, and, desc, asc, inArray, notInArray, ne, count, lt, or, sql, exists } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
-import { agentTaskQueue, taskMessage, conversation } from "../schema";
+import { agentTaskQueue, taskMessage, conversation, message } from "../schema";
 import type { Database } from "../index";
-import { ClaimedTaskRowSchema } from "../../schemas";
+import { ClaimedTaskRowSchema, type TaskVisibleOutcomeStatus } from "../../schemas";
 import { TASK_TYPES } from "../../constants";
 
 export async function createTask(
@@ -19,6 +19,8 @@ export async function createTask(
     context?: Record<string, unknown>;
     traceId?: string | null;
     parentTaskId?: string | null;
+    localeOverride?: string | null;
+    retryOfTaskId?: string | null;
   }
 ) {
   const rows = await db
@@ -35,16 +37,18 @@ export async function createTask(
       context: data.context ?? undefined,
       traceId: data.traceId ?? null,
       parentTaskId: data.parentTaskId ?? null,
+      localeOverride: data.localeOverride ?? null,
+      retryOfTaskId: data.retryOfTaskId ?? null,
     })
     .returning();
   return rows[0]!;
 }
 
-export async function countTasksByTrace(db: Database, traceId: string) {
+export async function countTasksByTrace(db: Database, traceId: string, workspaceId: string) {
   const rows = await db
     .select({ value: count() })
     .from(agentTaskQueue)
-    .where(eq(agentTaskQueue.traceId, traceId));
+    .where(and(eq(agentTaskQueue.traceId, traceId), eq(agentTaskQueue.workspaceId, workspaceId)));
   return Number(rows[0]?.value ?? 0);
 }
 
@@ -247,6 +251,8 @@ export async function claimTask(db: Database, agentId: string, workspaceId: stri
       .where(
         and(
           eq(agentTaskQueue.id, targetId),
+          eq(agentTaskQueue.agentId, agentId),
+          eq(agentTaskQueue.workspaceId, workspaceId),
           eq(agentTaskQueue.status, "queued")
         )
       )
@@ -318,7 +324,7 @@ export async function failTask(
 ) {
   const rows = await db
     .update(agentTaskQueue)
-    .set({ status: "failed", completedAt: new Date().toISOString(), error })
+    .set({ status: "failed", completedAt: new Date().toISOString(), error, visibleOutcomeStatus: "not_required" })
     .where(
       and(
         eq(agentTaskQueue.id, id),
@@ -330,6 +336,41 @@ export async function failTask(
   return rows[0] ?? null;
 }
 
+export async function detectTaskVisibleOutcome(
+  db: Database,
+  id: string,
+  workspaceId: string,
+): Promise<TaskVisibleOutcomeStatus> {
+  const rows = await db
+    .select({ value: count() })
+    .from(message)
+    .innerJoin(conversation, eq(message.conversationId, conversation.id))
+    .where(
+      and(
+        eq(message.taskId, id),
+        eq(conversation.workspaceId, workspaceId),
+        eq(message.status, "active"),
+      ),
+    );
+
+  return Number(rows[0]?.value ?? 0) > 0
+    ? "visible_output"
+    : "completed_without_visible_output";
+}
+
+export async function updateTaskVisibleOutcomeStatus(
+  db: Database,
+  id: string,
+  workspaceId: string,
+  visibleOutcomeStatus: TaskVisibleOutcomeStatus,
+) {
+  const rows = await db
+    .update(agentTaskQueue)
+    .set({ visibleOutcomeStatus })
+    .where(and(eq(agentTaskQueue.id, id), eq(agentTaskQueue.workspaceId, workspaceId)))
+    .returning();
+  return rows[0] ?? null;
+}
 
 export async function listPendingTasksByRuntimes(
   db: Database,
@@ -372,7 +413,7 @@ export async function hasPendingTaskForConversation(
 export async function supersedeTask(db: Database, id: string, workspaceId: string) {
   const rows = await db
     .update(agentTaskQueue)
-    .set({ status: "superseded", completedAt: new Date().toISOString() })
+    .set({ status: "superseded", completedAt: new Date().toISOString(), visibleOutcomeStatus: "not_required" })
     .where(
       and(
         eq(agentTaskQueue.id, id),
@@ -387,7 +428,7 @@ export async function supersedeTask(db: Database, id: string, workspaceId: strin
 export async function markFailedAsSuperseded(db: Database, id: string, workspaceId: string) {
   const rows = await db
     .update(agentTaskQueue)
-    .set({ status: "superseded" })
+    .set({ status: "superseded", visibleOutcomeStatus: "not_required" })
     .where(
       and(
         eq(agentTaskQueue.id, id),
@@ -402,7 +443,7 @@ export async function markFailedAsSuperseded(db: Database, id: string, workspace
 export async function cancelTask(db: Database, id: string, workspaceId: string) {
   const rows = await db
     .update(agentTaskQueue)
-    .set({ status: "cancelled", completedAt: new Date().toISOString() })
+    .set({ status: "cancelled", completedAt: new Date().toISOString(), visibleOutcomeStatus: "not_required" })
     .where(
       and(
         eq(agentTaskQueue.id, id),
@@ -424,6 +465,7 @@ export async function failStaleDispatchedTasks(db: Database, workspaceId: string
       status: "failed",
       completedAt: new Date().toISOString(),
       error: "timed out in dispatched state (daemon likely disconnected)",
+      visibleOutcomeStatus: "not_required",
     })
     .where(
       and(
@@ -455,7 +497,7 @@ export async function cancelActiveTasksByConversation(
 ) {
   return db
     .update(agentTaskQueue)
-    .set({ status: "cancelled", completedAt: new Date().toISOString() })
+    .set({ status: "cancelled", completedAt: new Date().toISOString(), visibleOutcomeStatus: "not_required" })
     .where(
       and(
         eq(agentTaskQueue.conversationId, conversationId),
@@ -628,6 +670,7 @@ export async function claimKillTasks(
     .where(
       and(
         inArray(agentTaskQueue.id, ids),
+        eq(agentTaskQueue.workspaceId, workspaceId),
         eq(agentTaskQueue.status, "queued")
       )
     )
@@ -645,6 +688,7 @@ export async function failStaleKillTasks(db: Database, workspaceId: string) {
       status: "failed",
       completedAt: new Date().toISOString(),
       error: "kill_task timed out (daemon likely offline)",
+      visibleOutcomeStatus: "not_required",
     })
     .where(
       and(
@@ -689,8 +733,9 @@ export async function failStaleRunningTasks(db: Database, workspaceId: string, s
       status: "failed",
       completedAt: new Date().toISOString(),
       error: `timed out in running state (no message activity for ${Math.round(staleSeconds / 60)} minutes)`,
+      visibleOutcomeStatus: "not_required",
     })
-    .where(and(inArray(agentTaskQueue.id, staleIds), eq(agentTaskQueue.status, "running")))
+    .where(and(inArray(agentTaskQueue.id, staleIds), eq(agentTaskQueue.workspaceId, workspaceId), eq(agentTaskQueue.status, "running")))
     .returning({ agentId: agentTaskQueue.agentId, workspaceId: agentTaskQueue.workspaceId, conversationId: agentTaskQueue.conversationId });
   return rows;
 }
@@ -747,6 +792,7 @@ export async function listTaskHistory(
       startedAt: agentTaskQueue.startedAt,
       completedAt: agentTaskQueue.completedAt,
       error: agentTaskQueue.error,
+      visibleOutcomeStatus: agentTaskQueue.visibleOutcomeStatus,
     })
     .from(agentTaskQueue)
     .where(and(...conditions))
@@ -871,6 +917,7 @@ export async function listTraces(
       agentId: agentTaskQueue.agentId,
       status: agentTaskQueue.status,
       completedAt: agentTaskQueue.completedAt,
+      visibleOutcomeStatus: agentTaskQueue.visibleOutcomeStatus,
     })
     .from(agentTaskQueue)
     .where(
@@ -899,6 +946,7 @@ export async function listTraces(
     startedAt: string;
     completedAt: string | null;
     channel: string;
+    silentTaskCount: number;
   }[] = [];
 
   for (const root of roots) {
@@ -927,6 +975,7 @@ export async function listTraces(
       startedAt: root.createdAt,
       completedAt,
       channel: root.channel ?? "default",
+      silentTaskCount: tasks.filter((t) => t.visibleOutcomeStatus === "completed_without_visible_output").length,
     });
   }
 
@@ -1011,6 +1060,7 @@ export async function getTraceTree(
       conversationId: agentTaskQueue.conversationId,
       createdAt: agentTaskQueue.createdAt,
       completedAt: agentTaskQueue.completedAt,
+      visibleOutcomeStatus: agentTaskQueue.visibleOutcomeStatus,
     })
     .from(agentTaskQueue)
     .where(

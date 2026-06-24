@@ -9,6 +9,7 @@ import Link from "@tiptap/extension-link";
 import TextAlign from "@tiptap/extension-text-align";
 import Image from "@tiptap/extension-image";
 import { EmailToolbar } from "@/components/email-toolbar";
+import { EMAIL_LABELS } from "@/components/email-labels";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
@@ -60,7 +61,7 @@ export function EmailCompose({
         link: false,
         underline: false,
       }),
-      Placeholder.configure({ placeholder: "Write your email..." }),
+      Placeholder.configure({ placeholder: EMAIL_LABELS.compose.bodyPlaceholder }),
       Underline,
       Link.configure({
         autolink: true,
@@ -109,7 +110,7 @@ export function EmailCompose({
       const { uploadEmailAttachment } = await import("@/lib/api");
       for (const file of Array.from(files)) {
         if (file.size > 10 * 1024 * 1024) {
-          toast.error(`${file.name} exceeds 10 MB limit`);
+          toast.error(EMAIL_LABELS.compose.fileTooLarge(file.name));
           continue;
         }
         const workspaceId = new URLSearchParams(window.location.search).get("workspace_id") ?? "";
@@ -117,7 +118,7 @@ export function EmailCompose({
         setAttachments((prev) => [...prev, meta]);
       }
     } catch {
-      toast.error("Failed to upload attachment");
+      toast.error(EMAIL_LABELS.compose.uploadFailed);
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -131,7 +132,7 @@ export function EmailCompose({
   return (
     <div className="flex flex-col h-full w-full min-w-0">
       <div className="flex items-center justify-between border-b border-border/40 px-4 py-2">
-        <h3 className="text-sm font-heading font-medium tracking-tight">New Email</h3>
+        <h3 className="text-sm font-heading font-medium tracking-tight">{EMAIL_LABELS.compose.title}</h3>
         <div className="flex items-center gap-1">
           <Button
             variant="ghost"
@@ -141,7 +142,7 @@ export function EmailCompose({
             disabled={sending}
           >
             <X className="size-3 mr-1" />
-            Discard
+            {EMAIL_LABELS.compose.discard}
           </Button>
           <Button
             size="sm"
@@ -154,18 +155,18 @@ export function EmailCompose({
             ) : (
               <Send className="size-3 mr-1" />
             )}
-            Send
+            {EMAIL_LABELS.compose.send}
           </Button>
         </div>
       </div>
 
       <div className="border-b border-border/30 px-4 py-2.5 space-y-1 min-w-0">
         <div className="flex items-center gap-2 text-sm min-w-0">
-          <span className="text-muted-foreground w-16 shrink-0">From</span>
+          <span className="text-muted-foreground w-16 shrink-0">{EMAIL_LABELS.compose.from}</span>
           <span className="text-muted-foreground truncate min-w-0">{fromAddress}</span>
         </div>
         <div className="flex items-center gap-2 text-sm min-w-0">
-          <span className="text-muted-foreground w-16 shrink-0">To</span>
+          <span className="text-muted-foreground w-16 shrink-0">{EMAIL_LABELS.compose.to}</span>
           <div className="flex-1 min-w-0 -ml-1.5 rounded-md bg-muted/40">
             <Input
               type="email"
@@ -178,12 +179,12 @@ export function EmailCompose({
           </div>
         </div>
         <div className="flex items-center gap-2 text-sm min-w-0">
-          <span className="text-muted-foreground w-16 shrink-0">Subject</span>
+          <span className="text-muted-foreground w-16 shrink-0">{EMAIL_LABELS.compose.subject}</span>
           <div className="flex-1 min-w-0 -ml-1.5 rounded-md bg-muted/40">
             <Input
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
-              placeholder="Email subject"
+              placeholder={EMAIL_LABELS.compose.subjectPlaceholder}
               className="h-7 text-sm border-0 bg-transparent px-1.5 shadow-none focus-visible:ring-0 placeholder:text-muted-foreground/50"
               disabled={sending}
             />
@@ -220,7 +221,7 @@ export function EmailCompose({
                 <Paperclip className="size-3.5" />
               )}
             </TooltipTrigger>
-            <TooltipContent>Attach file</TooltipContent>
+            <TooltipContent>{EMAIL_LABELS.compose.attachFile}</TooltipContent>
           </Tooltip>
         </div>
       </div>

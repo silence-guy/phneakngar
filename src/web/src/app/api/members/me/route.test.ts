@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 
 const mockGetMemberByUserAndWorkspace = vi.fn();
-const mockUpdateMemberGlobalInstruction = vi.fn();
+const mockUpdateMemberSettings = vi.fn();
 
 vi.mock("@opennextjs/cloudflare", () => ({
   getCloudflareContext: vi.fn(async () => ({ env: { DB: {} } })),
@@ -18,7 +18,7 @@ vi.mock("@alook/shared", async () => {
     queries: {
       member: {
         getMemberByUserAndWorkspace: (...args: unknown[]) => mockGetMemberByUserAndWorkspace(...args),
-        updateMemberGlobalInstruction: (...args: unknown[]) => mockUpdateMemberGlobalInstruction(...args),
+        updateMemberSettings: (...args: unknown[]) => mockUpdateMemberSettings(...args),
       },
     },
   };
@@ -75,6 +75,7 @@ describe("GET /api/members/me", () => {
   it("returns global_instruction for the current user", async () => {
     mockGetMemberByUserAndWorkspace.mockResolvedValue({
       globalInstruction: "always speak chinese",
+      preferredLocale: "km",
     });
 
     const res = await GET(getReq("w1"));
@@ -82,6 +83,7 @@ describe("GET /api/members/me", () => {
 
     expect(res.status).toBe(200);
     expect(body.global_instruction).toBe("always speak chinese");
+    expect(body.preferred_locale).toBe("km");
   });
 
   it("returns 400 when workspace_id is missing", async () => {
@@ -101,8 +103,9 @@ describe("PATCH /api/members/me", () => {
   beforeEach(() => vi.clearAllMocks());
 
   it("saves and returns updated global instruction", async () => {
-    mockUpdateMemberGlobalInstruction.mockResolvedValue({
+    mockUpdateMemberSettings.mockResolvedValue({
       globalInstruction: "new instruction",
+      preferredLocale: "km",
     });
 
     const res = await PATCH(patchReq({ global_instruction: "new instruction" }));
@@ -110,7 +113,29 @@ describe("PATCH /api/members/me", () => {
 
     expect(res.status).toBe(200);
     expect(body.global_instruction).toBe("new instruction");
-    expect(mockUpdateMemberGlobalInstruction).toHaveBeenCalledWith({}, "u1", "w1", "new instruction");
+    expect(body.preferred_locale).toBe("km");
+    expect(mockUpdateMemberSettings).toHaveBeenCalledWith({}, "u1", "w1", {
+      globalInstruction: "new instruction",
+      preferredLocale: undefined,
+    });
+  });
+
+  it("saves and returns updated preferred locale", async () => {
+    mockUpdateMemberSettings.mockResolvedValue({
+      globalInstruction: "existing instruction",
+      preferredLocale: "en",
+    });
+
+    const res = await PATCH(patchReq({ preferred_locale: "en" }));
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body.global_instruction).toBe("existing instruction");
+    expect(body.preferred_locale).toBe("en");
+    expect(mockUpdateMemberSettings).toHaveBeenCalledWith({}, "u1", "w1", {
+      globalInstruction: undefined,
+      preferredLocale: "en",
+    });
   });
 
   it("returns 400 for invalid body", async () => {
@@ -119,7 +144,7 @@ describe("PATCH /api/members/me", () => {
   });
 
   it("returns 404 when member not found", async () => {
-    mockUpdateMemberGlobalInstruction.mockResolvedValue(null);
+    mockUpdateMemberSettings.mockResolvedValue(null);
 
     const res = await PATCH(patchReq({ global_instruction: "something" }));
     expect(res.status).toBe(404);

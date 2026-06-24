@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { queries, RecruitAgentRequestSchema, isValidHandle, isOnline, buildMimeMessage, extractThreadId, buildEmailMapKey, DEV_WEB_URL, toAlookAddress } from "@alook/shared";
+import { queries, RecruitAgentRequestSchema, isValidHandle, isOnline, buildMimeMessage, extractThreadId, buildEmailMapKey, DEV_WEB_URL, toAlookAddress, EMAIL_NOTIFY_SECRET_HEADER } from "@alook/shared";
 import { nanoid } from "nanoid";
 import { uniqueNamesGenerator, names } from "unique-names-generator";
 import { getDb } from "@/lib/db";
@@ -153,7 +153,14 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
         isInternal: true,
         traceId,
       });
-      const notifyInit = { method: "POST", headers: { "Content-Type": "application/json" }, body: notifyPayload };
+      const notifyInit = {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          [EMAIL_NOTIFY_SECRET_HEADER]: cfEnv.EMAIL_NOTIFY_SECRET,
+        },
+        body: notifyPayload,
+      };
       try {
         await cfEnv.WORKER_SELF_REFERENCE!.fetch("http://internal/api/email/notify", notifyInit);
       } catch {

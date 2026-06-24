@@ -166,6 +166,64 @@ describe("TaskPayloadBuilder", () => {
     expect(result[0].agent!.instructions).toBe("speak english\n\nagent rules");
   });
 
+  it("resolves language policy from owner preferred locale", async () => {
+    mockGetAllAgentsForWorkspace.mockResolvedValue([
+      { id: "a1", ownerId: "owner1", instructions: "agent rules", name: "Bot", runtimeConfig: {} },
+    ]);
+    mockGetAllEmailAccountsForWorkspace.mockResolvedValue([]);
+    mockGetAllColleaguesForWorkspace.mockResolvedValue([]);
+    mockGetMemberByUserAndWorkspace.mockResolvedValue({ globalInstruction: "", preferredLocale: "en" });
+    mockGetUser.mockResolvedValue({ name: "Owner", email: "owner@ex.com" });
+    mockGetConversationsByIds.mockResolvedValue([]);
+
+    const result = await builder.buildFullPayloads([makeTask()], "w1");
+
+    expect(result[0].language_policy.default_user_facing_language).toBe("en");
+    expect(result[0].agent!.preferred_locale).toBe("en");
+  });
+
+  it("resolves language policy from agent preference before owner preference", async () => {
+    mockGetAllAgentsForWorkspace.mockResolvedValue([
+      {
+        id: "a1",
+        ownerId: "owner1",
+        preferredLocale: "bilingual",
+        languagePolicy: "Use concise Khmer first.",
+        instructions: "agent rules",
+        name: "Bot",
+        runtimeConfig: {},
+      },
+    ]);
+    mockGetAllEmailAccountsForWorkspace.mockResolvedValue([]);
+    mockGetAllColleaguesForWorkspace.mockResolvedValue([]);
+    mockGetMemberByUserAndWorkspace.mockResolvedValue({ globalInstruction: "", preferredLocale: "en" });
+    mockGetUser.mockResolvedValue({ name: "Owner", email: "owner@ex.com" });
+    mockGetConversationsByIds.mockResolvedValue([]);
+
+    const result = await builder.buildFullPayloads([makeTask()], "w1");
+
+    expect(result[0].language_policy.default_user_facing_language).toBe("bilingual");
+    expect(result[0].language_policy.custom_policy).toBe("Use concise Khmer first.");
+    expect(result[0].agent!.preferred_locale).toBe("bilingual");
+    expect(result[0].agent!.language_policy).toBe("Use concise Khmer first.");
+  });
+
+  it("resolves task locale override before persisted agent settings", async () => {
+    mockGetAllAgentsForWorkspace.mockResolvedValue([
+      { id: "a1", ownerId: "owner1", preferredLocale: "km", instructions: "agent rules", name: "Bot", runtimeConfig: {} },
+    ]);
+    mockGetAllEmailAccountsForWorkspace.mockResolvedValue([]);
+    mockGetAllColleaguesForWorkspace.mockResolvedValue([]);
+    mockGetMemberByUserAndWorkspace.mockResolvedValue({ globalInstruction: "", preferredLocale: "km" });
+    mockGetUser.mockResolvedValue({ name: "Owner", email: "owner@ex.com" });
+    mockGetConversationsByIds.mockResolvedValue([]);
+
+    const result = await builder.buildFullPayloads([makeTask({ localeOverride: "auto" })], "w1");
+
+    expect(result[0].language_policy.default_user_facing_language).toBe("auto");
+    expect(result[0].agent!.preferred_locale).toBe("km");
+  });
+
   it("handles task where agent is not found (agent: null)", async () => {
     mockGetAllAgentsForWorkspace.mockResolvedValue([]);
     mockGetAllEmailAccountsForWorkspace.mockResolvedValue([]);

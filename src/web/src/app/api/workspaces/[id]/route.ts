@@ -29,12 +29,19 @@ export const PATCH = withAuth(async (req: NextRequest, ctx) => {
   const [body, err] = await parseBody(req, UpdateWorkspaceRequestSchema);
   if (err) return err;
 
-  if (!body.name && !body.slug) return writeError("at least one of name or slug is required", 400);
+  if (!body.name && !body.slug && !body.default_locale) {
+    return writeError("at least one of name, slug, or default_locale is required", 400);
+  }
 
   const db = getDb(ctx.env.DB);
+  const update = {
+    ...(body.name !== undefined ? { name: body.name } : {}),
+    ...(body.slug !== undefined ? { slug: body.slug } : {}),
+    ...(body.default_locale !== undefined ? { defaultLocale: body.default_locale } : {}),
+  };
 
   try {
-    const updated = await queries.workspace.updateWorkspace(db, owner.workspaceId, body);
+    const updated = await queries.workspace.updateWorkspace(db, owner.workspaceId, update);
     if (!updated) return writeError("workspace not found", 404);
     return writeJSON(workspaceToResponse(updated));
   } catch (err: unknown) {

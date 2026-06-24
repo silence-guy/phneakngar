@@ -9,6 +9,7 @@ export interface AuthContext {
   env: Env
   userId: string
   email: string
+  authType: "user" | "machine"
   workspaceId?: string
 }
 
@@ -43,7 +44,7 @@ export function withAuth(handler: AuthenticatedHandler) {
             900,
             () => queries.machineToken.getMachineTokenByToken(db, raw),
           )
-          if (!mt) {
+          if (!mt || mt.status !== "active" || !mt.workspaceId) {
             return NextResponse.json({ error: "invalid token" }, { status: 401 })
           }
           throttled(
@@ -55,7 +56,8 @@ export function withAuth(handler: AuthenticatedHandler) {
             env: cloudflareEnv,
             userId: mt.userId,
             email: mt.userEmail,
-            workspaceId: mt.workspaceId ?? undefined,
+            authType: "machine",
+            workspaceId: mt.workspaceId,
           }
           return handler(req, { ...authCtx, params: resolvedParams })
         } catch {
@@ -93,6 +95,7 @@ export function withAuth(handler: AuthenticatedHandler) {
       env: cloudflareEnv,
       userId: sessionResult.response.user.id,
       email: sessionResult.response.user.email,
+      authType: "user",
     }
     const res = await handler(req, { ...authCtx, params: resolvedParams })
 

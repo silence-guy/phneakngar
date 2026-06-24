@@ -11,11 +11,15 @@ vi.mock("@/lib/db", () => ({
 
 const mockSyncGlobal = vi.fn();
 const mockSyncAgent = vi.fn();
+const mockGetMachineByDaemon = vi.fn();
 vi.mock("@alook/shared", async () => {
   const actual = await vi.importActual("@alook/shared");
   return {
     ...actual,
     queries: {
+      machine: {
+        getMachineByDaemon: (...a: unknown[]) => mockGetMachineByDaemon(...a),
+      },
       agentSkill: {
         syncGlobalSkills: (...a: unknown[]) => mockSyncGlobal(...a),
         syncAgentSkills: (...a: unknown[]) => mockSyncAgent(...a),
@@ -29,7 +33,7 @@ let injectWorkspaceId: string | undefined = "w1";
 vi.mock("@/lib/middleware/auth", () => ({
   withAuth: vi.fn((handler: any) => async (req: any, ctx?: any) => {
     const params = ctx?.params instanceof Promise ? await ctx.params : ctx?.params;
-    return handler(req, { env: {}, userId: "u1", email: "u@t.com", workspaceId: injectWorkspaceId, params });
+    return handler(req, { env: {}, userId: "u1", email: "u@t.com", authType: injectWorkspaceId ? "machine" as const : "user" as const, workspaceId: injectWorkspaceId, params });
   }),
 }));
 
@@ -38,6 +42,7 @@ import { POST } from "./route";
 beforeEach(() => {
   vi.clearAllMocks();
   injectWorkspaceId = "w1";
+  mockGetMachineByDaemon.mockResolvedValue(null);
 });
 
 function post(body: unknown) {

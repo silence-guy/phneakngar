@@ -1,19 +1,10 @@
 import React from "react";
-
-const EVENT_LABELS: Record<string, string> = {
-  created: "Issue created",
-  status_changed: "Issue updated",
-  dispatch_failed: "Dispatch failed",
-};
-
-function stampText(
-  event: string,
-  toStatus?: string,
-): string | null {
-  if (event === "created") return "New";
-  if (event === "status_changed") return toStatus ?? "Done";
-  return null;
-}
+import {
+  issueAssignedMeta,
+  issueEventLabel,
+  issueStampLabel,
+  issueStatusTransitionMeta,
+} from "@/components/issues/issue-labels";
 
 export function IssueCard({
   title,
@@ -30,12 +21,12 @@ export function IssueCard({
   assigneeName?: string;
   onClick?: () => void;
 }) {
-  const stamp = stampText(event, toStatus);
+  const stamp = issueStampLabel(event, toStatus);
   const meta =
     event === "created" && assigneeName
-      ? `assigned to ${assigneeName}`
+      ? issueAssignedMeta(assigneeName)
       : event === "status_changed" && fromStatus && toStatus
-        ? `${fromStatus} → ${toStatus}`
+        ? issueStatusTransitionMeta(fromStatus, toStatus)
         : null;
 
   return (
@@ -48,7 +39,7 @@ export function IssueCard({
       <span className="w-1 bg-(--ti) shrink-0 self-stretch" />
       <span className="flex-1 p-3 min-w-0 flex flex-col gap-1 relative">
         <span className="text-[0.62rem] font-semibold uppercase tracking-wider text-(--ti) leading-none">
-          {EVENT_LABELS[event] ?? event}
+          {issueEventLabel(event)}
         </span>
         <span className="text-[0.92rem] font-semibold tracking-[-0.01em] leading-[1.3] line-clamp-2 pr-8">
           {title}

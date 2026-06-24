@@ -89,6 +89,7 @@ export {
   DEV_WEB_URL,
   DEV_WS_DO_URL,
   DEV_EMAIL_WORKER_URL,
+  EMAIL_NOTIFY_SECRET_HEADER,
   MeetingStatus,
   TERMINAL_MEETING_STATUSES,
 } from "./constants";
@@ -103,9 +104,62 @@ export type {
   MeetingStatusType,
 } from "./constants";
 
+// Locale
+export {
+  Locale,
+  SUPPORTED_LOCALES,
+  SUPPORTED_AGENT_LANGUAGE_MODES,
+  AgentLanguageMode,
+  defaultLocale,
+  localeDisplayLabels,
+  coreEntityLabels,
+  agentStatusLabels,
+  runtimeStatusLabels,
+  taskStatusLabels,
+  taskTypeLabels,
+  issueStatusLabels,
+  messageRoleLabels,
+  meetingStatusLabels,
+  statusLabels,
+  localeTechnicalTokenPolicy,
+  isSupportedLocale,
+  isSupportedAgentLanguageMode,
+  resolveLocale,
+  resolveAgentLanguageMode,
+  resolveAgentLanguagePolicy,
+  buildAgentPromptLanguagePolicy,
+  getLocalizedLabel,
+} from "./locale";
+
+export type {
+  LocaleLabels,
+  CoreEntity,
+  AgentLanguagePolicyInput,
+  ResolvedAgentLanguagePolicy,
+  AgentPromptLanguagePolicy,
+} from "./locale";
+
+// Email attachments
+export {
+  buildEmailDraftAttachmentKey,
+  getEmailDraftAttachmentPrefix,
+  isEmailDraftAttachmentKeyForScope,
+  sanitizeEmailAttachmentFilename,
+} from "./email-attachments";
+
+// Network host validation
+export {
+  isPublicNetworkHost,
+  normalizePublicNetworkHost,
+} from "./network-host";
+
 // Schemas
 export {
   TaskStatusSchema,
+  PersistedLocaleSchema,
+  AgentLanguageModeSchema,
+  TaskVisibleOutcomeStatusSchema,
+  AgentPromptLanguagePolicyApiSchema,
   ClaimedTaskRowSchema,
   TaskAgentDataApiSchema,
   TaskApiBaseSchema,
@@ -171,6 +225,10 @@ export {
 } from "./schemas";
 
 export type {
+  PersistedLocale,
+  AgentLanguageModeApi,
+  TaskVisibleOutcomeStatus,
+  AgentPromptLanguagePolicyApi,
   ClaimedTaskRow,
   TaskAgentDataApi,
   TaskApiBase,

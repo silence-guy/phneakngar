@@ -30,7 +30,7 @@ function makeReq(wsId?: string) {
   return new NextRequest(url);
 }
 
-const auth = { userId: "u1", email: "u@t.com" };
+const auth = { userId: "u1", email: "u@t.com", authType: "user" as const };
 
 describe("withWorkspaceMember", () => {
   beforeEach(() => vi.clearAllMocks());
@@ -62,8 +62,36 @@ describe("withWorkspaceMember", () => {
 
   it("allows machine token workspace access when auth workspace matches", async () => {
     mockGetMemberByUserAndWorkspace.mockResolvedValue(null);
-    const result = await withWorkspaceMember(makeReq("w1"), { ...auth, workspaceId: "w1" });
+    const result = await withWorkspaceMember(makeReq("w1"), {
+      ...auth,
+      authType: "machine" as const,
+      workspaceId: "w1",
+    });
     expect(result).toEqual({ workspaceId: "w1", memberRole: "member" });
+    expect(mockGetMemberByUserAndWorkspace).not.toHaveBeenCalled();
+  });
+
+  it("rejects unbound machine token workspace access", async () => {
+    const result = await withWorkspaceMember(makeReq("w1"), {
+      ...auth,
+      authType: "machine" as const,
+      workspaceId: undefined,
+    });
+    expect(result).toBeInstanceOf(NextResponse);
+    expect((result as NextResponse).status).toBe(403);
+    expect(mockGetMemberByUserAndWorkspace).not.toHaveBeenCalled();
+  });
+
+  it("rejects machine token access to a different workspace", async () => {
+    mockGetMemberByUserAndWorkspace.mockResolvedValue({ role: "owner" });
+    const result = await withWorkspaceMember(makeReq("w2"), {
+      ...auth,
+      authType: "machine" as const,
+      workspaceId: "w1",
+    });
+    expect(result).toBeInstanceOf(NextResponse);
+    expect((result as NextResponse).status).toBe(403);
+    expect(mockGetMemberByUserAndWorkspace).not.toHaveBeenCalled();
   });
 });
 
@@ -79,6 +107,16 @@ describe("withWorkspaceOwner", () => {
   it("returns 403 for member role", async () => {
     mockGetMemberByUserAndWorkspace.mockResolvedValue({ role: "member" });
     const result = await withWorkspaceOwner(makeReq("w1"), auth);
+    expect(result).toBeInstanceOf(NextResponse);
+    expect((result as NextResponse).status).toBe(403);
+  });
+
+  it("returns 403 for machine token member role", async () => {
+    const result = await withWorkspaceOwner(makeReq("w1"), {
+      ...auth,
+      authType: "machine" as const,
+      workspaceId: "w1",
+    });
     expect(result).toBeInstanceOf(NextResponse);
     expect((result as NextResponse).status).toBe(403);
   });

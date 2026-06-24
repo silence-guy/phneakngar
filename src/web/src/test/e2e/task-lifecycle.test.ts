@@ -5,6 +5,12 @@ let seed: TestSeed
 let conversationId: string
 let taskId: string
 
+const EMAIL_NOTIFY_SECRET = process.env.EMAIL_NOTIFY_SECRET ?? "test-notify-secret"
+const emailNotifyHeaders = {
+  "Content-Type": "application/json",
+  "X-Alook-Email-Notify-Secret": EMAIL_NOTIFY_SECRET,
+}
+
 beforeAll(async () => {
   seed = seedTestData()
 
@@ -268,7 +274,7 @@ describe("context_key resume contract", () => {
       seed.machineToken,
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: emailNotifyHeaders,
         body: JSON.stringify({
           agentId: seed.agentId,
           workspaceId: seed.workspaceId,
@@ -316,7 +322,7 @@ describe("context_key resume contract", () => {
       seed.machineToken,
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: emailNotifyHeaders,
         body: JSON.stringify({
           agentId: seed.agentId,
           workspaceId: seed.workspaceId,

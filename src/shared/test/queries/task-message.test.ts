@@ -99,8 +99,8 @@ describe("listTaskErrorMessages", () => {
 });
 
 describe("listTaskMessagesSince", () => {
-  it("accepts (db, taskId, afterSeq)", () => {
-    expect(taskMessageQueries.listTaskMessagesSince.length).toBe(3);
+  it("accepts (db, taskId, afterSeq, workspaceId?)", () => {
+    expect(taskMessageQueries.listTaskMessagesSince.length).toBe(4);
   });
 });
 

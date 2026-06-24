@@ -4,8 +4,16 @@ import { NextRequest } from "next/server";
 const mockFailTask = vi.fn();
 const mockTaskToResponse = vi.fn();
 const mockGetConversation = vi.fn();
+const mockGetTask = vi.fn();
+const mockGetAgentRuntimeForWorkspace = vi.fn();
 
-let mockAuthCtx: Record<string, unknown> = { env: {}, userId: "u1", email: "u@t.com", workspaceId: "w1" };
+let mockAuthCtx: Record<string, unknown> = {
+  env: {},
+  userId: "u1",
+  email: "u@t.com",
+  authType: "machine" as const,
+  workspaceId: "w1",
+};
 
 vi.mock("@opennextjs/cloudflare", () => ({
   getCloudflareContext: vi.fn(() => ({ env: { DB: { withSession: () => ({}) } } })),
@@ -17,14 +25,17 @@ vi.mock("@alook/shared", async () => {
     ...real,
     createDb: vi.fn(() => ({})),
     queries: {
+      task: { getTask: (...args: any[]) => mockGetTask(...args) },
+      runtime: {
+        getAgentRuntimeForWorkspace: (...args: any[]) => mockGetAgentRuntimeForWorkspace(...args),
+      },
       conversation: { getConversation: (...args: any[]) => mockGetConversation(...args) },
     },
   };
 });
 vi.mock("@/lib/middleware/auth", () => ({
   withAuth: vi.fn((handler: any) => async (req: any, ctx?: any) => {
-    const params =
-      ctx?.params instanceof Promise ? await ctx.params : ctx?.params;
+    const params = ctx?.params instanceof Promise ? await ctx.params : ctx?.params;
     return handler(req, { ...mockAuthCtx, params });
   }),
 }));
@@ -67,7 +78,15 @@ const makeReq = (taskId: string, body: Record<string, unknown> = {}) =>
 describe("POST /api/daemon/tasks/[taskId]/fail", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockAuthCtx = { env: {}, userId: "u1", email: "u@t.com", workspaceId: "w1" };
+    mockAuthCtx = {
+      env: {},
+      userId: "u1",
+      email: "u@t.com",
+      authType: "machine" as const,
+      workspaceId: "w1",
+    };
+    mockGetTask.mockResolvedValue({ id: "t1", runtimeId: "rt1", workspaceId: "w1" });
+    mockGetAgentRuntimeForWorkspace.mockResolvedValue({ id: "rt1" });
   });
 
   it("returns failed task and broadcasts to conversation owner", async () => {
@@ -81,6 +100,8 @@ describe("POST /api/daemon/tasks/[taskId]/fail", () => {
 
     expect(res.status).toBe(200);
     expect(body).toEqual({ id: "t1", status: "failed" });
+    expect(mockGetTask).toHaveBeenCalledWith({}, "t1", "w1");
+    expect(mockGetAgentRuntimeForWorkspace).toHaveBeenCalledWith({}, "rt1", "w1", "u1");
     expect(mockFailTask).toHaveBeenCalledWith("t1", "w1", "boom");
     const { broadcastToUser } = await import("@/lib/broadcast");
     expect(broadcastToUser).toHaveBeenCalledWith("owner-u2", expect.objectContaining({ type: "task.updated", status: "failed" }));
@@ -89,7 +110,7 @@ describe("POST /api/daemon/tasks/[taskId]/fail", () => {
   });
 
   it("returns 403 when workspaceId is missing (session auth)", async () => {
-    mockAuthCtx = { env: {}, userId: "u1", email: "u@t.com" };
+    mockAuthCtx = { env: {}, userId: "u1", email: "u@t.com", authType: "user" as const };
 
     const res = await POST(makeReq("t1", { error: "boom" }), withParams("t1"));
     const body = await res.json();
@@ -99,13 +120,25 @@ describe("POST /api/daemon/tasks/[taskId]/fail", () => {
     expect(mockFailTask).not.toHaveBeenCalled();
   });
 
-  it("rejects cross-workspace task fail (task not found for workspace)", async () => {
-    mockFailTask.mockRejectedValue(new Error("cannot fail task in 'unknown' status"));
+  it("rejects cross-workspace task fail before calling the task service", async () => {
+    mockGetTask.mockResolvedValueOnce(null);
 
     const res = await POST(makeReq("t-other", { error: "boom" }), withParams("t-other"));
     const body = await res.json();
 
-    expect(res.status).toBe(400);
-    expect(mockFailTask).toHaveBeenCalledWith("t-other", "w1", "boom");
+    expect(res.status).toBe(404);
+    expect(body.error).toBe("task not found");
+    expect(mockFailTask).not.toHaveBeenCalled();
+  });
+
+  it("rejects tasks owned by another machine runtime", async () => {
+    mockGetAgentRuntimeForWorkspace.mockResolvedValueOnce(null);
+
+    const res = await POST(makeReq("t1", { error: "boom" }), withParams("t1"));
+    const body = await res.json();
+
+    expect(res.status).toBe(403);
+    expect(body.error).toBe("task runtime does not match token owner");
+    expect(mockFailTask).not.toHaveBeenCalled();
   });
 });

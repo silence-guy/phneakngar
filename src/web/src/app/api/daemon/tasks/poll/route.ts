@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { queries, PollRequestSchema, semverGte, type FileRequestItem, type PollMeetingItem } from "@alook/shared";
 import { getDb, withD1Retry } from "@/lib/db"
 import { withAuth } from "@/lib/middleware/auth";
+import { withDaemonMachine } from "@/lib/middleware/daemon";
 import { writeJSON, writeError, parseBody } from "@/lib/middleware/helpers";
 import { TaskService } from "@/lib/services/task";
 import { TaskPayloadBuilder } from "@/lib/services/task-payload-builder";
@@ -18,6 +19,9 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
   if (!ctx.workspaceId) {
     return writeError("Forbidden: machine token required", 403);
   }
+
+  const daemonAuth = await withDaemonMachine(db, ctx, body.daemon_id);
+  if (daemonAuth instanceof Response) return daemonAuth;
 
   // 1. Resolve runtime IDs from daemon_id + workspaceId (cached 10min)
   const runtimeIds = await cached(

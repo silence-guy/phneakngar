@@ -5,6 +5,11 @@ import { cn } from "@/lib/utils";
 import type { CalendarEvent, Agent } from "@alook/shared";
 import { Repeat } from "lucide-react";
 import { agentDot, agentInk } from "./calendar-month-grid";
+import {
+  hiddenEventsAriaLabel,
+  hiddenEventsLabel,
+  recurringTitlePrefix,
+} from "./calendar-labels";
 
 export interface CalendarDayPopoverProps {
   events: CalendarEvent[];
@@ -41,7 +46,7 @@ export function CalendarDayPopover({
       new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime()
   );
 
-  const dateLabel = date.toLocaleDateString(undefined, {
+  const dateLabel = date.toLocaleDateString("km-KH", {
     weekday: "short",
     month: "short",
     day: "numeric",
@@ -50,11 +55,11 @@ export function CalendarDayPopover({
   return (
     <Popover open={open} onOpenChange={onOpenChange}>
       <PopoverTrigger
-        aria-label={`${hiddenCount} more event${hiddenCount === 1 ? "" : "s"}`}
+        aria-label={hiddenEventsAriaLabel(hiddenCount)}
         onClick={(e) => e.stopPropagation()}
         className="w-full truncate rounded-sm px-1.5 py-0.5 text-left text-[10px] text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
       >
-        +{hiddenCount} more
+        {hiddenEventsLabel(hiddenCount)}
       </PopoverTrigger>
       <PopoverContent className="w-64" align="start">
         <div className="flex flex-col gap-1.5">
@@ -73,7 +78,7 @@ export function CalendarDayPopover({
                     onSelectEvent(ev);
                   }}
                   className="flex items-center gap-2 rounded-sm px-1.5 py-1 text-left text-[11px] font-medium text-foreground/85 hover:bg-accent/60 transition-colors"
-                  title={`${isRecurring ? "Recurring · " : ""}${ev.title}${
+                  title={`${recurringTitlePrefix(isRecurring)}${ev.title}${
                     agentNameById.get(ev.agent_id)
                       ? ` — ${agentNameById.get(ev.agent_id)}`
                       : ""

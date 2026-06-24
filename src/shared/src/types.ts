@@ -16,6 +16,7 @@ export interface Workspace {
   name: string;
   slug: string;
   onboarded: boolean;
+  default_locale?: "km" | "en";
   created_at: string;
   updated_at: string;
 }
@@ -35,6 +36,8 @@ export interface Agent {
   avatar_url: string | null;
   visibility: string;
   owner_id: string | null;
+  preferred_locale?: string | null;
+  language_policy?: string | null;
   created_at: string;
   updated_at: string;
 }

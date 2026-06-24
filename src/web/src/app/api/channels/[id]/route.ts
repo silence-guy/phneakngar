@@ -36,6 +36,16 @@ export const PATCH = withAuth(async (req, ctx) => {
   if (!existing) return writeError("channel not found", 404);
   if (existing.name === "default") return writeError("cannot rename the default channel", 400);
 
+  const hasOtherUserConversations = await queries.channel.channelHasConversationsForOtherUsers(
+    db,
+    ws.workspaceId,
+    existing.name,
+    ctx.userId
+  );
+  if (hasOtherUserConversations) {
+    return writeError("channel contains conversations owned by another user", 403);
+  }
+
   try {
     const updated = await queries.channel.renameChannel(db, id, ws.workspaceId, name);
     if (!updated) return writeError("channel not found", 404);
@@ -60,6 +70,16 @@ export const DELETE = withAuth(async (req, ctx) => {
   const existing = await queries.channel.getChannelById(db, id, ws.workspaceId);
   if (!existing) return writeError("channel not found", 404);
   if (existing.name === "default") return writeError("cannot delete the default channel", 400);
+
+  const hasOtherUserConversations = await queries.channel.channelHasConversationsForOtherUsers(
+    db,
+    ws.workspaceId,
+    existing.name,
+    ctx.userId
+  );
+  if (hasOtherUserConversations) {
+    return writeError("channel contains conversations owned by another user", 403);
+  }
 
   await queries.channel.deleteChannel(db, id, ws.workspaceId);
 

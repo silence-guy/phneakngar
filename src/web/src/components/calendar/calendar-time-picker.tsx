@@ -8,6 +8,7 @@ import {
   PopoverContent,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { CALENDAR_LABELS } from "./calendar-labels";
 
 export interface CalendarTimePickerProps {
   /** Value as "HH:MM" (24h). */
@@ -44,7 +45,7 @@ export function CalendarTimePicker({
   value,
   onChange,
   className,
-  ariaLabel = "Pick a time",
+  ariaLabel = CALENDAR_LABELS.actions.pickTime,
   step = 30,
   iconOnly = false,
 }: CalendarTimePickerProps) {

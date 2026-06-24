@@ -5,6 +5,18 @@ import { resolveAgentId, readBody } from "../lib/flags.js";
 import { resolveClientOpts } from "../lib/resolve-client.js";
 
 const VALID_STATUSES = ["todo", "in_progress", "review", "done", "closed", "canceled", "failed"];
+const KHMER_STATUS_LABELS: Record<string, string> = {
+  todo: "ត្រូវធ្វើ",
+  in_progress: "កំពុងដំណើរការ",
+  review: "រង់ចាំពិនិត្យ",
+  done: "រួចរាល់",
+  closed: "បានបិទ",
+  canceled: "បានបោះបង់",
+  failed: "បរាជ័យ",
+};
+const STATUS_HELP = VALID_STATUSES.map(
+  (status) => `${status} (${KHMER_STATUS_LABELS[status]})`,
+).join(", ");
 
 interface IssueResponse {
   id: string;
@@ -99,7 +111,7 @@ export function issueCommand(): Command {
     .command("list")
     .description("List issues for an agent")
     .option("--agent_id <id>", "Agent ID")
-    .option("--status <status>", `Filter by status (${VALID_STATUSES.join(", ")})`)
+    .option("--status <status>", `Filter by status (${STATUS_HELP})`)
     .option("--completed", "Show completed/closed/canceled/failed issues")
     .option("--all", "Show all issues")
     .option("--json", "Output as JSON")
@@ -157,7 +169,7 @@ export function issueCommand(): Command {
     .description("Update issue status or text")
     .option("--agent_id <id>", "Agent ID")
     .requiredOption("--issue_id <id>", "Issue ID")
-    .option("--status <status>", `New status (${VALID_STATUSES.join(", ")})`)
+    .option("--status <status>", `New status (${STATUS_HELP})`)
     .option("--title <title>", "New title")
     .option("--description <text>", "New description")
     .option("--body-file <path>", "Read description from a file")

@@ -3,6 +3,7 @@ import { NextRequest } from "next/server";
 
 const mockSweepStaleState = vi.fn();
 const mockPromoteDue = vi.fn(async () => 0);
+const mockGetMachineByDaemon = vi.fn();
 
 vi.mock("@opennextjs/cloudflare", () => ({
   getCloudflareContext: vi.fn(() => ({
@@ -23,12 +24,19 @@ vi.mock("@/lib/db", () => ({
 
 vi.mock("@alook/shared", async () => {
   const real = await vi.importActual<typeof import("@alook/shared")>("@alook/shared");
-  return { ...real };
+  return {
+    ...real,
+    queries: {
+      machine: {
+        getMachineByDaemon: (...args: unknown[]) => mockGetMachineByDaemon(...args),
+      },
+    },
+  };
 });
 
 vi.mock("@/lib/middleware/auth", () => ({
   withAuth: vi.fn((handler: any) => async (req: any) => {
-    return handler(req, { env: {}, userId: "u1", email: "u@t.com", workspaceId: "w1" });
+    return handler(req, { env: {}, userId: "u1", email: "u@t.com", authType: "machine" as const, workspaceId: "w1" });
   }),
 }));
 
@@ -67,6 +75,7 @@ describe("POST /api/daemon/sweep", () => {
     vi.clearAllMocks();
     mockSweepStaleState.mockResolvedValue(undefined);
     mockPromoteDue.mockResolvedValue(0);
+    mockGetMachineByDaemon.mockResolvedValue(null);
   });
 
   it("returns 403 without machine token auth", async () => {

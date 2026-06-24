@@ -29,6 +29,10 @@ describe("channel query module exports", () => {
   it("exports reorderChannels", () => {
     expect(typeof channelQueries.reorderChannels).toBe("function");
   });
+
+  it("exports channelHasConversationsForOtherUsers", () => {
+    expect(typeof channelQueries.channelHasConversationsForOtherUsers).toBe("function");
+  });
 });
 
 describe("channel query function signatures", () => {
@@ -58,5 +62,9 @@ describe("channel query function signatures", () => {
 
   it("reorderChannels accepts (db, workspaceId, orderedChannelIds)", () => {
     expect(channelQueries.reorderChannels.length).toBe(3);
+  });
+
+  it("channelHasConversationsForOtherUsers accepts (db, workspaceId, channelName, userId)", () => {
+    expect(channelQueries.channelHasConversationsForOtherUsers.length).toBe(4);
   });
 });

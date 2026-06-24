@@ -91,6 +91,7 @@ describe("withAuth middleware", () => {
     expect(body.ok).toBe(true);
     expect(body.ctx.userId).toBe("user-1");
     expect(body.ctx.email).toBe("user@example.com");
+    expect(body.ctx.authType).toBe("user");
     expect(testHandler).toHaveBeenCalledOnce();
   });
 
@@ -112,6 +113,7 @@ describe("withAuth middleware", () => {
       id: "mt-1",
       userId: "user-mt",
       userEmail: "mt@example.com",
+      status: "active",
       workspaceId: "ws-1",
     });
     mockUpdateMachineTokenLastUsed.mockResolvedValue(undefined);
@@ -126,6 +128,7 @@ describe("withAuth middleware", () => {
     expect(body.ok).toBe(true);
     expect(body.ctx.userId).toBe("user-mt");
     expect(body.ctx.email).toBe("mt@example.com");
+    expect(body.ctx.authType).toBe("machine");
     expect(body.ctx.workspaceId).toBe("ws-1");
     expect(mockGetMachineTokenByHash).toHaveBeenCalledOnce();
   });
@@ -143,12 +146,55 @@ describe("withAuth middleware", () => {
     expect(body.error).toBe("invalid token");
   });
 
+  it("rejects pending machine token before activation", async () => {
+    mockGetMachineTokenByHash.mockResolvedValue({
+      id: "mt-pending",
+      userId: "user-mt",
+      userEmail: "mt@example.com",
+      status: "pending",
+      workspaceId: "ws-1",
+    });
+
+    const req = new NextRequest("http://localhost/api/test", {
+      headers: { Authorization: "Bearer al_pending_token" },
+    });
+    const res = await wrapped(req);
+    const body = await res.json();
+
+    expect(res.status).toBe(401);
+    expect(body.error).toBe("invalid token");
+    expect(testHandler).not.toHaveBeenCalled();
+    expect(mockUpdateMachineTokenLastUsed).not.toHaveBeenCalled();
+  });
+
+  it("rejects active machine token without workspace binding", async () => {
+    mockGetMachineTokenByHash.mockResolvedValue({
+      id: "mt-unbound",
+      userId: "user-mt",
+      userEmail: "mt@example.com",
+      status: "active",
+      workspaceId: null,
+    });
+
+    const req = new NextRequest("http://localhost/api/test", {
+      headers: { Authorization: "Bearer al_unbound_token" },
+    });
+    const res = await wrapped(req);
+    const body = await res.json();
+
+    expect(res.status).toBe(401);
+    expect(body.error).toBe("invalid token");
+    expect(testHandler).not.toHaveBeenCalled();
+    expect(mockUpdateMachineTokenLastUsed).not.toHaveBeenCalled();
+  });
+
   it("updates lastUsedAt on machine token auth", async () => {
     mockGetMachineTokenByHash.mockResolvedValue({
       id: "mt-2",
       userId: "user-mt2",
       userEmail: "mt2@example.com",
-      workspaceId: null,
+      status: "active",
+      workspaceId: "ws-2",
     });
     mockUpdateMachineTokenLastUsed.mockResolvedValue(undefined);
 

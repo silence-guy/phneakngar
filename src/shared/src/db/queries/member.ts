@@ -21,6 +21,7 @@ export async function listMembers(db: Database, workspaceId: string) {
       workspaceId: member.workspaceId,
       userId: member.userId,
       role: member.role,
+      preferredLocale: member.preferredLocale,
       createdAt: member.createdAt,
       userName: user.name,
       userEmail: user.email,
@@ -31,18 +32,44 @@ export async function listMembers(db: Database, workspaceId: string) {
     .where(eq(member.workspaceId, workspaceId));
 }
 
+export type MemberSettingsUpdate = {
+  globalInstruction?: string;
+  preferredLocale?: string;
+};
+
+export async function updateMemberSettings(
+  db: Database,
+  userId: string,
+  workspaceId: string,
+  data: MemberSettingsUpdate
+) {
+  const values: MemberSettingsUpdate = {};
+  if (data.globalInstruction !== undefined) {
+    values.globalInstruction = data.globalInstruction;
+  }
+  if (data.preferredLocale !== undefined) {
+    values.preferredLocale = data.preferredLocale;
+  }
+
+  if (Object.keys(values).length === 0) {
+    return getMemberByUserAndWorkspace(db, userId, workspaceId);
+  }
+
+  const rows = await db
+    .update(member)
+    .set(values)
+    .where(and(eq(member.userId, userId), eq(member.workspaceId, workspaceId)))
+    .returning();
+  return rows[0] ?? null;
+}
+
 export async function updateMemberGlobalInstruction(
   db: Database,
   userId: string,
   workspaceId: string,
   globalInstruction: string
 ) {
-  const rows = await db
-    .update(member)
-    .set({ globalInstruction })
-    .where(and(eq(member.userId, userId), eq(member.workspaceId, workspaceId)))
-    .returning();
-  return rows[0] ?? null;
+  return updateMemberSettings(db, userId, workspaceId, { globalInstruction });
 }
 
 export async function createMember(

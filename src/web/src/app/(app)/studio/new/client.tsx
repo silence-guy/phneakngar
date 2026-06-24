@@ -13,7 +13,7 @@ import { PublicLayout } from "@/components/public-layout";
 import { ScenarioPicker } from "@/components/studio-onboarding/scenario-picker";
 import { TeamPreview, type TeamMember } from "@/components/studio-onboarding/team-preview";
 import {
-  SCENARIO_PRESETS,
+  getScenarioPresetById,
   shuffleMembers,
   type ScenarioId,
 } from "@/components/studio-onboarding/scenario-presets";
@@ -24,6 +24,7 @@ import { isTauri, isDesktop, tauriInvoke } from "@alook/shared";
 import { listRuntimes, createMachineToken } from "@/lib/api";
 import { useUserWs } from "@/lib/use-user-ws";
 import { ConnectMachineSteps } from "@/components/connect-machine-steps";
+import { DEFAULT_WEB_LOCALE, onboardingLabel } from "@/lib/locale";
 import type { TemplatePreset } from "@/lib/templates";
 
 export function StudioOnboardingClient({
@@ -94,11 +95,11 @@ export function StudioOnboardingClient({
           const rts = await listRuntimes(workspaceId).catch(() => [] as Runtime[]);
           setRuntimes(rts);
         } else {
-          toast.error(result.message || "Auto-registration failed");
+          toast.error(result.message || onboardingLabel("autoRegistrationFailed"));
         }
       }
     } catch {
-      toast.error("Failed to generate token");
+      toast.error(onboardingLabel("failedToGenerateToken"));
     } finally {
       setGeneratingToken(false);
     }
@@ -166,7 +167,7 @@ export function StudioOnboardingClient({
 
   const handleScenarioSelect = async (id: ScenarioId) => {
     setScenarioId(id);
-    const preset = SCENARIO_PRESETS.find((s) => s.id === id)!;
+    const preset = getScenarioPresetById(id, DEFAULT_WEB_LOCALE)!;
     const generated = shuffleMembers(preset.members.length);
     const defaultRuntimeId = onlineRuntimes[0]?.id || "";
     const newMembers = preset.members.map((m, i) => ({
@@ -234,7 +235,7 @@ export function StudioOnboardingClient({
 
       if (!res.ok) {
         const errBody = (await res.json()) as { error?: string };
-        throw new Error(errBody.error || "Failed to create company");
+        throw new Error(errBody.error || onboardingLabel("failedToCreateCompany"));
       }
 
       const data = (await res.json()) as { workspace: { slug: string }; leader_agent_id: string };
@@ -250,10 +251,10 @@ export function StudioOnboardingClient({
           has_email: !!members[i].emailHandle,
         });
       }
-      toast.success("Company created!");
+      toast.success(onboardingLabel("companyCreated"));
       router.push(`/w/${data.workspace.slug}/agents/${data.leader_agent_id}`);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed to create company");
+      toast.error(e instanceof Error ? e.message : onboardingLabel("failedToCreateCompany"));
       setCreating(false);
     }
   };

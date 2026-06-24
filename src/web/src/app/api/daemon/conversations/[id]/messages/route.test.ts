@@ -11,6 +11,9 @@ const m = {
   createMessage: vi.fn(),
   updateConversationTitle: vi.fn(),
   updateUnreadLatestMessage: vi.fn().mockResolvedValue(undefined),
+  getTask: vi.fn(),
+  updateTaskVisibleOutcomeStatus: vi.fn().mockResolvedValue(undefined),
+  getAgentRuntimeForWorkspace: vi.fn(),
 };
 
 vi.mock("@alook/shared", async () => {
@@ -28,6 +31,13 @@ vi.mock("@alook/shared", async () => {
       inbox: {
         updateUnreadLatestMessage: (...a: unknown[]) => m.updateUnreadLatestMessage(...a),
       },
+      task: {
+        getTask: (...a: unknown[]) => m.getTask(...a),
+        updateTaskVisibleOutcomeStatus: (...a: unknown[]) => m.updateTaskVisibleOutcomeStatus(...a),
+      },
+      runtime: {
+        getAgentRuntimeForWorkspace: (...a: unknown[]) => m.getAgentRuntimeForWorkspace(...a),
+      },
     },
   };
 });
@@ -44,6 +54,7 @@ vi.mock("@/lib/middleware/auth", () => ({
       userId: "u1",
       email: "u@t.com",
       workspaceId: isMachine ? "w1" : undefined,
+      authType: isMachine ? "machine" : "user",
       params,
     });
   }),
@@ -78,6 +89,9 @@ beforeEach(() => {
     ...data,
   }));
   m.updateConversationTitle.mockResolvedValue(null);
+  m.getTask.mockResolvedValue({ id: "t1", conversationId: "c1", runtimeId: "r1" });
+  m.getAgentRuntimeForWorkspace.mockResolvedValue({ id: "r1" });
+  m.updateTaskVisibleOutcomeStatus.mockResolvedValue(undefined);
 });
 
 describe("POST /api/daemon/conversations/[id]/messages", () => {

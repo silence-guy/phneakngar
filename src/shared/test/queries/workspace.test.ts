@@ -54,6 +54,14 @@ describe("updateWorkspace", () => {
     chain.where = vi.fn(() => chain); chain.returning = vi.fn(() => Promise.resolve([w]));
     expect(await ws.updateWorkspace(chain, "ws_1", { name: "N" })).toEqual(w);
   });
+  it("updates default locale", async () => {
+    const w = { id: "ws_1", defaultLocale: "en" };
+    const chain: any = {};
+    chain.update = vi.fn(() => chain); chain.set = vi.fn(() => chain);
+    chain.where = vi.fn(() => chain); chain.returning = vi.fn(() => Promise.resolve([w]));
+    expect(await ws.updateWorkspace(chain, "ws_1", { defaultLocale: "en" })).toEqual(w);
+    expect(chain.set).toHaveBeenCalledWith(expect.objectContaining({ defaultLocale: "en" }));
+  });
 });
 
 describe("deleteWorkspace", () => {

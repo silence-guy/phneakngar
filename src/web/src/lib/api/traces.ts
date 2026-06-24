@@ -1,3 +1,4 @@
+import type { TaskVisibleOutcomeStatus } from "@alook/shared";
 import { apiFetch, wsQuery } from "./client";
 
 export interface TraceListItem {
@@ -8,6 +9,7 @@ export interface TraceListItem {
   helper_agents: { id: string; name?: string; avatarUrl?: string | null }[];
   status: string;
   task_count: number;
+  silent_task_count: number;
   started_at: string;
   completed_at: string | null;
   channel: string;
@@ -20,6 +22,7 @@ export interface TraceTask {
   parent_task_id: string | null;
   prompt: string;
   status: string;
+  visible_outcome_status: TaskVisibleOutcomeStatus | null;
   type: string;
   conversation_id: string;
   created_at: string;

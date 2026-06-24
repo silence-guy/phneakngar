@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import type { TaskMessageResponse } from "@alook/shared";
 import type { TaskApi as Task } from "@alook/shared";
 import { RuntimeErrorBlock } from "@/components/agent-chat/runtime-error-block";
+import { ISSUE_LABELS } from "@/components/issues/issue-labels";
 
 /* ── Grouped stream items ── */
 
@@ -91,7 +92,7 @@ export function TaskStream({
 
       {connectionLost && (
         <p className="text-sm text-muted-foreground animate-pulse mt-1">
-          Connection lost — retrying...
+          {ISSUE_LABELS.connectionLostRetrying}
         </p>
       )}
     </div>

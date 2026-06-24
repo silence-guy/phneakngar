@@ -87,7 +87,7 @@ vi.mock("@alook/shared", async () => {
 vi.mock("@/lib/middleware/auth", () => ({
   withAuth: vi.fn((handler: any) => async (req: any, ctx?: any) => {
     const params = ctx?.params instanceof Promise ? await ctx.params : ctx?.params;
-    return handler(req, { env: {}, userId: "u1", email: "u@t.com", workspaceId: "w1", params });
+    return handler(req, { env: {}, userId: "u1", email: "u@t.com", authType: "machine" as const, workspaceId: "w1", params });
   }),
 }));
 
@@ -235,6 +235,8 @@ describe("POST /api/daemon/tasks/poll", () => {
       runtime_config: { model: "gpt-4" },
       email_handle: null,
       email_addresses: [],
+      preferred_locale: null,
+      language_policy: null,
       user_email: "u@t.com",
       user_name: null,
       colleagues: [],
@@ -766,7 +768,9 @@ describe("POST /api/daemon/tasks/poll", () => {
     mockSweepStaleState.mockResolvedValue(undefined);
     mockBroadcastToUser.mockResolvedValue(undefined);
     mockClaimTasksForRuntimes.mockResolvedValue([]);
-    mockGetMachineByDaemon.mockRejectedValue(new Error("D1 timeout"));
+    mockGetMachineByDaemon
+      .mockResolvedValueOnce(null)
+      .mockRejectedValueOnce(new Error("D1 timeout"));
 
     const res = await POST(postReq({ daemon_id: "d1", cli_version: "0.1.0" }));
     const body = await res.json();

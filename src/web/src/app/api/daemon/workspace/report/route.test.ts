@@ -1,9 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 
-const mockGetRequest = vi.fn();
-const mockCompleteRequest = vi.fn();
+const mockGetRequestForWorkspace = vi.fn();
+const mockCompleteRequestForWorkspace = vi.fn();
 const mockBroadcastToUser = vi.fn();
+
+let mockAuthCtx: Record<string, unknown> = {
+  env: {},
+  userId: "u1",
+  email: "u@t.com",
+  authType: "machine" as const,
+  workspaceId: "w1",
+};
 
 vi.mock("@opennextjs/cloudflare", () => ({
   getCloudflareContext: vi.fn(() => ({ env: { DB: {} } })),
@@ -20,8 +28,8 @@ vi.mock("@alook/shared", async () => {
     ...real,
     queries: {
       workspaceFileRequest: {
-        getRequest: (...args: unknown[]) => mockGetRequest(...args),
-        completeRequest: (...args: unknown[]) => mockCompleteRequest(...args),
+        getRequestForWorkspace: (...args: unknown[]) => mockGetRequestForWorkspace(...args),
+        completeRequestForWorkspace: (...args: unknown[]) => mockCompleteRequestForWorkspace(...args),
       },
     },
   };
@@ -30,7 +38,7 @@ vi.mock("@alook/shared", async () => {
 vi.mock("@/lib/middleware/auth", () => ({
   withAuth: vi.fn((handler: any) => async (req: any, ctx?: any) => {
     const params = ctx?.params instanceof Promise ? await ctx.params : ctx?.params;
-    return handler(req, { env: {}, userId: "u1", email: "u@t.com", workspaceId: "w1", params });
+    return handler(req, { ...mockAuthCtx, params });
   }),
 }));
 
@@ -53,33 +61,48 @@ function postReq(body: unknown) {
 }
 
 describe("POST /api/daemon/workspace/report", () => {
-  beforeEach(() => vi.clearAllMocks());
-
-  it("requires machine token (workspaceId) — tested via withAuth mock providing it", () => {
-    // The route checks ctx.workspaceId and returns 403 if missing.
-    // Our mock always provides workspaceId="w1" to test the happy path.
-    // The 403 guard is structurally identical to other daemon routes (e.g. poll, complete).
-    expect(true).toBe(true);
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockAuthCtx = {
+      env: {},
+      userId: "u1",
+      email: "u@t.com",
+      authType: "machine" as const,
+      workspaceId: "w1",
+    };
   });
 
-  it("returns 404 when request not found", async () => {
-    mockGetRequest.mockResolvedValue(null);
+  it("requires machine token auth", async () => {
+    mockAuthCtx = { env: {}, userId: "u1", email: "u@t.com", authType: "user" as const, workspaceId: "w1" };
+
+    const res = await POST(postReq({ request_id: "wfr_1", path: "." }));
+    const body = await res.json();
+
+    expect(res.status).toBe(403);
+    expect(body.error).toBe("Forbidden: machine token required");
+    expect(mockGetRequestForWorkspace).not.toHaveBeenCalled();
+  });
+
+  it("returns 404 when request is not found in the token workspace", async () => {
+    mockGetRequestForWorkspace.mockResolvedValue(null);
 
     const res = await POST(postReq({ request_id: "wfr_missing", path: "." }));
     expect(res.status).toBe(404);
+    expect(mockGetRequestForWorkspace).toHaveBeenCalledWith({}, "w1", "wfr_missing");
+    expect(mockCompleteRequestForWorkspace).not.toHaveBeenCalled();
   });
 
   it("completes request and broadcasts result for tree", async () => {
     const entries = [
       { name: "memory.md", path: "memory.md", isDirectory: false, size: 100, modifiedAt: "2026-01-01" },
     ];
-    mockGetRequest.mockResolvedValue({
+    mockGetRequestForWorkspace.mockResolvedValue({
       id: "wfr_1",
       agentId: "a1",
       requestType: "tree",
       workspaceId: "w1",
     });
-    mockCompleteRequest.mockResolvedValue({});
+    mockCompleteRequestForWorkspace.mockResolvedValue({ id: "wfr_1" });
     mockBroadcastToUser.mockResolvedValue(undefined);
 
     const res = await POST(postReq({ request_id: "wfr_1", path: ".", entries }));
@@ -87,7 +110,7 @@ describe("POST /api/daemon/workspace/report", () => {
 
     expect(res.status).toBe(200);
     expect(body.status).toBe("ok");
-    expect(mockCompleteRequest).toHaveBeenCalledWith({}, "wfr_1", {
+    expect(mockCompleteRequestForWorkspace).toHaveBeenCalledWith({}, "w1", "wfr_1", {
       entries,
       content: undefined,
       isBinary: undefined,
@@ -103,14 +126,31 @@ describe("POST /api/daemon/workspace/report", () => {
     });
   });
 
+  it("does not broadcast if scoped completion loses the row", async () => {
+    mockGetRequestForWorkspace.mockResolvedValue({
+      id: "wfr_1",
+      agentId: "a1",
+      requestType: "tree",
+      workspaceId: "w1",
+    });
+    mockCompleteRequestForWorkspace.mockResolvedValue(null);
+
+    const res = await POST(postReq({ request_id: "wfr_1", path: ".", entries: [] }));
+    const body = await res.json();
+
+    expect(res.status).toBe(404);
+    expect(body.error).toBe("request not found");
+    expect(mockBroadcastToUser).not.toHaveBeenCalled();
+  });
+
   it("completes request and broadcasts for file read", async () => {
-    mockGetRequest.mockResolvedValue({
+    mockGetRequestForWorkspace.mockResolvedValue({
       id: "wfr_2",
       agentId: "a1",
       requestType: "read",
       workspaceId: "w1",
     });
-    mockCompleteRequest.mockResolvedValue({});
+    mockCompleteRequestForWorkspace.mockResolvedValue({ id: "wfr_2" });
     mockBroadcastToUser.mockResolvedValue(undefined);
 
     const res = await POST(postReq({
@@ -131,13 +171,13 @@ describe("POST /api/daemon/workspace/report", () => {
   });
 
   it("handles error report from daemon", async () => {
-    mockGetRequest.mockResolvedValue({
+    mockGetRequestForWorkspace.mockResolvedValue({
       id: "wfr_3",
       agentId: "a1",
       requestType: "read",
       workspaceId: "w1",
     });
-    mockCompleteRequest.mockResolvedValue({});
+    mockCompleteRequestForWorkspace.mockResolvedValue({ id: "wfr_3" });
     mockBroadcastToUser.mockResolvedValue(undefined);
 
     const res = await POST(postReq({

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { Locale } from "@alook/shared";
 import {
   hasAgentCreateFieldErrors,
   validateAgentCreateRequiredFields,
@@ -11,7 +12,7 @@ describe("validateAgentCreateRequiredFields", () => {
       runtimeId: "rt_1",
     });
 
-    expect(errors).toEqual({ name: "Name is required" });
+    expect(errors).toEqual({ name: "ត្រូវបញ្ចូលឈ្មោះ" });
     expect(hasAgentCreateFieldErrors(errors)).toBe(true);
   });
 
@@ -21,7 +22,23 @@ describe("validateAgentCreateRequiredFields", () => {
       runtimeId: "",
     });
 
-    expect(errors).toEqual({ runtimeId: "Select an online runtime" });
+    expect(errors).toEqual({ runtimeId: "ជ្រើសរើស Runtime ដែល online" });
+    expect(hasAgentCreateFieldErrors(errors)).toBe(true);
+  });
+
+  it("keeps English fallback validation messages available", () => {
+    const errors = validateAgentCreateRequiredFields(
+      {
+        name: "   ",
+        runtimeId: "",
+      },
+      Locale.EN,
+    );
+
+    expect(errors).toEqual({
+      name: "Name is required",
+      runtimeId: "Select an online runtime",
+    });
     expect(hasAgentCreateFieldErrors(errors)).toBe(true);
   });
 

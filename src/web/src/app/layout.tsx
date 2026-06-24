@@ -5,6 +5,7 @@ import {
   Caveat,
   VT323,
   Literata,
+  Noto_Sans_Khmer,
 } from "next/font/google";
 import { GoogleTagManager } from "@next/third-parties/google";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -12,6 +13,7 @@ import { ToasterProvider } from "@/components/toaster-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { MockNetworkBanner } from "@/components/mock-network-banner";
 import { TauriThemeSync } from "@/components/tauri-theme-sync";
+import { DEFAULT_WEB_LOCALE } from "@/lib/locale";
 import "./globals.css";
 
 const dmSans = DM_Sans({
@@ -44,8 +46,16 @@ const literata = Literata({
   weight: ["400", "500", "600"],
 });
 
+const notoSansKhmer = Noto_Sans_Khmer({
+  variable: "--font-noto-sans-khmer",
+  subsets: ["khmer"],
+  weight: ["400", "500", "600"],
+});
 
 const SITE_URL = "https://alook.ai";
+const SITE_TITLE = "Alook — ក្រុមហ៊ុនផ្ទាល់ខ្លួន";
+const SITE_DESCRIPTION =
+  "ភ្នាក់ងារ AI របស់អ្នក ដំណើរការជានិច្ច។ ផ្តល់អ៊ីមែលឱ្យពួកគេ ហើយឱ្យពួកគេធ្វើការជំនួសអ្នកបានពេញមួយថ្ងៃ។";
 const OG_IMAGE_URL = "/og?title=Your Personal Company";
 
 export const viewport: Viewport = {
@@ -64,11 +74,10 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "Alook — Personal Company",
+    default: SITE_TITLE,
     template: "%s — Alook",
   },
-  description:
-    "Your AI agents, always on. Give them an email, let them work for you around the clock.",
+  description: SITE_DESCRIPTION,
   icons: {
     icon: [
       {
@@ -84,9 +93,8 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     siteName: "Alook",
-    title: "Alook — Personal Company",
-    description:
-      "Your AI agents, always on. Give them an email, let them work for you around the clock.",
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
     url: SITE_URL,
     images: [
       {
@@ -100,9 +108,8 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     site: "@alook_ai",
-    title: "Alook — Your Personal Company",
-    description:
-      "Your AI agents, always on. Give them an email, let them work for you around the clock.",
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
     images: [OG_IMAGE_URL],
   },
   alternates: {
@@ -117,8 +124,8 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="en"
-      className={`${dmSans.variable} ${dmMono.variable} ${caveat.variable} ${vt323.variable} ${literata.variable} h-full antialiased`}
+      lang={DEFAULT_WEB_LOCALE}
+      className={`${dmSans.variable} ${dmMono.variable} ${caveat.variable} ${vt323.variable} ${literata.variable} ${notoSansKhmer.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <head>
@@ -145,8 +152,7 @@ export default function RootLayout({
                 "@type": "WebApplication",
                 name: "Alook",
                 url: SITE_URL,
-                description:
-                  "Your AI agents, always on. Give them an email, let them work for you around the clock.",
+                description: SITE_DESCRIPTION,
                 applicationCategory: "DeveloperApplication",
                 operatingSystem: "All",
                 offers: {

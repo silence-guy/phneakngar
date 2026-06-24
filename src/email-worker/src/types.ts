@@ -5,4 +5,5 @@ export interface EmailEnv {
   SEND_EMAIL: SendEmail
   IMAP_POLLER: DurableObjectNamespace
   ENCRYPTION_KEY: string
+  EMAIL_NOTIFY_SECRET: string
 }
