@@ -256,6 +256,36 @@ describe("session-runner runSession", () => {
     );
   });
 
+  it("leaves backend spawn options unchanged when Headroom is disabled", async () => {
+    setupBackend([], {
+      status: "completed",
+      output: "Done!",
+      error: "",
+      durationMs: 1000,
+      sessionId: "sess-1",
+    });
+
+    await runSession(makeInput());
+
+    const [, options] = mockBackendExecute.mock.calls[0];
+    expect(options).toMatchObject({
+      cwd: "/tmp/ws/ws1/agent1/workdir",
+      model: "opus",
+      timeout: 7200000,
+    });
+    expect(options.env).toEqual({
+      ALOOK_WORKSPACE_ID: "ws1",
+      ALOOK_AGENT_ID: "agent1",
+      ALOOK_TASK_ID: "t1",
+      ALOOK_CONVERSATION_ID: "c1",
+      ALOOK_HEALTH_PORT: "19514",
+    });
+    expect(options.env).not.toHaveProperty("ALOOK_HEADROOM_ENABLED");
+    expect(options.env).not.toHaveProperty("ANTHROPIC_BASE_URL");
+    expect(options.env).not.toHaveProperty("OPENAI_BASE_URL");
+    expect(options.env).not.toHaveProperty("HEADROOM_PROXY_URL");
+  });
+
   it("fails open when optional Headroom is unavailable", async () => {
     mockPrepareHeadroomForTask.mockResolvedValue({
       status: "failed",
