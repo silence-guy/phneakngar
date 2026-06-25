@@ -515,8 +515,23 @@ export type AddWhitelistRequest = z.infer<typeof AddWhitelistRequestSchema>;
 // Agent request schemas
 // ---------------------------------------------------------------------------
 
+const HeadroomRuntimeConfigSchema = z
+  .object({
+    enabled: z.boolean().optional(),
+    mode: z.literal("proxy").optional(),
+    requireOptimization: z.boolean().optional(),
+    outputShaper: z.boolean().optional(),
+    memory: z.boolean().optional(),
+    ccr: z.boolean().optional(),
+    port: z.number().int().min(1024).max(65535).optional(),
+  })
+  .passthrough();
+
 const RuntimeConfigSchema = z
-  .object({ model: z.string().max(100).optional() })
+  .object({
+    model: z.string().max(100).optional(),
+    headroom: HeadroomRuntimeConfigSchema.optional(),
+  })
   .passthrough()
   .optional();
 

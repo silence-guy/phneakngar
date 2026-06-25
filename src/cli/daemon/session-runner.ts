@@ -37,6 +37,7 @@ import { RuntimeNotificationState } from "./steering/notificationState.js";
 import { RuntimeProgressState } from "./steering/progressState.js";
 import { classifyRuntimeError, scrubDiagnosticText } from "./steering/errorDiagnostics.js";
 import { killProcessTree } from "./kill-tree.js";
+import { prepareHeadroomForTask } from "./headroom/index.js";
 import { buildPrompt } from "./prompt.js";
 import { createLogger } from "../lib/logger.js";
 
@@ -349,10 +350,34 @@ export async function runSession(input: SessionRunnerInput): Promise<void> {
     log.info(`resuming session ${resumeSessionId} (context_key: ${task.contextKey})`);
   }
 
+  const headroom = await prepareHeadroomForTask(task, provider);
+  if (headroom.status === "ready") {
+    log.info(headroom.diagnostic ?? "Headroom proxy ready");
+  } else if (headroom.status === "failed") {
+    log.warn(headroom.diagnostic ?? "Headroom proxy unavailable");
+    if (headroom.requireOptimization) {
+      const errMsg = `Headroom optimization required but unavailable: ${headroom.diagnostic ?? "proxy unavailable"}`;
+      await cleanupAttachments(task.id);
+      updateEntry(timelineDir, task.id, (entry) => {
+        entry.pid = null;
+        entry.status = "failed";
+        entry.errmsg = errMsg;
+      });
+      await reportToServer(
+        () => client.failTask(token, task.id, errMsg),
+        { taskId: task.id, type: "fail", payload: { error: errMsg }, token, serverURL, createdAt: new Date().toISOString() },
+        workspacesRoot,
+      );
+      process.removeListener("SIGTERM", onKill);
+      process.removeListener("SIGINT", onKill);
+      return;
+    }
+  }
+
   const session = backend.execute(prompt, {
     cwd: workDir,
     model: model || undefined,
-    env,
+    env: { ...env, ...headroom.env },
     timeout: agentTimeout,
     resumeSessionId,
     steeringEnabled: input.steeringEnabled,

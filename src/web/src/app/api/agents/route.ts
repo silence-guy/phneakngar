@@ -60,9 +60,7 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
   }
 
   const rc = body.runtime_config;
-  const sanitizedRc: Record<string, unknown> | null = rc
-    ? { ...(typeof rc.model === "string" ? { model: rc.model } : {}) }
-    : null;
+  const sanitizedRc: Record<string, unknown> | null = rc ? { ...rc } : null;
 
   const newAgent = await queries.agent.createAgent(db, {
     workspaceId: ws.workspaceId,

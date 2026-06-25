@@ -96,6 +96,15 @@ vi.mock("./agent/index.js", () => ({
   })),
 }));
 
+const mockPrepareHeadroomForTask = vi.fn(async () => ({
+  status: "disabled",
+  env: {},
+  requireOptimization: false,
+}));
+vi.mock("./headroom/index.js", () => ({
+  prepareHeadroomForTask: (...args: any[]) => mockPrepareHeadroomForTask(...args),
+}));
+
 vi.mock("../lib/logger.js", () => {
   const mockLog = { info: vi.fn(), error: vi.fn(), debug: vi.fn(), warn: vi.fn() };
   return { createLogger: () => mockLog, log: mockLog };
@@ -152,6 +161,14 @@ function makeInput(overrides?: Partial<SessionRunnerInput>): SessionRunnerInput 
   };
 }
 
+beforeEach(() => {
+  mockPrepareHeadroomForTask.mockResolvedValue({
+    status: "disabled",
+    env: {},
+    requireOptimization: false,
+  });
+});
+
 function setupBackend(
   messages: any[],
   result: any,
@@ -200,6 +217,86 @@ describe("session-runner runSession", () => {
       "test_token",
       "t1",
       expect.objectContaining({ output: "Done!", session_id: "sess-1" }),
+    );
+  });
+
+  it("prepares Headroom and merges its env overlay", async () => {
+    mockPrepareHeadroomForTask.mockResolvedValue({
+      status: "ready",
+      env: {
+        ANTHROPIC_BASE_URL: "http://127.0.0.1:8787",
+        HEADROOM_TELEMETRY: "off",
+      },
+      requireOptimization: false,
+      diagnostic: "Headroom proxy reused on 127.0.0.1:8787",
+    });
+    setupBackend([], {
+      status: "completed",
+      output: "Done!",
+      error: "",
+      durationMs: 1000,
+      sessionId: "sess-1",
+    });
+
+    await runSession(makeInput());
+
+    expect(mockPrepareHeadroomForTask).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "t1" }),
+      "claude",
+    );
+    expect(mockBackendExecute).toHaveBeenCalledWith(
+      "do the thing",
+      expect.objectContaining({
+        env: expect.objectContaining({
+          ALOOK_WORKSPACE_ID: "ws1",
+          ANTHROPIC_BASE_URL: "http://127.0.0.1:8787",
+          HEADROOM_TELEMETRY: "off",
+        }),
+      }),
+    );
+  });
+
+  it("fails open when optional Headroom is unavailable", async () => {
+    mockPrepareHeadroomForTask.mockResolvedValue({
+      status: "failed",
+      env: {},
+      requireOptimization: false,
+      diagnostic: "Headroom executable not found: headroom",
+    });
+    setupBackend([], {
+      status: "completed",
+      output: "Done!",
+      error: "",
+      durationMs: 1000,
+      sessionId: "sess-1",
+    });
+
+    await runSession(makeInput());
+
+    expect(mockBackendExecute).toHaveBeenCalled();
+    expect(mockClientInstance.completeTask).toHaveBeenCalledWith(
+      "test_token",
+      "t1",
+      expect.objectContaining({ output: "Done!" }),
+    );
+    expect(mockLog.warn).toHaveBeenCalledWith("Headroom executable not found: headroom");
+  });
+
+  it("fails before spawning when Headroom is required but unavailable", async () => {
+    mockPrepareHeadroomForTask.mockResolvedValue({
+      status: "failed",
+      env: {},
+      requireOptimization: true,
+      diagnostic: "Headroom executable not found: headroom",
+    });
+
+    await runSession(makeInput());
+
+    expect(mockBackendExecute).not.toHaveBeenCalled();
+    expect(mockClientInstance.failTask).toHaveBeenCalledWith(
+      "test_token",
+      "t1",
+      "Headroom optimization required but unavailable: Headroom executable not found: headroom",
     );
   });
 

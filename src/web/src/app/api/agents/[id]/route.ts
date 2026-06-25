@@ -51,12 +51,7 @@ export const PATCH = withAuth(async (req, ctx) => {
     data.runtimeId = body.runtime_id;
   }
   if (body.runtime_config !== undefined) {
-    const rc = body.runtime_config;
-    const sanitized: Record<string, unknown> = {};
-    if (typeof rc.model === "string") {
-      sanitized.model = rc.model;
-    }
-    data.runtimeConfig = sanitized;
+    data.runtimeConfig = { ...body.runtime_config };
   }
   if (body.visibility !== undefined) data.visibility = body.visibility;
   if (body.avatar_url !== undefined) data.avatarUrl = body.avatar_url;

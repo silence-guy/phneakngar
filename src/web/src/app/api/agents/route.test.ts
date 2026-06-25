@@ -213,7 +213,10 @@ describe("POST /api/agents", () => {
       method: "POST",
       body: JSON.stringify({
         ...validBody,
-        runtime_config: { model: "claude-sonnet-4-6" },
+        runtime_config: {
+          model: "claude-sonnet-4-6",
+          headroom: { enabled: true, mode: "proxy", requireOptimization: false },
+        },
       }),
     });
     const res = await POST(req, {});
@@ -222,7 +225,10 @@ describe("POST /api/agents", () => {
     expect(mockCreateAgent).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({
-        runtimeConfig: { model: "claude-sonnet-4-6" },
+        runtimeConfig: {
+          model: "claude-sonnet-4-6",
+          headroom: { enabled: true, mode: "proxy", requireOptimization: false },
+        },
       }),
     );
   });

@@ -13,6 +13,11 @@ import {
   CustomEmailForm,
   type CustomEmailData,
 } from "@/components/custom-email-form";
+import {
+  HeadroomRuntimeSettings,
+  buildRuntimeConfigWithHeadroom,
+  type HeadroomSettingsValue,
+} from "@/components/headroom-runtime-settings";
 import { useWorkspace } from "@/contexts/workspace-context";
 import {
   type AvatarConfig,
@@ -50,6 +55,11 @@ interface AgentCreateFormProps {
 
 // Stable initial config to avoid hydration mismatch (randomConfig uses Math.random)
 const INITIAL_AVATAR: AvatarConfig = { shape: "circle", eye: "dots", nose: "dot", bg: 0 };
+const INITIAL_HEADROOM: HeadroomSettingsValue = {
+  enabled: false,
+  requireOptimization: false,
+  outputShaper: false,
+};
 
 async function runTour() {
   const waitForElement = (selector: string, timeout = 3000) =>
@@ -134,6 +144,7 @@ export function AgentCreateForm({
     null
   );
   const [model, setModel] = useState("");
+  const [headroomSettings, setHeadroomSettings] = useState<HeadroomSettingsValue>(INITIAL_HEADROOM);
   const [avatarConfig, setAvatarConfig] = useState<AvatarConfig>(INITIAL_AVATAR);
 
   // Randomize avatar and name on client mount to avoid hydration mismatch
@@ -206,7 +217,7 @@ export function AgentCreateForm({
       instructions,
       runtime_id: runtimeId,
       email_handle: emailHandle || derivedHandle || undefined,
-      runtime_config: model ? { model } : {},
+      runtime_config: buildRuntimeConfigWithHeadroom({}, model, headroomSettings),
       custom_email:
         customEmailGetDataRef.current?.() ?? customEmailData ?? undefined,
       avatar_url: serializeAvatarConfig(avatarConfig),
@@ -244,11 +255,17 @@ export function AgentCreateForm({
             />
           }
           advancedSection={
-            <CustomEmailForm
-              workspaceId={workspaceId}
-              onDataChange={setCustomEmailData}
-              getDataRef={customEmailGetDataRef}
-            />
+            <>
+              <HeadroomRuntimeSettings
+                value={headroomSettings}
+                onChange={setHeadroomSettings}
+              />
+              <CustomEmailForm
+                workspaceId={workspaceId}
+                onDataChange={setCustomEmailData}
+                getDataRef={customEmailGetDataRef}
+              />
+            </>
           }
         />
 

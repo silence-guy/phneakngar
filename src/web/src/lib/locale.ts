@@ -223,6 +223,30 @@ export const agentFormCopy = {
     [Locale.EN]: "Optional. Leave blank to use the runtime's default model.",
     [Locale.KM]: "មិនចាំបាច់បំពេញទេ។ ទុកទទេដើម្បីប្រើម៉ូឌែលលំនាំដើមរបស់ Runtime។",
   },
+  contextOptimization: {
+    [Locale.EN]: "Context Optimization",
+    [Locale.KM]: "ការបង្កើនប្រសិទ្ធភាពបរិបទ",
+  },
+  contextOptimizationHint: {
+    [Locale.EN]: "Route this agent through a local Headroom proxy to reduce repeated tool, log, and file context.",
+    [Locale.KM]: "បញ្ជូនភ្នាក់ងារនេះតាម Headroom proxy ក្នុងម៉ាស៊ីន ដើម្បីកាត់បន្ថយបរិបទ tool, log និង file ដែលស្ទួន។",
+  },
+  requireContextOptimization: {
+    [Locale.EN]: "Require optimization",
+    [Locale.KM]: "តម្រូវឱ្យប្រើការបង្កើនប្រសិទ្ធភាព",
+  },
+  requireContextOptimizationHint: {
+    [Locale.EN]: "Fail the task instead of running direct when the local proxy is unavailable.",
+    [Locale.KM]: "បើ proxy ក្នុងម៉ាស៊ីនមិនអាចប្រើបាន កុំដំណើរការផ្ទាល់ តែបង្ហាញថា task បរាជ័យ។",
+  },
+  shapeOutput: {
+    [Locale.EN]: "Shape output",
+    [Locale.KM]: "កែសម្រួលចម្លើយ",
+  },
+  shapeOutputHint: {
+    [Locale.EN]: "Ask Headroom to trim repetitive response text. Keep off until you have verified the agent's style.",
+    [Locale.KM]: "ឱ្យ Headroom កាត់អត្ថបទចម្លើយដែលស្ទួន។ ទុកបិទរហូតដល់អ្នកបានផ្ទៀងផ្ទាត់រចនាបថរបស់ភ្នាក់ងារ។",
+  },
   advanced: {
     [Locale.EN]: "Advanced",
     [Locale.KM]: "កម្រិតខ្ពស់",

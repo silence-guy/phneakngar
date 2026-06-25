@@ -9,6 +9,12 @@ import { toAlookAddress } from "@alook/shared";
 import { cn } from "@/lib/utils";
 import { LockIcon } from "lucide-react";
 import { CustomEmailForm } from "@/components/custom-email-form";
+import {
+  HeadroomRuntimeSettings,
+  buildRuntimeConfigWithHeadroom,
+  readHeadroomSettings,
+  type HeadroomSettingsValue,
+} from "@/components/headroom-runtime-settings";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { MarkdownEditor } from "@/components/ui/markdown-editor";
@@ -67,6 +73,8 @@ function RuntimeTab({
   setRuntimeId,
   runtimes,
   providerModels,
+  headroomSettings,
+  setHeadroomSettings,
 }: {
   model: string;
   setModel: (v: string) => void;
@@ -74,6 +82,8 @@ function RuntimeTab({
   setRuntimeId: (v: string) => void;
   runtimes: Runtime[];
   providerModels: string[];
+  headroomSettings: HeadroomSettingsValue;
+  setHeadroomSettings: (value: HeadroomSettingsValue) => void;
 }) {
   return (
     <>
@@ -112,6 +122,11 @@ function RuntimeTab({
           {agentFormLabel("modelDefaultHint")}
         </p>
       </div>
+
+      <HeadroomRuntimeSettings
+        value={headroomSettings}
+        onChange={setHeadroomSettings}
+      />
     </>
   );
 }
@@ -154,6 +169,9 @@ export function AgentEditForm({
     const rc = agent.runtime_config;
     return typeof rc?.model === "string" ? rc.model : "";
   });
+  const [headroomSettings, setHeadroomSettings] = useState(() =>
+    readHeadroomSettings(agent.runtime_config),
+  );
 
   // Instruction tab state — auto-saves independently
   const [instructions, setInstructions] = useState(agent.instructions ?? "");
@@ -263,7 +281,7 @@ export function AgentEditForm({
       name,
       description,
       runtime_id: runtimeId,
-      runtime_config: model ? { model } : {},
+      runtime_config: buildRuntimeConfigWithHeadroom(agent.runtime_config, model, headroomSettings),
       avatar_url: serializeAvatarConfig(avatarConfig),
     });
   };
@@ -371,6 +389,8 @@ export function AgentEditForm({
                     setRuntimeId={setRuntimeId}
                     runtimes={runtimes}
                     providerModels={providerModels}
+                    headroomSettings={headroomSettings}
+                    setHeadroomSettings={setHeadroomSettings}
                   />
                 )}
 

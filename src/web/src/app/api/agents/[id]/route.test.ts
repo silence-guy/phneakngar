@@ -175,7 +175,13 @@ describe("PATCH /api/agents/[id]", () => {
 
     const req = new NextRequest("http://localhost/api/agents/a1", {
       method: "PATCH",
-      body: JSON.stringify({ name: "Agent", runtime_config: { model: "claude-sonnet-4-6" } }),
+      body: JSON.stringify({
+        name: "Agent",
+        runtime_config: {
+          model: "claude-sonnet-4-6",
+          headroom: { enabled: true, mode: "proxy", outputShaper: true },
+        },
+      }),
     });
     const ctx = { params: Promise.resolve({ id: "a1" }) };
     const res = await PATCH(req, ctx);
@@ -185,7 +191,12 @@ describe("PATCH /api/agents/[id]", () => {
       expect.anything(),
       "a1",
       "w1",
-      expect.objectContaining({ runtimeConfig: { model: "claude-sonnet-4-6" } }),
+      expect.objectContaining({
+        runtimeConfig: {
+          model: "claude-sonnet-4-6",
+          headroom: { enabled: true, mode: "proxy", outputShaper: true },
+        },
+      }),
       "u1",
     );
   });
