@@ -1,10 +1,22 @@
 import { describe, it, expect, afterAll } from "vitest";
-import { createHealthServer } from "./health.js";
+import { createHealthServer, detectHeadroomHealth, type HeadroomHealth } from "./health.js";
 
 const TEST_PORT = 19614;
 const healthUrl = `http://127.0.0.1:${TEST_PORT}`;
 
-const { server, setRuntimeCount } = createHealthServer(TEST_PORT);
+const initialHeadroom: HeadroomHealth = {
+  status: "disabled",
+  configured: false,
+  available: false,
+  mode: "proxy",
+  port: 8787,
+  executable: "headroom",
+  proxy_url: "http://127.0.0.1:8787",
+};
+
+const { server, setRuntimeCount, setHeadroomStatus } = createHealthServer(TEST_PORT, {
+  detectHeadroom: () => initialHeadroom,
+});
 
 afterAll(
   () => new Promise<void>((resolve) => server.close(() => resolve())),
@@ -19,7 +31,7 @@ describe("health server", () => {
     }
   });
 
-  it("GET /health returns status ok with uptime and runtimes", async () => {
+  it("GET /health returns status ok with uptime, runtimes, and Headroom state", async () => {
     const res = await fetch(`${healthUrl}/health`);
     expect(res.status).toBe(200);
 
@@ -27,6 +39,7 @@ describe("health server", () => {
     expect(body.status).toBe("ok");
     expect(body.uptime).toMatch(/^\d+s$/);
     expect(body.runtimes).toBe(0);
+    expect(body.headroom).toEqual(initialHeadroom);
   });
 
   it("setRuntimeCount updates the runtimes count", async () => {
@@ -37,8 +50,58 @@ describe("health server", () => {
     expect(body.runtimes).toBe(5);
   });
 
+  it("setHeadroomStatus updates the Headroom status", async () => {
+    setHeadroomStatus({
+      status: "available",
+      configured: true,
+      available: true,
+      mode: "proxy",
+      port: 18787,
+      executable: "headroom",
+      proxy_url: "http://127.0.0.1:18787",
+    });
+
+    const res = await fetch(`${healthUrl}/health`);
+    const body = await res.json();
+    expect(body.headroom).toMatchObject({
+      status: "available",
+      configured: true,
+      available: true,
+      port: 18787,
+    });
+  });
+
   it("non-health paths return 404", async () => {
     const res = await fetch(`${healthUrl}/other`);
     expect(res.status).toBe(404);
+  });
+});
+
+describe("detectHeadroomHealth", () => {
+  it("marks Headroom disabled by default while preserving local proxy defaults", () => {
+    const health = detectHeadroomHealth({ PATH: "" });
+
+    expect(health).toMatchObject({
+      status: "disabled",
+      configured: false,
+      available: false,
+      mode: "proxy",
+      port: 8787,
+      executable: "headroom",
+      proxy_url: "http://127.0.0.1:8787",
+    });
+  });
+
+  it("reports missing when Headroom is explicitly enabled but unavailable", () => {
+    const health = detectHeadroomHealth({
+      PATH: "",
+      ALOOK_HEADROOM_ENABLED: "1",
+    });
+
+    expect(health).toMatchObject({
+      status: "missing",
+      configured: true,
+      available: false,
+    });
   });
 });
