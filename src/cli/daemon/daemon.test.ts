@@ -48,11 +48,22 @@ vi.mock("./config.js", () => ({
   ),
 }));
 
+const mockDetectHeadroomHealth = vi.fn(() => ({
+  status: "missing" as const,
+  configured: true,
+  available: false,
+  mode: "proxy" as const,
+  port: 8787,
+  executable: "headroom",
+  proxy_url: "http://127.0.0.1:8787",
+}));
+
 vi.mock("./health.js", () => ({
   createHealthServer: vi.fn(() => ({
     setRuntimeCount: vi.fn(),
     server: { close: vi.fn((cb?: () => void) => { if (cb) cb(); }) },
   })),
+  detectHeadroomHealth: () => mockDetectHeadroomHealth(),
 }));
 
 let capturedWsOnMessage: ((msg: any) => void) | null = null;
@@ -793,6 +804,22 @@ describe("daemon with multi-workspace config", () => {
       "al_tok_ws2",
       expect.objectContaining({ workspace_id: "ws2" }),
     );
+  });
+
+  it("registers sanitized Headroom capability metadata for every runtime", async () => {
+    await startDaemon();
+
+    const [, body] = mockClientInstance.register.mock.calls[0];
+    expect(body.runtimes).toHaveLength(3);
+    expect(body.runtimes[0].headroom).toEqual({
+      status: "missing",
+      configured: true,
+      available: false,
+      mode: "proxy",
+      port: 8787,
+      executable: "headroom",
+    });
+    expect(body.runtimes[0].headroom).not.toHaveProperty("proxy_url");
   });
 
   it("concurrency accounting: spawned tasks reduce remaining for next workspace", async () => {

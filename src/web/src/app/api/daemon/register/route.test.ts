@@ -124,6 +124,77 @@ describe("POST /api/daemon/register", () => {
     expect(mockUpsertAgentRuntime).toHaveBeenCalledTimes(1);
   });
 
+  it("persists sanitized Headroom capability metadata for runtimes", async () => {
+    const POST = await loadRoute(authCtx);
+
+    mockGetMember.mockResolvedValue({ userId: "u1", workspaceId: "w1" });
+    mockUpsertMachine.mockResolvedValue(undefined);
+    mockUpsertAgentRuntime.mockResolvedValue({ id: "r1" });
+    mockBroadcastToUser.mockResolvedValue(undefined);
+
+    const res = await POST(makeReq({
+      ...validBody,
+      runtimes: [
+        {
+          type: "claude",
+          version: "1.0",
+          runtime_mode: "local",
+          headroom: {
+            status: "missing",
+            configured: true,
+            available: false,
+            mode: "proxy",
+            port: 8787,
+            executable: "headroom",
+          },
+        },
+      ],
+    }));
+
+    expect(res.status).toBe(200);
+    expect(mockUpsertAgentRuntime).toHaveBeenCalledWith({}, expect.objectContaining({
+      metadata: expect.objectContaining({
+        headroom: {
+          status: "missing",
+          configured: true,
+          available: false,
+          mode: "proxy",
+          port: 8787,
+          executable: "headroom",
+        },
+      }),
+    }));
+  });
+
+  it("rejects unsupported Headroom capability fields", async () => {
+    const POST = await loadRoute(authCtx);
+
+    const res = await POST(makeReq({
+      ...validBody,
+      runtimes: [
+        {
+          type: "claude",
+          version: "1.0",
+          headroom: {
+            status: "available",
+            configured: true,
+            available: true,
+            mode: "proxy",
+            port: 8787,
+            executable: "headroom",
+            proxy_url: "http://127.0.0.1:8787",
+          },
+        },
+      ],
+    }));
+    const body = await res.json();
+
+    expect(res.status).toBe(400);
+    expect(body.error).toBe("validation error");
+    expect(body.details.join("\n")).toContain("proxy_url");
+    expect(mockUpsertAgentRuntime).not.toHaveBeenCalled();
+  });
+
   it("broadcasts only runtime.registered after upserts when no pending update", async () => {
     const POST = await loadRoute(authCtx);
 

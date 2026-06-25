@@ -143,6 +143,14 @@ export interface WorkspaceHealthReport {
       unassigned_agents: number;
       agents_with_missing_runtime: number;
     };
+    headroom: {
+      status: "ok" | "warning" | "critical";
+      enabled_agents: number;
+      required_agents: number;
+      unavailable_agents: number;
+      runtimes_reporting: number;
+      runtimes_available: number;
+    };
   };
   issues: Array<{ code: string; severity: "warning" | "critical"; message: string }>;
 }

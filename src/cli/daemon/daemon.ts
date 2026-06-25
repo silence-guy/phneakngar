@@ -1,6 +1,6 @@
 import { DaemonClient } from "./client.js";
 import { type DaemonConfig, loadDaemonConfig, sessionRunnerLogDir, daemonLogFilePath } from "./config.js";
-import { createHealthServer } from "./health.js";
+import { createHealthServer, detectHeadroomHealth, type HeadroomHealth } from "./health.js";
 import { detectVersion, createBackend } from "./agent/index.js";
 import { type Task, type Attachment, type SessionRunnerInput, fromApiTask } from "./types.js";
 import { type MarkerData, writeMarkerFile, downloadAttachments } from "./session-runner.js";
@@ -58,6 +58,19 @@ interface RuntimeData {
   id: string;
   workspaceId: string;
   provider: string;
+}
+
+type HeadroomRegisterMetadata = Omit<HeadroomHealth, "proxy_url">;
+
+function headroomHealthForRegister(health: HeadroomHealth): HeadroomRegisterMetadata {
+  return {
+    status: health.status,
+    configured: health.configured,
+    available: health.available,
+    mode: health.mode,
+    port: health.port,
+    executable: health.executable.slice(0, 100),
+  };
 }
 
 interface PendingEntry {
@@ -280,7 +293,8 @@ export async function startDaemon(
   if (cliConfig.server_url) config.serverURL = cliConfig.server_url;
 
   const client = new DaemonClient(config.serverURL);
-  const health = createHealthServer();
+  const headroomHealth = detectHeadroomHealth();
+  const health = createHealthServer(undefined, { detectHeadroom: () => headroomHealth });
 
   const providers: { type: string; path: string; version: string }[] = [];
   for (const [type, path] of [
@@ -312,6 +326,7 @@ export async function startDaemon(
     const runtimes = providers.map((p) => ({
       type: p.type,
       version: p.version,
+      headroom: headroomHealthForRegister(headroomHealth),
     }));
 
     log.info(`Registering workspace ${ws.id} (${ws.name ?? "unnamed"}) with ${runtimes.length} runtime(s)...`);

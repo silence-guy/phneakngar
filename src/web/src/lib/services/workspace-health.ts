@@ -40,6 +40,14 @@ export type WorkspaceHealthReport = {
       unassigned_agents: number;
       agents_with_missing_runtime: number;
     };
+    headroom: {
+      status: WorkspaceHealthStatus;
+      enabled_agents: number;
+      required_agents: number;
+      unavailable_agents: number;
+      runtimes_reporting: number;
+      runtimes_available: number;
+    };
   };
   issues: WorkspaceHealthIssue[];
 };
@@ -67,6 +75,37 @@ function checkStatus(
   return worstStatus(issues.filter((issue) => codes.includes(issue.code)));
 }
 
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : null;
+}
+
+function asJsonRecord(value: unknown): Record<string, unknown> | null {
+  if (typeof value !== "string") return asRecord(value);
+  try {
+    return asRecord(JSON.parse(value));
+  } catch {
+    return null;
+  }
+}
+
+function headroomSettings(runtimeConfig: unknown) {
+  const config = asJsonRecord(runtimeConfig);
+  const headroom = asRecord(config?.headroom);
+  return {
+    enabled: headroom?.enabled === true,
+    requireOptimization: headroom?.requireOptimization === true,
+  };
+}
+
+function headroomAvailableFromMetadata(metadata: unknown): boolean | null {
+  const meta = asJsonRecord(metadata);
+  const headroom = asRecord(meta?.headroom);
+  if (!headroom || typeof headroom.available !== "boolean") return null;
+  return headroom.available;
+}
+
 export async function getWorkspaceHealth(
   db: Database,
   workspaceId: string,
@@ -90,6 +129,26 @@ export async function getWorkspaceHealth(
     (agent) => agent.runtimeId && !runtimeIds.has(agent.runtimeId),
   ).length;
   const unassignedAgents = agents.length - assignedAgents;
+  const runtimeById = new Map(runtimes.map((runtime) => [runtime.id, runtime]));
+  const headroomAgentSettings = agents
+    .map((agent) => ({
+      runtimeId: agent.runtimeId,
+      ...headroomSettings(agent.runtimeConfig),
+    }))
+    .filter((agent) => agent.enabled);
+  const headroomUnavailableAgents = headroomAgentSettings.filter((agent) => {
+    const runtime = agent.runtimeId ? runtimeById.get(agent.runtimeId) : null;
+    return runtime ? headroomAvailableFromMetadata(runtime.metadata) !== true : true;
+  });
+  const headroomRequiredUnavailableAgents = headroomUnavailableAgents.filter(
+    (agent) => agent.requireOptimization,
+  );
+  const headroomReportingRuntimes = runtimes.filter(
+    (runtime) => headroomAvailableFromMetadata(runtime.metadata) !== null,
+  ).length;
+  const headroomAvailableRuntimes = runtimes.filter(
+    (runtime) => headroomAvailableFromMetadata(runtime.metadata) === true,
+  ).length;
 
   const issues: WorkspaceHealthIssue[] = [];
   if (runtimes.length === 0) {
@@ -148,6 +207,19 @@ export async function getWorkspaceHealth(
       message: "One or more agents reference a runtime that is no longer registered.",
     });
   }
+  if (headroomRequiredUnavailableAgents.length > 0) {
+    issues.push({
+      code: "headroom_required_unavailable",
+      severity: "critical",
+      message: "One or more agents require Headroom optimization, but their assigned runtime has not reported an available Headroom executable.",
+    });
+  } else if (headroomUnavailableAgents.length > 0) {
+    issues.push({
+      code: "headroom_runtime_unavailable",
+      severity: "warning",
+      message: "One or more agents enable Headroom optimization, but their assigned runtime has not reported an available Headroom executable.",
+    });
+  }
 
   return {
     status: worstStatus(issues),
@@ -187,6 +259,17 @@ export async function getWorkspaceHealth(
         assigned_agents: assignedAgents,
         unassigned_agents: unassignedAgents,
         agents_with_missing_runtime: agentsWithMissingRuntime,
+      },
+      headroom: {
+        status: checkStatus(issues, [
+          "headroom_runtime_unavailable",
+          "headroom_required_unavailable",
+        ]),
+        enabled_agents: headroomAgentSettings.length,
+        required_agents: headroomAgentSettings.filter((agent) => agent.requireOptimization).length,
+        unavailable_agents: headroomUnavailableAgents.length,
+        runtimes_reporting: headroomReportingRuntimes,
+        runtimes_available: headroomAvailableRuntimes,
       },
     },
     issues,

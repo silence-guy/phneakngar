@@ -224,6 +224,17 @@ export type RegisterResponse = z.infer<typeof RegisterResponseSchema>;
 // Daemon API request schemas
 // ---------------------------------------------------------------------------
 
+const DaemonHeadroomCapabilitySchema = z
+  .object({
+    status: z.enum(["disabled", "available", "missing"]),
+    configured: z.boolean(),
+    available: z.boolean(),
+    mode: z.literal("proxy"),
+    port: z.number().int().min(1024).max(65535),
+    executable: z.string().min(1).max(100),
+  })
+  .strict();
+
 export const DaemonRuntimeItemSchema = z.object({
   type: z.string().optional(),
   provider: z.string().optional(),
@@ -231,6 +242,7 @@ export const DaemonRuntimeItemSchema = z.object({
   version: z.string().optional(),
   status: z.string().optional(),
   model: z.string().optional(),
+  headroom: DaemonHeadroomCapabilitySchema.optional(),
 });
 export type DaemonRuntimeItem = z.infer<typeof DaemonRuntimeItemSchema>;
 

@@ -116,4 +116,95 @@ describe("getWorkspaceHealth", () => {
       "agents_with_missing_runtime",
     ]));
   });
+
+  it("reports ok when Headroom-enabled agents have an available runtime", async () => {
+    mockListAgentRuntimes.mockResolvedValue([
+      {
+        id: "rt1",
+        provider: "claude",
+        machineLastSeenAt: new Date(now.getTime() - 1_000).toISOString(),
+        metadata: {
+          headroom: {
+            status: "available",
+            configured: false,
+            available: true,
+            mode: "proxy",
+            port: 8787,
+            executable: "headroom",
+          },
+        },
+      },
+    ]);
+    mockGetAllAgentsForWorkspace.mockResolvedValue([
+      { id: "a1", runtimeId: "rt1", runtimeConfig: { headroom: { enabled: true } } },
+    ]);
+
+    const report = await getWorkspaceHealth({} as any, "w1", { now });
+
+    expect(report.status).toBe("ok");
+    expect(report.checks.headroom).toMatchObject({
+      status: "ok",
+      enabled_agents: 1,
+      required_agents: 0,
+      unavailable_agents: 0,
+      runtimes_reporting: 1,
+      runtimes_available: 1,
+    });
+  });
+
+  it("warns when optional Headroom agents lack an available runtime", async () => {
+    mockListAgentRuntimes.mockResolvedValue([
+      {
+        id: "rt1",
+        provider: "codex",
+        machineLastSeenAt: new Date(now.getTime() - 1_000).toISOString(),
+        metadata: { headroom: { available: false } },
+      },
+    ]);
+    mockGetAllAgentsForWorkspace.mockResolvedValue([
+      { id: "a1", runtimeId: "rt1", runtimeConfig: { headroom: { enabled: true } } },
+    ]);
+
+    const report = await getWorkspaceHealth({} as any, "w1", { now });
+
+    expect(report.status).toBe("warning");
+    expect(report.checks.headroom).toMatchObject({
+      status: "warning",
+      enabled_agents: 1,
+      required_agents: 0,
+      unavailable_agents: 1,
+      runtimes_reporting: 1,
+      runtimes_available: 0,
+    });
+    expect(report.issues.map((issue) => issue.code)).toContain("headroom_runtime_unavailable");
+  });
+
+  it("reports critical when required Headroom optimization is unavailable", async () => {
+    mockListAgentRuntimes.mockResolvedValue([
+      {
+        id: "rt1",
+        provider: "opencode",
+        machineLastSeenAt: new Date(now.getTime() - 1_000).toISOString(),
+        metadata: { headroom: { available: false } },
+      },
+    ]);
+    mockGetAllAgentsForWorkspace.mockResolvedValue([
+      {
+        id: "a1",
+        runtimeId: "rt1",
+        runtimeConfig: { headroom: { enabled: true, requireOptimization: true } },
+      },
+    ]);
+
+    const report = await getWorkspaceHealth({} as any, "w1", { now });
+
+    expect(report.status).toBe("critical");
+    expect(report.checks.headroom).toMatchObject({
+      status: "critical",
+      enabled_agents: 1,
+      required_agents: 1,
+      unavailable_agents: 1,
+    });
+    expect(report.issues.map((issue) => issue.code)).toContain("headroom_required_unavailable");
+  });
 });

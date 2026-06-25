@@ -84,6 +84,7 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
       version: rt.version || "",
       ...(cliVersion ? { cli_version: cliVersion } : {}),
       ...(workspacesRoot ? { workspaces_root: workspacesRoot } : {}),
+      ...(rt.headroom ? { headroom: rt.headroom } : {}),
     };
 
     const result = await withD1Retry(() => queries.runtime.upsertAgentRuntime(db, {
