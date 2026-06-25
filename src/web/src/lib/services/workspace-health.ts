@@ -10,6 +10,7 @@ export type WorkspaceHealthIssue = {
   code: string;
   severity: Exclude<WorkspaceHealthStatus, "ok">;
   message: string;
+  next_actions?: string[];
 };
 
 export type WorkspaceHealthReport = {
@@ -56,6 +57,12 @@ type HealthOptions = {
   userId?: string;
   now?: Date;
 };
+
+const HEADROOM_NEXT_ACTIONS = new Set([
+  "enable_headroom",
+  "install_headroom",
+  "configure_headroom_path",
+]);
 
 function isOnline(lastSeenAt: string | null | undefined, nowMs: number) {
   if (!lastSeenAt) return false;
@@ -106,6 +113,30 @@ function headroomAvailableFromMetadata(metadata: unknown): boolean | null {
   return headroom.available;
 }
 
+function unique(values: string[]): string[] {
+  return [...new Set(values)];
+}
+
+function headroomNextActionsFromMetadata(metadata: unknown): string[] {
+  const meta = asJsonRecord(metadata);
+  const headroom = asRecord(meta?.headroom);
+  if (!headroom) return [];
+
+  const actions = Array.isArray(headroom.next_actions) ? headroom.next_actions : [];
+  const sanitized = actions.filter(
+    (action): action is string => typeof action === "string" && HEADROOM_NEXT_ACTIONS.has(action),
+  );
+  if (sanitized.length > 0) return unique(sanitized);
+
+  if (headroom.available === false) {
+    return headroom.configured === false
+      ? ["enable_headroom", "install_headroom"]
+      : ["install_headroom", "configure_headroom_path"];
+  }
+
+  return [];
+}
+
 export async function getWorkspaceHealth(
   db: Database,
   workspaceId: string,
@@ -143,6 +174,13 @@ export async function getWorkspaceHealth(
   const headroomRequiredUnavailableAgents = headroomUnavailableAgents.filter(
     (agent) => agent.requireOptimization,
   );
+  const headroomUnavailableNextActions = unique(headroomUnavailableAgents.flatMap((agent) => {
+    const runtime = agent.runtimeId ? runtimeById.get(agent.runtimeId) : null;
+    return runtime ? headroomNextActionsFromMetadata(runtime.metadata) : [];
+  }));
+  const headroomIssueGuidance = headroomUnavailableNextActions.length > 0
+    ? { next_actions: headroomUnavailableNextActions }
+    : {};
   const headroomReportingRuntimes = runtimes.filter(
     (runtime) => headroomAvailableFromMetadata(runtime.metadata) !== null,
   ).length;
@@ -212,12 +250,14 @@ export async function getWorkspaceHealth(
       code: "headroom_required_unavailable",
       severity: "critical",
       message: "One or more agents require Headroom optimization, but their assigned runtime has not reported an available Headroom executable.",
+      ...headroomIssueGuidance,
     });
   } else if (headroomUnavailableAgents.length > 0) {
     issues.push({
       code: "headroom_runtime_unavailable",
       severity: "warning",
       message: "One or more agents enable Headroom optimization, but their assigned runtime has not reported an available Headroom executable.",
+      ...headroomIssueGuidance,
     });
   }
 

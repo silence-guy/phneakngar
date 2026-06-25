@@ -146,6 +146,7 @@ describe("POST /api/daemon/register", () => {
             mode: "proxy",
             port: 8787,
             executable: "headroom",
+            next_actions: ["install_headroom", "configure_headroom_path"],
           },
         },
       ],
@@ -161,9 +162,39 @@ describe("POST /api/daemon/register", () => {
           mode: "proxy",
           port: 8787,
           executable: "headroom",
+          next_actions: ["install_headroom", "configure_headroom_path"],
         },
       }),
     }));
+  });
+
+  it("rejects malformed Headroom next actions", async () => {
+    const POST = await loadRoute(authCtx);
+
+    const res = await POST(makeReq({
+      ...validBody,
+      runtimes: [
+        {
+          type: "claude",
+          version: "1.0",
+          headroom: {
+            status: "missing",
+            configured: true,
+            available: false,
+            mode: "proxy",
+            port: 8787,
+            executable: "headroom",
+            next_actions: ["install_headroom", "send_secret_to_ui"],
+          },
+        },
+      ],
+    }));
+    const body = await res.json();
+
+    expect(res.status).toBe(400);
+    expect(body.error).toBe("validation error");
+    expect(body.details.join("\n")).toContain("next_actions");
+    expect(mockUpsertAgentRuntime).not.toHaveBeenCalled();
   });
 
   it("rejects unsupported Headroom capability fields", async () => {

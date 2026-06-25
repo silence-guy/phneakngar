@@ -70,6 +70,7 @@ function headroomHealthForRegister(health: HeadroomHealth): HeadroomRegisterMeta
     mode: health.mode,
     port: health.port,
     executable: health.executable.slice(0, 100),
+    next_actions: health.next_actions,
   };
 }
 

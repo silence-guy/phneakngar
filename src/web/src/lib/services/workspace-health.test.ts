@@ -158,7 +158,13 @@ describe("getWorkspaceHealth", () => {
         id: "rt1",
         provider: "codex",
         machineLastSeenAt: new Date(now.getTime() - 1_000).toISOString(),
-        metadata: { headroom: { available: false } },
+        metadata: {
+          headroom: {
+            available: false,
+            configured: true,
+            next_actions: ["install_headroom", "configure_headroom_path"],
+          },
+        },
       },
     ]);
     mockGetAllAgentsForWorkspace.mockResolvedValue([
@@ -176,7 +182,8 @@ describe("getWorkspaceHealth", () => {
       runtimes_reporting: 1,
       runtimes_available: 0,
     });
-    expect(report.issues.map((issue) => issue.code)).toContain("headroom_runtime_unavailable");
+    const issue = report.issues.find((item) => item.code === "headroom_runtime_unavailable");
+    expect(issue?.next_actions).toEqual(["install_headroom", "configure_headroom_path"]);
   });
 
   it("reports critical when required Headroom optimization is unavailable", async () => {
@@ -185,7 +192,13 @@ describe("getWorkspaceHealth", () => {
         id: "rt1",
         provider: "opencode",
         machineLastSeenAt: new Date(now.getTime() - 1_000).toISOString(),
-        metadata: { headroom: { available: false } },
+        metadata: {
+          headroom: {
+            available: false,
+            configured: false,
+            next_actions: ["enable_headroom", "install_headroom"],
+          },
+        },
       },
     ]);
     mockGetAllAgentsForWorkspace.mockResolvedValue([
@@ -205,6 +218,26 @@ describe("getWorkspaceHealth", () => {
       required_agents: 1,
       unavailable_agents: 1,
     });
-    expect(report.issues.map((issue) => issue.code)).toContain("headroom_required_unavailable");
+    const issue = report.issues.find((item) => item.code === "headroom_required_unavailable");
+    expect(issue?.next_actions).toEqual(["enable_headroom", "install_headroom"]);
+  });
+
+  it("falls back to install guidance for older Headroom metadata without next actions", async () => {
+    mockListAgentRuntimes.mockResolvedValue([
+      {
+        id: "rt1",
+        provider: "codex",
+        machineLastSeenAt: new Date(now.getTime() - 1_000).toISOString(),
+        metadata: { headroom: { available: false } },
+      },
+    ]);
+    mockGetAllAgentsForWorkspace.mockResolvedValue([
+      { id: "a1", runtimeId: "rt1", runtimeConfig: { headroom: { enabled: true } } },
+    ]);
+
+    const report = await getWorkspaceHealth({} as any, "w1", { now });
+    const issue = report.issues.find((item) => item.code === "headroom_runtime_unavailable");
+
+    expect(issue?.next_actions).toEqual(["install_headroom", "configure_headroom_path"]);
   });
 });

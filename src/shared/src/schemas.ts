@@ -224,6 +224,12 @@ export type RegisterResponse = z.infer<typeof RegisterResponseSchema>;
 // Daemon API request schemas
 // ---------------------------------------------------------------------------
 
+const DaemonHeadroomNextActionSchema = z.enum([
+  "enable_headroom",
+  "install_headroom",
+  "configure_headroom_path",
+]);
+
 const DaemonHeadroomCapabilitySchema = z
   .object({
     status: z.enum(["disabled", "available", "missing"]),
@@ -232,6 +238,7 @@ const DaemonHeadroomCapabilitySchema = z
     mode: z.literal("proxy"),
     port: z.number().int().min(1024).max(65535),
     executable: z.string().min(1).max(100),
+    next_actions: z.array(DaemonHeadroomNextActionSchema).max(3).optional().default([]),
   })
   .strict();
 

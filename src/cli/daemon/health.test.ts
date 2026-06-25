@@ -12,6 +12,7 @@ const initialHeadroom: HeadroomHealth = {
   port: 8787,
   executable: "headroom",
   proxy_url: "http://127.0.0.1:8787",
+  next_actions: ["enable_headroom", "install_headroom"],
 };
 
 const { server, setRuntimeCount, setHeadroomStatus } = createHealthServer(TEST_PORT, {
@@ -59,6 +60,7 @@ describe("health server", () => {
       port: 18787,
       executable: "headroom",
       proxy_url: "http://127.0.0.1:18787",
+      next_actions: [],
     });
 
     const res = await fetch(`${healthUrl}/health`);
@@ -89,6 +91,21 @@ describe("detectHeadroomHealth", () => {
       port: 8787,
       executable: "headroom",
       proxy_url: "http://127.0.0.1:8787",
+      next_actions: ["enable_headroom", "install_headroom"],
+    });
+  });
+
+  it("suggests enabling Headroom when the executable is available but not configured", () => {
+    const health = detectHeadroomHealth({
+      PATH: "",
+      ALOOK_HEADROOM_PATH: process.execPath,
+    });
+
+    expect(health).toMatchObject({
+      status: "disabled",
+      configured: false,
+      available: true,
+      next_actions: ["enable_headroom"],
     });
   });
 
@@ -102,6 +119,22 @@ describe("detectHeadroomHealth", () => {
       status: "missing",
       configured: true,
       available: false,
+      next_actions: ["install_headroom", "configure_headroom_path"],
+    });
+  });
+
+  it("reports no next actions when Headroom is configured and executable", () => {
+    const health = detectHeadroomHealth({
+      PATH: "",
+      ALOOK_HEADROOM_ENABLED: "1",
+      ALOOK_HEADROOM_PATH: process.execPath,
+    });
+
+    expect(health).toMatchObject({
+      status: "available",
+      configured: true,
+      available: true,
+      next_actions: [],
     });
   });
 });

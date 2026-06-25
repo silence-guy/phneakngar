@@ -6,6 +6,7 @@ import { headroomProxyUrl } from "./headroom/env.js";
 const DEFAULT_HEALTH_PORT = Number(process.env.ALOOK_HEALTH_PORT) || 19514;
 
 export type HeadroomHealthStatus = "disabled" | "available" | "missing";
+export type HeadroomNextAction = "enable_headroom" | "install_headroom" | "configure_headroom_path";
 
 export interface HeadroomHealth {
   status: HeadroomHealthStatus;
@@ -15,6 +16,7 @@ export interface HeadroomHealth {
   port: number;
   executable: string;
   proxy_url: string;
+  next_actions: HeadroomNextAction[];
 }
 
 interface HealthServerOptions {
@@ -34,18 +36,27 @@ function canRunExecutable(executable: string, env: NodeJS.ProcessEnv): boolean {
   return !result.error && result.status === 0;
 }
 
+function headroomNextActions(configured: boolean, available: boolean): HeadroomNextAction[] {
+  if (configured && available) return [];
+  if (configured) return ["install_headroom", "configure_headroom_path"];
+  return available ? ["enable_headroom"] : ["enable_headroom", "install_headroom"];
+}
+
 export function detectHeadroomHealth(env: NodeJS.ProcessEnv = process.env): HeadroomHealth {
   const config = normalizeHeadroomRuntimeConfig(undefined, env);
   const available = canRunExecutable(config.executable, env);
 
+  const configured = config.enabled;
+
   return {
-    status: config.enabled ? (available ? "available" : "missing") : "disabled",
-    configured: config.enabled,
+    status: configured ? (available ? "available" : "missing") : "disabled",
+    configured,
     available,
     mode: config.mode,
     port: config.port,
     executable: executableName(config.executable),
     proxy_url: headroomProxyUrl(config),
+    next_actions: headroomNextActions(configured, available),
   };
 }
 

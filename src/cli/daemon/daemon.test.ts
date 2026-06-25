@@ -56,6 +56,7 @@ const mockDetectHeadroomHealth = vi.fn(() => ({
   port: 8787,
   executable: "headroom",
   proxy_url: "http://127.0.0.1:8787",
+  next_actions: ["install_headroom", "configure_headroom_path"],
 }));
 
 vi.mock("./health.js", () => ({
@@ -818,6 +819,7 @@ describe("daemon with multi-workspace config", () => {
       mode: "proxy",
       port: 8787,
       executable: "headroom",
+      next_actions: ["install_headroom", "configure_headroom_path"],
     });
     expect(body.runtimes[0].headroom).not.toHaveProperty("proxy_url");
   });

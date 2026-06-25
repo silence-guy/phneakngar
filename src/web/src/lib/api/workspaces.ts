@@ -152,7 +152,12 @@ export interface WorkspaceHealthReport {
       runtimes_available: number;
     };
   };
-  issues: Array<{ code: string; severity: "warning" | "critical"; message: string }>;
+  issues: Array<{
+    code: string;
+    severity: "warning" | "critical";
+    message: string;
+    next_actions?: string[];
+  }>;
 }
 
 export const getWorkspaceHealth = (workspaceId: string) =>
