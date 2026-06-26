@@ -4,9 +4,6 @@ import Image from "next/image";
 const footerLinks = [
   { href: "/templates", label: "Templates" },
   { href: "/blog", label: "Blog" },
-  { href: "https://github.com/phneakngarai/phneakngar", label: "GitHub", external: true },
-  { href: "https://discord.phneakngar.ai", label: "Discord", external: true },
-  { href: "https://x.com/phneakngar_ai", label: "X", external: true },
   { href: "/privacy", label: "Privacy" },
 ];
 
@@ -83,7 +80,6 @@ export function PublicLayout({
           <div className={`mx-auto flex ${maxWClass} flex-col items-center justify-between gap-6 md:flex-row`}>
             <div className="flex items-center gap-4">
               <Link href="/" className="flex items-center gap-1">
-                <Image src="/phneakngar.svg" alt="ភ្នាក់ងារ" width={20} height={20} />
                 <span
                   className="text-lg tracking-tight font-bold"
                   style={{ fontFamily: "var(--font-brand)" }}
@@ -97,27 +93,15 @@ export function PublicLayout({
             </div>
 
             <nav className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2" aria-label="Footer navigation">
-              {footerLinks.map((link) =>
-                link.external ? (
-                  <a
-                    key={link.label}
-                    href={link.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-[11px] uppercase tracking-[0.15em] font-mono text-muted-foreground transition-opacity hover:opacity-70"
-                  >
-                    {link.label}
-                  </a>
-                ) : (
-                  <Link
-                    key={link.label}
-                    href={link.href}
-                    className="text-[11px] uppercase tracking-[0.15em] font-mono text-muted-foreground transition-opacity hover:opacity-70"
-                  >
-                    {link.label}
-                  </Link>
-                )
-              )}
+              {footerLinks.map((link) => (
+                <Link
+                  key={link.label}
+                  href={link.href}
+                  className="text-[11px] uppercase tracking-[0.15em] font-mono text-muted-foreground transition-opacity hover:opacity-70"
+                >
+                  {link.label}
+                </Link>
+              ))}
             </nav>
 
             <span className="text-[10px] uppercase tracking-[0.2em] font-mono text-muted-foreground/50">

@@ -19,7 +19,7 @@ import {
   FieldLabel,
   FieldSeparator,
 } from "@/components/ui/field"
-import { SiGithub, SiGoogle } from "@icons-pack/react-simple-icons"
+import { SiGoogle } from "@icons-pack/react-simple-icons"
 import Image from "next/image"
 import { GradientBackground } from "@/components/gradient-background"
 import { Logo } from "@/components/logo"
@@ -250,20 +250,11 @@ function SignInForm({ postLoginUrl, isProd }: { postLoginUrl: string; isProd: bo
       <FieldSeparator className="*:data-[slot=field-separator-content]:bg-card">
         Or continue with
       </FieldSeparator>
-      <Field className="grid grid-cols-2 gap-4">
+      <Field >
         <Button
           variant="outline"
           type="button"
-          onClick={() =>
-            signIn.social({ provider: "github", callbackURL: postLoginUrl })
-          }
-        >
-          <SiGithub className="size-4" />
-          GitHub
-        </Button>
-        <Button
-          variant="outline"
-          type="button"
+          className="w-full"
           onClick={() =>
             signIn.social({ provider: "google", callbackURL: postLoginUrl })
           }

@@ -4,17 +4,13 @@
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache_2.0-blue.svg" alt="License" /></a>
-  <a href="https://github.com/phneakngarai/phneakngar/actions"><img src="https://github.com/phneakngarai/phneakngar/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
   <a href="https://codecov.io/gh/phneakngarai/phneakngar"><img src="https://codecov.io/gh/phneakngarai/phneakngar/branch/main/graph/badge.svg" alt="codecov" /></a>
   <a href="https://www.npmjs.com/package/@phneakngar/app"><img src="https://img.shields.io/npm/v/@phneakngar/app.svg" alt="npm version" /></a>
-  <a href="https://discord.phneakngar.ai"><img src="https://img.shields.io/badge/Discord-Join%20us-5865F2?logo=discord&logoColor=white" alt="Discord" /></a>
 </p>
 
 <p align="center">
-  <a href="https://phneakngar.ai">Website</a> · <a href="https://phneakngar.ai/templates">Templates</a> · <a href="https://discord.phneakngar.ai">Discord</a>
+  <a href="https://phneakngar.ai">Website</a> · <a href="https://phneakngar.ai/templates">Templates</a>
 </p>
-
-
 
 ## What is ភ្នាក់ងារ?
 
@@ -28,9 +24,31 @@ You're the CEO. Define the org chart. Your company runs 24/7.
   <img src="./assets/phneakngar-org_rounded.png" alt="ភ្នាក់ងារ Org Chart — visual agent collaboration canvas" width="700" />
 </p>
 
-
-
 ## Quick Start
+
+### Install on Mac
+
+Prerequisites:
+
+- Node.js 20 or newer
+- pnpm 10.33.0 or newer
+- Bun 1.3 or newer
+- Cloudflare Wrangler login if you want to run D1 and Workers locally
+
+Install dependencies:
+
+```bash
+pnpm install
+```
+
+Install Bun if it is missing:
+
+```bash
+curl -fsSL https://bun.sh/install | bash
+export PATH="$HOME/.bun/bin:$PATH"
+```
+
+Run the self-hosted onboarding wrapper:
 
 ```bash
 npx @phneakngar/app onboard
@@ -38,9 +56,27 @@ npx @phneakngar/app onboard
 
 This walks you through setup — connecting your machine, detecting runtimes, and deploying your first agent company. Open `http://localhost:15210` when it's done.
 
-Or go to [phneakngar.ai](https://phneakngar.ai) and claim unique `@phneakngar.ai` email addresses for your agents.
+For local development from this repository, use:
 
+```bash
+PHNEAKNGAR_PROJECT_ROOT="$PWD" pnpm dev:app
+```
 
+If the wrapper cannot start one of the local services, start them manually in three terminals:
+
+```bash
+WATCHPACK_POLLING=true WATCHPACK_POLLING_INTERVAL=1000 pnpm --filter @phneakngar/web exec next dev --port 15210
+pnpm --filter @phneakngar/email-worker exec wrangler dev --port 15211 --persist-to ../web/.wrangler/state
+pnpm --filter @phneakngar/ws-do exec wrangler dev --port 15212 --persist-to ../web/.wrangler/state
+```
+
+Expected local URLs:
+
+- Web app: `http://localhost:15210`
+- Email worker: `http://localhost:15211`
+- WebSocket worker: `http://localhost:15212`
+
+Open `http://localhost:15210` after the web app returns `HTTP 200`.
 
 ## Features
 
@@ -74,8 +110,6 @@ Or go to [phneakngar.ai](https://phneakngar.ai) and claim unique `@phneakngar.ai
 
 **Traceable** — Every instruction, decision, and reply is recorded. Full accountability, no black boxes.
 
-
-
 ## Bring Your Own Agent
 
 ភ្នាក់ងារ is the orchestration layer. Pick the agents you trust — we give them roles, inboxes, and an always-on runtime.
@@ -89,15 +123,11 @@ Or go to [phneakngar.ai](https://phneakngar.ai) and claim unique `@phneakngar.ai
 | Hermes | Coming Soon |
 | OpenClaw | Coming Soon |
 
-
-
 ## Templates
 
 Start with a pre-built company template — open-source maintainer, indie hacker ship crew, devops monitor, daily newsletter operator, and more.
 
 [Browse templates →](https://phneakngar.ai/templates)
-
-
 
 ## Contributing
 
@@ -162,22 +192,13 @@ flowchart TB
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on how to get involved.
 
-
-
-## Community
-
-- [Discord](https://discord.phneakngar.ai) — Chat with the team and other builders
 - [Website](https://phneakngar.ai) — Live product
-
-
 
 ## Stay Close
 
 <p align="center">
   <img src="./assets/weirdly-ask-for-star.gif" alt="Starring" />
 </p>
-
-
 
 ## License
 

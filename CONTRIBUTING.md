@@ -11,7 +11,6 @@ Thanks for your interest in contributing to ភ្នាក់ងារ. This gu
 ## Setup
 
 ```bash
-git clone https://github.com/phneakngarai/phneakngar.git
 cd phneakngar
 pnpm install
 pnpm db:migrate
@@ -122,14 +121,10 @@ Tests run on both Ubuntu and Windows in CI.
 
 ## Reporting Issues
 
-Use [GitHub Issues](https://github.com/phneakngarai/phneakngar/issues). We have templates for:
+Use the project issue tracker with these templates:
 
 - **Bug reports** — reproduction steps, expected vs actual behavior
 - **Feature requests** — problem statement, proposed solution
-
-## Community
-
-- [Discord](https://discord.phneakngar.ai) — questions, discussion, help
 
 ## License
 

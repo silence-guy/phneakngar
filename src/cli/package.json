@@ -3,15 +3,6 @@
   "version": "0.0.149",
   "description": "ភ្នាក់ងារ CLI — Enable Your Person Colleague",
   "license": "Apache-2.0",
-  "homepage": "https://github.com/phneakngarai/phneakngar#readme",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/phneakngarai/phneakngar.git",
-    "directory": "src/cli"
-  },
-  "bugs": {
-    "url": "https://github.com/phneakngarai/phneakngar/issues"
-  },
   "keywords": [
     "phneakngar",
     "cli",

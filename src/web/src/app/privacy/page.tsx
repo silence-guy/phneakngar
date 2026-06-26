@@ -59,7 +59,7 @@ export default function PrivacyPage() {
           <h4 className="text-base font-medium mt-6 mb-2">Information from Third-Party Social Login</h4>
           <p className="text-foreground/80">
             ភ្នាក់ងារ allows You to create an account and log in through third-party services
-            including Google and GitHub. If You decide to register through or grant us access
+            including Google. If You decide to register through or grant us access
             to a third-party service, We may collect Personal Data already associated with
             Your account, such as Your name and email address.
           </p>

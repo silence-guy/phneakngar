@@ -2,7 +2,6 @@
 
 import { useRef } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -12,9 +11,6 @@ gsap.registerPlugin(ScrollTrigger);
 const footerLinks = [
   { href: "/templates", label: "Templates" },
   { href: "/blog", label: "Blog" },
-  { href: "https://github.com/phneakngarai/phneakngar", label: "GitHub", external: true },
-  { href: "https://discord.phneakngar.ai", label: "Discord", external: true },
-  { href: "https://x.com/phneakngar_ai", label: "X", external: true },
   { href: "/privacy", label: "Privacy" },
 ];
 
@@ -58,7 +54,6 @@ export function MarketingFooter() {
       <div className="mx-auto flex max-w-5xl flex-col items-center justify-between gap-6 md:flex-row">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-1">
-            <Image src="/phneakngar.svg" alt="ភ្នាក់ងារ" width={20} height={20} />
             <span
               className="text-lg tracking-tight"
               style={{
@@ -82,29 +77,16 @@ export function MarketingFooter() {
         </div>
 
         <nav className="flex items-center gap-5" aria-label="Footer navigation">
-          {footerLinks.map((link) =>
-            link.external ? (
-              <a
-                key={link.label}
-                href={link.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="transition-opacity hover:opacity-70"
-                style={linkStyle}
-              >
-                {link.label}
-              </a>
-            ) : (
-              <Link
-                key={link.label}
-                href={link.href}
-                className="transition-opacity hover:opacity-70"
-                style={linkStyle}
-              >
-                {link.label}
-              </Link>
-            )
-          )}
+          {footerLinks.map((link) => (
+            <Link
+              key={link.label}
+              href={link.href}
+              className="transition-opacity hover:opacity-70"
+              style={linkStyle}
+            >
+              {link.label}
+            </Link>
+          ))}
         </nav>
 
         <div className="flex items-center gap-6">

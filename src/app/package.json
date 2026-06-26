@@ -3,15 +3,6 @@
   "version": "0.0.149",
   "description": "Run ភ្នាក់ងារ locally — one command, no clone needed",
   "license": "Apache-2.0",
-  "homepage": "https://github.com/phneakngarai/phneakngar#readme",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/phneakngarai/phneakngar.git",
-    "directory": "src/app"
-  },
-  "bugs": {
-    "url": "https://github.com/phneakngarai/phneakngar/issues"
-  },
   "type": "module",
   "bin": {
     "phneakngar-app": "dist/index.js"

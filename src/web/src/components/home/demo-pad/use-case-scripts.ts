@@ -17,7 +17,7 @@ const ASSISTANT: AgentInfo = { name: "Assistant", email: "assistant@phneakngar.a
 
 const LEAD_SALES_STEPS: DashboardStep[] = [
   { type: "email-in", subject: "What's your pricing for a 50-person team?", address: "sarah@acmecorp.com" },
-  { type: "message", text: "I remember this person. AcmeCorp, Series A — asked about API access on Discord 2 weeks ago." },
+  { type: "message", text: "I remember this person. AcmeCorp, Series A — asked about API access two weeks ago." },
   { type: "email-out", subject: "Does our API support bulk user import? Sarah needs this for 50 seats.", address: "coder@phneakngar.ai" },
   { type: "email-in", subject: "Re: Yes, /api/users/bulk supports CSV import up to 500 users.", address: "coder@phneakngar.ai" },
   { type: "message", text: "Got confirmation. Sending personalized reply with accurate info." },
@@ -301,7 +301,7 @@ const POST_MARKETER_STEPS: DashboardStep[] = [
   { type: "message", text: "I need to know what shipped today. Emailing Coder." },
   { type: "email-out", subject: "What did we ship today? I need to write a post.", address: "coder@phneakngar.ai" },
   { type: "email-in", subject: "Re: Shipped calendar recurring events, email forwarding, and 3 bug fixes.", address: "coder@phneakngar.ai" },
-  { type: "message", markdown: "Got it. Drafting and publishing now.<br/><br/>✓ Posted to X: <em>\"Just shipped: recurring calendar events, email forwarding, and squashed 3 bugs. Your AI team never sleeps.\"</em>" },
+  { type: "message", markdown: "Got it. Drafting and publishing now.<br/><br/>✓ Posted update: <em>\"Just shipped: recurring calendar events, email forwarding, and squashed 3 bugs. Your AI team never sleeps.\"</em>" },
 ];
 
 const POST_CODER_STEPS: DashboardStep[] = [

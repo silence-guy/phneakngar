@@ -116,7 +116,7 @@ PHNEAKNGAR_PROJECT_ROOT=/path/to/phneakngar npx @phneakngar/app onboard
 ## Limitations
 
 - Email send/receive is not available in local mode
-- OAuth login (GitHub, Google) is disabled; use email/password
+- Social OAuth login is disabled; use email/password
 
 ## License
 
