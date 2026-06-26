@@ -1,5 +1,5 @@
 {
-  "name": "@alook/web",
+  "name": "@phneakngar/web",
   "version": "0.0.149",
   "private": true,
   "scripts": {
@@ -20,7 +20,7 @@
     "seo:check": "lhci autorun --config=lighthouserc.json && node scripts/print-lighthouse-scores.mjs"
   },
   "dependencies": {
-    "@alook/shared": "workspace:*",
+    "@phneakngar/shared": "workspace:*",
     "@base-ui/react": "^1.6.0",
     "@dagrejs/dagre": "^3.0.0",
     "@dnd-kit/core": "^6.3.1",
@@ -78,7 +78,7 @@
     "unique-names-generator": "^4.7.1"
   },
   "devDependencies": {
-    "@alook/test-utils": "workspace:*",
+    "@phneakngar/test-utils": "workspace:*",
     "@lhci/cli": "^0.15.1",
     "@tailwindcss/node": "^4.3.1",
     "@tailwindcss/postcss": "^4",

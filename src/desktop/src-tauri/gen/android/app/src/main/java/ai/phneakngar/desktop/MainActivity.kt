@@ -1,4 +1,4 @@
-package ai.alook.desktop
+package ai.phneakngar.desktop
 
 import android.content.res.Configuration
 import android.graphics.Color
@@ -24,11 +24,11 @@ class MainActivity : TauriActivity() {
 
         const val THEME_OBSERVER_SCRIPT = """
             (function() {
-                if (window.__alookThemeObserverInstalled) return;
-                window.__alookThemeObserverInstalled = true;
+                if (window.__phneakngarThemeObserverInstalled) return;
+                window.__phneakngarThemeObserverInstalled = true;
                 function sync() {
                     var dark = document.documentElement.classList.contains('dark');
-                    if (window.AlookNative) window.AlookNative.setWindowTheme(dark);
+                    if (window.PhneakngarNative) window.PhneakngarNative.setWindowTheme(dark);
                 }
                 sync();
                 new MutationObserver(sync).observe(document.documentElement, {
@@ -66,7 +66,7 @@ class MainActivity : TauriActivity() {
 
     override fun onWebViewCreate(webView: WebView) {
         super.onWebViewCreate(webView)
-        webView.addJavascriptInterface(ThemeBridge(this), "AlookNative")
+        webView.addJavascriptInterface(ThemeBridge(this), "PhneakngarNative")
 
         if (WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) {
             WebViewCompat.addDocumentStartJavaScript(webView, THEME_OBSERVER_SCRIPT, setOf("*"))

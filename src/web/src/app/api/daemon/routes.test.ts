@@ -71,9 +71,9 @@ describe("daemon route body validation", () => {
       vi.resetModules();
       applyBase();
 
-      vi.doMock("@alook/shared", async () => {
-        const real = await vi.importActual<typeof import("@alook/shared")>(
-          "@alook/shared"
+      vi.doMock("@phneakngar/shared", async () => {
+        const real = await vi.importActual<typeof import("@phneakngar/shared")>(
+          "@phneakngar/shared"
         );
         return {
           ...real,
@@ -145,9 +145,9 @@ describe("daemon route body validation", () => {
       // Re-mock with a trackable upsert
       vi.resetModules();
       applyBase();
-      vi.doMock("@alook/shared", async () => {
-        const real = await vi.importActual<typeof import("@alook/shared")>(
-          "@alook/shared"
+      vi.doMock("@phneakngar/shared", async () => {
+        const real = await vi.importActual<typeof import("@phneakngar/shared")>(
+          "@phneakngar/shared"
         );
         return {
           ...real,
@@ -195,9 +195,9 @@ describe("daemon route body validation", () => {
         workspaceId: "w1",
       });
 
-      vi.doMock("@alook/shared", async () => {
-        const real = await vi.importActual<typeof import("@alook/shared")>(
-          "@alook/shared"
+      vi.doMock("@phneakngar/shared", async () => {
+        const real = await vi.importActual<typeof import("@phneakngar/shared")>(
+          "@phneakngar/shared"
         );
         return {
           ...real,
@@ -248,9 +248,9 @@ describe("daemon route body validation", () => {
       vi.resetModules();
       applyBase();
 
-      vi.doMock("@alook/shared", async () => {
-        const real = await vi.importActual<typeof import("@alook/shared")>(
-          "@alook/shared"
+      vi.doMock("@phneakngar/shared", async () => {
+        const real = await vi.importActual<typeof import("@phneakngar/shared")>(
+          "@phneakngar/shared"
         );
         return {
           ...real,
@@ -340,9 +340,9 @@ describe("daemon route body validation", () => {
       vi.resetModules();
       applyBase();
 
-      vi.doMock("@alook/shared", async () => {
-        const real = await vi.importActual<typeof import("@alook/shared")>(
-          "@alook/shared"
+      vi.doMock("@phneakngar/shared", async () => {
+        const real = await vi.importActual<typeof import("@phneakngar/shared")>(
+          "@phneakngar/shared"
         );
         return {
           ...real,
@@ -401,9 +401,9 @@ describe("daemon route body validation", () => {
       vi.resetModules();
       applyBase();
 
-      vi.doMock("@alook/shared", async () => {
-        const real = await vi.importActual<typeof import("@alook/shared")>(
-          "@alook/shared"
+      vi.doMock("@phneakngar/shared", async () => {
+        const real = await vi.importActual<typeof import("@phneakngar/shared")>(
+          "@phneakngar/shared"
         );
         return {
           ...real,
@@ -457,9 +457,9 @@ describe("daemon route body validation", () => {
       vi.resetModules();
       applyBase();
 
-      vi.doMock("@alook/shared", async () => {
-        const real = await vi.importActual<typeof import("@alook/shared")>(
-          "@alook/shared"
+      vi.doMock("@phneakngar/shared", async () => {
+        const real = await vi.importActual<typeof import("@phneakngar/shared")>(
+          "@phneakngar/shared"
         );
         return {
           ...real,
@@ -513,9 +513,9 @@ describe("daemon route body validation", () => {
       vi.resetModules();
       applyBase();
 
-      vi.doMock("@alook/shared", async () => {
-        const real = await vi.importActual<typeof import("@alook/shared")>(
-          "@alook/shared"
+      vi.doMock("@phneakngar/shared", async () => {
+        const real = await vi.importActual<typeof import("@phneakngar/shared")>(
+          "@phneakngar/shared"
         );
         return {
           ...real,
@@ -565,9 +565,9 @@ describe("daemon route body validation", () => {
       const createMock = vi.fn().mockResolvedValue(undefined);
       const broadcastMock = vi.fn().mockResolvedValue(undefined);
 
-      vi.doMock("@alook/shared", async () => {
-        const real = await vi.importActual<typeof import("@alook/shared")>(
-          "@alook/shared"
+      vi.doMock("@phneakngar/shared", async () => {
+        const real = await vi.importActual<typeof import("@phneakngar/shared")>(
+          "@phneakngar/shared"
         );
         return {
           ...real,
@@ -623,9 +623,9 @@ describe("daemon route body validation", () => {
 
       const broadcastMock = vi.fn().mockResolvedValue(undefined);
 
-      vi.doMock("@alook/shared", async () => {
-        const real = await vi.importActual<typeof import("@alook/shared")>(
-          "@alook/shared"
+      vi.doMock("@phneakngar/shared", async () => {
+        const real = await vi.importActual<typeof import("@phneakngar/shared")>(
+          "@phneakngar/shared"
         );
         return {
           ...real,

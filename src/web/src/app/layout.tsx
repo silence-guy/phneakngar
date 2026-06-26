@@ -52,8 +52,8 @@ const notoSansKhmer = Noto_Sans_Khmer({
   weight: ["400", "500", "600"],
 });
 
-const SITE_URL = "https://alook.ai";
-const SITE_TITLE = "Alook — ក្រុមហ៊ុនផ្ទាល់ខ្លួន";
+const SITE_URL = "https://phneakngar.ai";
+const SITE_TITLE = "ភ្នាក់ងារ — ក្រុមហ៊ុនផ្ទាល់ខ្លួន";
 const SITE_DESCRIPTION =
   "ភ្នាក់ងារ AI របស់អ្នក ដំណើរការជានិច្ច។ ផ្តល់អ៊ីមែលឱ្យពួកគេ ហើយឱ្យពួកគេធ្វើការជំនួសអ្នកបានពេញមួយថ្ងៃ។";
 const OG_IMAGE_URL = "/og?title=Your Personal Company";
@@ -75,24 +75,24 @@ export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
     default: SITE_TITLE,
-    template: "%s — Alook",
+    template: "%s — ភ្នាក់ងារ",
   },
   description: SITE_DESCRIPTION,
   icons: {
     icon: [
       {
-        url: "/alook.svg",
+        url: "/phneakngar.svg",
         media: "(prefers-color-scheme: light)",
       },
       {
-        url: "/alook-dark.svg",
+        url: "/phneakngar-dark.svg",
         media: "(prefers-color-scheme: dark)",
       },
     ],
   },
   openGraph: {
     type: "website",
-    siteName: "Alook",
+    siteName: "ភ្នាក់ងារ",
     title: SITE_TITLE,
     description: SITE_DESCRIPTION,
     url: SITE_URL,
@@ -101,13 +101,13 @@ export const metadata: Metadata = {
         url: OG_IMAGE_URL,
         width: 1200,
         height: 630,
-        alt: "Alook — Your Personal Company",
+        alt: "ភ្នាក់ងារ — Your Personal Company",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    site: "@alook_ai",
+    site: "@phneakngar_ai",
     title: SITE_TITLE,
     description: SITE_DESCRIPTION,
     images: [OG_IMAGE_URL],
@@ -150,7 +150,7 @@ export default function RootLayout({
               {
                 "@context": "https://schema.org",
                 "@type": "WebApplication",
-                name: "Alook",
+                name: "ភ្នាក់ងារ",
                 url: SITE_URL,
                 description: SITE_DESCRIPTION,
                 applicationCategory: "DeveloperApplication",
@@ -164,12 +164,12 @@ export default function RootLayout({
               {
                 "@context": "https://schema.org",
                 "@type": "Organization",
-                name: "Alook",
+                name: "ភ្នាក់ងារ",
                 url: SITE_URL,
-                logo: `${SITE_URL}/alook.svg`,
+                logo: `${SITE_URL}/phneakngar.svg`,
                 contactPoint: {
                   "@type": "ContactPoint",
-                  email: "support@alook.ai",
+                  email: "support@phneakngar.ai",
                   contactType: "customer support",
                 },
               },

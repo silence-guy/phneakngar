@@ -1,5 +1,5 @@
-import type { Database } from "@alook/shared";
-import { queries } from "@alook/shared";
+import type { Database } from "@phneakngar/shared";
+import { queries } from "@phneakngar/shared";
 import { TaskService } from "./task";
 import { throttled, invalidate, cacheKeys } from "@/lib/cache";
 

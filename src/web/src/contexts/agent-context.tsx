@@ -27,7 +27,7 @@ import {
   reorderUnpinnedAgents,
   type WorkspaceActiveTask,
 } from "@/lib/api";
-import type { AgentRuntime as Runtime } from "@alook/shared";
+import type { AgentRuntime as Runtime } from "@phneakngar/shared";
 import { toast } from "sonner";
 import type {
   Agent,
@@ -35,7 +35,7 @@ import type {
   CreateAgentRequest,
   UpdateAgentRequest,
   WsMessage,
-} from "@alook/shared";
+} from "@phneakngar/shared";
 import { useUserWs } from "@/lib/use-user-ws";
 
 

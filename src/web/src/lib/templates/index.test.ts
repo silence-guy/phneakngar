@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { Locale } from "@alook/shared";
+import { Locale } from "@phneakngar/shared";
 import {
   TEMPLATES,
   TEMPLATES_KM,

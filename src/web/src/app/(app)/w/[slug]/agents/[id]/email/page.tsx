@@ -5,8 +5,8 @@ import { useParams } from "next/navigation";
 import { useWorkspace } from "@/contexts/workspace-context";
 import { useAgentContext } from "@/contexts/agent-context";
 import { listEmails, getEmailBody, getEmailThread, deleteEmail, sendEmail, listEmailAccounts, updateEmailStatus, trustEmail } from "@/lib/api";
-import { toAlookAddress } from "@alook/shared";
-import type { Email, EmailAttachment, AgentEmailAccount } from "@alook/shared";
+import { toPhneakngarAddress } from "@phneakngar/shared";
+import type { Email, EmailAttachment, AgentEmailAccount } from "@phneakngar/shared";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { EmailCompose } from "@/components/email-compose";
@@ -78,10 +78,10 @@ export default function AgentEmailPage() {
     setComposing(false);
   }, []);
 
-  type Mailbox = { type: "alook"; address: string } | { type: "custom"; address: string; accountId: string };
-  const alookAddress = agent?.email_handle ? toAlookAddress(agent.email_handle) : "";
+  type Mailbox = { type: "phneakngar"; address: string } | { type: "custom"; address: string; accountId: string };
+  const phneakngarAddress = agent?.email_handle ? toPhneakngarAddress(agent.email_handle) : "";
   const mailboxes: Mailbox[] = [
-    ...(alookAddress ? [{ type: "alook" as const, address: alookAddress }] : []),
+    ...(phneakngarAddress ? [{ type: "phneakngar" as const, address: phneakngarAddress }] : []),
     ...emailAccounts.map((a) => ({ type: "custom" as const, address: a.email_address, accountId: a.id })),
   ];
   const [activeMailboxIdx, setActiveMailboxIdx] = useState(0);
@@ -116,7 +116,7 @@ export default function AgentEmailPage() {
       if (msg.type === "email.received" && msg.agentId === agentId) {
         trackEmailReceived({
           agent_id: agentId,
-          mailbox_type: activeMailbox?.type === "custom" ? "imap" : "alook",
+          mailbox_type: activeMailbox?.type === "custom" ? "imap" : "phneakngar",
         });
         loadEmails(folder, activeAddress);
       } else if (msg.type === "email.sent" && msg.agentId === agentId) {
@@ -489,7 +489,7 @@ export default function AgentEmailPage() {
   );
 
   const readingPaneContent = (
-    <div className="h-full overflow-auto flex flex-col min-w-0 thin-scrollbar">
+    <div className="h-full overflow-y-auto thin-scrollbar flex flex-col min-w-0">
       {composing ? (
         <EmailCompose
           key={JSON.stringify(composeInitial)}
@@ -699,7 +699,7 @@ export default function AgentEmailPage() {
             </Button>
             <span className="text-sm font-medium">New Email</span>
           </div>
-          <div className="flex-1 min-h-0 overflow-auto">{readingPaneContent}</div>
+          <div className="flex-1 min-h-0 overflow-y-auto thin-scrollbar">{readingPaneContent}</div>
         </div>
       );
     }
@@ -716,7 +716,7 @@ export default function AgentEmailPage() {
             </Button>
             <span className="text-sm font-medium truncate">{selected.subject || "(no subject)"}</span>
           </div>
-          <div className="flex-1 min-h-0 overflow-auto">{readingPaneContent}</div>
+          <div className="flex-1 min-h-0 overflow-y-auto thin-scrollbar">{readingPaneContent}</div>
         </div>
       );
     }
@@ -807,7 +807,7 @@ export default function AgentEmailPage() {
             <Plus className="size-4" />
           </Button>
         </div>
-        <div className="flex-1 min-h-0 overflow-auto">{emailListContent}</div>
+        <div className="flex-1 min-h-0 overflow-y-auto thin-scrollbar">{emailListContent}</div>
       </div>
     );
   })();

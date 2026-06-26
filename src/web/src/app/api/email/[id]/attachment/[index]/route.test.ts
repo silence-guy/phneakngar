@@ -13,8 +13,8 @@ vi.mock("postal-mime", () => ({ default: { parse: (...a: unknown[]) => mockParse
 const mockGetById = vi.fn();
 const mockFilter = vi.fn();
 const mockGetAgent = vi.fn();
-vi.mock("@alook/shared", async () => {
-  const actual = await vi.importActual("@alook/shared");
+vi.mock("@phneakngar/shared", async () => {
+  const actual = await vi.importActual("@phneakngar/shared");
   return {
     ...actual,
     filterDownloadableAttachments: (...a: unknown[]) => mockFilter(...a),

@@ -5,22 +5,22 @@ import { homedir } from "os";
 import { loadDaemonConfig, normalizeServerBaseURL, daemonLogFilePath, daemonLogDir, sessionRunnerLogDir } from "./config.js";
 
 const DAEMON_ENV_KEYS = [
-  "ALOOK_SERVER_URL",
-  "ALOOK_PROJECT_ROOT",
-  "ALOOK_DAEMON_POLL_INTERVAL",
-  "ALOOK_AGENT_TIMEOUT",
-  "ALOOK_DAEMON_MAX_CONCURRENT_TASKS",
-  "ALOOK_CLAUDE_PATH",
-  "ALOOK_DAEMON_ID",
-  "ALOOK_WORKSPACES_ROOT",
-  "ALOOK_DAEMON_DEVICE_NAME",
-  "ALOOK_KEEP_ENV_AFTER_TASK",
-  "ALOOK_CODEX_PATH",
-  "ALOOK_OPENCODE_PATH",
-  "ALOOK_CLAUDE_MODEL",
-  "ALOOK_CODEX_MODEL",
-  "ALOOK_OPENCODE_MODEL",
-  "ALOOK_MESSAGE_INACTIVITY_TIMEOUT",
+  "PHNEAKNGAR_SERVER_URL",
+  "PHNEAKNGAR_PROJECT_ROOT",
+  "PHNEAKNGAR_DAEMON_POLL_INTERVAL",
+  "PHNEAKNGAR_AGENT_TIMEOUT",
+  "PHNEAKNGAR_DAEMON_MAX_CONCURRENT_TASKS",
+  "PHNEAKNGAR_CLAUDE_PATH",
+  "PHNEAKNGAR_DAEMON_ID",
+  "PHNEAKNGAR_WORKSPACES_ROOT",
+  "PHNEAKNGAR_DAEMON_DEVICE_NAME",
+  "PHNEAKNGAR_KEEP_ENV_AFTER_TASK",
+  "PHNEAKNGAR_CODEX_PATH",
+  "PHNEAKNGAR_OPENCODE_PATH",
+  "PHNEAKNGAR_CLAUDE_MODEL",
+  "PHNEAKNGAR_CODEX_MODEL",
+  "PHNEAKNGAR_OPENCODE_MODEL",
+  "PHNEAKNGAR_MESSAGE_INACTIVITY_TIMEOUT",
 ];
 
 afterEach(() => {
@@ -33,7 +33,7 @@ describe("loadDaemonConfig defaults", () => {
   it("returns correct defaults when no env vars set", () => {
     const cfg = loadDaemonConfig();
 
-    expect(cfg.serverURL).toBe("https://alook.ai");
+    expect(cfg.serverURL).toBe("https://phneakngar.ai");
     expect(cfg.pollInterval).toBe(3000);
     expect(cfg.agentTimeout).toBe(43200000);
     expect(cfg.maxConcurrentTasks).toBe(20);
@@ -43,23 +43,23 @@ describe("loadDaemonConfig defaults", () => {
 });
 
 describe("loadDaemonConfig env overrides", () => {
-  it("ALOOK_SERVER_URL overrides serverURL", () => {
-    process.env.ALOOK_SERVER_URL = "http://remote:9090";
+  it("PHNEAKNGAR_SERVER_URL overrides serverURL", () => {
+    process.env.PHNEAKNGAR_SERVER_URL = "http://remote:9090";
     expect(loadDaemonConfig().serverURL).toBe("http://remote:9090");
   });
 
-  it("ALOOK_DAEMON_POLL_INTERVAL='5s' → 5000", () => {
-    process.env.ALOOK_DAEMON_POLL_INTERVAL = "5s";
+  it("PHNEAKNGAR_DAEMON_POLL_INTERVAL='5s' → 5000", () => {
+    process.env.PHNEAKNGAR_DAEMON_POLL_INTERVAL = "5s";
     expect(loadDaemonConfig().pollInterval).toBe(5000);
   });
 
-  it("ALOOK_DAEMON_MAX_CONCURRENT_TASKS='10' → 10", () => {
-    process.env.ALOOK_DAEMON_MAX_CONCURRENT_TASKS = "10";
+  it("PHNEAKNGAR_DAEMON_MAX_CONCURRENT_TASKS='10' → 10", () => {
+    process.env.PHNEAKNGAR_DAEMON_MAX_CONCURRENT_TASKS = "10";
     expect(loadDaemonConfig().maxConcurrentTasks).toBe(10);
   });
 
-  it("ALOOK_MESSAGE_INACTIVITY_TIMEOUT='10m' → 600000", () => {
-    process.env.ALOOK_MESSAGE_INACTIVITY_TIMEOUT = "10m";
+  it("PHNEAKNGAR_MESSAGE_INACTIVITY_TIMEOUT='10m' → 600000", () => {
+    process.env.PHNEAKNGAR_MESSAGE_INACTIVITY_TIMEOUT = "10m";
     expect(loadDaemonConfig().messageInactivityTimeout).toBe(600000);
   });
 });
@@ -101,8 +101,8 @@ describe("daemonId profile suffix", () => {
     expect(cfg.daemonId).toBe(`${hostname()}-staging`);
   });
 
-  it("doesn't double-append when ALOOK_DAEMON_ID already has suffix", () => {
-    process.env.ALOOK_DAEMON_ID = `myhost-staging`;
+  it("doesn't double-append when PHNEAKNGAR_DAEMON_ID already has suffix", () => {
+    process.env.PHNEAKNGAR_DAEMON_ID = `myhost-staging`;
     const cfg = loadDaemonConfig("staging");
     expect(cfg.daemonId).toBe("myhost-staging");
   });
@@ -112,7 +112,7 @@ describe("daemonLogFilePath", () => {
   it("returns <configDir>/daemon/logs/YYYY-MM-DD.log for a fixed date", () => {
     const d = new Date(2026, 3, 17); // 2026-04-17 local
     const p = daemonLogFilePath(d);
-    expect(p).toBe(join(homedir(), ".alook", "daemon", "logs", "2026-04-17.log"));
+    expect(p).toBe(join(homedir(), ".phneakngar", "daemon", "logs", "2026-04-17.log"));
   });
 
   it("zero-pads month and day", () => {
@@ -121,89 +121,89 @@ describe("daemonLogFilePath", () => {
   });
 });
 
-describe("daemonLogDir — three ALOOK_PROJECT_ROOT scenarios", () => {
-  it("production: ~/.alook/daemon/logs", () => {
-    delete process.env.ALOOK_PROJECT_ROOT;
-    expect(daemonLogDir()).toBe(join(homedir(), ".alook", "daemon", "logs"));
+describe("daemonLogDir — three PHNEAKNGAR_PROJECT_ROOT scenarios", () => {
+  it("production: ~/.phneakngar/daemon/logs", () => {
+    delete process.env.PHNEAKNGAR_PROJECT_ROOT;
+    expect(daemonLogDir()).toBe(join(homedir(), ".phneakngar", "daemon", "logs"));
   });
 
-  it("dev mode: <PROJECT>/.alook/daemon/logs", () => {
-    process.env.ALOOK_PROJECT_ROOT = "/tmp/my-project/.alook";
-    expect(daemonLogDir()).toBe(join("/tmp/my-project/.alook", "daemon", "logs"));
+  it("dev mode: <PROJECT>/.phneakngar/daemon/logs", () => {
+    process.env.PHNEAKNGAR_PROJECT_ROOT = "/tmp/my-project/.phneakngar";
+    expect(daemonLogDir()).toBe(join("/tmp/my-project/.phneakngar", "daemon", "logs"));
   });
 
-  it("app mode: ~/.alook/self-hosted/daemon/logs", () => {
-    process.env.ALOOK_PROJECT_ROOT = join(homedir(), ".alook", "self-hosted");
-    expect(daemonLogDir()).toBe(join(homedir(), ".alook", "self-hosted", "daemon", "logs"));
+  it("app mode: ~/.phneakngar/self-hosted/daemon/logs", () => {
+    process.env.PHNEAKNGAR_PROJECT_ROOT = join(homedir(), ".phneakngar", "self-hosted");
+    expect(daemonLogDir()).toBe(join(homedir(), ".phneakngar", "self-hosted", "daemon", "logs"));
   });
 });
 
-describe("workspacesRoot — three ALOOK_PROJECT_ROOT scenarios", () => {
-  it("production: ~/.alook/workspaces", () => {
-    delete process.env.ALOOK_PROJECT_ROOT;
+describe("workspacesRoot — three PHNEAKNGAR_PROJECT_ROOT scenarios", () => {
+  it("production: ~/.phneakngar/workspaces", () => {
+    delete process.env.PHNEAKNGAR_PROJECT_ROOT;
     const cfg = loadDaemonConfig();
-    expect(cfg.workspacesRoot).toBe(join(homedir(), ".alook", "workspaces"));
+    expect(cfg.workspacesRoot).toBe(join(homedir(), ".phneakngar", "workspaces"));
   });
 
-  it("production + profile: ~/.alook/workspaces_{profile}", () => {
-    delete process.env.ALOOK_PROJECT_ROOT;
+  it("production + profile: ~/.phneakngar/workspaces_{profile}", () => {
+    delete process.env.PHNEAKNGAR_PROJECT_ROOT;
     const cfg = loadDaemonConfig("dev");
     expect(cfg.workspacesRoot).toBe(
-      join(homedir(), ".alook", "workspaces_dev"),
+      join(homedir(), ".phneakngar", "workspaces_dev"),
     );
   });
 
-  it("dev mode: <PROJECT>/.alook/workspaces", () => {
-    process.env.ALOOK_PROJECT_ROOT = "/tmp/my-project/.alook";
+  it("dev mode: <PROJECT>/.phneakngar/workspaces", () => {
+    process.env.PHNEAKNGAR_PROJECT_ROOT = "/tmp/my-project/.phneakngar";
     const cfg = loadDaemonConfig();
     expect(cfg.workspacesRoot).toBe(
-      join("/tmp/my-project/.alook", "workspaces"),
+      join("/tmp/my-project/.phneakngar", "workspaces"),
     );
   });
 
-  it("dev mode + profile: <PROJECT>/.alook/workspaces_{profile}", () => {
-    process.env.ALOOK_PROJECT_ROOT = "/tmp/my-project/.alook";
+  it("dev mode + profile: <PROJECT>/.phneakngar/workspaces_{profile}", () => {
+    process.env.PHNEAKNGAR_PROJECT_ROOT = "/tmp/my-project/.phneakngar";
     const cfg = loadDaemonConfig("staging");
     expect(cfg.workspacesRoot).toBe(
-      join("/tmp/my-project/.alook", "workspaces_staging"),
+      join("/tmp/my-project/.phneakngar", "workspaces_staging"),
     );
   });
 
-  it("app mode: ~/.alook/self-hosted/workspaces", () => {
-    process.env.ALOOK_PROJECT_ROOT = join(homedir(), ".alook", "self-hosted");
+  it("app mode: ~/.phneakngar/self-hosted/workspaces", () => {
+    process.env.PHNEAKNGAR_PROJECT_ROOT = join(homedir(), ".phneakngar", "self-hosted");
     const cfg = loadDaemonConfig();
     expect(cfg.workspacesRoot).toBe(
-      join(homedir(), ".alook", "self-hosted", "workspaces"),
+      join(homedir(), ".phneakngar", "self-hosted", "workspaces"),
     );
   });
 
-  it("ALOOK_WORKSPACES_ROOT overrides all defaults", () => {
-    process.env.ALOOK_PROJECT_ROOT = "/tmp/my-project/.alook";
-    process.env.ALOOK_WORKSPACES_ROOT = "/custom/path";
+  it("PHNEAKNGAR_WORKSPACES_ROOT overrides all defaults", () => {
+    process.env.PHNEAKNGAR_PROJECT_ROOT = "/tmp/my-project/.phneakngar";
+    process.env.PHNEAKNGAR_WORKSPACES_ROOT = "/custom/path";
     const cfg = loadDaemonConfig();
     expect(cfg.workspacesRoot).toBe("/custom/path");
   });
 });
 
-describe("sessionRunnerLogDir — three ALOOK_PROJECT_ROOT scenarios", () => {
-  it("production: ~/.alook/daemon/session-runners", () => {
-    delete process.env.ALOOK_PROJECT_ROOT;
+describe("sessionRunnerLogDir — three PHNEAKNGAR_PROJECT_ROOT scenarios", () => {
+  it("production: ~/.phneakngar/daemon/session-runners", () => {
+    delete process.env.PHNEAKNGAR_PROJECT_ROOT;
     expect(sessionRunnerLogDir()).toBe(
-      join(homedir(), ".alook", "daemon", "session-runners"),
+      join(homedir(), ".phneakngar", "daemon", "session-runners"),
     );
   });
 
-  it("dev mode: <PROJECT>/.alook/daemon/session-runners", () => {
-    process.env.ALOOK_PROJECT_ROOT = "/tmp/my-project/.alook";
+  it("dev mode: <PROJECT>/.phneakngar/daemon/session-runners", () => {
+    process.env.PHNEAKNGAR_PROJECT_ROOT = "/tmp/my-project/.phneakngar";
     expect(sessionRunnerLogDir()).toBe(
-      join("/tmp/my-project/.alook", "daemon", "session-runners"),
+      join("/tmp/my-project/.phneakngar", "daemon", "session-runners"),
     );
   });
 
-  it("app mode: ~/.alook/self-hosted/daemon/session-runners", () => {
-    process.env.ALOOK_PROJECT_ROOT = join(homedir(), ".alook", "self-hosted");
+  it("app mode: ~/.phneakngar/self-hosted/daemon/session-runners", () => {
+    process.env.PHNEAKNGAR_PROJECT_ROOT = join(homedir(), ".phneakngar", "self-hosted");
     expect(sessionRunnerLogDir()).toBe(
-      join(homedir(), ".alook", "self-hosted", "daemon", "session-runners"),
+      join(homedir(), ".phneakngar", "self-hosted", "daemon", "session-runners"),
     );
   });
 });

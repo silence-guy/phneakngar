@@ -163,7 +163,7 @@ export function InboxPopover({
               <p className="text-xs">No unread messages</p>
             </div>
           ) : (
-            <div className="max-h-96 overflow-y-auto">
+            <div className="max-h-96 overflow-y-auto thin-scrollbar">
               {items.map((item) => (
                 <InboxPopoverRow
                   key={item.id}

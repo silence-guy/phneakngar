@@ -32,9 +32,9 @@ function isDaemonRunning(): boolean {
 
 export function updateCommand(): Command {
   return new Command("update")
-    .description("Update Alook to the latest version")
+    .description("Update ភ្នាក់ងារ to the latest version")
     .action(() => {
-      console.log("Updating Alook...\n");
+      console.log("Updating ភ្នាក់ងារ...\n");
 
       // Stop daemon if running (so it doesn't hold the health port)
       const daemonWasRunning = isDaemonRunning();
@@ -71,7 +71,7 @@ export function updateCommand(): Command {
 
       console.log("\n✓ Update complete.");
       if (!servicesWereRunning) {
-        console.log("Run 'npx @alook/app start' to start services.");
+        console.log("Run 'npx @phneakngar/app start' to start services.");
       }
     });
 }

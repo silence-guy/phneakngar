@@ -2,7 +2,7 @@ import {
   OFFLINE_THRESHOLD_MS,
   queries,
   type Database,
-} from "@alook/shared";
+} from "@phneakngar/shared";
 
 export type WorkspaceHealthStatus = "ok" | "warning" | "critical";
 

@@ -10,11 +10,11 @@ assignees: ''
 A clear description of what you want to happen.
 
 ## Impact Area
-- [ ] Shared library (`@alook/shared`)
-- [ ] Web app (`@alook/web`)
-- [ ] CLI (`@alook/cli`)
-- [ ] Email Worker (`@alook/email-worker`)
-- [ ] WebSocket DO (`@alook/ws-do`)
+- [ ] Shared library (`@phneakngar/shared`)
+- [ ] Web app (`@phneakngar/web`)
+- [ ] CLI (`@phneakngar/cli`)
+- [ ] Email Worker (`@phneakngar/email-worker`)
+- [ ] WebSocket DO (`@phneakngar/ws-do`)
 - [ ] Other: ...
 
 ## Additional Context

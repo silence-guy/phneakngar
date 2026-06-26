@@ -1,4 +1,4 @@
-import { toAlookAddress } from "./email"
+import { toPhneakngarAddress } from "./email"
 
 export interface PromptAgent {
   name: string
@@ -73,13 +73,13 @@ export function parsePromptMentions(prompt: string, agents: PromptAgent[]): Pars
     const m = matches[i]
     const mention: PromptMention = {
       name: m.agent.name,
-      email: m.agent.emailHandle ? toAlookAddress(m.agent.emailHandle) : null,
+      email: m.agent.emailHandle ? toPhneakngarAddress(m.agent.emailHandle) : null,
       description: m.agent.description,
     }
     mentions.unshift(mention)
 
     if (m.agent.emailHandle) {
-      const replacement = `@${m.agent.name} (${toAlookAddress(m.agent.emailHandle)})`
+      const replacement = `@${m.agent.name} (${toPhneakngarAddress(m.agent.emailHandle)})`
       result = result.slice(0, m.start) + replacement + result.slice(m.end)
     } else {
       // Preserve canonical casing even without email

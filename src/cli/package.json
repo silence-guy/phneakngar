@@ -1,19 +1,19 @@
 {
-  "name": "@alook/cli",
+  "name": "@phneakngar/cli",
   "version": "0.0.149",
-  "description": "Alook CLI — Enable Your Person Colleague",
+  "description": "ភ្នាក់ងារ CLI — Enable Your Person Colleague",
   "license": "Apache-2.0",
-  "homepage": "https://github.com/alookai/alook#readme",
+  "homepage": "https://github.com/phneakngarai/phneakngar#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/alookai/alook.git",
+    "url": "git+https://github.com/phneakngarai/phneakngar.git",
     "directory": "src/cli"
   },
   "bugs": {
-    "url": "https://github.com/alookai/alook/issues"
+    "url": "https://github.com/phneakngarai/phneakngar/issues"
   },
   "keywords": [
-    "alook",
+    "phneakngar",
     "cli",
     "ai",
     "agent",
@@ -22,7 +22,7 @@
   ],
   "type": "module",
   "bin": {
-    "alook": "dist/index.js"
+    "phneakngar": "dist/index.js"
   },
   "main": "./dist/index.js",
   "files": [
@@ -54,7 +54,7 @@
     "sharp": "^0.35.2"
   },
   "devDependencies": {
-    "@alook/shared": "workspace:*",
+    "@phneakngar/shared": "workspace:*",
     "@types/bun": "^1.3.14",
     "eslint": "^10.3.0",
     "knip": "^6.17.1",

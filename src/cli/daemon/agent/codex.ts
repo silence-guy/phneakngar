@@ -694,8 +694,8 @@ export class CodexBackend implements AgentBackend {
           // 1. Initialize
           await sendRpc("initialize", {
             clientInfo: {
-              name: "alook-daemon",
-              title: "Alook Agent SDK",
+              name: "phneakngar-daemon",
+              title: "ភ្នាក់ងារ Agent SDK",
               version: "0.1.0",
             },
             capabilities: { experimentalApi: true },

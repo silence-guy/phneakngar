@@ -8,8 +8,8 @@ vi.mock("@/lib/db", () => ({ getDb: vi.fn(() => ({})) }));
 
 const mockList = vi.fn();
 const mockGetConversation = vi.fn();
-vi.mock("@alook/shared", async () => {
-  const actual = await vi.importActual("@alook/shared");
+vi.mock("@phneakngar/shared", async () => {
+  const actual = await vi.importActual("@phneakngar/shared");
   return {
     ...actual,
     queries: {

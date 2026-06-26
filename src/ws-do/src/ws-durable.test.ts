@@ -61,7 +61,7 @@ vi.mock("cloudflare:workers", () => ({
   },
 }))
 
-// Mock @alook/shared
+// Mock @phneakngar/shared
 const mockGetValidSession = vi.fn<(db: unknown, token: string) => Promise<string | null>>()
 const mockGetMachineTokenByToken = vi.fn()
 const mockGetLatestTokenForUser = vi.fn()
@@ -69,7 +69,7 @@ const mockGetRuntimeIdsByDaemon = vi.fn()
 const mockGetMachineByDaemon = vi.fn()
 const mockCreateDb = vi.fn().mockReturnValue({})
 
-vi.mock("@alook/shared", () => {
+vi.mock("@phneakngar/shared", () => {
   const noopLogger = {
     debug: () => {},
     info: () => {},

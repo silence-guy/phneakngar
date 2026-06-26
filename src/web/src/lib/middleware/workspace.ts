@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getCloudflareContext } from "@opennextjs/cloudflare"
-import { queries } from "@alook/shared"
+import { queries } from "@phneakngar/shared"
 import { getDb } from "@/lib/db"
 import { cached, cacheKeys } from "@/lib/cache"
 import type { AuthContext } from "./auth"

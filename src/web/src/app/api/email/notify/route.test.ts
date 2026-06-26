@@ -20,8 +20,8 @@ vi.mock("@opennextjs/cloudflare", () => ({
 }));
 vi.mock("@/lib/db", () => ({ getDb: vi.fn(() => ({})) }));
 
-vi.mock("@alook/shared", async () => {
-  const actual = await vi.importActual("@alook/shared");
+vi.mock("@phneakngar/shared", async () => {
+  const actual = await vi.importActual("@phneakngar/shared");
   return {
     ...actual,
     createDb: vi.fn(() => ({})),
@@ -84,7 +84,7 @@ import { POST } from "./route";
 
 function makeNotifyReq(body: Record<string, unknown>, secret: string | null = "notify-secret") {
   const headers = new Headers();
-  if (secret !== null) headers.set("X-Alook-Email-Notify-Secret", secret);
+  if (secret !== null) headers.set("X-Phneakngar-Email-Notify-Secret", secret);
 
   return new NextRequest("http://localhost/api/email/notify", {
     method: "POST",
@@ -202,7 +202,7 @@ describe("POST /api/email/notify", () => {
   // of opening a brand-new one (the reported bug).
   it("threads a human reply into the original conversation via In-Reply-To (no new conversation)", async () => {
     mockGetAgent.mockResolvedValue({ id: "a1", workspaceId: "ws1", runtimeId: "r1", ownerId: "u1" });
-    const WIRE_ID = "<wire-abc@alook.ai>"; // the id the agent put on the wire + registered
+    const WIRE_ID = "<wire-abc@phneakngar.ai>"; // the id the agent put on the wire + registered
     // The map was registered (on send) keyed on the wire id → the original conversation.
     mockFindByKey.mockImplementation((_db: unknown, key: string) =>
       key === `email:a1:${WIRE_ID}` ? "conv_original" : null,

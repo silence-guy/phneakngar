@@ -10,7 +10,7 @@ import type {
   UpdateAgentLinkRequest,
   UpdateAgentRequest,
   UpdateEmailAccountRequest,
-} from "@alook/shared";
+} from "@phneakngar/shared";
 import { apiFetch, wsQuery } from "./client";
 
 // Agents

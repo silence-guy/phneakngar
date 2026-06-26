@@ -9,7 +9,7 @@ vi.mock("@/lib/db", () => ({ getDb: vi.fn(() => ({})) }));
 
 const mockUnflagMessage = vi.fn();
 
-vi.mock("@alook/shared", () => ({
+vi.mock("@phneakngar/shared", () => ({
   createDb: vi.fn(() => ({})),
   queries: {
     messageFlag: {

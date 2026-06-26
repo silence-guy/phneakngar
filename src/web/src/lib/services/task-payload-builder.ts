@@ -1,11 +1,11 @@
-import type { Database, ClaimedTaskRow } from "@alook/shared";
+import type { Database, ClaimedTaskRow } from "@phneakngar/shared";
 import {
   buildAgentPromptLanguagePolicy,
   queries,
   resolveAgentLanguageMode,
   TASK_TYPES,
-  toAlookAddress,
-} from "@alook/shared";
+  toPhneakngarAddress,
+} from "@phneakngar/shared";
 import { taskToResponse } from "@/lib/api/responses";
 import { cached, cacheKeys } from "@/lib/cache";
 
@@ -69,7 +69,7 @@ export class TaskPayloadBuilder {
       const taskContext = task.context as Record<string, unknown> | null | undefined;
       const emailAddresses: string[] = [];
       if (agent) {
-        if (agent.emailHandle) emailAddresses.push(toAlookAddress(agent.emailHandle));
+        if (agent.emailHandle) emailAddresses.push(toPhneakngarAddress(agent.emailHandle));
         const customAccounts = emailAccountsByAgent.get(agent.id) ?? [];
         emailAddresses.push(...customAccounts);
       }
@@ -142,7 +142,7 @@ export class TaskPayloadBuilder {
       const rawColleagues = colleaguesByAgent.get(task.agentId) ?? [];
       const colleagues = rawColleagues.map((c) => ({
         name: c.name,
-        email: c.emailHandle ? toAlookAddress(c.emailHandle) : "",
+        email: c.emailHandle ? toPhneakngarAddress(c.emailHandle) : "",
         description: c.description,
         instruction: c.instruction,
       }));

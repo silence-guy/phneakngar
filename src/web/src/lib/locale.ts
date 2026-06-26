@@ -8,8 +8,8 @@ import {
   resolveLocale,
   taskStatusLabels,
   taskTypeLabels,
-} from "@alook/shared";
-import type { Locale as SharedLocale, LocaleLabels } from "@alook/shared";
+} from "@phneakngar/shared";
+import type { Locale as SharedLocale, LocaleLabels } from "@phneakngar/shared";
 
 export type WebLocale = SharedLocale;
 
@@ -149,8 +149,8 @@ export const connectMachineCopy = {
     [Locale.KM]: "ភ្ជាប់កុំព្យូទ័រ",
   },
   desktopDescription: {
-    [Locale.EN]: "Click to register your machine with Alook.",
-    [Locale.KM]: "ចុចដើម្បីចុះឈ្មោះម៉ាស៊ីនរបស់អ្នកជាមួយ Alook។",
+    [Locale.EN]: "Click to register your machine with ភ្នាក់ងារ.",
+    [Locale.KM]: "ចុចដើម្បីចុះឈ្មោះម៉ាស៊ីនរបស់អ្នកជាមួយ ភ្នាក់ងារ។",
   },
   terminalDescription: {
     [Locale.EN]: "Run this in your terminal to link your machine.",
@@ -337,8 +337,8 @@ export const agentFormCopy = {
     [Locale.KM]: "អ្នកផ្ញើដែលអនុញ្ញាត",
   },
   allowedSendersDescription: {
-    [Locale.EN]: "Only emails from these addresses will trigger this agent. Applies to all configured email addresses (alook.ai handle and custom email).",
-    [Locale.KM]: "មានតែអ៊ីមែលពីអាសយដ្ឋានទាំងនេះប៉ុណ្ណោះដែលនឹងបើកដំណើរការភ្នាក់ងារនេះ។ អនុវត្តចំពោះអាសយដ្ឋានអ៊ីមែលដែលបានកំណត់ទាំងអស់ (alook.ai handle និង custom email)។",
+    [Locale.EN]: "Only emails from these addresses will trigger this agent. Applies to all configured email addresses (phneakngar.ai handle and custom email).",
+    [Locale.KM]: "មានតែអ៊ីមែលពីអាសយដ្ឋានទាំងនេះប៉ុណ្ណោះដែលនឹងបើកដំណើរការភ្នាក់ងារនេះ។ អនុវត្តចំពោះអាសយដ្ឋានអ៊ីមែលដែលបានកំណត់ទាំងអស់ (phneakngar.ai handle និង custom email)។",
   },
   agentsCanEmailEachOther: {
     [Locale.EN]: "Agents in this workspace can already email each other - no whitelist entry needed.",

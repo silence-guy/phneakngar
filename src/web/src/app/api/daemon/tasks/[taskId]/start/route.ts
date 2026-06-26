@@ -1,4 +1,4 @@
-import { queries } from "@alook/shared"
+import { queries } from "@phneakngar/shared"
 import { getDb } from "@/lib/db"
 import { withAuth } from "@/lib/middleware/auth";
 import { withDaemonTaskAccess } from "@/lib/middleware/daemon";

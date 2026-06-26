@@ -8,7 +8,7 @@ import type { HeadroomPaths, HeadroomRuntimeConfig } from "./config.js";
 const roots: string[] = [];
 
 function makePaths(): HeadroomPaths {
-  const root = mkdtempSync(join(tmpdir(), "alook-headroom-"));
+  const root = mkdtempSync(join(tmpdir(), "phneakngar-headroom-"));
   roots.push(root);
   return {
     configDir: join(root, "config"),

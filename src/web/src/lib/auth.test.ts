@@ -12,8 +12,8 @@ vi.mock("better-auth/plugins", () => ({
 
 vi.mock("@/lib/db", () => ({ getDb: vi.fn(() => ({})) }));
 
-vi.mock("@alook/shared", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@alook/shared")>()
+vi.mock("@phneakngar/shared", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@phneakngar/shared")>()
   return {
     ...actual,
     createLogger: () => ({ info: vi.fn(), error: vi.fn() }),

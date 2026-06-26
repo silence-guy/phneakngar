@@ -1,4 +1,4 @@
--- Alook schema — single merged migration
+-- ភ្នាក់ងារ schema — single merged migration
 -- Tables match src/shared/src/db/schema.ts
 
 -- =========================================================================

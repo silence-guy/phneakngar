@@ -54,10 +54,10 @@ export function normalizeHeadroomRuntimeConfig(
 ): HeadroomRuntimeConfig {
   const runtime = asRecord(runtimeConfig);
   const headroom = asRecord(runtime?.headroom);
-  const envEnabled = boolValue(env.ALOOK_HEADROOM_ENABLED);
+  const envEnabled = boolValue(env.PHNEAKNGAR_HEADROOM_ENABLED);
   const enabled = boolValue(headroom?.enabled) || envEnabled;
   const port =
-    parsePort(env.ALOOK_HEADROOM_PORT) ??
+    parsePort(env.PHNEAKNGAR_HEADROOM_PORT) ??
     parsePort(headroom?.port) ??
     parsePort(env.HEADROOM_PORT) ??
     DEFAULT_PORT;
@@ -70,8 +70,8 @@ export function normalizeHeadroomRuntimeConfig(
     memory: boolValue(headroom?.memory),
     ccr: boolValue(headroom?.ccr),
     port,
-    executable: typeof env.ALOOK_HEADROOM_PATH === "string" && env.ALOOK_HEADROOM_PATH.trim()
-      ? env.ALOOK_HEADROOM_PATH.trim()
+    executable: typeof env.PHNEAKNGAR_HEADROOM_PATH === "string" && env.PHNEAKNGAR_HEADROOM_PATH.trim()
+      ? env.PHNEAKNGAR_HEADROOM_PATH.trim()
       : "headroom",
   };
 }

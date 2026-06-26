@@ -7,7 +7,7 @@ vi.mock("@opennextjs/cloudflare", () => ({
 
 vi.mock("@/lib/db", () => ({ getDb: vi.fn(() => ({})) }));
 
-vi.mock("@alook/shared", () => ({
+vi.mock("@phneakngar/shared", () => ({
   createDb: vi.fn(() => ({})),
   queries: {
     machineToken: {
@@ -25,7 +25,7 @@ vi.mock("@/lib/auth", () => ({
 }));
 
 import { withAuth } from "./auth";
-import { queries } from "@alook/shared";
+import { queries } from "@phneakngar/shared";
 
 const mockGetMachineTokenByHash = queries.machineToken
   .getMachineTokenByToken as ReturnType<typeof vi.fn>;

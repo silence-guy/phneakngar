@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { Locale } from "@alook/shared";
+import { Locale } from "@phneakngar/shared";
 import {
   hasCustomEmailErrors,
   hasWorkspaceFormErrors,
@@ -19,7 +19,7 @@ describe("validateWorkspaceForm", () => {
   });
 
   it("passes when name and slug are present", () => {
-    const errors = validateWorkspaceForm({ name: "Alook", slug: "alook" });
+    const errors = validateWorkspaceForm({ name: "ភ្នាក់ងារ", slug: "phneakngar" });
 
     expect(errors).toEqual({});
     expect(hasWorkspaceFormErrors(errors)).toBe(false);

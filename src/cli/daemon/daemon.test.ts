@@ -41,10 +41,10 @@ vi.mock("./config.js", () => ({
     wsPollInterval: 30000,
     sweepInterval: 60000,
   })),
-  sessionRunnerLogDir: vi.fn(() => path.join("/tmp", "alook", "daemon", "session-runners")),
-  daemonLogFilePath: vi.fn(() => path.join("/tmp", "alook", "daemon", "logs", "2026-01-01.log")),
+  sessionRunnerLogDir: vi.fn(() => path.join("/tmp", "phneakngar", "daemon", "session-runners")),
+  daemonLogFilePath: vi.fn(() => path.join("/tmp", "phneakngar", "daemon", "logs", "2026-01-01.log")),
   lastUpdateMarkerPath: vi.fn((profile?: string) =>
-    profile ? path.join("/tmp", "alook", `last_update_${profile}`) : path.join("/tmp", "alook", "last_update"),
+    profile ? path.join("/tmp", "phneakngar", `last_update_${profile}`) : path.join("/tmp", "phneakngar", "last_update"),
   ),
 }));
 
@@ -1279,11 +1279,11 @@ describe("spawnSessionRunner", () => {
     spawnSessionRunner(makeSpawnInput() as any);
 
     expect(mockMkdirSync).toHaveBeenCalledWith(
-      path.join("/tmp", "alook", "daemon", "session-runners"),
+      path.join("/tmp", "phneakngar", "daemon", "session-runners"),
       { recursive: true },
     );
     expect(mockOpenSync).toHaveBeenCalledWith(
-      path.join("/tmp", "alook", "daemon", "session-runners", "t1.log"),
+      path.join("/tmp", "phneakngar", "daemon", "session-runners", "t1.log"),
       "a",
     );
 
@@ -1303,7 +1303,7 @@ describe("spawnSessionRunner", () => {
     const call = vi.mocked(spawn).mock.calls[0];
     const encoded = call[1]![1] as string;
     const decoded = JSON.parse(Buffer.from(encoded, "base64").toString("utf-8"));
-    expect(decoded.logFilePath).toBe(path.join("/tmp", "alook", "daemon", "session-runners", "t1.log"));
+    expect(decoded.logFilePath).toBe(path.join("/tmp", "phneakngar", "daemon", "session-runners", "t1.log"));
   });
 
   it("spawns with stdio ignore when openSync fails (disk full)", () => {
@@ -1358,7 +1358,7 @@ describe("pruneSessionRunnerLogs", () => {
     // Files 0-4 are the oldest (lowest mtime), they should be deleted
     for (let i = 0; i < 5; i++) {
       expect(mockUnlinkSync).toHaveBeenCalledWith(
-        path.join("/tmp", "alook", "daemon", "session-runners", `${i}.log`),
+        path.join("/tmp", "phneakngar", "daemon", "session-runners", `${i}.log`),
       );
     }
   });
@@ -1883,7 +1883,7 @@ describe("daemon restart spawn", () => {
       { recursive: true, mode: 0o700 },
     );
     expect(mockOpenSync).toHaveBeenCalledWith(
-      path.join("/tmp", "alook", "daemon", "logs", "2026-01-01.log"),
+      path.join("/tmp", "phneakngar", "daemon", "logs", "2026-01-01.log"),
       "a",
       0o600,
     );
@@ -1902,20 +1902,20 @@ describe("daemon kill_task handling", () => {
     mockProcessExit.mockImplementation((() => {}) as any);
     mockOpenSync.mockReturnValue(42);
     // Use short timeouts for KILL_TASK retry loop in tests
-    process.env.ALOOK_KILL_TASK_MAX_WAIT_MS = "500";
-    process.env.ALOOK_KILL_TASK_POLL_MS = "50";
+    process.env.PHNEAKNGAR_KILL_TASK_MAX_WAIT_MS = "500";
+    process.env.PHNEAKNGAR_KILL_TASK_POLL_MS = "50";
     // Short verify/grace windows so killAndVerify's SIGTERM→verify→SIGKILL loop
     // is quick. (verifyMs is clamped to >= grace+500, so keep grace tiny too.)
-    process.env.ALOOK_KILL_GRACE_MS = "10";
-    process.env.ALOOK_KILL_VERIFY_MS = "100";
+    process.env.PHNEAKNGAR_KILL_GRACE_MS = "10";
+    process.env.PHNEAKNGAR_KILL_VERIFY_MS = "100";
   });
 
   afterEach(() => {
     for (const t of intervalTimers) realClearInterval(t);
-    delete process.env.ALOOK_KILL_TASK_MAX_WAIT_MS;
-    delete process.env.ALOOK_KILL_TASK_POLL_MS;
-    delete process.env.ALOOK_KILL_GRACE_MS;
-    delete process.env.ALOOK_KILL_VERIFY_MS;
+    delete process.env.PHNEAKNGAR_KILL_TASK_MAX_WAIT_MS;
+    delete process.env.PHNEAKNGAR_KILL_TASK_POLL_MS;
+    delete process.env.PHNEAKNGAR_KILL_GRACE_MS;
+    delete process.env.PHNEAKNGAR_KILL_VERIFY_MS;
   });
 
   // process.kill mock that simulates the target dying on SIGTERM: the delivery
@@ -2036,7 +2036,7 @@ describe("daemon kill_task handling", () => {
     mockClientInstance.register.mockResolvedValue({ runtimes: [{ id: "rt1" }] });
 
     await startDaemon();
-    // Wait longer than ALOOK_KILL_TASK_MAX_WAIT_MS (500ms) + overhead
+    // Wait longer than PHNEAKNGAR_KILL_TASK_MAX_WAIT_MS (500ms) + overhead
     await new Promise((r) => setTimeout(r, 800));
 
     expect(mockClientInstance.failTask).toHaveBeenCalledWith("al_test_token", "kt1", "target not found in timeline");
@@ -2452,7 +2452,7 @@ describe("handleWsPush via WebSocket onMessage", () => {
     expect(capturedWsOnMessage).not.toBeNull();
 
     mockFindRunningPidByTaskId.mockReturnValue(77777);
-    process.env.ALOOK_KILL_VERIFY_MS = "100";
+    process.env.PHNEAKNGAR_KILL_VERIFY_MS = "100";
     // SIGTERM delivery succeeds; liveness probe reports the target gone so the
     // verify loop ends without escalation.
     const mockKill = vi.spyOn(process, "kill").mockImplementation(((_pid: number, sig: any) => {
@@ -2472,7 +2472,7 @@ describe("handleWsPush via WebSocket onMessage", () => {
     expect(mockKill).toHaveBeenCalledWith(77777, "SIGTERM");
 
     mockKill.mockRestore();
-    delete process.env.ALOOK_KILL_VERIFY_MS;
+    delete process.env.PHNEAKNGAR_KILL_VERIFY_MS;
   });
 
   it("handles daemon.meetings via WS push with Map lookup", async () => {

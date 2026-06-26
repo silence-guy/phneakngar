@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import type { Agent } from "@alook/shared";
+import type { Agent } from "@phneakngar/shared";
 import { Skeleton } from "@/components/ui/skeleton";
 import { agentColor } from "./calendar-month-grid";
 
@@ -22,7 +22,7 @@ export function CalendarAgentFilter({
   onToggle,
 }: CalendarAgentFilterProps) {
   return (
-    <div className="flex min-h-6 items-center gap-1.5 overflow-x-auto flex-nowrap scrollbar-none sm:flex-wrap sm:overflow-x-visible">
+    <div className="flex min-h-6 items-center gap-1.5 overflow-x-auto thin-scrollbar flex-nowrap sm:flex-wrap sm:overflow-x-visible">
       {agents.length === 0 ? (
         <>
           <Skeleton className="h-6 w-20 rounded-full" />

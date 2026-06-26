@@ -1,6 +1,6 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
-import { resolveMode, cliCommand, updateCommand, daemonCommand, isTauri, isMobile, type AlookMode } from "@alook/shared"
+import { resolveMode, cliCommand, updateCommand, daemonCommand, isTauri, isMobile, type PhneakngarMode } from "@phneakngar/shared"
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -16,7 +16,7 @@ function getMode() {
   })
 }
 
-export function getAppMode(): AlookMode {
+export function getAppMode(): PhneakngarMode {
   return getMode()
 }
 

@@ -25,8 +25,8 @@ import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Monitor, Plus } from "lucide-react";
 
-import type { AgentRuntime as Runtime } from "@alook/shared";
-import { semverGte, isTauri, isDesktop, tauriInvoke } from "@alook/shared";
+import type { AgentRuntime as Runtime } from "@phneakngar/shared";
+import { semverGte, isTauri, isDesktop, tauriInvoke } from "@phneakngar/shared";
 import { cliCmd, getAppMode } from "@/lib/utils";
 import { ProviderLogo } from "@/components/provider-logo";
 import { triggerRuntimeUpdate, triggerRuntimeRescan, fetchLatestCliVersion } from "@/lib/api";
@@ -240,7 +240,7 @@ export default function RuntimesPage() {
           <Skeleton className="h-8 w-29 rounded-md" />
         </div>
         {/* Skeleton card grid */}
-        <div className="flex-1 overflow-y-auto px-5 py-5">
+        <div className="flex-1 overflow-y-auto thin-scrollbar px-5 py-5">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: 3 }).map((_, i) => (
               <div
@@ -295,7 +295,7 @@ export default function RuntimesPage() {
         )}
       </div>
 
-      <div className="flex-1 overflow-y-auto px-5 py-5">
+      <div className="flex-1 overflow-y-auto thin-scrollbar px-5 py-5">
         {runtimes.length === 0 ? (
           <div className="flex flex-1 items-center justify-center min-h-[60vh]">
             <div className="text-center animate-[fade-up_400ms_ease-out_both]">

@@ -43,15 +43,15 @@ export function Logo({
       {mounted ? (
         <>
           <Image
-            src="/alook.svg"
-            alt="Alook"
+            src="/phneakngar.svg"
+            alt="ភ្នាក់ងារ"
             width={icon}
             height={icon}
             className="dark:hidden"
           />
           <Image
-            src="/alook-dark.svg"
-            alt="Alook"
+            src="/phneakngar-dark.svg"
+            alt="ភ្នាក់ងារ"
             width={icon}
             height={icon}
             className="hidden dark:block"
@@ -65,7 +65,7 @@ export function Logo({
           className={cn(text, "font-black tracking-tight")}
           style={{ fontFamily: "var(--font-brand)" }}
         >
-          Alook
+          ភ្នាក់ងារ
         </span>
       )}
     </button>

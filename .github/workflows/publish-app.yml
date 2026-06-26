@@ -11,7 +11,7 @@ concurrency:
 
 jobs:
   publish:
-    name: Publish @alook/app to npm
+    name: Publish @phneakngar/app to npm
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -28,9 +28,9 @@ jobs:
       - name: Check if version already published
         id: check
         run: |
-          if npm view "@alook/app@${{ steps.version.outputs.version }}" version >/dev/null 2>&1; then
+          if npm view "@phneakngar/app@${{ steps.version.outputs.version }}" version >/dev/null 2>&1; then
             echo "skip=true" >> "$GITHUB_OUTPUT"
-            echo "::notice::@alook/app@${{ steps.version.outputs.version }} already on npm — skipping"
+            echo "::notice::@phneakngar/app@${{ steps.version.outputs.version }} already on npm — skipping"
           else
             echo "skip=false" >> "$GITHUB_OUTPUT"
           fi
@@ -59,7 +59,7 @@ jobs:
 
       - name: Build packages
         if: steps.check.outputs.skip == 'false'
-        run: pnpm build --filter=@alook/shared --filter=@alook/web --filter=@alook/cli --filter=@alook/email-worker --filter=@alook/ws-do
+        run: pnpm build --filter=@phneakngar/shared --filter=@phneakngar/web --filter=@phneakngar/cli --filter=@phneakngar/email-worker --filter=@phneakngar/ws-do
 
       - name: Bundle app (pre-build workers)
         if: steps.check.outputs.skip == 'false'

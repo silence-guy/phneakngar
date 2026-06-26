@@ -110,11 +110,11 @@ jobs:
               desc = desc[:4093] + '...'
           payload = {
             'embeds': [{
-              'title': f'\U0001f680 Alook {version} Released',
+              'title': f'\U0001f680 ភ្នាក់ងារ {version} Released',
               'description': desc,
               'color': 3066993,
               'url': release_url,
-              'footer': {'text': 'Alook CI/CD'},
+              'footer': {'text': 'ភ្នាក់ងារ CI/CD'},
             }]
           }
           print(json.dumps(payload))

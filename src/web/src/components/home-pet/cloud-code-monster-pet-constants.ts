@@ -1,11 +1,11 @@
 export const CLOUD_CODE_MONSTER_ACTIVITY_REFRESH_MS = 3 * 60 * 1000;
-export const CLOUD_CODE_MONSTER_STORAGE_KEY = "alook-cloud-code-monster-pet-activity-v1";
+export const CLOUD_CODE_MONSTER_STORAGE_KEY = "phneakngar-cloud-code-monster-pet-activity-v1";
 export const CLOUD_CODE_MONSTER_POSITION_STORAGE_KEY =
-  "alook-cloud-code-monster-pet-position-v1";
+  "phneakngar-cloud-code-monster-pet-position-v1";
 export const CLOUD_CODE_MONSTER_PRESET_STORAGE_KEY =
-  "alook-cloud-code-monster-pet-preset-v1";
+  "phneakngar-cloud-code-monster-pet-preset-v1";
 export const CLOUD_CODE_MONSTER_PRESET_CHANGED_EVENT =
-  "alook-cloud-code-monster-pet-preset-changed";
+  "phneakngar-cloud-code-monster-pet-preset-changed";
 export const CLOUD_CODE_MONSTER_REACTION_MS = 900;
 export const CLOUD_CODE_MONSTER_SHAKE_REACTION_MS = 680;
 export const CLOUD_CODE_MONSTER_FAINT_MS = 10_000;

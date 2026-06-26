@@ -1,4 +1,4 @@
-import type { Agent, AgentLink } from "@alook/shared"
+import type { Agent, AgentLink } from "@phneakngar/shared"
 
 /**
  * Build the set of agent ids that are "related" to the current agent — i.e.

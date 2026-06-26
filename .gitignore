@@ -10,9 +10,10 @@ bundled/
 coverage/
 .open-next/
 temp/
-docs/
+docs/*
+!docs/*.md
 .DS_Store
-.alook/
+.phneakngar/
 .dev.vars
 plans/
 .agents/

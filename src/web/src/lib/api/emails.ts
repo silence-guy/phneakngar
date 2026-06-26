@@ -1,4 +1,4 @@
-import type { Email } from "@alook/shared";
+import type { Email } from "@phneakngar/shared";
 import { ApiError } from "@/lib/errors";
 import { apiFetch, wsQuery } from "./client";
 

@@ -85,7 +85,7 @@ export interface DaemonConfig {
 
 export function loadDaemonConfig(profile?: string): DaemonConfig {
   const h = hostname();
-  let daemonId = process.env.ALOOK_DAEMON_ID || h;
+  let daemonId = process.env.PHNEAKNGAR_DAEMON_ID || h;
   if (profile && !daemonId.endsWith(`-${profile}`)) {
     daemonId = `${daemonId}-${profile}`;
   }
@@ -94,30 +94,30 @@ export function loadDaemonConfig(profile?: string): DaemonConfig {
     configDir(),
     profile ? `workspaces_${profile}` : "workspaces",
   );
-  const workspacesRoot = process.env.ALOOK_WORKSPACES_ROOT || defaultRoot;
+  const workspacesRoot = process.env.PHNEAKNGAR_WORKSPACES_ROOT || defaultRoot;
 
   return {
     serverURL: normalizeServerBaseURL(getServerUrl()),
-    claudePath: process.env.ALOOK_CLAUDE_PATH || "claude",
-    codexPath: process.env.ALOOK_CODEX_PATH || "codex",
-    opencodePath: process.env.ALOOK_OPENCODE_PATH || "opencode",
-    claudeModel: process.env.ALOOK_CLAUDE_MODEL || "",
-    codexModel: process.env.ALOOK_CODEX_MODEL || "",
-    opencodeModel: process.env.ALOOK_OPENCODE_MODEL || "",
+    claudePath: process.env.PHNEAKNGAR_CLAUDE_PATH || "claude",
+    codexPath: process.env.PHNEAKNGAR_CODEX_PATH || "codex",
+    opencodePath: process.env.PHNEAKNGAR_OPENCODE_PATH || "opencode",
+    claudeModel: process.env.PHNEAKNGAR_CLAUDE_MODEL || "",
+    codexModel: process.env.PHNEAKNGAR_CODEX_MODEL || "",
+    opencodeModel: process.env.PHNEAKNGAR_OPENCODE_MODEL || "",
     pollInterval: parseDuration(
-      process.env.ALOOK_DAEMON_POLL_INTERVAL || "3s",
+      process.env.PHNEAKNGAR_DAEMON_POLL_INTERVAL || "3s",
     ),
-    wsPollInterval: parseDuration(process.env.ALOOK_DAEMON_WS_POLL_INTERVAL || "60s"),
-    heartbeatInterval: parseDuration(process.env.ALOOK_DAEMON_HEARTBEAT_INTERVAL || "15s"),
-    sweepInterval: parseDuration(process.env.ALOOK_DAEMON_SWEEP_INTERVAL || "60s"),
-    agentTimeout: parseDuration(process.env.ALOOK_AGENT_TIMEOUT || "12h"),
-    messageInactivityTimeout: parseDuration(process.env.ALOOK_MESSAGE_INACTIVITY_TIMEOUT || "20m"),
+    wsPollInterval: parseDuration(process.env.PHNEAKNGAR_DAEMON_WS_POLL_INTERVAL || "60s"),
+    heartbeatInterval: parseDuration(process.env.PHNEAKNGAR_DAEMON_HEARTBEAT_INTERVAL || "15s"),
+    sweepInterval: parseDuration(process.env.PHNEAKNGAR_DAEMON_SWEEP_INTERVAL || "60s"),
+    agentTimeout: parseDuration(process.env.PHNEAKNGAR_AGENT_TIMEOUT || "12h"),
+    messageInactivityTimeout: parseDuration(process.env.PHNEAKNGAR_MESSAGE_INACTIVITY_TIMEOUT || "20m"),
     maxConcurrentTasks: parseInt(
-      process.env.ALOOK_DAEMON_MAX_CONCURRENT_TASKS || "20",
+      process.env.PHNEAKNGAR_DAEMON_MAX_CONCURRENT_TASKS || "20",
     ),
-    enableSteering: process.env.ALOOK_ENABLE_STEERING === "1",
+    enableSteering: process.env.PHNEAKNGAR_ENABLE_STEERING === "1",
     daemonId,
-    deviceName: process.env.ALOOK_DAEMON_DEVICE_NAME || h,
+    deviceName: process.env.PHNEAKNGAR_DAEMON_DEVICE_NAME || h,
     workspacesRoot,
     cliVersion: getCurrentVersion(),
   };

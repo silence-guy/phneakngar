@@ -15,7 +15,7 @@ export function MarketingNav({ isLoggedIn }: { isLoggedIn: boolean }) {
     >
       <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-2.5">
         <Link href="/" className="flex items-center gap-1">
-          <Image src="/alook.svg" alt="Alook" width={22} height={22} />
+          <Image src="/phneakngar.svg" alt="ភ្នាក់ងារ" width={22} height={22} />
           <span
             className="text-lg tracking-tight"
             style={{
@@ -24,7 +24,7 @@ export function MarketingNav({ isLoggedIn }: { isLoggedIn: boolean }) {
               fontWeight: 700,
             }}
           >
-            Alook
+            ភ្នាក់ងារ
           </span>
         </Link>
 
@@ -50,7 +50,7 @@ export function MarketingNav({ isLoggedIn }: { isLoggedIn: boolean }) {
             Blog
           </Link>
           <a
-            href="https://github.com/alookai/alook"
+            href="https://github.com/phneakngarai/phneakngar"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center justify-center p-1.5 transition-opacity duration-150 hover:opacity-70"
@@ -61,7 +61,7 @@ export function MarketingNav({ isLoggedIn }: { isLoggedIn: boolean }) {
             </svg>
           </a>
           <a
-            href="https://discord.alook.ai"
+            href="https://discord.phneakngar.ai"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center justify-center p-1.5 transition-opacity duration-150 hover:opacity-70"
@@ -72,7 +72,7 @@ export function MarketingNav({ isLoggedIn }: { isLoggedIn: boolean }) {
             </svg>
           </a>
           <a
-            href="https://x.com/alook_ai"
+            href="https://x.com/phneakngar_ai"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center justify-center p-1.5 transition-opacity duration-150 hover:opacity-70"

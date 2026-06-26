@@ -8,8 +8,8 @@ const mockGetUser = vi.fn();
 const mockGetConversation = vi.fn();
 const mockGetConversationsByIds = vi.fn();
 
-vi.mock("@alook/shared", async () => {
-  const real = await vi.importActual<typeof import("@alook/shared")>("@alook/shared");
+vi.mock("@phneakngar/shared", async () => {
+  const real = await vi.importActual<typeof import("@phneakngar/shared")>("@phneakngar/shared");
   return {
     ...real,
     queries: {
@@ -143,8 +143,8 @@ describe("TaskPayloadBuilder", () => {
       name: "Bot",
       runtime_config: { model: "gpt-4" },
       email_handle: "bot",
-      email_addresses: ["bot@alook.ai", "custom@company.com"],
-      colleagues: [{ name: "Helper", email: "helper@alook.ai", description: "helps", instruction: "be nice" }],
+      email_addresses: ["bot@phneakngar.ai", "custom@company.com"],
+      colleagues: [{ name: "Helper", email: "helper@phneakngar.ai", description: "helps", instruction: "be nice" }],
     });
     expect(result[0].channel).toBe("slack");
     expect(result[0].sender).toMatchObject({ name: "Sender", email: "sender@ex.com" });

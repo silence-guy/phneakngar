@@ -136,7 +136,7 @@ export function AgentStatusBadge({ isOnline, taskCount, agentId }: AgentStatusBa
         ) : !tasks || tasks.length === 0 ? (
           <div className="p-3 text-xs text-muted-foreground">No active tasks</div>
         ) : (
-          <div className="max-h-75 overflow-y-auto">
+          <div className="max-h-75 overflow-y-auto thin-scrollbar">
             {tasks.slice(0, MAX_VISIBLE_TASKS).map((task) => (
               <TaskRow key={task.id} task={task} slug={slug} agentId={agentId} />
             ))}

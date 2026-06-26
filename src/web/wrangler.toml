@@ -1,4 +1,4 @@
-name = "alook-web"
+name = "phneakngar-web"
 main = "custom-worker.ts"
 compatibility_date = "2026-04-09"
 compatibility_flags = ["nodejs_compat"]
@@ -28,17 +28,17 @@ binding = "ASSETS"
 
 [[services]]
 binding = "WORKER_SELF_REFERENCE"
-service = "alook-web"
+service = "phneakngar-web"
 
 # OpenNext internal cache
 [[r2_buckets]]
 binding = "NEXT_INC_CACHE_R2_BUCKET"
-bucket_name = "alook-next-cache"
+bucket_name = "phneakngar-next-cache"
 
 [[d1_databases]]
 binding = "NEXT_TAG_CACHE_D1"
 database_id = "f15ea77a-d5e9-460e-926b-532948e3ad1b"
-database_name = "alook-next-tags"
+database_name = "phneakngar-next-tags"
 
 [[durable_objects.bindings]]
 name = "NEXT_CACHE_DO_QUEUE"
@@ -52,20 +52,20 @@ new_sqlite_classes = ["DOQueueHandler"]
 [[d1_databases]]
 binding = "DB"
 database_id = "1593b87c-d8a8-4cdf-b6c0-c80d94442654"
-database_name = "alook-app"
+database_name = "phneakngar-app"
 
 [[r2_buckets]]
 binding = "EMAIL_BUCKET"
-bucket_name = "alook-emails"
+bucket_name = "phneakngar-emails"
 
 # WS Durable Object is in a separate worker — access via Service Binding
 [[services]]
 binding = "WS_DO_WORKER"
-service = "alook-ws-do"
+service = "phneakngar-ws-do"
 
 [[services]]
 binding = "EMAIL_WORKER"
-service = "alook-email-worker"
+service = "phneakngar-email-worker"
 
 [[kv_namespaces]]
 binding = "RATE_LIMIT_KV"

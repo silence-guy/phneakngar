@@ -67,7 +67,7 @@ describe("prepareHeadroomForTask", () => {
     expect(result.requireOptimization).toBe(false);
     expect(result.diagnostic).toBe("Headroom proxy reused on 127.0.0.1:18787");
     expect(result.env).toMatchObject({
-      ALOOK_HEADROOM_ENABLED: "1",
+      PHNEAKNGAR_HEADROOM_ENABLED: "1",
       HEADROOM_HOST: "127.0.0.1",
       HEADROOM_PORT: "18787",
       HEADROOM_TELEMETRY: "off",

@@ -141,7 +141,7 @@ export function EmailToolbar({ editor }: EmailToolbarProps) {
   };
 
   return (
-    <div className="flex items-center gap-0.5 px-3 py-1 overflow-x-auto">
+    <div className="flex items-center gap-0.5 px-3 py-1 overflow-x-auto thin-scrollbar">
       {/* Inline formatting */}
       <ToolbarButton
         title={EMAIL_LABELS.toolbar.bold}

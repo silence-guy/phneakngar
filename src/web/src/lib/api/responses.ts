@@ -2,7 +2,7 @@ import {
   formatTimestamp,
   formatTimestampNullable,
 } from "@/lib/middleware/helpers";
-import { TaskApiBaseSchema, isOnline, TASK_TYPES, schema, type Message } from "@alook/shared";
+import { TaskApiBaseSchema, isOnline, TASK_TYPES, schema, type Message } from "@phneakngar/shared";
 
 type UserRow = typeof schema.user.$inferSelect;
 type WorkspaceRow = typeof schema.workspace.$inferSelect;

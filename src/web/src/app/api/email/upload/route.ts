@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { nanoid } from "nanoid";
-import { buildEmailDraftAttachmentKey, sanitizeEmailAttachmentFilename } from "@alook/shared";
+import { buildEmailDraftAttachmentKey, sanitizeEmailAttachmentFilename } from "@phneakngar/shared";
 import { withAuth } from "@/lib/middleware/auth";
 import { withWorkspaceMember } from "@/lib/middleware/workspace";
 import { writeJSON, writeError } from "@/lib/middleware/helpers";

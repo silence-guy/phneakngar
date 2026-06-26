@@ -10,8 +10,8 @@ const mockGetAgent = vi.fn();
 const mockPinAgent = vi.fn();
 const mockUnpinAgent = vi.fn();
 
-vi.mock("@alook/shared", async () => {
-  const actual = await vi.importActual("@alook/shared");
+vi.mock("@phneakngar/shared", async () => {
+  const actual = await vi.importActual("@phneakngar/shared");
   return {
     ...actual,
     queries: {

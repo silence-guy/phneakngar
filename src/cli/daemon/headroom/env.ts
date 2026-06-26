@@ -47,6 +47,6 @@ export function buildProviderHeadroomEnv(
     env.HEADROOM_PROXY_URL = proxyUrl;
   }
 
-  env.ALOOK_HEADROOM_ENABLED = "1";
+  env.PHNEAKNGAR_HEADROOM_ENABLED = "1";
   return env;
 }

@@ -1,4 +1,4 @@
-import { createLogger } from "@alook/shared"
+import { createLogger } from "@phneakngar/shared"
 
 export { WebSocketDurableObject } from "./ws-durable"
 

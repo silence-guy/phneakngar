@@ -92,9 +92,9 @@ jobs:
       - run: pnpm run db:migrate
       - name: Start dev servers
         run: |
-          pnpm --filter @alook/email-worker dev &
-          pnpm --filter @alook/ws-do dev &
-          pnpm --filter @alook/web dev &
+          pnpm --filter @phneakngar/email-worker dev &
+          pnpm --filter @phneakngar/ws-do dev &
+          pnpm --filter @phneakngar/web dev &
       - name: Wait for services to be ready
         run: |
           wait_for() {
@@ -120,16 +120,16 @@ jobs:
             pkill -f "wrangler" || true
             pkill -f "next" || true
             sleep 3
-            pnpm --filter @alook/email-worker dev &
-            pnpm --filter @alook/ws-do dev &
-            pnpm --filter @alook/web dev &
+            pnpm --filter @phneakngar/email-worker dev &
+            pnpm --filter @phneakngar/ws-do dev &
+            pnpm --filter @phneakngar/web dev &
             # Second attempt — fail hard
             wait_for http://localhost:8787/health "email-worker" || exit 1
             wait_for http://localhost:8789/health "ws-do" || exit 1
             wait_for http://localhost:3000/api/health "web app" || exit 1
           fi
       - run: pnpm test:e2e
-      - run: pnpm --filter @alook/cli run test:integration
+      - run: pnpm --filter @phneakngar/cli run test:integration
 
   build:
     name: Build
@@ -144,7 +144,7 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm build --filter=@alook/shared --filter=@alook/web --filter=@alook/cli --filter=@alook/email-worker --filter=@alook/ws-do
+      - run: pnpm build --filter=@phneakngar/shared --filter=@phneakngar/web --filter=@phneakngar/cli --filter=@phneakngar/email-worker --filter=@phneakngar/ws-do
 
   coverage:
     name: Coverage

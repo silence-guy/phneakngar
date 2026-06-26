@@ -162,7 +162,7 @@ export function ByoaSection() {
             fontSize: "0.85rem",
           }}
         >
-          Alook is the orchestration layer. Pick the agents you trust —
+          ភ្នាក់ងារ is the orchestration layer. Pick the agents you trust —
           we give them roles, inboxes, and an always-on runtime.
         </p>
       </div>

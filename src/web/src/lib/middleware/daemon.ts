@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { queries } from "@alook/shared";
+import { queries } from "@phneakngar/shared";
 import type { AuthContext } from "./auth";
 
 type Database = Parameters<typeof queries.machine.getMachineByDaemon>[0];

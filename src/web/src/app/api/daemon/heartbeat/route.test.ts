@@ -15,8 +15,8 @@ vi.mock("@/lib/db", () => ({
   getDb: vi.fn(() => ({})),
 }));
 
-vi.mock("@alook/shared", async () => {
-  const real = await vi.importActual<typeof import("@alook/shared")>("@alook/shared");
+vi.mock("@phneakngar/shared", async () => {
+  const real = await vi.importActual<typeof import("@phneakngar/shared")>("@phneakngar/shared");
   return {
     ...real,
     queries: {
@@ -139,8 +139,8 @@ describe("POST /api/daemon/heartbeat", () => {
       getCloudflareContext: vi.fn(() => ({ env: { DB: {} } })),
     }));
     vi.doMock("@/lib/db", () => ({ getDb: vi.fn(() => ({})) }));
-    vi.doMock("@alook/shared", async () => {
-      const real = await vi.importActual<typeof import("@alook/shared")>("@alook/shared");
+    vi.doMock("@phneakngar/shared", async () => {
+      const real = await vi.importActual<typeof import("@phneakngar/shared")>("@phneakngar/shared");
       return { ...real, queries: { machine: { upsertMachine: vi.fn(), getMachineByDaemon: vi.fn() } } };
     });
     vi.doMock("@/lib/middleware/auth", () => ({

@@ -6,7 +6,7 @@ import { tempDir, isPathContained, isWindows } from "./platform.js";
 describe("platform", () => {
   describe("tempDir", () => {
     it("returns os tmpdir joined with subdir", () => {
-      expect(tempDir("alook-test")).toBe(join(tmpdir(), "alook-test"));
+      expect(tempDir("phneakngar-test")).toBe(join(tmpdir(), "phneakngar-test"));
     });
   });
 

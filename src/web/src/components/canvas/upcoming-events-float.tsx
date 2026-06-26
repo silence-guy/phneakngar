@@ -8,7 +8,7 @@ import { useWorkspace } from "@/contexts/workspace-context";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { AvatarRenderer, parseAvatarUrl } from "@/components/avatar";
 import { listCalendarEvents } from "@/lib/api";
-import type { CalendarEvent } from "@alook/shared";
+import type { CalendarEvent } from "@phneakngar/shared";
 
 function AgentAvatar({ name, avatarUrl, size = 20 }: { name?: string; avatarUrl?: string | null; size?: number }) {
   const config = parseAvatarUrl(avatarUrl);

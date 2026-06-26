@@ -2,13 +2,13 @@
 members = ["plugins/tauri-plugin-push"]
 
 [package]
-name = "alook-desktop"
+name = "phneakngar-desktop"
 version = "0.0.149"
 edition = "2021"
-description = "Alook — Your Personal Company"
+description = "ភ្នាក់ងារ — Your Personal Company"
 
 [lib]
-name = "alook_desktop_lib"
+name = "phneakngar_desktop_lib"
 crate-type = ["lib", "cdylib", "staticlib"]
 
 [build-dependencies]

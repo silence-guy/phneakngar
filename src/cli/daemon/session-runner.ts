@@ -45,7 +45,7 @@ const log = createLogger({ module: "session-runner" });
 import { tempDir } from "../lib/platform.js";
 import type { SessionRunnerInput, Attachment } from "./types.js";
 
-const ATTACHMENTS_BASE = tempDir("alook-attachments");
+const ATTACHMENTS_BASE = tempDir("phneakngar-attachments");
 
 // --- Marker file support for resilient server reporting ---
 
@@ -219,8 +219,8 @@ export async function runSession(input: SessionRunnerInput): Promise<void> {
   }[] = [];
   let seq = 0;
   let toolCount = 0;
-  const BATCH_SIZE = Number(process.env.ALOOK_MESSAGE_BATCH_SIZE) || 20;
-  const FLUSH_INTERVAL_MS = Number(process.env.ALOOK_MESSAGE_FLUSH_INTERVAL_MS) || 100;
+  const BATCH_SIZE = Number(process.env.PHNEAKNGAR_MESSAGE_BATCH_SIZE) || 20;
+  const FLUSH_INTERVAL_MS = Number(process.env.PHNEAKNGAR_MESSAGE_FLUSH_INTERVAL_MS) || 100;
 
   const flushMessages = async () => {
     if (pendingMessages.length === 0) return;

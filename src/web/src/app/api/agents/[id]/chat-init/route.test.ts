@@ -25,7 +25,7 @@ const mockArtifactToResponse = vi.fn((r: any) => ({
 
 vi.mock("@/lib/db", () => ({ getDb: vi.fn(() => ({})) }));
 
-vi.mock("@alook/shared", () => ({
+vi.mock("@phneakngar/shared", () => ({
   createDb: vi.fn(() => ({})),
   queries: {
     agent: {

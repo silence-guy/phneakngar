@@ -1,5 +1,5 @@
-import { Locale, defaultLocale, resolveLocale } from "@alook/shared";
-import type { Locale as SharedLocale } from "@alook/shared";
+import { Locale, defaultLocale, resolveLocale } from "@phneakngar/shared";
+import type { Locale as SharedLocale } from "@phneakngar/shared";
 import { uniqueNamesGenerator, names } from "unique-names-generator";
 import { randomConfig, serializeAvatarConfig } from "@/components/avatar";
 

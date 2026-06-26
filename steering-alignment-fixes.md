@@ -2,7 +2,7 @@
 
 ## Features / Showcase
 
-Fix alignment gaps between alook's steering implementation and the agent-backends reference. All issues are in the steering-ON path only — steering-OFF (default) is unaffected.
+Fix alignment gaps between phneakngar's steering implementation and the agent-backends reference. All issues are in the steering-ON path only — steering-OFF (default) is unaffected.
 
 ### Before → After
 
@@ -83,7 +83,7 @@ The current `apmStateMachine.ts` has a fundamentally different state shape (4 fi
     - `reduceApmGatedRecentEvent(state, { event })` → maintain capped event history
     - `reduceApmStalledRecoveryTermination(state, input)` → stalled recovery check (input: `inboxLength, staleForMs, staleThresholdMs, runtimeProgressIsStale, hasSession, busyDeliveryMode, hasDirectStdinRecoveryEvidence`)
     - `reduceApmStartupTimeoutTermination(state, { hasRuntimeProgressEvent })` → startup timeout check
-  - **Keep `reduceApmGatedEnqueue()`** — this is alook-specific (reference doesn't need it because messages are held in notificationState inbox, not in APM state). Adapt to new state shape.
+  - **Keep `reduceApmGatedEnqueue()`** — this is phneakngar-specific (reference doesn't need it because messages are held in notificationState inbox, not in APM state). Adapt to new state shape.
   - Reference: `agent-backends/src/runtime/apmStateMachine.ts` (full file, 327 lines)
   - **Files:** `src/cli/daemon/steering/apmStateMachine.ts`
   - **Acceptance criteria:** All reducer functions implemented with reference-matching logic. Phase tracking works. Stalled recovery returns `shouldTerminate` correctly. Event history capped at 12.

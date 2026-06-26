@@ -1,10 +1,10 @@
 import { describe, it, expect } from "vitest"
-import { parseEmailHandle, toAlookAddress, isValidHandle } from "../../src/utils/email"
+import { parseEmailHandle, toPhneakngarAddress, isValidHandle } from "../../src/utils/email"
 describe("parseEmailHandle", () => {
-  it("extracts handle", () => expect(parseEmailHandle("jarvis@alook.ai")).toBe("jarvis"))
-  it("empty for non-alook", () => expect(parseEmailHandle("u@gmail.com")).toBe(""))
+  it("extracts handle", () => expect(parseEmailHandle("jarvis@phneakngar.ai")).toBe("jarvis"))
+  it("empty for non-phneakngar", () => expect(parseEmailHandle("u@gmail.com")).toBe(""))
 })
-describe("toAlookAddress", () => { it("appends domain", () => expect(toAlookAddress("jarvis")).toBe("jarvis@alook.ai")) })
+describe("toPhneakngarAddress", () => { it("appends domain", () => expect(toPhneakngarAddress("jarvis")).toBe("jarvis@phneakngar.ai")) })
 describe("isValidHandle", () => {
   it("accepts 3+ alphanum+dash", () => { expect(isValidHandle("jarvis")).toBe(true); expect(isValidHandle("my-bot")).toBe(true); expect(isValidHandle("abc")).toBe(true) })
   it("rejects <3", () => expect(isValidHandle("ab")).toBe(false))
@@ -16,7 +16,7 @@ describe("isValidHandle", () => {
     expect(isValidHandle("support")).toBe(false)
     expect(isValidHandle("postmaster")).toBe(false)
     expect(isValidHandle("abuse")).toBe(false)
-    expect(isValidHandle("alook")).toBe(false)
+    expect(isValidHandle("phneakngar")).toBe(false)
   })
   it("rejects reserved handles case-insensitively", () => {
     expect(isValidHandle("No-Reply")).toBe(false)

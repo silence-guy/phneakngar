@@ -23,7 +23,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 export function onboardCommand(): Command {
   return new Command("onboard")
-    .description("Set up and start Alook locally")
+    .description("Set up and start ភ្នាក់ងារ locally")
     .option("--port-web <port>", "Web server port", String(DEFAULT_PORTS.web))
     .option("--port-email <port>", "Email worker port", String(DEFAULT_PORTS.emailWorker))
     .option("--port-ws <port>", "WebSocket worker port", String(DEFAULT_PORTS.wsDo))
@@ -35,7 +35,7 @@ export function onboardCommand(): Command {
         wsDo: parseInt(opts.portWs, 10),
       };
 
-      console.log("\n🚀 Alook Local Setup\n");
+      console.log("\n🚀 ភ្នាក់ងារ Local Setup\n");
 
       // 1. Environment checks
       checkNodeVersion();
@@ -59,11 +59,11 @@ export function onboardCommand(): Command {
         email = await collectEmail();
       }
 
-      const devMode = !!process.env.ALOOK_PROJECT_ROOT;
+      const devMode = !!process.env.PHNEAKNGAR_PROJECT_ROOT;
 
       if (devMode) {
         // Dev mode: run predev + migrations from monorepo
-        const root = process.env.ALOOK_PROJECT_ROOT!;
+        const root = process.env.PHNEAKNGAR_PROJECT_ROOT!;
         console.log("Preparing dev environment...");
         try {
           execSync("pnpm predev", { cwd: root, stdio: "inherit" });
@@ -72,7 +72,7 @@ export function onboardCommand(): Command {
       } else {
         // Production: install bundled assets
         if (!isInstalled()) {
-          console.log("Installing Alook...");
+          console.log("Installing ភ្នាក់ងារ...");
           installBundled();
         } else {
           console.log(`Installation found at ${SELF_HOSTED_DIR}`);
@@ -117,24 +117,24 @@ export function onboardCommand(): Command {
           });
         } catch {
           console.warn("  Warning: daemon auto-start failed. Start manually:");
-          console.warn(`  npx @alook/app cli register --token ${token}`);
-          console.warn(`  npx @alook/app cli daemon start`);
+          console.warn(`  npx @phneakngar/app cli register --token ${token}`);
+          console.warn(`  npx @phneakngar/app cli daemon start`);
         }
       }
 
       // 11. Print summary
       console.log("\n" + "─".repeat(50));
       console.log("\n⚠️  Local mode: email send/receive is not available.");
-      console.log("   To enable email, connect to alook.ai cloud.\n");
+      console.log("   To enable email, connect to phneakngar.ai cloud.\n");
       console.log("─".repeat(50));
-      console.log(`\n🎉 Alook is running!`);
+      console.log(`\n🎉 ភ្នាក់ងារ is running!`);
       console.log(`   Dashboard: ${baseURL}`);
       if (email) {
         console.log(`   Login:     ${email}`);
       }
-      console.log(`\n   Stop:   npx @alook/app stop`);
-      console.log(`   Start:  npx @alook/app start`);
-      console.log(`   Update: npx @alook/app update\n`);
+      console.log(`\n   Stop:   npx @phneakngar/app stop`);
+      console.log(`   Start:  npx @phneakngar/app start`);
+      console.log(`   Update: npx @phneakngar/app update\n`);
 
       // 12. Copy email & open browser on Enter
       const signInURL = `${baseURL}/sign-in`;

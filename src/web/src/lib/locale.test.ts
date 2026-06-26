@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { Locale, defaultLocale } from "@alook/shared";
+import { Locale, defaultLocale } from "@phneakngar/shared";
 import {
   DEFAULT_WEB_LOCALE,
   agentFormLabel,

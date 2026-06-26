@@ -1,10 +1,10 @@
 import { NextRequest } from "next/server";
-import { queries } from "@alook/shared"
+import { queries } from "@phneakngar/shared"
 import { getDb } from "@/lib/db"
 import { withAuth } from "@/lib/middleware/auth";
 import { withDaemonMachine } from "@/lib/middleware/daemon";
 import { writeJSON, writeError, parseBody } from "@/lib/middleware/helpers";
-import { DeregisterRequestSchema } from "@alook/shared";
+import { DeregisterRequestSchema } from "@phneakngar/shared";
 import { broadcastToUser } from "@/lib/broadcast";
 import { invalidate, cacheKeys } from "@/lib/cache";
 import { log } from "@/lib/logger";

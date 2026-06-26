@@ -8,7 +8,7 @@
  */
 import { describe, it, expect, beforeAll, afterAll } from "vitest"
 import { randomUUID } from "crypto"
-import { seedTestData, cleanupTestData, type TestSeed } from "@alook/test-utils"
+import { seedTestData, cleanupTestData, type TestSeed } from "@phneakngar/test-utils"
 
 const WS_DO_PORT = Number(process.env.NEXT_PUBLIC_WS_DO_PORT) || 8789
 const WS_DO_HTTP = `http://localhost:${WS_DO_PORT}`

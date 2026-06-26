@@ -1,4 +1,4 @@
-import type { LoginResponse, Workspace } from "@alook/shared";
+import type { LoginResponse, Workspace } from "@phneakngar/shared";
 import { apiFetch, wsQuery } from "./client";
 
 export const listWorkspaces = () => apiFetch<Workspace[]>("/api/workspaces");

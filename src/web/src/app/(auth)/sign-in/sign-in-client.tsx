@@ -23,7 +23,7 @@ import { SiGithub, SiGoogle } from "@icons-pack/react-simple-icons"
 import Image from "next/image"
 import { GradientBackground } from "@/components/gradient-background"
 import { Logo } from "@/components/logo"
-import { DEV_PASSWORD } from "@alook/shared"
+import { DEV_PASSWORD } from "@phneakngar/shared"
 
 const DEFAULT_POST_LOGIN = "/workspaces?auto"
 

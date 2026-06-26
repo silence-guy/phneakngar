@@ -28,7 +28,7 @@ describe("normalizeHeadroomRuntimeConfig", () => {
           port: 18787,
         },
       },
-      { ALOOK_HEADROOM_PATH: "/opt/headroom/bin/headroom" },
+      { PHNEAKNGAR_HEADROOM_PATH: "/opt/headroom/bin/headroom" },
     );
 
     expect(config).toMatchObject({
@@ -42,10 +42,10 @@ describe("normalizeHeadroomRuntimeConfig", () => {
     });
   });
 
-  it("lets Alook env override the proxy port", () => {
+  it("lets ភ្នាក់ងារ env override the proxy port", () => {
     const config = normalizeHeadroomRuntimeConfig(
       { headroom: { enabled: true, port: 18787 } },
-      { ALOOK_HEADROOM_PORT: "18888" },
+      { PHNEAKNGAR_HEADROOM_PORT: "18888" },
     );
 
     expect(config.port).toBe(18888);
@@ -62,11 +62,11 @@ describe("normalizeHeadroomRuntimeConfig", () => {
 });
 
 describe("resolveHeadroomPaths", () => {
-  it("keeps Headroom state under the Alook local root", () => {
-    expect(resolveHeadroomPaths("/tmp/alook-root")).toEqual({
-      configDir: "/tmp/alook-root/headroom/config",
-      workspaceDir: "/tmp/alook-root/headroom/workspace",
-      savingsPath: "/tmp/alook-root/headroom/savings.json",
+  it("keeps Headroom state under the ភ្នាក់ងារ local root", () => {
+    expect(resolveHeadroomPaths("/tmp/phneakngar-root")).toEqual({
+      configDir: "/tmp/phneakngar-root/headroom/config",
+      workspaceDir: "/tmp/phneakngar-root/headroom/workspace",
+      savingsPath: "/tmp/phneakngar-root/headroom/savings.json",
     });
   });
 });

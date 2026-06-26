@@ -7,7 +7,7 @@ import { Check, Play, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { connectMachineLabel } from "@/lib/locale";
 import { cliCmd, getAppMode } from "@/lib/utils";
-import { isTauri, tauriInvoke } from "@alook/shared";
+import { isTauri, tauriInvoke } from "@phneakngar/shared";
 
 export function ConnectMachineSteps({
   generatedToken,

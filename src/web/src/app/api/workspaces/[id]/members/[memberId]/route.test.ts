@@ -10,8 +10,8 @@ vi.mock("@opennextjs/cloudflare", () => ({
 
 vi.mock("@/lib/db", () => ({ getDb: vi.fn(() => ({})) }));
 
-vi.mock("@alook/shared", async () => {
-  const real = await vi.importActual<typeof import("@alook/shared")>("@alook/shared");
+vi.mock("@phneakngar/shared", async () => {
+  const real = await vi.importActual<typeof import("@phneakngar/shared")>("@phneakngar/shared");
   return {
     ...real,
     queries: {

@@ -50,7 +50,7 @@ vi.mock("nanoid", () => ({
   nanoid: (len?: number) => `mock-${++nanoidCounter}`,
 }))
 
-vi.mock("@alook/shared/crypto", () => ({
+vi.mock("@phneakngar/shared/crypto", () => ({
   encrypt: (val: string) => `encrypted:${val}`,
   decrypt: (val: string) => `decrypted:${val}`,
 }))
@@ -60,8 +60,8 @@ const mockUpdateEmailAccount = vi.fn()
 const mockIsWhitelisted = vi.fn().mockResolvedValue(true)
 const mockBuildWhitelistSet = vi.fn()
 
-vi.mock("@alook/shared", async () => {
-  const real = await vi.importActual<typeof import("@alook/shared")>("@alook/shared")
+vi.mock("@phneakngar/shared", async () => {
+  const real = await vi.importActual<typeof import("@phneakngar/shared")>("@phneakngar/shared")
   const noopLogger = {
     debug: () => {},
     info: () => {},
@@ -203,7 +203,7 @@ describe("alarm — normal UID-based flow", () => {
     expect(webFetch).toHaveBeenCalledTimes(2)
 
     const init1 = webFetch.mock.calls[0][1]
-    expect((init1.headers as Record<string, string>)["X-Alook-Email-Notify-Secret"]).toBe("notify-secret")
+    expect((init1.headers as Record<string, string>)["X-Phneakngar-Email-Notify-Secret"]).toBe("notify-secret")
 
     const notify1 = JSON.parse(init1.body as string)
     expect(notify1.agentId).toBe("ag_test1")
@@ -269,7 +269,7 @@ describe("alarm — whitelist filtering", () => {
     await durable.alarm()
 
     const init = webFetch.mock.calls[0][1]
-    expect((init.headers as Record<string, string>)["X-Alook-Email-Notify-Secret"]).toBe("notify-secret")
+    expect((init.headers as Record<string, string>)["X-Phneakngar-Email-Notify-Secret"]).toBe("notify-secret")
 
     const notify = JSON.parse(init.body as string)
     expect(notify.isWhitelisted).toBe(true)
@@ -288,7 +288,7 @@ describe("alarm — whitelist filtering", () => {
     await durable.alarm()
 
     const init = webFetch.mock.calls[0][1]
-    expect((init.headers as Record<string, string>)["X-Alook-Email-Notify-Secret"]).toBe("notify-secret")
+    expect((init.headers as Record<string, string>)["X-Phneakngar-Email-Notify-Secret"]).toBe("notify-secret")
 
     const notify = JSON.parse(init.body as string)
     expect(notify.isWhitelisted).toBe(false)

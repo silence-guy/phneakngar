@@ -27,7 +27,7 @@ interface CLIConfig {
 export type { CLIConfig, ProfileConfig };
 
 export function configDir(): string {
-  return process.env.ALOOK_PROJECT_ROOT || join(homedir(), ".alook");
+  return process.env.PHNEAKNGAR_PROJECT_ROOT || join(homedir(), ".phneakngar");
 }
 
 export function configPath(): string {

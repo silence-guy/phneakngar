@@ -9,13 +9,13 @@ export const metadata: Metadata = {
   title: "Blog",
   description,
   alternates: {
-    canonical: "https://alook.ai/blog",
+    canonical: "https://phneakngar.ai/blog",
     types: { "application/rss+xml": "/blog/feed.xml" },
   },
   openGraph: {
     title: "Blog",
     description,
-    url: "https://alook.ai/blog",
+    url: "https://phneakngar.ai/blog",
     images: [{ url: "/og?title=Blog", width: 1200, height: 630 }],
   },
   twitter: {
@@ -29,9 +29,9 @@ export const metadata: Metadata = {
 const collectionJsonLd = {
   "@context": "https://schema.org",
   "@type": "CollectionPage",
-  name: "Alook Blog",
+  name: "ភ្នាក់ងារ Blog",
   description,
-  url: "https://alook.ai/blog",
+  url: "https://phneakngar.ai/blog",
 };
 
 export default async function BlogPage() {

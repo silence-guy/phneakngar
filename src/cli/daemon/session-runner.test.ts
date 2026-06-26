@@ -20,11 +20,11 @@ const mockPrepare = vi.fn(() => ({
   workDir: "/tmp/ws/ws1/agent1/workdir",
   timelineDir: "/tmp/ws/ws1/agent1/workdir/.context_timeline",
   env: {
-    ALOOK_WORKSPACE_ID: "ws1",
-    ALOOK_AGENT_ID: "agent1",
-    ALOOK_TASK_ID: "t1",
-    ALOOK_CONVERSATION_ID: "c1",
-    ALOOK_HEALTH_PORT: "19514",
+    PHNEAKNGAR_WORKSPACE_ID: "ws1",
+    PHNEAKNGAR_AGENT_ID: "agent1",
+    PHNEAKNGAR_TASK_ID: "t1",
+    PHNEAKNGAR_CONVERSATION_ID: "c1",
+    PHNEAKNGAR_HEALTH_PORT: "19514",
   },
 }));
 vi.mock("./execenv/index.js", () => ({
@@ -248,7 +248,7 @@ describe("session-runner runSession", () => {
       "do the thing",
       expect.objectContaining({
         env: expect.objectContaining({
-          ALOOK_WORKSPACE_ID: "ws1",
+          PHNEAKNGAR_WORKSPACE_ID: "ws1",
           ANTHROPIC_BASE_URL: "http://127.0.0.1:8787",
           HEADROOM_TELEMETRY: "off",
         }),
@@ -274,13 +274,13 @@ describe("session-runner runSession", () => {
       timeout: 7200000,
     });
     expect(options.env).toEqual({
-      ALOOK_WORKSPACE_ID: "ws1",
-      ALOOK_AGENT_ID: "agent1",
-      ALOOK_TASK_ID: "t1",
-      ALOOK_CONVERSATION_ID: "c1",
-      ALOOK_HEALTH_PORT: "19514",
+      PHNEAKNGAR_WORKSPACE_ID: "ws1",
+      PHNEAKNGAR_AGENT_ID: "agent1",
+      PHNEAKNGAR_TASK_ID: "t1",
+      PHNEAKNGAR_CONVERSATION_ID: "c1",
+      PHNEAKNGAR_HEALTH_PORT: "19514",
     });
-    expect(options.env).not.toHaveProperty("ALOOK_HEADROOM_ENABLED");
+    expect(options.env).not.toHaveProperty("PHNEAKNGAR_HEADROOM_ENABLED");
     expect(options.env).not.toHaveProperty("ANTHROPIC_BASE_URL");
     expect(options.env).not.toHaveProperty("OPENAI_BASE_URL");
     expect(options.env).not.toHaveProperty("HEADROOM_PROXY_URL");

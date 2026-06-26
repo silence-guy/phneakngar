@@ -11,7 +11,7 @@ import { resolveClientOpts } from "../lib/resolve-client.js";
 import { contentToBuffer, uploadFile } from "../lib/file-utils.js";
 import type { UploadedFile } from "../lib/file-utils.js";
 import { gatherContextEnvVars } from "../lib/context-env.js";
-import { sanitizeEmailAttachmentFilename } from "@alook/shared";
+import { sanitizeEmailAttachmentFilename } from "@phneakngar/shared";
 
 const log = createLogger({ module: "email" });
 
@@ -35,7 +35,7 @@ interface EmailResponse {
 
 const VALID_STATUSES = ["unread", "read", "archived", "sent"];
 const VALID_FOLDERS = ["inbox", "sent", "untrust"];
-const EMAIL_BASE = tempDir("alook-emails");
+const EMAIL_BASE = tempDir("phneakngar-emails");
 
 interface SendResponse {
   id: string;
@@ -65,7 +65,7 @@ export function emailCommand(): Command {
 
   cmd
     .command("pull")
-    .description("Download and parse emails to /tmp/alook-emails/{workspaceId}/{agentId}/")
+    .description("Download and parse emails to /tmp/phneakngar-emails/{workspaceId}/{agentId}/")
     .option("--agent_id <id>", "Agent ID")
     .option("--email_id <id>", "Fetch a single email by ID (mutually exclusive with --status/--folder/--limit/--offset)")
     .option("--status <status>", "Filter by status (unread, read, archived)")

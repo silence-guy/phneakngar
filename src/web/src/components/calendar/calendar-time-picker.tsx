@@ -84,7 +84,7 @@ export function CalendarTimePicker({
       <PopoverContent align="start" className="w-36 p-1">
         <div
           ref={listRef}
-          className="flex max-h-60 flex-col overflow-y-auto scrollbar-none"
+          className="flex max-h-60 flex-col overflow-y-auto thin-scrollbar"
           role="listbox"
         >
           {slots.map((slot) => {

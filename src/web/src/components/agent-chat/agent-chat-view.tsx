@@ -28,7 +28,7 @@ import type {
   Message,
   SkillEntry,
   WsMessage,
-} from "@alook/shared";
+} from "@phneakngar/shared";
 import { useAgentContext } from "@/contexts/agent-context";
 import { useInboxCount } from "@/contexts/inbox-count-context";
 import { useChannel } from "@/contexts/channel-context";
@@ -667,7 +667,7 @@ export function AgentChatView({
   if (messagesLoading) {
     return (
       <>
-        <div className="flex-1 overflow-y-auto px-3 md:px-5">
+        <div className="flex-1 overflow-y-auto thin-scrollbar px-3 md:px-5">
           <div className="mx-auto max-w-3xl py-6 space-y-6 motion-safe:animate-[fade-up_200ms_ease-out_both]">
             {/* Agent cluster — top [avatar][name] header, bubbles stacked below
                 in the gutter (mirrors AgentRow's Slack/Discord layout). */}

@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { queries, SkillSyncRequestSchema } from "@alook/shared";
+import { queries, SkillSyncRequestSchema } from "@phneakngar/shared";
 import { withAuth } from "@/lib/middleware/auth";
 import { withDaemonMachine } from "@/lib/middleware/daemon";
 import { parseBody, writeJSON, writeError } from "@/lib/middleware/helpers";

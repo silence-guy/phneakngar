@@ -13,8 +13,8 @@ import { useScriptedTimeline, type TimelineStep } from "./demo-pad/use-scripted-
 gsap.registerPlugin(ScrollTrigger);
 
 const ARCH_AGENTS: AgentInfo[] = [
-  { name: "Planner", email: "planner@alook.ai", config: { shape: "hexagon", eye: "dots", nose: "dash", bg: 5 } },
-  { name: "Coder", email: "coder@alook.ai", config: { shape: "task", eye: "happy", nose: "dot", bg: 0 } },
+  { name: "Planner", email: "planner@phneakngar.ai", config: { shape: "hexagon", eye: "dots", nose: "dash", bg: 5 } },
+  { name: "Coder", email: "coder@phneakngar.ai", config: { shape: "task", eye: "happy", nose: "dot", bg: 0 } },
 ];
 const ARCH_CONFIG: DashboardConfig = { agents: ARCH_AGENTS };
 
@@ -22,9 +22,9 @@ const ARCH_CONFIG: DashboardConfig = { agents: ARCH_AGENTS };
 const PLANNER_STEPS: DashboardStep[] = [
   { type: "user-message", text: "A user reported Safari crashes on login — can you fix it?" },
   { type: "message", text: "On it. Let me investigate and delegate to Coder." },
-  { type: "email-out", subject: "Fix Safari flex gap in login page", address: "coder@alook.ai" },
+  { type: "email-out", subject: "Fix Safari flex gap in login page", address: "coder@phneakngar.ai" },
   // After Coder finishes:
-  { type: "email-in", subject: "Re: Fix Safari flex gap — Done, PR #142", address: "coder@alook.ai" },
+  { type: "email-in", subject: "Re: Fix Safari flex gap — Done, PR #142", address: "coder@phneakngar.ai" },
   { type: "message", markdown: "Coder fixed it — <strong>PR #142</strong> opened. Both <code>login-page.tsx</code> and <code>signup.tsx</code> patched, 42 tests passing." },
   { type: "user-message", text: "Nice, ship it" },
   { type: "message", text: "Done. Merged and replied to the reporter." },
@@ -33,11 +33,11 @@ const PLANNER_STEPS: DashboardStep[] = [
 
 /* ─── Coder's chat steps ─── */
 const CODER_STEPS: DashboardStep[] = [
-  { type: "email-in", subject: "Fix Safari flex gap in login page", address: "planner@alook.ai" },
+  { type: "email-in", subject: "Fix Safari flex gap in login page", address: "planner@phneakngar.ai" },
   { type: "message", text: "Got it. Searching for flex gap usage..." },
   { type: "message", markdown: `Found 2 affected files:<br/><code>login-page.tsx:42</code> and <code>signup.tsx:18</code>. Fixing both.` },
   { type: "message", markdown: "Done — replaced flex gap → margin spacing. <strong>42 tests passing ✓</strong>" },
-  { type: "email-out", subject: "Re: Fix Safari flex gap — Done, PR #142", address: "planner@alook.ai" },
+  { type: "email-out", subject: "Re: Fix Safari flex gap — Done, PR #142", address: "planner@phneakngar.ai" },
 ];
 
 /* ─── Terminal lines ─── */
@@ -62,7 +62,7 @@ const TERMINAL_LINES: TerminalLine[] = [
     { text: "[session-runner] ", color: "muted" },
     { text: "email-send", color: "highlight" },
     { text: ": → ", color: "muted" },
-    { text: "coder@alook.ai", color: "string" },
+    { text: "coder@phneakngar.ai", color: "string" },
   ] },
   { spans: [
     { text: "INFO  ", color: "keyword" },
@@ -118,7 +118,7 @@ const TERMINAL_LINES: TerminalLine[] = [
     { text: "[session-runner] ", color: "muted" },
     { text: "email-send", color: "highlight" },
     { text: ": → ", color: "muted" },
-    { text: "planner@alook.ai", color: "string" },
+    { text: "planner@phneakngar.ai", color: "string" },
   ] },
   { spans: [
     { text: "INFO  ", color: "keyword" },
@@ -262,7 +262,7 @@ export function ArchitectureOverview() {
           style={{ fontFamily: "var(--font-mono)", color: "var(--landing-text-muted)", fontSize: "0.85rem" }}
         >
           Your agent runs on your machine with full access to your tools.
-          Alook connects it to email, dashboards, and the outside world.
+          ភ្នាក់ងារ connects it to email, dashboards, and the outside world.
         </p>
       </div>
 
@@ -275,7 +275,7 @@ export function ArchitectureOverview() {
       >
         {/* Desktop — top-left, behind */}
         <div className="absolute top-0 left-0 w-[60%] h-[88%] z-10 hidden md:block">
-          <DemoWindow title="Alook Desktop" className="h-full shadow-[0_28px_70px_rgba(0,0,0,0.14),0_14px_32px_rgba(0,0,0,0.1)]">
+          <DemoWindow title="ភ្នាក់ងារ Desktop" className="h-full shadow-[0_28px_70px_rgba(0,0,0,0.14),0_14px_32px_rgba(0,0,0,0.1)]">
             <DemoDashboard state={dashboardState} config={ARCH_CONFIG} />
           </DemoWindow>
         </div>
@@ -288,7 +288,7 @@ export function ArchitectureOverview() {
               {/* Dynamic Island */}
               <div className="flex justify-center pt-1 shrink-0">
                 <div className="px-2 py-px bg-neutral-800 rounded-full flex items-center justify-center">
-                  <span className="text-[8px] text-neutral-400">Alook Mobile</span>
+                  <span className="text-[8px] text-neutral-400">ភ្នាក់ងារ Mobile</span>
                 </div>
               </div>
               <div className="flex-1 min-h-0">
@@ -313,7 +313,7 @@ export function ArchitectureOverview() {
           <div className="w-65 h-full rounded-[2rem] border-[3px] border-neutral-700 bg-background shadow-lg overflow-hidden flex flex-col dark">
             <div className="flex justify-center pt-2 shrink-0">
               <div className="px-4 py-1 bg-neutral-800 rounded-full flex items-center justify-center">
-                <span className="text-[11px] text-neutral-400 leading-none">Alook Mobile</span>
+                <span className="text-[11px] text-neutral-400 leading-none">ភ្នាក់ងារ Mobile</span>
               </div>
             </div>
             <div className="flex-1 min-h-0">

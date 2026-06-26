@@ -1,4 +1,4 @@
-import { queries, isUniqueConstraintError } from "@alook/shared";
+import { queries, isUniqueConstraintError } from "@phneakngar/shared";
 import { getDb } from "@/lib/db";
 import { withAuth } from "@/lib/middleware/auth";
 import { withWorkspaceMember } from "@/lib/middleware/workspace";

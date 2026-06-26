@@ -1,5 +1,5 @@
-import type { Database } from "@alook/shared";
-import { queries, TASK_TYPES } from "@alook/shared";
+import type { Database } from "@phneakngar/shared";
+import { queries, TASK_TYPES } from "@phneakngar/shared";
 import { nanoid } from "nanoid";
 import { log } from "@/lib/logger";
 

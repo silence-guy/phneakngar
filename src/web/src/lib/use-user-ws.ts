@@ -1,6 +1,6 @@
 "use client"
 import { useEffect, useRef, useCallback } from "react"
-import type { WsMessage } from "@alook/shared"
+import type { WsMessage } from "@phneakngar/shared"
 import { isLocalMode } from "@/lib/utils"
 
 const isLocal = isLocalMode()

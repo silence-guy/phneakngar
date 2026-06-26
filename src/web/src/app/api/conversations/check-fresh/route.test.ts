@@ -11,8 +11,8 @@ const mockGetOrCreate = vi.fn();
 const mockGetNewestMessageId = vi.fn();
 const mockGetActiveMessageCount = vi.fn();
 
-vi.mock("@alook/shared", async () => {
-  const actual = await vi.importActual("@alook/shared");
+vi.mock("@phneakngar/shared", async () => {
+  const actual = await vi.importActual("@phneakngar/shared");
   return {
     ...actual,
     queries: {

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest"
-import { seedTestData, cleanupTestData, type TestSeed, tokenRequest } from "@alook/test-utils"
+import { seedTestData, cleanupTestData, type TestSeed, tokenRequest } from "@phneakngar/test-utils"
 
 let seed: TestSeed
 let conversationId: string
@@ -8,7 +8,7 @@ let taskId: string
 const EMAIL_NOTIFY_SECRET = process.env.EMAIL_NOTIFY_SECRET ?? "test-notify-secret"
 const emailNotifyHeaders = {
   "Content-Type": "application/json",
-  "X-Alook-Email-Notify-Secret": EMAIL_NOTIFY_SECRET,
+  "X-Phneakngar-Email-Notify-Secret": EMAIL_NOTIFY_SECRET,
 }
 
 beforeAll(async () => {

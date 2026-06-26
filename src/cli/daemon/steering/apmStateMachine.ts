@@ -214,7 +214,7 @@ export function reduceApmGatedRecentEvent(
 }
 
 /* ------------------------------------------------------------------ */
-/* Alook-specific: enqueue pending messages                            */
+/* ភ្នាក់ងារ-specific: enqueue pending messages                            */
 /* ------------------------------------------------------------------ */
 
 export function reduceApmGatedEnqueue(

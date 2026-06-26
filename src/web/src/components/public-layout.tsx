@@ -4,9 +4,9 @@ import Image from "next/image";
 const footerLinks = [
   { href: "/templates", label: "Templates" },
   { href: "/blog", label: "Blog" },
-  { href: "https://github.com/alookai/alook", label: "GitHub", external: true },
-  { href: "https://discord.alook.ai", label: "Discord", external: true },
-  { href: "https://x.com/alook_ai", label: "X", external: true },
+  { href: "https://github.com/phneakngarai/phneakngar", label: "GitHub", external: true },
+  { href: "https://discord.phneakngar.ai", label: "Discord", external: true },
+  { href: "https://x.com/phneakngar_ai", label: "X", external: true },
   { href: "/privacy", label: "Privacy" },
 ];
 
@@ -40,12 +40,12 @@ export function PublicLayout({
           ) : (
             <div className="flex items-center gap-1.5">
               <Link href="/" className="flex items-center gap-1">
-                <Image src="/alook.svg" alt="Alook" width={22} height={22} />
+                <Image src="/phneakngar.svg" alt="ភ្នាក់ងារ" width={22} height={22} />
                 <span
                   className="text-lg tracking-tight font-bold"
                   style={{ fontFamily: "var(--font-brand)" }}
                 >
-                  Alook
+                  ភ្នាក់ងារ
                 </span>
               </Link>
               {breadcrumb && (
@@ -72,7 +72,7 @@ export function PublicLayout({
         <footer className="border-t border-border px-6 py-12">
           <div className={`mx-auto flex ${maxWClass} items-center justify-center`}>
             <span className="text-[10px] uppercase tracking-[0.2em] font-mono text-muted-foreground/50">
-              &copy; {new Date().getFullYear()} Alook AI
+              &copy; {new Date().getFullYear()} ភ្នាក់ងារ AI
             </span>
           </div>
         </footer>
@@ -83,12 +83,12 @@ export function PublicLayout({
           <div className={`mx-auto flex ${maxWClass} flex-col items-center justify-between gap-6 md:flex-row`}>
             <div className="flex items-center gap-4">
               <Link href="/" className="flex items-center gap-1">
-                <Image src="/alook.svg" alt="Alook" width={20} height={20} />
+                <Image src="/phneakngar.svg" alt="ភ្នាក់ងារ" width={20} height={20} />
                 <span
                   className="text-lg tracking-tight font-bold"
                   style={{ fontFamily: "var(--font-brand)" }}
                 >
-                  Alook
+                  ភ្នាក់ងារ
                 </span>
               </Link>
               <span className="text-[10px] uppercase tracking-[0.2em] font-mono text-muted-foreground">
@@ -121,7 +121,7 @@ export function PublicLayout({
             </nav>
 
             <span className="text-[10px] uppercase tracking-[0.2em] font-mono text-muted-foreground/50">
-              &copy; {new Date().getFullYear()} Alook AI
+              &copy; {new Date().getFullYear()} ភ្នាក់ងារ AI
             </span>
           </div>
         </footer>

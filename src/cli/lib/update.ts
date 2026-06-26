@@ -10,7 +10,7 @@ export function isValidCliVersion(version: string): boolean {
 }
 
 export function fetchLatestVersion(): Promise<string | null> {
-  return fetch("https://registry.npmjs.org/@alook/cli/latest")
+  return fetch("https://registry.npmjs.org/@phneakngar/cli/latest")
     .then((res) => {
       if (!res.ok) return null;
       return res.json() as Promise<{ version?: string }>;
@@ -31,7 +31,7 @@ export function runNpmUpdate(
 
   return new Promise((resolve) => {
     const chunks: Buffer[] = [];
-    const child = spawn("npm", ["install", "-g", `@alook/cli@${targetVersion}`], {
+    const child = spawn("npm", ["install", "-g", `@phneakngar/cli@${targetVersion}`], {
       stdio: ["ignore", "pipe", "pipe"],
     });
     child.stdout?.on("data", (d: Buffer) => chunks.push(d));

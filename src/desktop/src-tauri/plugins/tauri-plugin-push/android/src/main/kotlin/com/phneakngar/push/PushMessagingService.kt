@@ -1,4 +1,4 @@
-package com.alook.push
+package com.phneakngar.push
 
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
@@ -8,13 +8,13 @@ class PushMessagingService : FirebaseMessagingService() {
 
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
         super.onMessageReceived(remoteMessage)
-        Log.d("AlookPush", "Message received: ${remoteMessage.data}")
+        Log.d("PhneakngarPush", "Message received: ${remoteMessage.data}")
         PushPlugin.instance?.onMessageReceived(remoteMessage)
     }
 
     override fun onNewToken(token: String) {
         super.onNewToken(token)
-        Log.d("AlookPush", "New FCM token: $token")
+        Log.d("PhneakngarPush", "New FCM token: $token")
         PushPlugin.instance?.onTokenRefresh(token)
     }
 }

@@ -31,7 +31,7 @@ import {
 import { CalendarAgentFilter } from "@/components/calendar/calendar-agent-filter";
 import { CalendarEventSheet } from "@/components/calendar/calendar-event-sheet";
 import { getWeekStart, weekRangeIso } from "@/components/calendar/calendar-week-utils";
-import type { CalendarEvent, UpdateCalendarEventRequest } from "@alook/shared";
+import type { CalendarEvent, UpdateCalendarEventRequest } from "@phneakngar/shared";
 import { isTypingTarget } from "@/components/calendar/keyboard";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { trackCalendarEventCreated } from "@/lib/analytics";
@@ -529,7 +529,7 @@ export default function CalendarPage() {
 
       <div className={cn(
         "flex flex-1 flex-col gap-4 px-3 py-3 sm:px-5 sm:py-5",
-        view === "week" ? "min-h-0 overflow-hidden" : "overflow-y-auto"
+        view === "week" ? "min-h-0 overflow-hidden" : "overflow-y-auto thin-scrollbar"
       )}>
         <CalendarAgentFilter
           agents={agents}

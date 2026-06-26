@@ -1,9 +1,9 @@
 import { DurableObject } from "cloudflare:workers"
 import PostalMime from "postal-mime"
 import { nanoid } from "nanoid"
-import { createDb, queries, createLogger, parseIcs, extractAttachmentMeta, DEV_WEB_URL, EMAIL_NOTIFY_SECRET_HEADER } from "@alook/shared"
-import type { MeetingInfo } from "@alook/shared"
-import { decrypt } from "@alook/shared/crypto"
+import { createDb, queries, createLogger, parseIcs, extractAttachmentMeta, DEV_WEB_URL, EMAIL_NOTIFY_SECRET_HEADER } from "@phneakngar/shared"
+import type { MeetingInfo } from "@phneakngar/shared"
+import { decrypt } from "@phneakngar/shared/crypto"
 import { ImapClient, ImapAuthError } from "./lib/imap-client"
 import type { EmailEnv } from "./types"
 

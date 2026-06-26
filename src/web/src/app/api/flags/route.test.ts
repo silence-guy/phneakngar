@@ -12,7 +12,7 @@ const mockListFlaggedMessages = vi.fn();
 const mockGetMessageWorkspaceId = vi.fn();
 const mockFlagMessage = vi.fn();
 
-vi.mock("@alook/shared", () => ({
+vi.mock("@phneakngar/shared", () => ({
   createDb: vi.fn(() => ({})),
   queries: {
     messageFlag: {

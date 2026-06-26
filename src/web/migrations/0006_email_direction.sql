@@ -1,8 +1,8 @@
 -- Add direction column to emails table (inbound/outbound)
 ALTER TABLE emails ADD COLUMN direction TEXT NOT NULL DEFAULT 'inbound';
 
--- Backfill: emails sent FROM an @alook.ai address are outbound
-UPDATE emails SET direction = 'outbound' WHERE from_email LIKE '%@alook.ai';
+-- Backfill: emails sent FROM an @phneakngar.ai address are outbound
+UPDATE emails SET direction = 'outbound' WHERE from_email LIKE '%@phneakngar.ai';
 
 -- Backfill: emails sent FROM a custom SMTP account are also outbound
 UPDATE emails SET direction = 'outbound'

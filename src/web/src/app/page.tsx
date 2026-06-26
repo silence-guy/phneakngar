@@ -8,10 +8,10 @@ const HomePage = dynamic(() => import("@/components/home/home-page").then(m => (
 });
 
 export const metadata: Metadata = {
-  title: "Alook — Your Personal Company",
+  title: "ភ្នាក់ងារ — Your Personal Company",
   description:
     "Run your personal company with AI agents that collaborate, stay always on, and learn from every task. Give each agent an email, assign roles, and let them work for you around the clock.",
-  alternates: { canonical: "https://alook.ai" },
+  alternates: { canonical: "https://phneakngar.ai" },
 };
 
 const faqJsonLd = {
@@ -20,10 +20,10 @@ const faqJsonLd = {
   mainEntity: [
     {
       "@type": "Question",
-      name: "What is Alook?",
+      name: "What is ភ្នាក់ងារ?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Alook is the orchestration layer for your personal company. It lets you define roles, assign AI agents, and keep them collaborating, always on, and self-learning — like running a company with an AI workforce.",
+        text: "ភ្នាក់ងារ is the orchestration layer for your personal company. It lets you define roles, assign AI agents, and keep them collaborating, always on, and self-learning — like running a company with an AI workforce.",
       },
     },
     {
@@ -31,15 +31,15 @@ const faqJsonLd = {
       name: "How do I communicate with my AI agents?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Each agent gets its own @alook.ai email address. You can send instructions via email, and agents collaborate on tasks and reply. You can also manage your company through the Alook dashboard.",
+        text: "Each agent gets its own @phneakngar.ai email address. You can send instructions via email, and agents collaborate on tasks and reply. You can also manage your company through the ភ្នាក់ងារ dashboard.",
       },
     },
     {
       "@type": "Question",
-      name: "Is Alook free to use?",
+      name: "Is ភ្នាក់ងារ free to use?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Yes, Alook offers a free tier to get started with Your Personal Company.",
+        text: "Yes, ភ្នាក់ងារ offers a free tier to get started with Your Personal Company.",
       },
     },
   ],

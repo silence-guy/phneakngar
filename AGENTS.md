@@ -1,16 +1,21 @@
-# Alook
-Alook's main purpose is to make the cli agent always on, and give it a email address.
+# ភ្នាក់ងារ
+ភ្នាក់ងារ's main purpose is to make the cli agent always on, and give it a email address.
 
 ## Navigation
 - `plans/`: place your dev plans (gitignored, local only)
 - `src/shared`: shared types, schema, queries, validators
+- `src/shared/src/db/schema.ts`: D1 schema
+- `src/shared/src/db/queries/`: shared Drizzle query modules
 - `src/web`: Next.js app on Cloudflare Workers (D1 + R2)
 - `src/cli`: CLI + daemon
 - `src/email-worker`: inbound email Cloudflare Worker
 - `src/ws-do`: WebSocket Durable Object worker
+- `docs/source-map.md`: current package map and entry points
+- `docs/data-and-state-boundaries.md`: query ownership and state rules
+- `docs/migrations.md`: migration checklist
 
 ## MUST
-- run `pnpm typecheck`, `pnpm test` as the final check when you think the code is ready.
+- run `pnpm check:project`, `pnpm typecheck`, `pnpm test` as the final check when you think the code is ready.
 - service must be STATELESS! All the state must be in DB or local, never put important states in memory.
 - scope the queries before, not check the ownership after. don't query data then check if the data belongs to a workspace, use workspace id ahead to query the data.
 
@@ -36,8 +41,8 @@ git push origin main
 This triggers:
 - **CI** — typecheck, lint, tests, coverage (uploaded to Codecov)
 - **Auto-Tag & Release** — CI detects the `release: vX.Y.Z` commit message, creates the git tag, and creates a GitHub Release with generated changelog (`auto-tag-release.yml`)
-- **@alook/cli** → auto-published to npm via `publish-cli.yml` (watches `src/cli/package.json`)
-- **@alook/app** → auto-published to npm via `publish-app.yml` (watches `src/app/package.json`)
+- **@phneakngar/cli** → auto-published to npm via `publish-cli.yml` (watches `src/cli/package.json`)
+- **@phneakngar/app** → auto-published to npm via `publish-app.yml` (watches `src/app/package.json`)
 - **CF Workers** → each module redeploys when its own `package.json` changes
 
 ## Plan-driven Development
@@ -59,8 +64,8 @@ This triggers:
 
 ## Database — Cloudflare D1 (SQLite) + Drizzle ORM
 
-Schema lives in `src/shared/src/schema.ts` using `sqliteTable` from `drizzle-orm/sqlite-core`.
-Queries use the shared query modules in `src/shared/src/queries/`.
+Schema lives in `src/shared/src/db/schema.ts` using `sqliteTable` from `drizzle-orm/sqlite-core`.
+Queries use the shared query modules in `src/shared/src/db/queries/`.
 
 Use Drizzle ORM operators for all queries. **Never use `sql` template literals** unless there is no ORM equivalent (atomic increment, upsert `excluded.*` references).
 

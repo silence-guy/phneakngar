@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation"
 import { getCloudflareContext } from "@opennextjs/cloudflare"
-import { queries, generateWorkspaceSlug } from "@alook/shared"
+import { queries, generateWorkspaceSlug } from "@phneakngar/shared"
 import { getDb } from "@/lib/db"
 import { requireSession } from "@/lib/session"
 import { WorkspaceListClient } from "./client"

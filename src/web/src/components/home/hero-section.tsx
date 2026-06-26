@@ -79,7 +79,7 @@ export function HeroSection({ isLoggedIn }: { isLoggedIn: boolean }) {
       <div className="hero-content relative z-10 mx-auto flex w-full max-w-4xl flex-col items-center px-4 sm:px-6 py-8 max-h-full">
         {/* Brand */}
         <div className="hero-brand mb-6 flex shrink-0 items-center gap-1.5" style={{ opacity: 0 }}>
-          <Image src="/alook.svg" alt="Alook" width={32} height={32} />
+          <Image src="/phneakngar.svg" alt="ភ្នាក់ងារ" width={32} height={32} />
           <span
             className="text-2xl tracking-tight"
             style={{
@@ -88,7 +88,7 @@ export function HeroSection({ isLoggedIn }: { isLoggedIn: boolean }) {
               fontWeight: 700,
             }}
           >
-            Alook
+            ភ្នាក់ងារ
           </span>
         </div>
 
@@ -124,7 +124,7 @@ export function HeroSection({ isLoggedIn }: { isLoggedIn: boolean }) {
               }}
             >
               You have ideas that need ten people to execute.
-              Now you only need yourself and Alook.
+              Now you only need yourself and ភ្នាក់ងារ.
             </p>
           </div>
 
@@ -142,7 +142,7 @@ export function HeroSection({ isLoggedIn }: { isLoggedIn: boolean }) {
           style={{ opacity: 0 }}
           onClick={() => {
             navigator.clipboard.writeText(
-              `Read ${window.location.origin}/onboard.md and follow the instructions to install and configure Alook`
+              `Read ${window.location.origin}/onboard.md and follow the instructions to install and configure ភ្នាក់ងារ`
             );
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
@@ -180,7 +180,7 @@ export function HeroSection({ isLoggedIn }: { isLoggedIn: boolean }) {
               >
                 Onboard.md
               </a>
-              {" "}and follow the instructions to install and configure Alook
+              {" "}and follow the instructions to install and configure ភ្នាក់ងារ
             </span>
             <span
               className="shrink-0 p-1"
@@ -223,7 +223,7 @@ export function HeroSection({ isLoggedIn }: { isLoggedIn: boolean }) {
         {/* Community links */}
         <div className="hero-providers mt-5 shrink-0 flex items-center justify-center gap-4" style={{ opacity: 0 }}>
           <a
-            href="https://github.com/alookai/alook"
+            href="https://github.com/phneakngarai/phneakngar"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center justify-center p-1.5 transition-opacity hover:opacity-70"
@@ -235,7 +235,7 @@ export function HeroSection({ isLoggedIn }: { isLoggedIn: boolean }) {
             </svg>
           </a>
           <a
-            href="https://discord.alook.ai"
+            href="https://discord.phneakngar.ai"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center justify-center p-1.5 transition-opacity hover:opacity-70"
@@ -247,7 +247,7 @@ export function HeroSection({ isLoggedIn }: { isLoggedIn: boolean }) {
             </svg>
           </a>
           <a
-            href="https://x.com/alook_ai"
+            href="https://x.com/phneakngar_ai"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center justify-center p-1.5 transition-opacity hover:opacity-70"
@@ -263,7 +263,7 @@ export function HeroSection({ isLoggedIn }: { isLoggedIn: boolean }) {
         {/* CTA */}
         <div ref={ctaRef} className="mt-8 shrink-0 flex flex-nowrap items-center justify-center gap-3" style={{ opacity: 0 }}>
           {/* <a
-            href="https://github.com/alookai/alook"
+            href="https://github.com/phneakngarai/phneakngar"
             className="inline-flex items-center gap-2 px-6 py-2.5 text-sm transition-all duration-200 hover:opacity-80"
             style={{
               fontFamily: "var(--font-mono)",

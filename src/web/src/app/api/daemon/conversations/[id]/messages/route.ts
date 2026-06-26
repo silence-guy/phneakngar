@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { queries, AgentDmRequestSchema, truncateTitle } from "@alook/shared"
+import { queries, AgentDmRequestSchema, truncateTitle } from "@phneakngar/shared"
 import { getDb } from "@/lib/db"
 import { withAuth } from "@/lib/middleware/auth";
 import { writeJSON, writeError, parseBody } from "@/lib/middleware/helpers";
@@ -7,7 +7,7 @@ import { messageToResponse } from "@/lib/api/responses";
 import { broadcastToUser } from "@/lib/broadcast";
 import { withDaemonTaskAccess } from "@/lib/middleware/daemon";
 
-// Agent-authored DM endpoint (`alook sync send-dm`). The agent calls this to
+// Agent-authored DM endpoint (`phneakngar sync send-dm`). The agent calls this to
 // push exactly what the user should see — a `role:"assistant"` chat bubble that
 // lands live in the open chat. Machine-token auth only (mirrors the other
 // daemon routes); explicitly does NOT enqueue a task (unlike the user-send

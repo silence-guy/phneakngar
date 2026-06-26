@@ -1,13 +1,13 @@
 # Uncomment the next line to define a global platform for your project
 
-target 'alook-desktop_iOS' do
+target 'phneakngar-desktop_iOS' do
 platform :ios, '14.0'
-  # Pods for alook-desktop_iOS
+  # Pods for phneakngar-desktop_iOS
 end
 
-target 'alook-desktop_macOS' do
+target 'phneakngar-desktop_macOS' do
 platform :osx, '11.0'
-  # Pods for alook-desktop_macOS
+  # Pods for phneakngar-desktop_macOS
 end
 
 # Delete the deployment target for iOS and macOS, causing it to be inherited from the Podfile

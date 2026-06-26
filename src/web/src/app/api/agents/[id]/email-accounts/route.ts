@@ -1,6 +1,6 @@
-import { queries, CreateEmailAccountSchema, DEV_EMAIL_WORKER_URL } from "@alook/shared"
+import { queries, CreateEmailAccountSchema, DEV_EMAIL_WORKER_URL } from "@phneakngar/shared"
 import { getDb } from "@/lib/db"
-import { encrypt } from "@alook/shared/crypto"
+import { encrypt } from "@phneakngar/shared/crypto"
 import { withAuth } from "@/lib/middleware/auth"
 import { withWorkspaceMember } from "@/lib/middleware/workspace"
 import { writeJSON, writeError, parseBody, formatTimestamp, formatTimestampNullable } from "@/lib/middleware/helpers"

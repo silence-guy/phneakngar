@@ -16,8 +16,8 @@ const m = {
   getAgentRuntimeForWorkspace: vi.fn(),
 };
 
-vi.mock("@alook/shared", async () => {
-  const actual = await vi.importActual("@alook/shared");
+vi.mock("@phneakngar/shared", async () => {
+  const actual = await vi.importActual("@phneakngar/shared");
   return {
     ...actual,
     queries: {

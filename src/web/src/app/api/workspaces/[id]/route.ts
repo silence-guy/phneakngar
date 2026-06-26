@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { queries, UpdateWorkspaceRequestSchema, DeleteWorkspaceRequestSchema, isUniqueConstraintError } from "@alook/shared"
+import { queries, UpdateWorkspaceRequestSchema, DeleteWorkspaceRequestSchema, isUniqueConstraintError } from "@phneakngar/shared"
 import { getDb } from "@/lib/db"
 import { withAuth } from "@/lib/middleware/auth";
 import { withWorkspaceOwner } from "@/lib/middleware/workspace";

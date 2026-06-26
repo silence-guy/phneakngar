@@ -2,10 +2,10 @@ import { homedir } from "os";
 import { join } from "path";
 
 function resolveBaseDir(): string {
-  if (process.env.ALOOK_PROJECT_ROOT) {
-    return join(process.env.ALOOK_PROJECT_ROOT, ".alook", "self-hosted");
+  if (process.env.PHNEAKNGAR_PROJECT_ROOT) {
+    return join(process.env.PHNEAKNGAR_PROJECT_ROOT, ".phneakngar", "self-hosted");
   }
-  return join(homedir(), ".alook", "self-hosted");
+  return join(homedir(), ".phneakngar", "self-hosted");
 }
 
 export const SELF_HOSTED_DIR = resolveBaseDir();

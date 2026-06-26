@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { queries, isUniqueConstraintError, generateWorkspaceSlug, CreateWorkspaceRequestSchema } from "@alook/shared"
+import { queries, isUniqueConstraintError, generateWorkspaceSlug, CreateWorkspaceRequestSchema } from "@phneakngar/shared"
 import { getDb } from "@/lib/db"
 import { nanoid } from "nanoid"
 import { withAuth } from "@/lib/middleware/auth";

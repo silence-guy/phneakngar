@@ -14,8 +14,8 @@ vi.mock("@opennextjs/cloudflare", () => ({
 }));
 vi.mock("@/lib/db", () => ({ getDb: vi.fn(() => ({})) }));
 
-vi.mock("@alook/shared", async () => {
-  const actual = await vi.importActual("@alook/shared");
+vi.mock("@phneakngar/shared", async () => {
+  const actual = await vi.importActual("@phneakngar/shared");
   const noop = () => {};
   const log = { debug: noop, info: noop, warn: noop, error: noop, child: () => log };
   return {

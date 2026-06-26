@@ -3,9 +3,9 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import type { Agent } from "@alook/shared";
-import type { AgentRuntime as Runtime } from "@alook/shared";
-import { toAlookAddress } from "@alook/shared";
+import type { Agent } from "@phneakngar/shared";
+import type { AgentRuntime as Runtime } from "@phneakngar/shared";
+import { toPhneakngarAddress } from "@phneakngar/shared";
 import { cn } from "@/lib/utils";
 import { LockIcon } from "lucide-react";
 import { CustomEmailForm } from "@/components/custom-email-form";
@@ -336,7 +336,7 @@ export function AgentEditForm({
 
         {activeTab === "instruction" ? (
           <div className="flex flex-col flex-1 min-h-0">
-            <div className="flex-1 px-6 pt-4 pb-4 overflow-y-auto">
+            <div className="flex-1 px-6 pt-4 pb-4 overflow-y-auto thin-scrollbar">
               <MarkdownEditor
                 value={instructions}
                 onChange={handleInstructionChange}
@@ -409,7 +409,7 @@ export function AgentEditForm({
                         </span>
                         <span className="text-xs text-muted-foreground">
                           {agent.email_handle
-                            ? toAlookAddress(agent.email_handle)
+                            ? toPhneakngarAddress(agent.email_handle)
                             : agentFormLabel("notConfigured")}
                         </span>
                       </div>

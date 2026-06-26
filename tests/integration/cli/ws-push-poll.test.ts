@@ -5,9 +5,9 @@ import {
   cleanupTestData,
   type TestSeed,
   sqlRun,
-} from "@alook/test-utils"
+} from "@phneakngar/test-utils"
 import { DaemonClient } from "../../../src/cli/daemon/client"
-import { DaemonPushMessageSchema } from "@alook/shared"
+import { DaemonPushMessageSchema } from "@phneakngar/shared"
 
 const APP_URL = process.env.APP_URL ?? "http://localhost:3000"
 const WS_DO_URL = process.env.WS_DO_URL ?? "http://localhost:8789"

@@ -1,4 +1,4 @@
-import type { Agent } from "@alook/shared"
+import type { Agent } from "@phneakngar/shared"
 
 function isTrigger(text: string, atIndex: number): boolean {
   if (atIndex === 0) return true
@@ -39,10 +39,10 @@ export function highlightMentions(content: string, agents: Agent[]): string {
       const slice = content.slice(afterAt, nameEnd)
       if (slice.toLowerCase() !== agent.name.toLowerCase()) continue
 
-      // Check if this is the enriched form: @AgentName (handle@alook.ai)
+      // Check if this is the enriched form: @AgentName (handle@phneakngar.ai)
       let matchEnd = nameEnd
       const afterName = content.slice(nameEnd)
-      const enrichedMatch = afterName.match(/^ \([a-zA-Z0-9-]+@alook\.ai\)/)
+      const enrichedMatch = afterName.match(/^ \([a-zA-Z0-9-]+@phneakngar\.ai\)/)
       if (enrichedMatch) {
         matchEnd = nameEnd + enrichedMatch[0].length
       }

@@ -304,7 +304,7 @@ export {
 } from "./db/queries/calendar-event";
 
 // Utils
-export { parseEmailHandle, toAlookAddress, isValidHandle } from "./utils/email";
+export { parseEmailHandle, toPhneakngarAddress, isValidHandle } from "./utils/email";
 export { parsePromptMentions } from "./utils/prompt-parser";
 export type { PromptAgent, PromptMention, ParseResult } from "./utils/prompt-parser";
 export { isValidToken, isValidEmail } from "./utils/validation";
@@ -314,4 +314,4 @@ export { generateWorkspaceSlug } from "./utils/slug";
 export { truncateTitle } from "./utils/title";
 export { semverGte } from "./semver";
 export { resolveMode, cliCommand, cliPackageName, updateCommand, daemonCommand, getBaseUrl, isTauri, isDesktop, isMobile, tauriInvoke } from "./mode";
-export type { AlookMode, ModeSignals, BaseUrlSignals } from "./mode";
+export type { PhneakngarMode, ModeSignals, BaseUrlSignals } from "./mode";

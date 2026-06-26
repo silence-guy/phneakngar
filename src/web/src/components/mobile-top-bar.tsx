@@ -100,7 +100,7 @@ export function MobileTopBar() {
         <CircleDot className="size-4" />
       </button>
 
-      <div className="flex-1 overflow-x-auto flex items-center gap-1.5 py-1 px-0.5 scrollbar-none">
+      <div className="flex-1 overflow-x-auto thin-scrollbar flex items-center gap-1.5 py-1 px-0.5">
         {loading ? (
           <Skeleton className="size-7 rounded-full" />
         ) : (

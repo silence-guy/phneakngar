@@ -443,7 +443,7 @@ export function buildAgentPromptLanguagePolicy(
     apply_to:
       "User-facing messages, emails, DM replies, issue comments, summaries, and follow-ups.",
     preserve_english_for: [
-      "CLI commands such as `alook sync send-dm` and `alook issue update`",
+      "CLI commands such as `phneakngar sync send-dm` and `phneakngar issue update`",
       "JSON keys such as `type`, `received_at`, `instruction`, `issue_id`, `email_id`, and `is_owner`",
       "Status values such as `in_progress`, `review`, `done`, `pending`, `failed`, and `canceled`",
       "Code, file paths, package names, API names, logs, environment variables, and exact quotes",

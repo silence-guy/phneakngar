@@ -28,14 +28,14 @@ export function prepare(
   writeInstructionFileIfChanged(workDir, task);
 
   const env: Record<string, string> = {
-    ALOOK_WORKSPACE_ID: task.workspaceId,
-    ALOOK_AGENT_ID: task.agentId,
-    ALOOK_TASK_ID: task.id,
-    ALOOK_CONVERSATION_ID: task.conversationId,
-    ALOOK_TRACE_ID: task.traceId ?? "",
-    ALOOK_CHANNEL: task.channel ?? "default",
-    ALOOK_HEALTH_PORT: process.env.ALOOK_HEALTH_PORT || "19514",
-    ...(config.token ? { ALOOK_TOKEN: config.token } : {}),
+    PHNEAKNGAR_WORKSPACE_ID: task.workspaceId,
+    PHNEAKNGAR_AGENT_ID: task.agentId,
+    PHNEAKNGAR_TASK_ID: task.id,
+    PHNEAKNGAR_CONVERSATION_ID: task.conversationId,
+    PHNEAKNGAR_TRACE_ID: task.traceId ?? "",
+    PHNEAKNGAR_CHANNEL: task.channel ?? "default",
+    PHNEAKNGAR_HEALTH_PORT: process.env.PHNEAKNGAR_HEALTH_PORT || "19514",
+    ...(config.token ? { PHNEAKNGAR_TOKEN: config.token } : {}),
   };
 
   return { workDir, timelineDir, env };

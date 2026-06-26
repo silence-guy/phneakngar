@@ -1,9 +1,9 @@
-import { buildAgentPromptLanguagePolicy, type AgentPromptLanguagePolicy } from "@alook/shared";
+import { buildAgentPromptLanguagePolicy, type AgentPromptLanguagePolicy } from "@phneakngar/shared";
 import type { Task, Attachment } from "./types.js";
 import { localISOString } from "./execenv/timeline.js";
 
 const DM_RESPONSE_NOTICE =
-  "Reply with `alook sync send-dm` — that's the only thing the user sees; your task output and reasoning are not shown." +
+  "Reply with `phneakngar sync send-dm` — that's the only thing the user sees; your task output and reasoning are not shown." +
   " Talk to them at milestones like a colleague would, and don't end your turn without sending what they need." +
   " If this task will take more than 30 seconds, send a quick ack first so the user knows you're on it." +
   " IMPORTANT: If you were working on a previous task before this message arrived, do NOT silently drop it. After handling this message, return to any prior unfinished work and report the result to the user.";
@@ -22,9 +22,9 @@ const CALENDAR_NOTICE =
 
 const ISSUE_NOTICE =
   "This task was triggered by an assigned issue. The issue_id is provided in this message." +
-  " Use `alook issue show --issue_id <issue_id>` to read full context." +
-  " Use `alook issue update --issue_id <issue_id> --status <status>` to change status." +
-  " Use `alook issue comment --issue_id <issue_id> --body <text>` to leave a comment." +
+  " Use `phneakngar issue show --issue_id <issue_id>` to read full context." +
+  " Use `phneakngar issue update --issue_id <issue_id> --status <status>` to change status." +
+  " Use `phneakngar issue comment --issue_id <issue_id> --body <text>` to leave a comment." +
   " CRITICAL — You MUST manage the issue status correctly. This is NOT optional:" +
   " 1. Set status to 'in_progress' when you start working." +
   " 2. If you complete the work yourself: leave a summary comment, then set status to 'review' as your last action. 'review' means there is actual completed work (code, artifact, result) ready for the owner to look at." +

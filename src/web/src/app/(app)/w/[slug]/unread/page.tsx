@@ -22,7 +22,7 @@ import {
   setInboxFilterTypes,
   type InboxFilterType,
 } from "@/lib/inbox-filter";
-import type { WsMessage } from "@alook/shared";
+import type { WsMessage } from "@phneakngar/shared";
 
 const INBOX_LIMIT = 30;
 
@@ -292,7 +292,7 @@ export default function InboxPage() {
       <div
         ref={scrollRef}
         onScroll={handleScroll}
-        className="flex-1 overflow-y-auto"
+        className="flex-1 overflow-y-auto thin-scrollbar"
       >
         {loading ? (
           <>

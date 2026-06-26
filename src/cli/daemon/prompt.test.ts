@@ -36,8 +36,8 @@ describe("buildPrompt", () => {
 
     const policyText = JSON.stringify(parsed.language_policy);
     expect(policyText).toContain("Use Khmer by default");
-    expect(policyText).toContain("alook sync send-dm");
-    expect(policyText).toContain("alook issue update");
+    expect(policyText).toContain("phneakngar sync send-dm");
+    expect(policyText).toContain("phneakngar issue update");
     expect(policyText).toContain("JSON keys");
     expect(policyText).toContain("issue_id");
     expect(policyText).toContain("in_progress");
@@ -381,7 +381,7 @@ describe("buildPrompt", () => {
     const task = makeTask("Issue iss_1: Fix import", "issue_event");
     const parsed = JSON.parse(buildPrompt(task));
     expect(parsed.notice).toContain("assigned issue");
-    expect(parsed.notice).toContain("alook issue update");
+    expect(parsed.notice).toContain("phneakngar issue update");
     expect(parsed.notice).toContain("in_progress");
   });
 

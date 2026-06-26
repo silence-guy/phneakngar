@@ -17,8 +17,8 @@ import { workspaceCommand } from "../commands/workspace.js";
 const program = new Command();
 
 program
-  .name("alook")
-  .description("Alook CLI")
+  .name("phneakngar")
+  .description("ភ្នាក់ងារ CLI")
   .option("--server <url>", "Server URL")
   .option("--profile <name>", "Profile name");
 

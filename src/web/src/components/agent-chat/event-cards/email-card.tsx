@@ -4,7 +4,7 @@ import { AnimatedAvatar, parseAvatarUrl, type AvatarConfig } from "@/components/
 import { ChevronRight, MessageSquare } from "lucide-react";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useLongPress } from "@/hooks/use-long-press";
-import type { Agent } from "@alook/shared";
+import type { Agent } from "@phneakngar/shared";
 
 export function EmailCard({
   subject,

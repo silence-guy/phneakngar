@@ -1,5 +1,5 @@
 import { DurableObject } from "cloudflare:workers"
-import { createDb, queries, createLogger } from "@alook/shared"
+import { createDb, queries, createLogger } from "@phneakngar/shared"
 
 const log = createLogger({ service: "ws-do" })
 

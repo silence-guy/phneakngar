@@ -6,7 +6,7 @@ import { activateAndSave } from "../lib/activate.js";
 import { loadCLIConfigForProfile, saveCLIConfigForProfile } from "../lib/config.js";
 import { cmdPrefix, getServerUrl } from "../lib/env.js";
 
-const DEVICE_CLIENT_ID = process.env.ALOOK_DEVICE_CLIENT_ID || "alook-cli";
+const DEVICE_CLIENT_ID = process.env.PHNEAKNGAR_DEVICE_CLIENT_ID || "phneakngar-cli";
 
 interface DeviceCodeResponse {
   device_code: string;
@@ -262,7 +262,7 @@ async function checkExistingAuth(serverUrl: string, profile?: string): Promise<{
 
 export function loginCommand(): Command {
   const cmd = new Command("login")
-    .description("Log in to Alook via browser (device code flow)")
+    .description("Log in to ភ្នាក់ងារ via browser (device code flow)")
     .option("--server <url>", "Server URL")
     .option("--profile <name>", "Profile name")
     .option("--force", "Re-authenticate even if already logged in")

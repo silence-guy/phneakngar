@@ -16,7 +16,7 @@ vi.mock("../daemon/pidfile.js", () => ({
 }));
 
 vi.mock("../lib/env.js", () => ({
-  cmdPrefix: () => "alook",
+  cmdPrefix: () => "phneakngar",
   isDev: () => false,
   getServerUrl: () => "http://localhost:3000",
 }));
@@ -38,7 +38,7 @@ vi.mock("child_process", () => ({
 
 import { loginCommand } from "./login";
 
-describe("alook login", () => {
+describe("phneakngar login", () => {
   let consoleSpy: ReturnType<typeof vi.spyOn>;
   let consoleErrSpy: ReturnType<typeof vi.spyOn>;
   let mockExit: ReturnType<typeof vi.spyOn>;
@@ -107,7 +107,7 @@ describe("alook login", () => {
     return [
       { url: "/api/auth/device/code", status: 200, body: deviceCodeResponse() },
       { url: "/api/auth/device/token", status: 200, body: tokenSuccessResponse() },
-      { url: "/api/me", status: 200, body: { id: "u1", email: "test@alook.ai" } },
+      { url: "/api/me", status: 200, body: { id: "u1", email: "test@phneakngar.ai" } },
       { url: "/api/workspaces", status: 200, body: [{ id: "sp_ws1", name: "My Workspace" }] },
       { url: "/api/machine-tokens", status: 201, body: { token: "al_machine_tok" } },
       { url: "/api/machine-tokens/activate", status: 200, body: { daemon_id: "host1", workspace_id: "sp_ws1", runtimes: [{ id: "r1", provider: "claude" }] } },
@@ -151,7 +151,7 @@ describe("alook login", () => {
         ]),
       }),
     );
-    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("Logged in as test@alook.ai"));
+    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("Logged in as test@phneakngar.ai"));
   });
 
 
@@ -160,7 +160,7 @@ describe("alook login", () => {
       { url: "/api/auth/device/code", status: 200, body: deviceCodeResponse() },
       { url: "/api/auth/device/token", status: 400, body: { error: "authorization_pending" } },
       { url: "/api/auth/device/token", status: 200, body: tokenSuccessResponse() },
-      { url: "/api/me", status: 200, body: { id: "u1", email: "poll@alook.ai" } },
+      { url: "/api/me", status: 200, body: { id: "u1", email: "poll@phneakngar.ai" } },
       { url: "/api/workspaces", status: 200, body: [{ id: "sp_poll", name: "Poll WS" }] },
       { url: "/api/machine-tokens", status: 201, body: { token: "al_poll_tok" } },
       { url: "/api/machine-tokens/activate", status: 200, body: { daemon_id: "host1", workspace_id: "sp_poll", runtimes: [{ id: "r1", provider: "claude" }] } },
@@ -172,7 +172,7 @@ describe("alook login", () => {
     await runWithTimers(cmd.parseAsync(["node", "login", "--server", "http://localhost:3000"]));
 
     expect(mockSaveCLIConfigForProfile).toHaveBeenCalled();
-    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("Logged in as poll@alook.ai"));
+    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("Logged in as poll@phneakngar.ai"));
   });
 
   it("handles slow_down by increasing polling interval", async () => {
@@ -180,7 +180,7 @@ describe("alook login", () => {
       { url: "/api/auth/device/code", status: 200, body: deviceCodeResponse() },
       { url: "/api/auth/device/token", status: 400, body: { error: "slow_down" } },
       { url: "/api/auth/device/token", status: 200, body: tokenSuccessResponse() },
-      { url: "/api/me", status: 200, body: { id: "u1", email: "slow@alook.ai" } },
+      { url: "/api/me", status: 200, body: { id: "u1", email: "slow@phneakngar.ai" } },
       { url: "/api/workspaces", status: 200, body: [{ id: "sp_slow", name: "Slow WS" }] },
       { url: "/api/machine-tokens", status: 201, body: { token: "al_slow_tok" } },
       { url: "/api/machine-tokens/activate", status: 200, body: { daemon_id: "host1", workspace_id: "sp_slow", runtimes: [{ id: "r1", provider: "claude" }] } },
@@ -191,7 +191,7 @@ describe("alook login", () => {
     const cmd = loginCommand();
     await runWithTimers(cmd.parseAsync(["node", "login", "--server", "http://localhost:3000"]));
 
-    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("Logged in as slow@alook.ai"));
+    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("Logged in as slow@phneakngar.ai"));
   });
 
   it("sends SIGHUP when daemon is running after login", async () => {
@@ -224,14 +224,14 @@ describe("alook login", () => {
 
       mockFetchSequence([
         { url: "/api/workspaces", status: 200, body: [{ id: "sp_ws1", name: "My Workspace" }] },
-        { url: "/api/me", status: 200, body: { email: "user@alook.ai" } },
+        { url: "/api/me", status: 200, body: { email: "user@phneakngar.ai" } },
       ]);
 
       const cmd = loginCommand();
       await runWithTimers(cmd.parseAsync(["node", "login", "--server", "http://localhost:3000"]));
 
       expect(consoleSpy).toHaveBeenCalledWith(
-        "Already logged in as user@alook.ai (workspace: My Workspace).",
+        "Already logged in as user@phneakngar.ai (workspace: My Workspace).",
       );
       expect(mockSaveCLIConfigForProfile).not.toHaveBeenCalled();
     });
@@ -248,7 +248,7 @@ describe("alook login", () => {
       await runWithTimers(cmd.parseAsync(["node", "login", "--server", "http://localhost:3000", "--force"]));
 
       expect(mockSaveCLIConfigForProfile).toHaveBeenCalled();
-      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("Logged in as test@alook.ai"));
+      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("Logged in as test@phneakngar.ai"));
     });
 
     it("proceeds with login when token is invalid/expired", async () => {
@@ -261,7 +261,7 @@ describe("alook login", () => {
         { url: "/api/workspaces", status: 401, body: { error: "unauthorized" } },
         { url: "/api/auth/device/code", status: 200, body: deviceCodeResponse() },
         { url: "/api/auth/device/token", status: 200, body: tokenSuccessResponse() },
-        { url: "/api/me", status: 200, body: { id: "u1", email: "test@alook.ai" } },
+        { url: "/api/me", status: 200, body: { id: "u1", email: "test@phneakngar.ai" } },
         { url: "/api/workspaces", status: 200, body: [{ id: "sp_ws1", name: "My Workspace" }] },
         { url: "/api/machine-tokens", status: 201, body: { token: "al_new_tok" } },
         { url: "/api/machine-tokens/activate", status: 200, body: { daemon_id: "host1", workspace_id: "sp_ws1", runtimes: [{ id: "r1", provider: "claude" }] } },
@@ -273,7 +273,7 @@ describe("alook login", () => {
       await runWithTimers(cmd.parseAsync(["node", "login", "--server", "http://localhost:3000"]));
 
       expect(mockSaveCLIConfigForProfile).toHaveBeenCalled();
-      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("Logged in as test@alook.ai"));
+      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("Logged in as test@phneakngar.ai"));
     });
 
     it("proceeds with login when no workspaces in config", async () => {
@@ -360,14 +360,14 @@ describe("alook login", () => {
 
       mockFetchSequence([
         { url: "/api/workspaces", status: 200, body: [{ id: "sp_ws1", name: "My Workspace" }] },
-        { url: "/api/me", status: 200, body: { email: "agent@alook.ai" } },
+        { url: "/api/me", status: 200, body: { email: "agent@phneakngar.ai" } },
       ]);
 
       const cmd = loginCommand();
       await runWithTimers(cmd.parseAsync(["node", "login", "--server", "http://localhost:3000"]));
 
       expect(consoleSpy).toHaveBeenCalledWith(
-        "Already logged in as agent@alook.ai (workspace: My Workspace).",
+        "Already logged in as agent@phneakngar.ai (workspace: My Workspace).",
       );
       expect(mockSaveCLIConfigForProfile).not.toHaveBeenCalled();
     });
@@ -390,7 +390,7 @@ describe("alook login", () => {
       mockFetchSequence([
         { url: "/api/auth/device/code", status: 200, body: deviceCodeResponse() },
         { url: "/api/auth/device/token", status: 200, body: tokenSuccessResponse() },
-        { url: "/api/me", status: 200, body: { id: "u1", email: "test@alook.ai" } },
+        { url: "/api/me", status: 200, body: { id: "u1", email: "test@phneakngar.ai" } },
         { url: "/api/workspaces", status: 200, body: [
           { id: "sp_ws1", name: "Work" },
           { id: "sp_ws2", name: "Personal" },
@@ -427,7 +427,7 @@ describe("alook login", () => {
 
       mockFetchSequence([
         { url: "/api/workspaces", status: 200, body: [{ id: "sp_synced", name: "Synced WS" }] },
-        { url: "/api/me", status: 200, body: { email: "sync@alook.ai" } },
+        { url: "/api/me", status: 200, body: { email: "sync@phneakngar.ai" } },
       ]);
 
       const cmd = loginCommand();
@@ -442,7 +442,7 @@ describe("alook login", () => {
         }),
       );
       expect(consoleSpy).toHaveBeenCalledWith(
-        "Already logged in as sync@alook.ai (workspace: Synced WS).",
+        "Already logged in as sync@phneakngar.ai (workspace: Synced WS).",
       );
     });
 
@@ -455,14 +455,14 @@ describe("alook login", () => {
 
       mockFetchSequence([
         { url: "/api/workspaces", status: 200, body: [{ id: "sp_ws1", name: "Session WS" }] },
-        { url: "/api/me", status: 200, body: { email: "session@alook.ai" } },
+        { url: "/api/me", status: 200, body: { email: "session@phneakngar.ai" } },
       ]);
 
       const cmd = loginCommand();
       await runWithTimers(cmd.parseAsync(["node", "login", "--server", "http://localhost:3000"]));
 
       expect(consoleSpy).toHaveBeenCalledWith(
-        "Already logged in as session@alook.ai (workspace: Session WS).",
+        "Already logged in as session@phneakngar.ai (workspace: Session WS).",
       );
     });
   });

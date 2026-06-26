@@ -1,6 +1,6 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare"
-import type { WsMessage, DaemonPushMessage } from "@alook/shared"
-import { DEV_WS_DO_URL, createLogger } from "@alook/shared"
+import type { WsMessage, DaemonPushMessage } from "@phneakngar/shared"
+import { DEV_WS_DO_URL, createLogger } from "@phneakngar/shared"
 
 const log = createLogger({ service: "broadcast" })
 

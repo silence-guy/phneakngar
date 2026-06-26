@@ -1,5 +1,5 @@
 # Default owners for the entire repository
-* @alookai/core-dev
+* @phneakngarai/core-dev
 
 # CI/CD workflows require review
-.github/ @alookai/core-dev
+.github/ @phneakngarai/core-dev

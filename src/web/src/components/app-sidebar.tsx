@@ -4,7 +4,7 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { useAgentContext } from "@/contexts/agent-context";
 import { useWorkspace } from "@/contexts/workspace-context";
-import type { Agent } from "@alook/shared";
+import type { Agent } from "@phneakngar/shared";
 import { InboxPopover } from "@/components/inbox-popover";
 import { FlagPopover } from "@/components/flag-popover";
 import { Logo } from "@/components/logo";
@@ -454,7 +454,7 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void } = {}) {
       </div>
 
       {/* Agent avatars */}
-      <div className={cn("flex flex-1 w-full flex-col items-center gap-1.5 py-1 scrollbar-none", wiggling ? "overflow-visible" : "overflow-y-auto")}>
+      <div className={cn("flex flex-1 w-full flex-col items-center gap-1.5 py-1 thin-scrollbar", wiggling ? "overflow-visible" : "overflow-y-auto")}>
         {loading ? (
           <Skeleton className="size-10 rounded-xl" />
         ) : (

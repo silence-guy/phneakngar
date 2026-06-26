@@ -1,10 +1,10 @@
 ## Design Context
 
 ### Users
-Power users and tasteful hackers who want Your Personal Company with a minimalist, collaborative approach. They value control over their infrastructure, appreciate good tooling, and have strong aesthetic sensibilities. They use Alook in focused work sessions — managing agents, reviewing task output, and iterating on instructions.
+Power users and tasteful hackers who want Your Personal Company with a minimalist, collaborative approach. They value control over their infrastructure, appreciate good tooling, and have strong aesthetic sensibilities. They use ភ្នាក់ងារ in focused work sessions — managing agents, reviewing task output, and iterating on instructions.
 
 ### Brand Personality
-**Warm, precise, and utilitarian.** Alook feels like a well-crafted tool made by someone who cares — not cold and corporate, not flashy and consumer. It earns trust through restraint and clarity. Every element has a reason.
+**Warm, precise, and utilitarian.** ភ្នាក់ងារ feels like a well-crafted tool made by someone who cares — not cold and corporate, not flashy and consumer. It earns trust through restraint and clarity. Every element has a reason.
 
 3-word personality: **Warm. Sharp. Purposeful.**
 

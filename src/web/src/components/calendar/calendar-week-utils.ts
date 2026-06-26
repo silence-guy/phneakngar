@@ -1,4 +1,4 @@
-import type { CalendarEvent } from "@alook/shared";
+import type { CalendarEvent } from "@phneakngar/shared";
 
 export function getWeekStart(date: Date): Date {
   const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());

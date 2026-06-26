@@ -12,7 +12,7 @@ function sharedMocks() {
     "@opennextjs/cloudflare": {
       getCloudflareContext: vi.fn(() => Promise.resolve({ env: { DB: {} } })),
     },
-    "@alook/shared": async () => ({
+    "@phneakngar/shared": async () => ({
       createDb: vi.fn(() => ({})),
       queries: {
         machineToken: {
@@ -26,7 +26,7 @@ function sharedMocks() {
           upsertAgentRuntime: (...a: any[]) => mockUpsertAgentRuntime(...a),
         },
       },
-      ActivateTokenRequestSchema: (await import("@alook/shared"))
+      ActivateTokenRequestSchema: (await import("@phneakngar/shared"))
         .ActivateTokenRequestSchema,
       createLogger: () => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() }),
     }),
@@ -53,7 +53,7 @@ describe("POST /api/machine-tokens/activate", () => {
     const mocks = sharedMocks();
 
     vi.doMock("@opennextjs/cloudflare", () => mocks["@opennextjs/cloudflare"]);
-    vi.doMock("@alook/shared", mocks["@alook/shared"]);
+    vi.doMock("@phneakngar/shared", mocks["@phneakngar/shared"]);
     vi.doMock("@/lib/db", () => ({ getDb: vi.fn(() => ({})) }));
     vi.doMock("@/lib/broadcast", () => mocks["@/lib/broadcast"]);
     vi.doMock("@/lib/cache", () => ({

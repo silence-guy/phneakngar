@@ -107,7 +107,7 @@ describe("locale foundation", () => {
     expect(policy.default_user_facing_language).toBe("bilingual");
     expect(policy.apply_to).toContain("User-facing");
     expect(policy.guidance).toContain("Use Khmer first");
-    expect(policy.preserve_english_for.join("\n")).toContain("alook sync send-dm");
+    expect(policy.preserve_english_for.join("\n")).toContain("phneakngar sync send-dm");
     expect(policy.preserve_english_for.join("\n")).toContain("JSON keys");
     expect(policy.preserve_english_for.join("\n")).toContain("in_progress");
     expect(policy.preserve_english_for.join("\n")).toContain("file paths");
@@ -177,11 +177,11 @@ describe("locale foundation", () => {
     expect(localeTechnicalTokenPolicy.preserve).toContain("task type values");
     expect(localeTechnicalTokenPolicy.preserve).toContain("logs");
 
-    expect(cliCommand("production")).toBe("npx @alook/cli");
+    expect(cliCommand("production")).toBe("npx @phneakngar/cli");
     expect(cliCommand("dev")).toBe("pnpm dev:cli");
     expect(daemonCommand("dev")).toBe("pnpm dev:cli daemon start --foreground");
     expect(updateCommand("app")).toBe(
-      "npx @alook/app stop && npx @alook/app@latest update && npx @alook/app start",
+      "npx @phneakngar/app stop && npx @phneakngar/app@latest update && npx @phneakngar/app start",
     );
   });
 });

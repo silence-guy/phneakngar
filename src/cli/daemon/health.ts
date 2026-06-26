@@ -3,7 +3,7 @@ import { spawnSync } from "child_process";
 import { normalizeHeadroomRuntimeConfig } from "./headroom/config.js";
 import { headroomProxyUrl } from "./headroom/env.js";
 
-const DEFAULT_HEALTH_PORT = Number(process.env.ALOOK_HEALTH_PORT) || 19514;
+const DEFAULT_HEALTH_PORT = Number(process.env.PHNEAKNGAR_HEALTH_PORT) || 19514;
 
 export type HeadroomHealthStatus = "disabled" | "available" | "missing";
 export type HeadroomNextAction = "enable_headroom" | "install_headroom" | "configure_headroom_path";

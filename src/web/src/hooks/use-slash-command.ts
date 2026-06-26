@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo, useRef, useEffect } from "react"
-import type { SkillEntry } from "@alook/shared"
+import type { SkillEntry } from "@phneakngar/shared"
 
 /**
  * Minimal keyboard-event shape the popup hooks need. Both React synthetic

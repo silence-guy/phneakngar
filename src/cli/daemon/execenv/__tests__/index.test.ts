@@ -103,13 +103,13 @@ describe("prepare", () => {
     const result = prepare({ workspacesRoot: root }, task);
 
     expect(result.env).toEqual({
-      ALOOK_WORKSPACE_ID: "ws1",
-      ALOOK_AGENT_ID: "a1",
-      ALOOK_TASK_ID: "t1",
-      ALOOK_CONVERSATION_ID: "c1",
-      ALOOK_TRACE_ID: "",
-      ALOOK_CHANNEL: "default",
-      ALOOK_HEALTH_PORT: expect.any(String),
+      PHNEAKNGAR_WORKSPACE_ID: "ws1",
+      PHNEAKNGAR_AGENT_ID: "a1",
+      PHNEAKNGAR_TASK_ID: "t1",
+      PHNEAKNGAR_CONVERSATION_ID: "c1",
+      PHNEAKNGAR_TRACE_ID: "",
+      PHNEAKNGAR_CHANNEL: "default",
+      PHNEAKNGAR_HEALTH_PORT: expect.any(String),
     });
   });
 });

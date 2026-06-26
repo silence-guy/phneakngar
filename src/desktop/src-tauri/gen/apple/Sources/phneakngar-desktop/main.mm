@@ -3,56 +3,56 @@
 #import <WebKit/WebKit.h>
 #import <objc/runtime.h>
 
-static UIColor *alookLightColor(void) {
+static UIColor *phneakngarLightColor(void) {
     return [UIColor colorWithRed:0.929 green:0.910 blue:0.871 alpha:1.0];
 }
 
-static UIColor *alookDarkColor(void) {
+static UIColor *phneakngarDarkColor(void) {
     return [UIColor colorWithRed:0.063 green:0.051 blue:0.039 alpha:1.0];
 }
 
 static NSString *const kThemeObserverScript =
     @"(function(){"
-    "if(window.__alookThemeObserverInstalled)return;"
-    "window.__alookThemeObserverInstalled=true;"
+    "if(window.__phneakngarThemeObserverInstalled)return;"
+    "window.__phneakngarThemeObserverInstalled=true;"
     "function sync(){var d=document.documentElement.classList.contains('dark');"
-    "window.webkit.messageHandlers.alookTheme.postMessage(d?'dark':'light');}"
+    "window.webkit.messageHandlers.phneakngarTheme.postMessage(d?'dark':'light');}"
     "sync();"
     "new MutationObserver(sync).observe(document.documentElement,"
     "{attributes:true,attributeFilter:['class']});"
     "})();";
 
-@interface AlookThemeHandler : NSObject <WKScriptMessageHandler>
+@interface PhneakngarThemeHandler : NSObject <WKScriptMessageHandler>
 @property (nonatomic, weak) UIViewController *viewController;
 @end
 
-@implementation AlookThemeHandler
+@implementation PhneakngarThemeHandler
 
 - (void)userContentController:(WKUserContentController *)userContentController
       didReceiveScriptMessage:(WKScriptMessage *)message {
-    if (![message.name isEqualToString:@"alookTheme"]) return;
+    if (![message.name isEqualToString:@"phneakngarTheme"]) return;
     NSString *theme = message.body;
     BOOL isDark = [theme isEqualToString:@"dark"];
     dispatch_async(dispatch_get_main_queue(), ^{
-        self.viewController.view.backgroundColor = isDark ? alookDarkColor() : alookLightColor();
+        self.viewController.view.backgroundColor = isDark ? phneakngarDarkColor() : phneakngarLightColor();
     });
 }
 
 @end
 
-@implementation UIViewController (AlookSafeArea)
+@implementation UIViewController (PhneakngarSafeArea)
 
 + (void)load {
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
         Method original = class_getInstanceMethod(self, @selector(viewDidLayoutSubviews));
-        Method swizzled = class_getInstanceMethod(self, @selector(alook_viewDidLayoutSubviews));
+        Method swizzled = class_getInstanceMethod(self, @selector(phneakngar_viewDidLayoutSubviews));
         method_exchangeImplementations(original, swizzled);
     });
 }
 
-- (void)alook_viewDidLayoutSubviews {
-    [self alook_viewDidLayoutSubviews];
+- (void)phneakngar_viewDidLayoutSubviews {
+    [self phneakngar_viewDidLayoutSubviews];
     UIEdgeInsets insets = self.view.safeAreaInsets;
     for (UIView *subview in self.view.subviews) {
         if ([subview isKindOfClass:[WKWebView class]]) {
@@ -67,10 +67,10 @@ static NSString *const kThemeObserverScript =
             WKWebView *webView = (WKWebView *)subview;
             static dispatch_once_t scriptToken;
             dispatch_once(&scriptToken, ^{
-                AlookThemeHandler *handler = [[AlookThemeHandler alloc] init];
+                PhneakngarThemeHandler *handler = [[PhneakngarThemeHandler alloc] init];
                 handler.viewController = self;
                 [webView.configuration.userContentController
-                    addScriptMessageHandler:handler name:@"alookTheme"];
+                    addScriptMessageHandler:handler name:@"phneakngarTheme"];
                 WKUserScript *script = [[WKUserScript alloc]
                     initWithSource:kThemeObserverScript
                     injectionTime:WKUserScriptInjectionTimeAtDocumentEnd
@@ -79,7 +79,7 @@ static NSString *const kThemeObserverScript =
             });
 
             BOOL isDark = (self.traitCollection.userInterfaceStyle == UIUserInterfaceStyleDark);
-            self.view.backgroundColor = isDark ? alookDarkColor() : alookLightColor();
+            self.view.backgroundColor = isDark ? phneakngarDarkColor() : phneakngarLightColor();
         }
     }
 }

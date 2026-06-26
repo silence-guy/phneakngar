@@ -4,8 +4,8 @@ const mockListAgentRuntimes = vi.fn();
 const mockGetAllAgentsForWorkspace = vi.fn();
 const mockGetTaskStatsByWorkspace = vi.fn();
 
-vi.mock("@alook/shared", async () => {
-  const real = await vi.importActual<typeof import("@alook/shared")>("@alook/shared");
+vi.mock("@phneakngar/shared", async () => {
+  const real = await vi.importActual<typeof import("@phneakngar/shared")>("@phneakngar/shared");
   return {
     ...real,
     OFFLINE_THRESHOLD_MS: 20_000,

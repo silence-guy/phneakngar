@@ -13,8 +13,8 @@ function sharedMocks() {
     "@opennextjs/cloudflare": {
       getCloudflareContext: vi.fn(() => ({ env: { DB: {} } })),
     },
-    "@alook/shared": async () => {
-      const real = await import("@alook/shared");
+    "@phneakngar/shared": async () => {
+      const real = await import("@phneakngar/shared");
       return {
         createDb: vi.fn(() => ({})),
         semverGte: real.semverGte,
@@ -61,7 +61,7 @@ describe("POST /api/daemon/register", () => {
     const mocks = sharedMocks();
 
     vi.doMock("@opennextjs/cloudflare", () => mocks["@opennextjs/cloudflare"]);
-    vi.doMock("@alook/shared", mocks["@alook/shared"]);
+    vi.doMock("@phneakngar/shared", mocks["@phneakngar/shared"]);
     vi.doMock("@/lib/db", () => ({
       getDb: vi.fn(() => ({})),
       withD1Retry: vi.fn((fn: () => Promise<any>) => fn()),

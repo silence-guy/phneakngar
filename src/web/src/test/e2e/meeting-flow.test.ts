@@ -1,13 +1,13 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest"
 import { randomUUID } from "crypto"
-import { seedTestData, cleanupTestData, type TestSeed, tokenRequest, sqlRun, sqlQuery } from "@alook/test-utils"
+import { seedTestData, cleanupTestData, type TestSeed, tokenRequest, sqlRun, sqlQuery } from "@phneakngar/test-utils"
 
 let seed: TestSeed
 
 const EMAIL_NOTIFY_SECRET = process.env.EMAIL_NOTIFY_SECRET ?? "test-notify-secret"
 const emailNotifyHeaders = {
   "Content-Type": "application/json",
-  "X-Alook-Email-Notify-Secret": EMAIL_NOTIFY_SECRET,
+  "X-Phneakngar-Email-Notify-Secret": EMAIL_NOTIFY_SECRET,
 }
 
 beforeAll(() => {

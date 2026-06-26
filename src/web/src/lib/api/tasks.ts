@@ -1,4 +1,4 @@
-import type { TaskApi, TaskMessageResponse } from "@alook/shared";
+import type { TaskApi, TaskMessageResponse } from "@phneakngar/shared";
 import { apiFetch, wsQuery } from "./client";
 
 export const getTask = (id: string, workspaceId: string) =>

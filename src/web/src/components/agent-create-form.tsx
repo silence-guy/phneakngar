@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import type { AgentRuntime as Runtime } from "@alook/shared";
+import type { AgentRuntime as Runtime } from "@phneakngar/shared";
 import {
   GeneralFields,
   EmailHandleField,

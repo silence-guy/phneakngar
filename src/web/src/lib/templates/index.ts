@@ -1,7 +1,7 @@
 export type { TemplatePreset, TemplateCategory } from "./types";
 export { TEMPLATE_CATEGORIES } from "./types";
 
-import { Locale, defaultLocale, resolveLocale } from "@alook/shared";
+import { Locale, defaultLocale, resolveLocale } from "@phneakngar/shared";
 import { openSourceMaintainer } from "./presets/open-source-maintainer";
 import { indieHackerShipCrew } from "./presets/indie-hacker-ship-crew";
 import { devopsMonitor } from "./presets/devops-monitor";

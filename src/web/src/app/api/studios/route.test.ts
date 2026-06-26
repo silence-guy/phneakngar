@@ -38,8 +38,8 @@ vi.mock("@/lib/cache", () => ({
   },
 }));
 
-vi.mock("@alook/shared", async () => {
-  const actual = await vi.importActual("@alook/shared");
+vi.mock("@phneakngar/shared", async () => {
+  const actual = await vi.importActual("@phneakngar/shared");
   return {
     ...actual,
     createDb: vi.fn(() => ({})),

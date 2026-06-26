@@ -10,7 +10,7 @@ function sharedMocks() {
     "@opennextjs/cloudflare": {
       getCloudflareContext: vi.fn(() => ({ env: { DB: {} } })),
     },
-    "@alook/shared": async () => ({
+    "@phneakngar/shared": async () => ({
       createDb: vi.fn(() => ({})),
       queries: {
         machine: {
@@ -19,7 +19,7 @@ function sharedMocks() {
             mockSetMachineLastSeenNull(...a),
         },
       },
-      DeregisterRequestSchema: (await import("@alook/shared"))
+      DeregisterRequestSchema: (await import("@phneakngar/shared"))
         .DeregisterRequestSchema,
     }),
     "@/lib/broadcast": {
@@ -48,7 +48,7 @@ describe("POST /api/daemon/deregister", () => {
     const mocks = sharedMocks();
 
     vi.doMock("@opennextjs/cloudflare", () => mocks["@opennextjs/cloudflare"]);
-    vi.doMock("@alook/shared", mocks["@alook/shared"]);
+    vi.doMock("@phneakngar/shared", mocks["@phneakngar/shared"]);
     vi.doMock("@/lib/db", () => ({
       getDb: vi.fn(() => ({})),
       withD1Retry: vi.fn((fn: () => Promise<any>) => fn()),

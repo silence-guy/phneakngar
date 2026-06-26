@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 /**
- * Bundle script — run in CI before `npm publish` of @alook/app.
+ * Bundle script — run in CI before `npm publish` of @phneakngar/app.
  * Builds web (opennextjs-cloudflare), email-worker, and ws-do into
  * pre-compiled bundles that can run with `wrangler dev --local` without
  * needing source code or node_modules.

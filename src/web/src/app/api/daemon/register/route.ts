@@ -1,11 +1,11 @@
 import { NextRequest } from "next/server";
-import { queries, semverGte } from "@alook/shared"
+import { queries, semverGte } from "@phneakngar/shared"
 import { getDb, withD1Retry } from "@/lib/db"
 import { withAuth } from "@/lib/middleware/auth";
 import { withDaemonMachine } from "@/lib/middleware/daemon";
 import { writeJSON, parseBody } from "@/lib/middleware/helpers";
 import { runtimeToResponse } from "@/lib/api/responses";
-import { RegisterDaemonRequestSchema } from "@alook/shared";
+import { RegisterDaemonRequestSchema } from "@phneakngar/shared";
 import { broadcastToUser } from "@/lib/broadcast";
 import { invalidate, cacheKeys } from "@/lib/cache";
 import { log } from "@/lib/logger";

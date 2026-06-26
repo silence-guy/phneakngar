@@ -1,4 +1,4 @@
-export type AlookMode = "production" | "dev" | "app" | "desktop" | "mobile";
+export type PhneakngarMode = "production" | "dev" | "app" | "desktop" | "mobile";
 
 export interface ModeSignals {
   serverUrl?: string;
@@ -58,7 +58,7 @@ export async function tauriInvoke<T>(command: string, args?: Record<string, unkn
   return core.invoke(command, args);
 }
 
-export function resolveMode(signals: ModeSignals): AlookMode {
+export function resolveMode(signals: ModeSignals): PhneakngarMode {
   if (signals.tauri || isTauri()) {
     if (signals.tauriPlatform === "mobile" || isMobile()) return "mobile";
     return "desktop";
@@ -71,29 +71,29 @@ export function resolveMode(signals: ModeSignals): AlookMode {
   return "production";
 }
 
-export function cliCommand(mode: AlookMode): string {
+export function cliCommand(mode: PhneakngarMode): string {
   switch (mode) {
     case "dev":
       return "pnpm dev:cli";
     case "app":
-      return "npx @alook/app cli";
+      return "npx @phneakngar/app cli";
     case "desktop":
     case "mobile":
     case "production":
-      return "npx @alook/cli";
+      return "npx @phneakngar/cli";
   }
 }
 
-export function daemonCommand(mode: AlookMode): string {
+export function daemonCommand(mode: PhneakngarMode): string {
   const base = `${cliCommand(mode)} daemon start`;
   return mode === "dev" ? `${base} --foreground` : base;
 }
 
-export function cliPackageName(mode: AlookMode): string {
-  return mode === "app" ? "@alook/app" : "@alook/cli";
+export function cliPackageName(mode: PhneakngarMode): string {
+  return mode === "app" ? "@phneakngar/app" : "@phneakngar/cli";
 }
 
-export function updateCommand(mode: AlookMode): string {
+export function updateCommand(mode: PhneakngarMode): string {
   const pkg = cliPackageName(mode);
   if (mode === "app") {
     return `npx ${pkg} stop && npx ${pkg}@latest update && npx ${pkg} start`;
@@ -107,7 +107,7 @@ export interface BaseUrlSignals {
   nodeEnv?: string;
 }
 
-const DEFAULT_BASE_URL = "https://alook.ai";
+const DEFAULT_BASE_URL = "https://phneakngar.ai";
 const DEV_BASE_URL = "http://localhost:3000";
 
 export function getBaseUrl(signals: BaseUrlSignals): string {

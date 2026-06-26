@@ -1,6 +1,6 @@
 "use client";
 
-import type { Agent } from "@alook/shared";
+import type { Agent } from "@phneakngar/shared";
 import type { AgentFolder } from "@/hooks/use-agent-folders";
 import { parseAvatarUrl } from "@/components/avatar";
 import { AnimatedAvatar } from "@/components/avatar/animated-avatar";

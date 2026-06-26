@@ -7,7 +7,7 @@ import type {
   CreateIssueRequest,
   TaskApi,
   UpdateIssueRequest,
-} from "@alook/shared";
+} from "@phneakngar/shared";
 import { ApiError } from "@/lib/errors";
 import { apiFetch, wsQuery } from "./client";
 

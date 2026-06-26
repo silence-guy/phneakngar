@@ -45,7 +45,7 @@ importers:
         specifier: ^4.103.0
         version: 4.103.0(@cloudflare/workers-types@4.20260621.1)
     devDependencies:
-      '@alook/shared':
+      '@phneakngar/shared':
         specifier: workspace:*
         version: link:../shared
       '@types/bun':
@@ -85,7 +85,7 @@ importers:
         specifier: ^0.35.2
         version: 0.35.2
     devDependencies:
-      '@alook/shared':
+      '@phneakngar/shared':
         specifier: workspace:*
         version: link:../shared
       '@types/bun':
@@ -137,7 +137,7 @@ importers:
 
   src/email-worker:
     dependencies:
-      '@alook/shared':
+      '@phneakngar/shared':
         specifier: workspace:*
         version: link:../shared
       nanoid:
@@ -202,7 +202,7 @@ importers:
 
   src/web:
     dependencies:
-      '@alook/shared':
+      '@phneakngar/shared':
         specifier: workspace:*
         version: link:../shared
       '@base-ui/react':
@@ -371,7 +371,7 @@ importers:
         specifier: ^4.7.1
         version: 4.7.1
     devDependencies:
-      '@alook/test-utils':
+      '@phneakngar/test-utils':
         specifier: workspace:*
         version: link:../../tests/utils
       '@lhci/cli':
@@ -425,7 +425,7 @@ importers:
 
   src/ws-do:
     dependencies:
-      '@alook/shared':
+      '@phneakngar/shared':
         specifier: workspace:*
         version: link:../shared
     devDependencies:

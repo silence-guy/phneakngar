@@ -1,6 +1,6 @@
-# Contributing to Alook
+# Contributing to ភ្នាក់ងារ
 
-Thanks for your interest in contributing to Alook. This guide covers everything you need to get started.
+Thanks for your interest in contributing to ភ្នាក់ងារ. This guide covers everything you need to get started.
 
 ## Prerequisites
 
@@ -11,8 +11,8 @@ Thanks for your interest in contributing to Alook. This guide covers everything 
 ## Setup
 
 ```bash
-git clone https://github.com/alookai/alook.git
-cd alook
+git clone https://github.com/phneakngarai/phneakngar.git
+cd phneakngar
 pnpm install
 pnpm db:migrate
 pnpm dev
@@ -26,15 +26,17 @@ pnpm dev:cli
 
 ## Project Structure
 
-Alook is a monorepo with five packages:
+Use [docs/source-map.md](docs/source-map.md) as the current package map. Read [docs/data-and-state-boundaries.md](docs/data-and-state-boundaries.md) before changing D1 queries, ownership checks, task state, runtime status, caches, or email state.
+
+ភ្នាក់ងារ is a monorepo with five packages:
 
 | Package | Location | What it does |
 |---------|----------|-------------|
-| `@alook/web` | `src/web` | Next.js dashboard, REST API, auth, database |
-| `@alook/cli` | `src/cli` | Runtime daemon, task execution, agent orchestration |
-| `@alook/shared` | `src/shared` | Types, constants, DB schema, validation |
-| `@alook/email-worker` | `src/email-worker` | Inbound email parsing and storage |
-| `@alook/ws-do` | `src/ws-do` | Real-time WebSocket channels |
+| `@phneakngar/web` | `src/web` | Next.js dashboard, REST API, auth, database |
+| `@phneakngar/cli` | `src/cli` | Runtime daemon, task execution, agent orchestration |
+| `@phneakngar/shared` | `src/shared` | Types, constants, DB schema, validation |
+| `@phneakngar/email-worker` | `src/email-worker` | Inbound email parsing and storage |
+| `@phneakngar/ws-do` | `src/ws-do` | Real-time WebSocket channels |
 
 ## Making Changes
 
@@ -56,10 +58,13 @@ A few ground rules:
 ### 3. Validate before pushing
 
 ```bash
+pnpm check:project
 pnpm typecheck
 pnpm lint
 pnpm test
 ```
+
+For schema changes, follow [docs/migrations.md](docs/migrations.md). For releases, follow [docs/release-checklist.md](docs/release-checklist.md).
 
 All three must pass. A pre-commit hook runs lint and test automatically.
 
@@ -117,14 +122,14 @@ Tests run on both Ubuntu and Windows in CI.
 
 ## Reporting Issues
 
-Use [GitHub Issues](https://github.com/alookai/alook/issues). We have templates for:
+Use [GitHub Issues](https://github.com/phneakngarai/phneakngar/issues). We have templates for:
 
 - **Bug reports** — reproduction steps, expected vs actual behavior
 - **Feature requests** — problem statement, proposed solution
 
 ## Community
 
-- [Discord](https://discord.alook.ai) — questions, discussion, help
+- [Discord](https://discord.phneakngar.ai) — questions, discussion, help
 
 ## License
 

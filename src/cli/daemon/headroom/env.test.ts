@@ -14,9 +14,9 @@ const config: HeadroomRuntimeConfig = {
 };
 
 const paths: HeadroomPaths = {
-  configDir: "/tmp/alook/headroom/config",
-  workspaceDir: "/tmp/alook/headroom/workspace",
-  savingsPath: "/tmp/alook/headroom/savings.json",
+  configDir: "/tmp/phneakngar/headroom/config",
+  workspaceDir: "/tmp/phneakngar/headroom/workspace",
+  savingsPath: "/tmp/phneakngar/headroom/savings.json",
 };
 
 describe("headroom env", () => {
@@ -36,14 +36,14 @@ describe("headroom env", () => {
     expect(buildProviderHeadroomEnv("claude", config, paths)).toMatchObject({
       ANTHROPIC_BASE_URL: "http://127.0.0.1:8787",
       ENABLE_TOOL_SEARCH: "true",
-      ALOOK_HEADROOM_ENABLED: "1",
+      PHNEAKNGAR_HEADROOM_ENABLED: "1",
     });
   });
 
   it("routes Codex through the OpenAI-compatible proxy path", () => {
     expect(buildProviderHeadroomEnv("codex", config, paths)).toMatchObject({
       OPENAI_BASE_URL: "http://127.0.0.1:8787/v1",
-      ALOOK_HEADROOM_ENABLED: "1",
+      PHNEAKNGAR_HEADROOM_ENABLED: "1",
     });
   });
 
@@ -51,7 +51,7 @@ describe("headroom env", () => {
     expect(buildProviderHeadroomEnv("opencode", config, paths)).toMatchObject({
       OPENAI_BASE_URL: "http://127.0.0.1:8787/v1",
       HEADROOM_PROXY_URL: "http://127.0.0.1:8787",
-      ALOOK_HEADROOM_ENABLED: "1",
+      PHNEAKNGAR_HEADROOM_ENABLED: "1",
     });
   });
 

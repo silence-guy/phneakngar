@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server"
-import { queries, MeetingStatus, EmailNotifyRequestSchema, EMAIL_NOTIFY_SECRET_HEADER } from "@alook/shared"
+import { queries, MeetingStatus, EmailNotifyRequestSchema, EMAIL_NOTIFY_SECRET_HEADER } from "@phneakngar/shared"
 import { getDb } from "@/lib/db"
 import { withEnv } from "@/lib/middleware/env"
 import { writeJSON, writeError, parseBody } from "@/lib/middleware/helpers"

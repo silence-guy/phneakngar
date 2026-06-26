@@ -28,9 +28,9 @@ function stopDaemon(): boolean {
 
 export function stopCommand(): Command {
   return new Command("stop")
-    .description("Stop all Alook services")
+    .description("Stop all ភ្នាក់ងារ services")
     .action(() => {
-      console.log("Stopping Alook services and daemon...");
+      console.log("Stopping ភ្នាក់ងារ services and daemon...");
       stopServices();
       stopDaemon();
       console.log("\nAll services stopped.");

@@ -1,4 +1,4 @@
-import type { TaskVisibleOutcomeStatus } from "@alook/shared";
+import type { TaskVisibleOutcomeStatus } from "@phneakngar/shared";
 import { apiFetch, wsQuery } from "./client";
 
 export interface TraceListItem {

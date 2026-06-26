@@ -1,8 +1,8 @@
 "use client";
 
 import { useMemo } from "react";
-import type { TaskMessageResponse } from "@alook/shared";
-import type { TaskApi as Task } from "@alook/shared";
+import type { TaskMessageResponse } from "@phneakngar/shared";
+import type { TaskApi as Task } from "@phneakngar/shared";
 import { RuntimeErrorBlock } from "@/components/agent-chat/runtime-error-block";
 import { ISSUE_LABELS } from "@/components/issues/issue-labels";
 

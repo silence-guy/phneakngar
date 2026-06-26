@@ -98,7 +98,7 @@ describe("detectHeadroomHealth", () => {
   it("suggests enabling Headroom when the executable is available but not configured", () => {
     const health = detectHeadroomHealth({
       PATH: "",
-      ALOOK_HEADROOM_PATH: process.execPath,
+      PHNEAKNGAR_HEADROOM_PATH: process.execPath,
     });
 
     expect(health).toMatchObject({
@@ -112,7 +112,7 @@ describe("detectHeadroomHealth", () => {
   it("reports missing when Headroom is explicitly enabled but unavailable", () => {
     const health = detectHeadroomHealth({
       PATH: "",
-      ALOOK_HEADROOM_ENABLED: "1",
+      PHNEAKNGAR_HEADROOM_ENABLED: "1",
     });
 
     expect(health).toMatchObject({
@@ -126,8 +126,8 @@ describe("detectHeadroomHealth", () => {
   it("reports no next actions when Headroom is configured and executable", () => {
     const health = detectHeadroomHealth({
       PATH: "",
-      ALOOK_HEADROOM_ENABLED: "1",
-      ALOOK_HEADROOM_PATH: process.execPath,
+      PHNEAKNGAR_HEADROOM_ENABLED: "1",
+      PHNEAKNGAR_HEADROOM_PATH: process.execPath,
     });
 
     expect(health).toMatchObject({

@@ -45,7 +45,7 @@ export function AvatarPickerDialog({ config, onChange }: AvatarPickerDialogProps
 
       <DialogContent className={
         isMobile
-          ? "top-auto left-0 translate-x-0 translate-y-0 bottom-0 max-w-full sm:max-w-full w-full rounded-b-none rounded-t-xl max-h-[85dvh] overflow-y-auto pb-[env(safe-area-inset-bottom)]"
+          ? "top-auto left-0 translate-x-0 translate-y-0 bottom-0 max-w-full sm:max-w-full w-full rounded-b-none rounded-t-xl max-h-[85dvh] overflow-y-auto thin-scrollbar pb-[env(safe-area-inset-bottom)]"
           : "sm:max-w-180"
       }>
         <DialogHeader>

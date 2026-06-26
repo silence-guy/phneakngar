@@ -4,10 +4,10 @@ const mockIsTauri = vi.fn(() => false);
 const mockIsMobile = vi.fn(() => false);
 const mockResolveMode = vi.fn(() => "production" as const);
 
-vi.mock("@alook/shared", () => ({
+vi.mock("@phneakngar/shared", () => ({
   resolveMode: (...args: any[]) => mockResolveMode(...args),
-  cliCommand: vi.fn(() => "npx @alook/cli"),
-  daemonCommand: vi.fn(() => "npx @alook/cli daemon start"),
+  cliCommand: vi.fn(() => "npx @phneakngar/cli"),
+  daemonCommand: vi.fn(() => "npx @phneakngar/cli daemon start"),
   isTauri: (...args: any[]) => mockIsTauri(...args),
   isMobile: (...args: any[]) => mockIsMobile(...args),
 }));

@@ -8,7 +8,7 @@ import {
   useCallback,
   type ReactNode,
 } from "react";
-import type { Channel } from "@alook/shared";
+import type { Channel } from "@phneakngar/shared";
 import {
   listChannels,
   createChannelApi,
@@ -38,8 +38,8 @@ const ChannelContext = createContext<ChannelContextValue | null>(null);
 
 function storageKey(workspaceId: string, agentId?: string | null) {
   return agentId
-    ? `alook:channel:${workspaceId}:${agentId}`
-    : `alook:channel:${workspaceId}`;
+    ? `phneakngar:channel:${workspaceId}:${agentId}`
+    : `phneakngar:channel:${workspaceId}`;
 }
 
 export function ChannelProvider({

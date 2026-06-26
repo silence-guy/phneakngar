@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { queries, DEV_EMAIL_WORKER_URL, DEV_WEB_URL, SendEmailRequestSchema, parseEmailHandle, toAlookAddress, buildMimeMessage, extractThreadId, buildEmailMapKey, isEmailDraftAttachmentKeyForScope, EMAIL_NOTIFY_SECRET_HEADER } from "@alook/shared";
+import { queries, DEV_EMAIL_WORKER_URL, DEV_WEB_URL, SendEmailRequestSchema, parseEmailHandle, toPhneakngarAddress, buildMimeMessage, extractThreadId, buildEmailMapKey, isEmailDraftAttachmentKeyForScope, EMAIL_NOTIFY_SECRET_HEADER } from "@phneakngar/shared";
 import { nanoid } from "nanoid";
 import { getDb } from "@/lib/db"
 import { withAuth } from "@/lib/middleware/auth";
@@ -67,9 +67,9 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
   let fromAddress: string;
 
   if (body.from && !customAccountId) {
-    const alookAddr = agent.emailHandle ? toAlookAddress(agent.emailHandle) : null;
-    if (body.from === alookAddr) {
-      fromAddress = alookAddr;
+    const phneakngarAddr = agent.emailHandle ? toPhneakngarAddress(agent.emailHandle) : null;
+    if (body.from === phneakngarAddr) {
+      fromAddress = phneakngarAddr;
     } else {
       const allAccounts = await cached(cacheKeys.allEmailAccounts(ws.workspaceId), 600, () => queries.emailAccount.getAllEmailAccountsForWorkspace(db, ws.workspaceId));
       const match = allAccounts.find((a) => a.agentId === body.agentId && a.emailAddress === body.from);
@@ -89,7 +89,7 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
     if (!agent.emailHandle) {
       return writeError("agent has no email handle configured", 400);
     }
-    fromAddress = toAlookAddress(agent.emailHandle);
+    fromAddress = toPhneakngarAddress(agent.emailHandle);
   }
 
   let validatedConversationId: string | undefined;
@@ -105,13 +105,13 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
     }
   }
 
-  // Local delivery shortcut: same-workspace @alook.ai → @alook.ai
+  // Local delivery shortcut: same-workspace @phneakngar.ai → @phneakngar.ai
   const senderHandle = parseEmailHandle(fromAddress);
   const recipientHandle = parseEmailHandle(body.to);
   if (senderHandle && recipientHandle) {
     const recipientAgent = await queries.agent.getAgentByHandle(db, recipientHandle);
     if (recipientAgent && recipientAgent.workspaceId === ws.workspaceId) {
-      const messageId = `<${nanoid()}@alook.ai>`;
+      const messageId = `<${nanoid()}@phneakngar.ai>`;
       const htmlBody = body.htmlBody || "";
 
       const fetchedAttachments = (await Promise.all(

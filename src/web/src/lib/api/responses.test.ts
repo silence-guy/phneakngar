@@ -535,7 +535,7 @@ describe("emailToResponse", () => {
       id: "e1",
       agentId: "a1",
       fromEmail: "alice@example.com",
-      toEmail: "agent@alook.ai",
+      toEmail: "agent@phneakngar.ai",
       subject: "Hello",
       r2Key: "emails/abc/raw",
       isWhitelisted: 1,

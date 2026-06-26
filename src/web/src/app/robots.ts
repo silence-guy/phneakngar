@@ -9,6 +9,6 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ["/w/", "/workspaces", "/api/"],
       },
     ],
-    sitemap: "https://alook.ai/sitemap.xml",
+    sitemap: "https://phneakngar.ai/sitemap.xml",
   };
 }

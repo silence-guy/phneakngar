@@ -11,32 +11,32 @@ describe("resolveMode", () => {
   });
 
   it("production: random hostname", () => {
-    expect(resolveMode({ hostname: "alook.ai" })).toBe("production");
+    expect(resolveMode({ hostname: "phneakngar.ai" })).toBe("production");
   });
 
   it("dev: NODE_ENV=development", () => {
     expect(resolveMode({ nodeEnv: "development" })).toBe("dev");
   });
 
-  it("dev: local ALOOK_SERVER_URL without CMD_PREFIX", () => {
+  it("dev: local PHNEAKNGAR_SERVER_URL without CMD_PREFIX", () => {
     expect(resolveMode({ serverUrl: "http://localhost:3000" })).toBe("dev");
   });
 
-  it("dev: ALOOK_SERVER_URL + NODE_ENV=development", () => {
+  it("dev: PHNEAKNGAR_SERVER_URL + NODE_ENV=development", () => {
     expect(
       resolveMode({ serverUrl: "http://localhost:3000", nodeEnv: "development" }),
     ).toBe("dev");
   });
 
-  it("production: ALOOK_SERVER_URL set with NODE_ENV=production", () => {
+  it("production: PHNEAKNGAR_SERVER_URL set with NODE_ENV=production", () => {
     expect(
-      resolveMode({ serverUrl: "https://alook.ai", nodeEnv: "production" }),
+      resolveMode({ serverUrl: "https://phneakngar.ai", nodeEnv: "production" }),
     ).toBe("production");
   });
 
-  it("production: non-local ALOOK_SERVER_URL without NODE_ENV", () => {
+  it("production: non-local PHNEAKNGAR_SERVER_URL without NODE_ENV", () => {
     expect(
-      resolveMode({ serverUrl: "https://alook.ai" }),
+      resolveMode({ serverUrl: "https://phneakngar.ai" }),
     ).toBe("production");
   });
 
@@ -44,7 +44,7 @@ describe("resolveMode", () => {
     expect(
       resolveMode({
         serverUrl: "http://localhost:15210",
-        cmdPrefix: "npx @alook/app cli",
+        cmdPrefix: "npx @phneakngar/app cli",
       }),
     ).toBe("app");
   });
@@ -53,7 +53,7 @@ describe("resolveMode", () => {
     expect(
       resolveMode({
         nodeEnv: "development",
-        cmdPrefix: "npx @alook/app cli",
+        cmdPrefix: "npx @phneakngar/app cli",
       }),
     ).toBe("app");
   });
@@ -86,7 +86,7 @@ describe("resolveMode", () => {
 
   it("desktop: tauri overrides other signals", () => {
     expect(
-      resolveMode({ tauri: true, nodeEnv: "development", cmdPrefix: "npx @alook/app cli" }),
+      resolveMode({ tauri: true, nodeEnv: "development", cmdPrefix: "npx @phneakngar/app cli" }),
     ).toBe("desktop");
   });
 });
@@ -228,30 +228,30 @@ describe("tauriInvoke", () => {
 });
 
 describe("cliCommand", () => {
-  it("production → npx @alook/cli", () => {
-    expect(cliCommand("production")).toBe("npx @alook/cli");
+  it("production → npx @phneakngar/cli", () => {
+    expect(cliCommand("production")).toBe("npx @phneakngar/cli");
   });
 
   it("dev → pnpm dev:cli", () => {
     expect(cliCommand("dev")).toBe("pnpm dev:cli");
   });
 
-  it("app → npx @alook/app cli", () => {
-    expect(cliCommand("app")).toBe("npx @alook/app cli");
+  it("app → npx @phneakngar/app cli", () => {
+    expect(cliCommand("app")).toBe("npx @phneakngar/app cli");
   });
 
-  it("desktop → npx @alook/cli", () => {
-    expect(cliCommand("desktop")).toBe("npx @alook/cli");
+  it("desktop → npx @phneakngar/cli", () => {
+    expect(cliCommand("desktop")).toBe("npx @phneakngar/cli");
   });
 
-  it("mobile → npx @alook/cli", () => {
-    expect(cliCommand("mobile")).toBe("npx @alook/cli");
+  it("mobile → npx @phneakngar/cli", () => {
+    expect(cliCommand("mobile")).toBe("npx @phneakngar/cli");
   });
 });
 
 describe("daemonCommand", () => {
   it("production → no --foreground", () => {
-    expect(daemonCommand("production")).toBe("npx @alook/cli daemon start");
+    expect(daemonCommand("production")).toBe("npx @phneakngar/cli daemon start");
   });
 
   it("dev → with --foreground", () => {
@@ -259,68 +259,68 @@ describe("daemonCommand", () => {
   });
 
   it("app → no --foreground", () => {
-    expect(daemonCommand("app")).toBe("npx @alook/app cli daemon start");
+    expect(daemonCommand("app")).toBe("npx @phneakngar/app cli daemon start");
   });
 
   it("desktop → no --foreground", () => {
-    expect(daemonCommand("desktop")).toBe("npx @alook/cli daemon start");
+    expect(daemonCommand("desktop")).toBe("npx @phneakngar/cli daemon start");
   });
 
   it("mobile → no --foreground", () => {
-    expect(daemonCommand("mobile")).toBe("npx @alook/cli daemon start");
+    expect(daemonCommand("mobile")).toBe("npx @phneakngar/cli daemon start");
   });
 });
 
 describe("cliPackageName", () => {
-  it("app → @alook/app", () => {
-    expect(cliPackageName("app")).toBe("@alook/app");
+  it("app → @phneakngar/app", () => {
+    expect(cliPackageName("app")).toBe("@phneakngar/app");
   });
 
-  it("production → @alook/cli", () => {
-    expect(cliPackageName("production")).toBe("@alook/cli");
+  it("production → @phneakngar/cli", () => {
+    expect(cliPackageName("production")).toBe("@phneakngar/cli");
   });
 
-  it("desktop → @alook/cli", () => {
-    expect(cliPackageName("desktop")).toBe("@alook/cli");
+  it("desktop → @phneakngar/cli", () => {
+    expect(cliPackageName("desktop")).toBe("@phneakngar/cli");
   });
 
-  it("mobile → @alook/cli", () => {
-    expect(cliPackageName("mobile")).toBe("@alook/cli");
+  it("mobile → @phneakngar/cli", () => {
+    expect(cliPackageName("mobile")).toBe("@phneakngar/cli");
   });
 
-  it("dev → @alook/cli", () => {
-    expect(cliPackageName("dev")).toBe("@alook/cli");
+  it("dev → @phneakngar/cli", () => {
+    expect(cliPackageName("dev")).toBe("@phneakngar/cli");
   });
 });
 
 describe("updateCommand", () => {
-  it("app → stop, update, start with @alook/app", () => {
+  it("app → stop, update, start with @phneakngar/app", () => {
     expect(updateCommand("app")).toBe(
-      "npx @alook/app stop && npx @alook/app@latest update && npx @alook/app start",
+      "npx @phneakngar/app stop && npx @phneakngar/app@latest update && npx @phneakngar/app start",
     );
   });
 
-  it("production → daemon stop and start with @alook/cli", () => {
+  it("production → daemon stop and start with @phneakngar/cli", () => {
     expect(updateCommand("production")).toBe(
-      "npx @alook/cli@latest daemon stop && npx @alook/cli@latest daemon start",
+      "npx @phneakngar/cli@latest daemon stop && npx @phneakngar/cli@latest daemon start",
     );
   });
 
-  it("desktop → daemon stop and start with @alook/cli", () => {
+  it("desktop → daemon stop and start with @phneakngar/cli", () => {
     expect(updateCommand("desktop")).toBe(
-      "npx @alook/cli@latest daemon stop && npx @alook/cli@latest daemon start",
+      "npx @phneakngar/cli@latest daemon stop && npx @phneakngar/cli@latest daemon start",
     );
   });
 
-  it("mobile → daemon stop and start with @alook/cli", () => {
+  it("mobile → daemon stop and start with @phneakngar/cli", () => {
     expect(updateCommand("mobile")).toBe(
-      "npx @alook/cli@latest daemon stop && npx @alook/cli@latest daemon start",
+      "npx @phneakngar/cli@latest daemon stop && npx @phneakngar/cli@latest daemon start",
     );
   });
 
-  it("dev → daemon stop and start with @alook/cli", () => {
+  it("dev → daemon stop and start with @phneakngar/cli", () => {
     expect(updateCommand("dev")).toBe(
-      "npx @alook/cli@latest daemon stop && npx @alook/cli@latest daemon start",
+      "npx @phneakngar/cli@latest daemon stop && npx @phneakngar/cli@latest daemon start",
     );
   });
 });
@@ -339,10 +339,10 @@ describe("getBaseUrl", () => {
   });
 
   it("returns production URL when no signals", () => {
-    expect(getBaseUrl({})).toBe("https://alook.ai");
+    expect(getBaseUrl({})).toBe("https://phneakngar.ai");
   });
 
   it("returns production URL in production mode with no URLs", () => {
-    expect(getBaseUrl({ nodeEnv: "production" })).toBe("https://alook.ai");
+    expect(getBaseUrl({ nodeEnv: "production" })).toBe("https://phneakngar.ai");
   });
 });

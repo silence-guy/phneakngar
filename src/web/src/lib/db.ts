@@ -1,4 +1,4 @@
-import { createDb, type Database } from "@alook/shared"
+import { createDb, type Database } from "@phneakngar/shared"
 
 export function getDb(d1: D1Database): Database {
   const session = d1.withSession("first-unconstrained")

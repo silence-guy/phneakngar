@@ -1,6 +1,6 @@
 import { betterAuth } from "better-auth"
 import { emailOTP, deviceAuthorization, bearer } from "better-auth/plugins"
-import { createLogger, DEV_EMAIL_WORKER_URL, resolveMode } from "@alook/shared"
+import { createLogger, DEV_EMAIL_WORKER_URL, resolveMode } from "@phneakngar/shared"
 import { getOtpSubject, renderOtpEmail } from "./email-templates"
 
 const log = createLogger({ service: "auth" })
