@@ -22,7 +22,9 @@ export interface HeadroomPaths {
   savingsPath: string;
 }
 
-const DEFAULT_PORT = 8787;
+// Avoid 8787 — the email-worker's `wrangler dev` binds it (src/email-worker/wrangler.toml),
+// so a bare TCP probe there would mistake wrangler for the Headroom proxy.
+const DEFAULT_PORT = 8799;
 const MIN_PORT = 1024;
 const MAX_PORT = 65535;
 
@@ -36,6 +38,16 @@ function boolValue(value: unknown): boolean {
   if (typeof value === "boolean") return value;
   if (typeof value === "string") return ["1", "true", "yes", "on"].includes(value.toLowerCase());
   return false;
+}
+
+// Tri-state env override: unset -> defer to per-agent config; truthy -> force on;
+// explicit falsy ("0"/"false"/"no"/"off") -> force off (fleet-wide kill switch).
+function envBoolOverride(value: unknown): boolean | null {
+  if (typeof value !== "string" || !value.trim()) return null;
+  const normalized = value.trim().toLowerCase();
+  if (["1", "true", "yes", "on"].includes(normalized)) return true;
+  if (["0", "false", "no", "off"].includes(normalized)) return false;
+  return null;
 }
 
 function parsePort(value: unknown): number | null {
@@ -54,8 +66,8 @@ export function normalizeHeadroomRuntimeConfig(
 ): HeadroomRuntimeConfig {
   const runtime = asRecord(runtimeConfig);
   const headroom = asRecord(runtime?.headroom);
-  const envEnabled = boolValue(env.PHNEAKNGAR_HEADROOM_ENABLED);
-  const enabled = boolValue(headroom?.enabled) || envEnabled;
+  const envOverride = envBoolOverride(env.PHNEAKNGAR_HEADROOM_ENABLED);
+  const enabled = envOverride ?? boolValue(headroom?.enabled);
   const port =
     parsePort(env.PHNEAKNGAR_HEADROOM_PORT) ??
     parsePort(headroom?.port) ??

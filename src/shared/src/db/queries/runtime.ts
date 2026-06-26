@@ -1,4 +1,4 @@
-import { eq, and, asc, sql, inArray } from "drizzle-orm";
+import { eq, and, or, isNull, asc, sql, inArray } from "drizzle-orm";
 import { agentRuntime, agent, machine } from "../schema";
 import type { Database } from "../index";
 
@@ -88,7 +88,10 @@ export async function getAgentRuntimeForWorkspace(
   userId?: string
 ) {
   const conditions = [eq(agentRuntime.id, id), eq(agentRuntime.workspaceId, workspaceId)];
-  if (userId) conditions.push(eq(machine.ownerId, userId));
+  // Permit a NULL machine.ownerId (orphaned runtime / migration owner-backfill
+  // fallback) so legitimate daemons are not locked out; only reject a runtime
+  // owned by a DIFFERENT user.
+  if (userId) conditions.push(or(eq(machine.ownerId, userId), isNull(machine.ownerId))!);
   const rows = await db
     .select({
       id: agentRuntime.id,

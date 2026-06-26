@@ -45,6 +45,10 @@ export async function withDaemonTaskAccess(
     return NextResponse.json({ error: "task not found" }, { status: 404 });
   }
 
+  // Scope by workspace + owner in one query. getAgentRuntimeForWorkspace permits
+  // a NULL machine.ownerId (orphaned runtime / migration owner-backfill fallback)
+  // so legitimate daemons are not permanently locked out of task lifecycle
+  // endpoints; it only rejects a runtime owned by a DIFFERENT user.
   const runtime = await queries.runtime.getAgentRuntimeForWorkspace(
     db,
     task.runtimeId,

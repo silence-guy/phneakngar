@@ -1,8 +1,9 @@
 import { mkdtempSync, rmSync } from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
+import { createServer, type Server } from "http";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { ensureHeadroomProxy } from "./supervisor.js";
+import { ensureHeadroomProxy, canConnectToHeadroom } from "./supervisor.js";
 import type { HeadroomPaths, HeadroomRuntimeConfig } from "./config.js";
 
 const roots: string[] = [];
@@ -85,5 +86,58 @@ describe("ensureHeadroomProxy", () => {
       ["proxy", "--host", "127.0.0.1", "--port", "8787"],
       expect.objectContaining({ detached: expect.any(Boolean), stdio: "ignore" }),
     );
+  });
+});
+
+describe("canConnectToHeadroom (identity handshake)", () => {
+  const servers: Server[] = [];
+
+  function listen(handler: (req: unknown, res: any) => void): Promise<number> {
+    return new Promise((resolve) => {
+      const server = createServer(handler as never);
+      servers.push(server);
+      server.listen(0, "127.0.0.1", () => {
+        const addr = server.address();
+        resolve(typeof addr === "object" && addr ? addr.port : 0);
+      });
+    });
+  }
+
+  afterEach(async () => {
+    await Promise.all(
+      servers.splice(0).map((s) => new Promise<void>((r) => s.close(() => r()))),
+    );
+  });
+
+  it("rejects a foreign listener with no Headroom signature (e.g. wrangler)", async () => {
+    const port = await listen((_req, res) => {
+      res.writeHead(200, { "content-type": "text/html", server: "workerd" });
+      res.end("<html>wrangler</html>");
+    });
+
+    expect(await canConnectToHeadroom(port)).toBe(false);
+  });
+
+  it("accepts a listener that identifies as Headroom via header", async () => {
+    const port = await listen((_req, res) => {
+      res.writeHead(200, { "x-headroom-version": "1.0.0" });
+      res.end("ok");
+    });
+
+    expect(await canConnectToHeadroom(port)).toBe(true);
+  });
+
+  it("accepts a listener with a headroom Server banner", async () => {
+    const port = await listen((_req, res) => {
+      res.writeHead(200, { server: "Headroom/1.0" });
+      res.end("ok");
+    });
+
+    expect(await canConnectToHeadroom(port)).toBe(true);
+  });
+
+  it("returns false when nothing is listening", async () => {
+    // Port 1 is privileged and not listening in test env → connection refused.
+    expect(await canConnectToHeadroom(1)).toBe(false);
   });
 });

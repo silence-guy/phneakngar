@@ -55,6 +55,15 @@ export class TaskPayloadBuilder {
       : [];
     const convoMap = new Map(convos.map((c) => [c.id, c]));
 
+    // Workspace default locale applies to agent output when no task/agent/owner
+    // locale is set. Fetched once per build (cached) and threaded into every
+    // task's language policy below.
+    const workspaceDefaultLocale = await cached(
+      cacheKeys.workspaceDefaultLocale(workspaceId),
+      600,
+      () => queries.workspace.getWorkspaceDefaultLocale(this.db, workspaceId),
+    );
+
     const memberCache = new Map<string, { globalInstruction: string; preferredLocale: string | null } | null>();
     const userCache = new Map<string, { name: string; email: string } | null>();
 
@@ -132,12 +141,19 @@ export class TaskPayloadBuilder {
       const ownerPreferredLocale = agent?.ownerId
         ? memberCache.get(agent.ownerId)?.preferredLocale ?? null
         : null;
+      // Precedence: task override > agent locale > owner locale > workspace default.
+      // Owner locale is folded into agentPreferredLocale (as before); the workspace
+      // default is the final fallback so a configured default actually applies
+      // instead of dropping to the hardcoded km default.
       const agentPreferredLocale = stringOrNull(agent?.preferredLocale) ?? stringOrNull(ownerPreferredLocale);
       const languagePolicy = buildAgentPromptLanguagePolicy({
         taskLocaleOverride: stringOrNull(task.localeOverride) ?? stringOrNull(taskContext?.taskLocaleOverride),
         agentPreferredLocale,
+        workspaceDefaultLocale: stringOrNull(workspaceDefaultLocale),
         agentLanguagePolicy: stringOrNull(agent?.languagePolicy),
       });
+      // Resolved locale advertised to the runtime: agent/owner > workspace default.
+      const resolvedPreferredLocale = agentPreferredLocale ?? stringOrNull(workspaceDefaultLocale);
 
       const rawColleagues = colleaguesByAgent.get(task.agentId) ?? [];
       const colleagues = rawColleagues.map((c) => ({
@@ -161,7 +177,7 @@ export class TaskPayloadBuilder {
               email_addresses: emailAddresses,
               user_email: null as string | null,
               user_name: ownerName,
-              preferred_locale: agentPreferredLocale ? resolveAgentLanguageMode(agentPreferredLocale) : null,
+              preferred_locale: resolvedPreferredLocale ? resolveAgentLanguageMode(resolvedPreferredLocale) : null,
               language_policy: agent.languagePolicy || null,
               colleagues,
             }

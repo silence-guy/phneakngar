@@ -4,6 +4,7 @@ import { getDb } from "@/lib/db"
 import { withAuth } from "@/lib/middleware/auth";
 import { withWorkspaceOwner } from "@/lib/middleware/workspace";
 import { writeJSON, writeError, parseBody } from "@/lib/middleware/helpers";
+import { invalidate, cacheKeys } from "@/lib/cache";
 import { workspaceToResponse } from "@/lib/api/responses";
 
 export const GET = withAuth(async (_req, ctx) => {
@@ -43,6 +44,9 @@ export const PATCH = withAuth(async (req: NextRequest, ctx) => {
   try {
     const updated = await queries.workspace.updateWorkspace(db, owner.workspaceId, update);
     if (!updated) return writeError("workspace not found", 404);
+    if (body.default_locale !== undefined) {
+      await invalidate(cacheKeys.workspaceDefaultLocale(owner.workspaceId));
+    }
     return writeJSON(workspaceToResponse(updated));
   } catch (err: unknown) {
     if (isUniqueConstraintError(err)) return writeError("slug already in use", 409);

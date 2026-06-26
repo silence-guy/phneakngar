@@ -158,6 +158,7 @@ export const cacheKeys = {
   machineToken: (token: string) => `mt:${token.slice(0, 20)}`,
   machineTokenLastUsed: (token: string) => `mt_lu:${token.slice(0, 20)}`,
   member: (workspaceId: string, userId: string) => `mem:${workspaceId}:${userId}`,
+  workspaceDefaultLocale: (workspaceId: string) => `ws_locale:${workspaceId}`,
   runtimeIds: (workspaceId: string, daemonId: string) => `rt:${workspaceId}:${daemonId}`,
   agent: (workspaceId: string, agentId: string) => `ag:${workspaceId}:${agentId}`,
   heartbeat: (workspaceId: string, daemonId: string) => `hb:${workspaceId}:${daemonId}`,

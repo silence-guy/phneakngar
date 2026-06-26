@@ -1,4 +1,4 @@
-import { queries, TASK_TYPES, extractThreadId, buildEmailMapKey } from "@phneakngar/shared"
+import { queries, TASK_TYPES, extractThreadId, buildEmailMapKey, sliceGraphemes } from "@phneakngar/shared"
 import { nanoid } from "nanoid"
 import type { Database } from "@phneakngar/shared"
 import { TaskService } from "@/lib/services/task"
@@ -70,7 +70,7 @@ export async function dispatchEmailToAgent(
       workspaceId: agent.workspaceId,
       agentId: agent.id,
       userId: ownerId,
-      title: `Email: ${email.subject}`.slice(0, 50),
+      title: sliceGraphemes(`Email: ${email.subject}`, 50),
       type: TASK_TYPES.EMAIL_NOTIFICATION,
       ...(inheritedChannel && inheritedChannel !== "default" ? { channel: inheritedChannel } : {}),
     })

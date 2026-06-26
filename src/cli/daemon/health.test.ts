@@ -79,6 +79,38 @@ describe("health server", () => {
   });
 });
 
+describe("health server re-detection", () => {
+  it("reflects newly-detected Headroom state on a later request without restart", async () => {
+    const PORT = 19615;
+    let available = false;
+    const detect = (): HeadroomHealth => ({
+      status: available ? "available" : "missing",
+      configured: true,
+      available,
+      mode: "proxy",
+      port: 8787,
+      executable: "headroom",
+      proxy_url: "http://127.0.0.1:8787",
+      next_actions: available ? [] : ["install_headroom", "configure_headroom_path"],
+    });
+    const { server } = createHealthServer(PORT, { detectHeadroom: detect, detectTtlMs: 0 });
+    try {
+      const first = await (await fetch(`http://127.0.0.1:${PORT}/health`)).json();
+      expect(first.headroom.available).toBe(false);
+
+      // Simulate the operator installing Headroom after the daemon started.
+      // With detectTtlMs: 0 the next request re-detects immediately.
+      available = true;
+
+      const second = await (await fetch(`http://127.0.0.1:${PORT}/health`)).json();
+      expect(second.headroom.available).toBe(true);
+      expect(second.headroom.status).toBe("available");
+    } finally {
+      await new Promise<void>((resolve) => server.close(() => resolve()));
+    }
+  });
+});
+
 describe("detectHeadroomHealth", () => {
   it("marks Headroom disabled by default while preserving local proxy defaults", () => {
     const health = detectHeadroomHealth({ PATH: "" });
@@ -88,9 +120,9 @@ describe("detectHeadroomHealth", () => {
       configured: false,
       available: false,
       mode: "proxy",
-      port: 8787,
+      port: 8799,
       executable: "headroom",
-      proxy_url: "http://127.0.0.1:8787",
+      proxy_url: "http://127.0.0.1:8799",
       next_actions: ["enable_headroom", "install_headroom"],
     });
   });

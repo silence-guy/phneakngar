@@ -21,6 +21,8 @@ export interface HeadroomHealth {
 
 interface HealthServerOptions {
   detectHeadroom?: () => HeadroomHealth;
+  /** Detection cache TTL in ms (default 5000). Set to 0 to detect every request. */
+  detectTtlMs?: number;
 }
 
 function executableName(executable: string): string {
@@ -65,7 +67,26 @@ export function createHealthServer(
   options: HealthServerOptions = {},
 ) {
   let runtimeCount = 0;
-  let headroom = options.detectHeadroom?.() ?? detectHeadroomHealth();
+  const detect = options.detectHeadroom ?? detectHeadroomHealth;
+  // Re-detect on each request (TTL-cached) so /health reflects live state — e.g.
+  // a Headroom executable installed after the daemon started. A frozen startup
+  // snapshot would report "missing" forever (or stay "available" after removal).
+  // An explicit setHeadroomStatus override always wins.
+  const DETECT_TTL_MS = options.detectTtlMs ?? 5000;
+  let override: HeadroomHealth | null = null;
+  let cached: HeadroomHealth | null = null;
+  let cachedAt = 0;
+
+  function currentHeadroom(): HeadroomHealth {
+    if (override) return override;
+    const now = Date.now();
+    if (!cached || now - cachedAt > DETECT_TTL_MS) {
+      cached = detect();
+      cachedAt = now;
+    }
+    return cached;
+  }
+
   const startTime = Date.now();
 
   const server = createServer((req: IncomingMessage, res: ServerResponse) => {
@@ -77,7 +98,7 @@ export function createHealthServer(
           status: "ok",
           uptime: `${uptimeSec}s`,
           runtimes: runtimeCount,
-          headroom,
+          headroom: currentHeadroom(),
         }),
       );
     } else {
@@ -94,7 +115,7 @@ export function createHealthServer(
       runtimeCount = n;
     },
     setHeadroomStatus(next: HeadroomHealth) {
-      headroom = next;
+      override = next;
     },
   };
 }

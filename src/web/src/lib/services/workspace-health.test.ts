@@ -56,13 +56,41 @@ describe("getWorkspaceHealth", () => {
     ]);
     mockGetAllAgentsForWorkspace.mockResolvedValue([{ id: "a1", runtimeId: "rt1" }]);
 
-    const report = await getWorkspaceHealth({} as any, "w1", { userId: "u1", now });
+    const report = await getWorkspaceHealth({} as any, "w1", { now });
 
     expect(report.status).toBe("ok");
     expect(report.checks.machines).toMatchObject({ total: 1, online: 1, offline: 0 });
     expect(report.checks.runtimes.providers).toEqual(["claude"]);
-    expect(mockListAgentRuntimes).toHaveBeenCalledWith({}, "w1", "u1");
+    expect(mockListAgentRuntimes).toHaveBeenCalledWith({}, "w1");
     expect(mockGetTaskStatsByWorkspace).toHaveBeenCalledWith({}, "w1", "2026-06-24T00:00:00.000Z");
+  });
+
+  it("scopes runtimes to the workspace, not the viewing user (no false alarms in multi-member workspaces)", async () => {
+    // Runtimes are listed at workspace scope so another member's runtime is
+    // visible; an agent assigned to it must NOT be flagged as missing-runtime
+    // or Headroom-unavailable just because a different member is viewing.
+    mockListAgentRuntimes.mockResolvedValue([
+      {
+        id: "rt-memberB",
+        provider: "claude",
+        machineLastSeenAt: new Date(now.getTime() - 1_000).toISOString(),
+        metadata: { headroom: { available: true, configured: true } },
+      },
+    ]);
+    mockGetAllAgentsForWorkspace.mockResolvedValue([
+      {
+        id: "a1",
+        runtimeId: "rt-memberB",
+        runtimeConfig: { headroom: { enabled: true, requireOptimization: true } },
+      },
+    ]);
+
+    const report = await getWorkspaceHealth({} as any, "w1", { now });
+
+    expect(mockListAgentRuntimes).toHaveBeenCalledWith({}, "w1");
+    expect(report.status).toBe("ok");
+    expect(report.checks.configuration.agents_with_missing_runtime).toBe(0);
+    expect(report.issues.map((issue) => issue.code)).not.toContain("headroom_required_unavailable");
   });
 
   it("reports critical when queued tasks have no online machine", async () => {

@@ -54,7 +54,6 @@ export type WorkspaceHealthReport = {
 };
 
 type HealthOptions = {
-  userId?: string;
   now?: Date;
 };
 
@@ -146,8 +145,12 @@ export async function getWorkspaceHealth(
   const nowMs = now.getTime();
   const todayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
 
+  // Health is a workspace-level view: runtimes MUST be scoped to the workspace,
+  // not the viewing user. Scoping runtimes by user while agents stay
+  // workspace-wide makes another member's runtimes vanish, falsely reporting
+  // "no_runtime_registered" and "headroom_required_unavailable" criticals.
   const [runtimes, agents, taskStats] = await Promise.all([
-    queries.runtime.listAgentRuntimes(db, workspaceId, opts.userId),
+    queries.runtime.listAgentRuntimes(db, workspaceId),
     queries.agent.getAllAgentsForWorkspace(db, workspaceId),
     queries.overview.getTaskStatsByWorkspace(db, workspaceId, todayStart.toISOString()),
   ]);

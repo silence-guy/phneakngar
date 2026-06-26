@@ -1,5 +1,5 @@
 import { spawn as nodeSpawn, type ChildProcess } from "child_process";
-import { createConnection } from "net";
+import { request as httpRequest } from "http";
 import type { HeadroomPaths, HeadroomRuntimeConfig, HeadroomStatus } from "./config.js";
 import { ensureHeadroomDirs } from "./config.js";
 import { buildHeadroomProcessEnv } from "./env.js";
@@ -19,23 +19,50 @@ interface SupervisorDeps {
 
 const STARTUP_POLLS = 12;
 const STARTUP_DELAY_MS = 250;
+const PROBE_TIMEOUT_MS = 500;
 
 function wait(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+/**
+ * Verify that the listener on 127.0.0.1:<port> is actually Headroom, not some
+ * unrelated process that happens to hold the port (e.g. `wrangler dev`). A bare
+ * TCP connect is NOT enough: pointing ANTHROPIC_BASE_URL/OPENAI_BASE_URL at a
+ * foreign server would leak provider credentials and silently break requests.
+ *
+ * Headroom answers its readiness probe with an `x-headroom`/`x-headroom-*`
+ * response header (or a `server: headroom...` banner). We require one of those
+ * signatures before trusting the proxy.
+ */
 export function canConnectToHeadroom(port: number): Promise<boolean> {
   return new Promise((resolve) => {
-    const socket = createConnection({ host: "127.0.0.1", port });
+    let settled = false;
     const done = (ok: boolean) => {
-      socket.removeAllListeners();
-      socket.destroy();
+      if (settled) return;
+      settled = true;
       resolve(ok);
     };
-    socket.setTimeout(500);
-    socket.once("connect", () => done(true));
-    socket.once("timeout", () => done(false));
-    socket.once("error", () => done(false));
+
+    const req = httpRequest(
+      { host: "127.0.0.1", port, path: "/", method: "GET", timeout: PROBE_TIMEOUT_MS },
+      (res) => {
+        const headerNames = Object.keys(res.headers).map((h) => h.toLowerCase());
+        const server = String(res.headers["server"] ?? "").toLowerCase();
+        const isHeadroom =
+          headerNames.some((h) => h === "x-headroom" || h.startsWith("x-headroom-")) ||
+          server.includes("headroom");
+        // Drain and discard the body so the socket can close promptly.
+        res.resume();
+        done(isHeadroom);
+      },
+    );
+    req.setTimeout(PROBE_TIMEOUT_MS, () => {
+      req.destroy();
+      done(false);
+    });
+    req.once("error", () => done(false));
+    req.end();
   });
 }
 

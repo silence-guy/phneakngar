@@ -10,7 +10,7 @@ describe("normalizeHeadroomRuntimeConfig", () => {
       outputShaper: false,
       memory: false,
       ccr: false,
-      port: 8787,
+      port: 8799,
       executable: "headroom",
     });
   });
@@ -57,7 +57,50 @@ describe("normalizeHeadroomRuntimeConfig", () => {
       {},
     );
 
-    expect(config.port).toBe(8787);
+    expect(config.port).toBe(8799);
+  });
+
+  it("force-enables via env even when per-agent config is off", () => {
+    const config = normalizeHeadroomRuntimeConfig(
+      { headroom: { enabled: false } },
+      { PHNEAKNGAR_HEADROOM_ENABLED: "1" },
+    );
+
+    expect(config.enabled).toBe(true);
+  });
+
+  it("force-disables via env even when per-agent config is on (fleet kill switch)", () => {
+    const config = normalizeHeadroomRuntimeConfig(
+      { headroom: { enabled: true } },
+      { PHNEAKNGAR_HEADROOM_ENABLED: "false" },
+    );
+
+    expect(config.enabled).toBe(false);
+  });
+
+  it("treats env 0/off/no as force-disable", () => {
+    for (const value of ["0", "off", "no"]) {
+      const config = normalizeHeadroomRuntimeConfig(
+        { headroom: { enabled: true } },
+        { PHNEAKNGAR_HEADROOM_ENABLED: value },
+      );
+      expect(config.enabled).toBe(false);
+    }
+  });
+
+  it("defers to per-agent config when env is unset or empty", () => {
+    expect(
+      normalizeHeadroomRuntimeConfig({ headroom: { enabled: true } }, {}).enabled,
+    ).toBe(true);
+    expect(
+      normalizeHeadroomRuntimeConfig({ headroom: { enabled: false } }, {}).enabled,
+    ).toBe(false);
+    expect(
+      normalizeHeadroomRuntimeConfig(
+        { headroom: { enabled: true } },
+        { PHNEAKNGAR_HEADROOM_ENABLED: "" },
+      ).enabled,
+    ).toBe(true);
   });
 });
 

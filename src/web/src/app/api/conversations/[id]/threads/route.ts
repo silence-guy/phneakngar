@@ -1,4 +1,4 @@
-import { queries, TASK_TYPES, truncateTitle, CreateThreadRequestSchema, isUniqueConstraintError } from "@phneakngar/shared";
+import { queries, TASK_TYPES, truncateTitle, sliceGraphemes, CreateThreadRequestSchema, isUniqueConstraintError } from "@phneakngar/shared";
 import { getDb } from "@/lib/db";
 import { nanoid } from "nanoid";
 import { withAuth } from "@/lib/middleware/auth";
@@ -102,7 +102,7 @@ export const POST = withAuth(async (req, ctx) => {
   }
 
   // Create new thread conversation (catch unique-violation from concurrent requests)
-  const threadTitle = truncateTitle(rootMessage.content).slice(0, 80);
+  const threadTitle = sliceGraphemes(truncateTitle(rootMessage.content), 80);
   let threadConv;
   try {
     threadConv = await queries.conversation.createConversation(db, {

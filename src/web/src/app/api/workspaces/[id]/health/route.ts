@@ -14,6 +14,6 @@ export const GET = withAuth(async (req, ctx) => {
   }
 
   const db = getDb(ctx.env.DB);
-  const health = await getWorkspaceHealth(db, ws.workspaceId, { userId: ctx.userId });
+  const health = await getWorkspaceHealth(db, ws.workspaceId);
   return writeJSON(health);
 });

@@ -2,6 +2,7 @@ import { eq, and, desc, ne, lt, sql, count as drizzleCount, inArray, isNull, isN
 import { conversation, message } from "../schema";
 import type { Database } from "../index";
 import { TASK_TYPES, type TaskType } from "../../constants";
+import { truncateGraphemes } from "../../utils/title";
 
 
 export async function createConversation(
@@ -288,7 +289,7 @@ export async function listThreadsByAgent(
     conditions.push(lt(conversation.createdAt, opts.before));
   }
   const limit = opts?.limit ?? 30;
-  return db
+  const rows = await db
     .select({
       id: conversation.id,
       parentMessageId: conversation.parentMessageId,
@@ -298,8 +299,12 @@ export async function listThreadsByAgent(
         sql<number>`COUNT(CASE WHEN ${message.status} = 'active' THEN 1 END)`.mapWith(Number),
       lastReplyAt:
         sql<string>`MAX(${message.createdAt})`,
-      lastReplyPreview:
-        sql<string>`(SELECT SUBSTR(m2.content, 1, 60) FROM message m2 WHERE m2.conversation_id = ${conversation.id} AND m2.status = 'active' ORDER BY m2.created_at DESC LIMIT 1)`,
+      // Over-fetch raw content (bounded), then truncate on a grapheme-cluster
+      // boundary in JS. SQLite SUBSTR counts code points, so cutting at 60 there
+      // can split a Khmer cluster (orphaned coeng/vowel sign). 240 code points is
+      // a safe upper bound for 60 grapheme clusters.
+      lastReplyRaw:
+        sql<string | null>`(SELECT SUBSTR(m2.content, 1, 240) FROM message m2 WHERE m2.conversation_id = ${conversation.id} AND m2.status = 'active' ORDER BY m2.created_at DESC LIMIT 1)`,
     })
     .from(conversation)
     .leftJoin(message, eq(message.conversationId, conversation.id))
@@ -307,6 +312,11 @@ export async function listThreadsByAgent(
     .groupBy(conversation.id)
     .orderBy(desc(sql`MAX(${message.createdAt})`))
     .limit(limit);
+
+  return rows.map(({ lastReplyRaw, ...rest }) => ({
+    ...rest,
+    lastReplyPreview: lastReplyRaw ? truncateGraphemes(lastReplyRaw, 60, "") : lastReplyRaw,
+  }));
 }
 
 export async function hasPreviousConversations(

@@ -311,7 +311,7 @@ export { isValidToken, isValidEmail } from "./utils/validation";
 export { isOnline, formatStatus } from "./utils/status";
 export { isUniqueConstraintError } from "./utils/db-errors";
 export { generateWorkspaceSlug } from "./utils/slug";
-export { truncateTitle } from "./utils/title";
+export { truncateTitle, truncateGraphemes, sliceGraphemes, toGraphemes } from "./utils/title";
 export { semverGte } from "./semver";
 export { resolveMode, cliCommand, cliPackageName, updateCommand, daemonCommand, getBaseUrl, isTauri, isDesktop, isMobile, tauriInvoke } from "./mode";
 export type { PhneakngarMode, ModeSignals, BaseUrlSignals } from "./mode";

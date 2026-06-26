@@ -24,6 +24,17 @@ export async function getWorkspaceBySlug(db: Database, slug: string) {
   return rows[0] ?? null;
 }
 
+// Workspace-scoped lookup of the configured default locale. Callers must
+// already operate within a verified workspace (e.g. the task payload builder),
+// so no per-user membership join is needed here.
+export async function getWorkspaceDefaultLocale(db: Database, id: string): Promise<string | null> {
+  const rows = await db
+    .select({ defaultLocale: workspace.defaultLocale })
+    .from(workspace)
+    .where(eq(workspace.id, id));
+  return rows[0]?.defaultLocale ?? null;
+}
+
 export async function listWorkspaces(db: Database, userId: string) {
   return db
     .select({

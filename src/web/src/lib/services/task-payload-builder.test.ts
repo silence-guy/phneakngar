@@ -7,6 +7,7 @@ const mockGetMemberByUserAndWorkspace = vi.fn();
 const mockGetUser = vi.fn();
 const mockGetConversation = vi.fn();
 const mockGetConversationsByIds = vi.fn();
+const mockGetWorkspaceDefaultLocale = vi.fn();
 
 vi.mock("@phneakngar/shared", async () => {
   const real = await vi.importActual<typeof import("@phneakngar/shared")>("@phneakngar/shared");
@@ -32,6 +33,9 @@ vi.mock("@phneakngar/shared", async () => {
         getConversation: (...args: unknown[]) => mockGetConversation(...args),
         getConversationsByIds: (...args: unknown[]) => mockGetConversationsByIds(...args),
       },
+      workspace: {
+        getWorkspaceDefaultLocale: (...args: unknown[]) => mockGetWorkspaceDefaultLocale(...args),
+      },
     },
   };
 });
@@ -44,6 +48,7 @@ vi.mock("@/lib/cache", () => ({
     allColleagues: (wsId: string) => `col:${wsId}`,
     member: (wsId: string, userId: string) => `mem:${wsId}:${userId}`,
     user: (userId: string) => `usr:${userId}`,
+    workspaceDefaultLocale: (wsId: string) => `ws_locale:${wsId}`,
   },
 }));
 
@@ -98,6 +103,7 @@ describe("TaskPayloadBuilder", () => {
     mockGetAllEmailAccountsForWorkspace.mockResolvedValue([]);
     mockGetAllColleaguesForWorkspace.mockResolvedValue([]);
     mockGetConversationsByIds.mockResolvedValue([]);
+    mockGetWorkspaceDefaultLocale.mockResolvedValue(null);
   });
 
   it("returns empty array for empty input", async () => {
@@ -175,6 +181,40 @@ describe("TaskPayloadBuilder", () => {
     mockGetMemberByUserAndWorkspace.mockResolvedValue({ globalInstruction: "", preferredLocale: "en" });
     mockGetUser.mockResolvedValue({ name: "Owner", email: "owner@ex.com" });
     mockGetConversationsByIds.mockResolvedValue([]);
+
+    const result = await builder.buildFullPayloads([makeTask()], "w1");
+
+    expect(result[0].language_policy.default_user_facing_language).toBe("en");
+    expect(result[0].agent!.preferred_locale).toBe("en");
+  });
+
+  it("falls back to workspace default locale when no task/agent/owner locale is set", async () => {
+    mockGetAllAgentsForWorkspace.mockResolvedValue([
+      { id: "a1", ownerId: "owner1", instructions: "agent rules", name: "Bot", runtimeConfig: {} },
+    ]);
+    mockGetAllEmailAccountsForWorkspace.mockResolvedValue([]);
+    mockGetAllColleaguesForWorkspace.mockResolvedValue([]);
+    mockGetMemberByUserAndWorkspace.mockResolvedValue({ globalInstruction: "", preferredLocale: null });
+    mockGetUser.mockResolvedValue({ name: "Owner", email: "owner@ex.com" });
+    mockGetConversationsByIds.mockResolvedValue([]);
+    mockGetWorkspaceDefaultLocale.mockResolvedValue("en");
+
+    const result = await builder.buildFullPayloads([makeTask()], "w1");
+
+    expect(result[0].language_policy.default_user_facing_language).toBe("en");
+    expect(result[0].agent!.preferred_locale).toBe("en");
+  });
+
+  it("prefers owner locale over workspace default locale", async () => {
+    mockGetAllAgentsForWorkspace.mockResolvedValue([
+      { id: "a1", ownerId: "owner1", instructions: "agent rules", name: "Bot", runtimeConfig: {} },
+    ]);
+    mockGetAllEmailAccountsForWorkspace.mockResolvedValue([]);
+    mockGetAllColleaguesForWorkspace.mockResolvedValue([]);
+    mockGetMemberByUserAndWorkspace.mockResolvedValue({ globalInstruction: "", preferredLocale: "en" });
+    mockGetUser.mockResolvedValue({ name: "Owner", email: "owner@ex.com" });
+    mockGetConversationsByIds.mockResolvedValue([]);
+    mockGetWorkspaceDefaultLocale.mockResolvedValue("km");
 
     const result = await builder.buildFullPayloads([makeTask()], "w1");
 

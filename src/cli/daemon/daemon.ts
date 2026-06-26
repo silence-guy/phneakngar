@@ -294,8 +294,9 @@ export async function startDaemon(
   if (cliConfig.server_url) config.serverURL = cliConfig.server_url;
 
   const client = new DaemonClient(config.serverURL);
-  const headroomHealth = detectHeadroomHealth();
-  const health = createHealthServer(undefined, { detectHeadroom: () => headroomHealth });
+  // Pass the live detector so /health re-detects (TTL-cached) instead of
+  // freezing a startup snapshot that never reflects a later install/removal.
+  const health = createHealthServer(undefined, { detectHeadroom: detectHeadroomHealth });
 
   const providers: { type: string; path: string; version: string }[] = [];
   for (const [type, path] of [
@@ -322,12 +323,13 @@ export async function startDaemon(
   const workspaceStates: WorkspaceState[] = [];
   const runtimeIndex = new Map<string, RuntimeData>();
   let hadWorkspaces = workspaces.length > 0;
+  const registerHeadroom = headroomHealthForRegister(detectHeadroomHealth());
 
   for (const ws of workspaces) {
     const runtimes = providers.map((p) => ({
       type: p.type,
       version: p.version,
-      headroom: headroomHealthForRegister(headroomHealth),
+      headroom: registerHeadroom,
     }));
 
     log.info(`Registering workspace ${ws.id} (${ws.name ?? "unnamed"}) with ${runtimes.length} runtime(s)...`);
