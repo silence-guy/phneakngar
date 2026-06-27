@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import { mockNetworkLabel } from "@/components/component-labels";
 
 export function MockNetworkBanner() {
   const enabled =
@@ -70,7 +71,7 @@ export function MockNetworkBanner() {
         whiteSpace: "nowrap",
       }}
     >
-      Mock Network — {delayMs}ms delay
+      {mockNetworkLabel(delayMs)}
     </div>
   );
 }

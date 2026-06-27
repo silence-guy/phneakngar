@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { fetchModelOptions } from "@/lib/api";
+import { AGENT_PAGE_LABELS, agentDeleteDescription } from "./agent-page-labels";
 
 export default function AgentDetailLayout({ children }: { children: ReactNode }) {
   const params = useParams();
@@ -39,7 +40,7 @@ export default function AgentDetailLayout({ children }: { children: ReactNode })
         : pathname.includes("/files")
           ? "files"
           : "chat";
-  const tabLabels: Record<string, string> = { email: "Email", meetings: "Meetings", activity: "Activity", files: "Files" };
+  const tabLabels: Record<string, string> = { email: AGENT_PAGE_LABELS.layout.tabEmail, meetings: AGENT_PAGE_LABELS.layout.tabMeetings, activity: AGENT_PAGE_LABELS.layout.tabActivity, files: AGENT_PAGE_LABELS.layout.tabFiles };
   const { agents, runtimes, handleDeleteAgent, handleUpdateAgent } = useAgentContext();
 
   const agent = agents.find((a) => a.id === agentId);
@@ -83,13 +84,13 @@ export default function AgentDetailLayout({ children }: { children: ReactNode })
               }>
                 {agent.name}
               </TooltipTrigger>
-              <TooltipContent>{agent.description || "No description"}</TooltipContent>
+              <TooltipContent>{agent.description || AGENT_PAGE_LABELS.layout.noDescription}</TooltipContent>
             </Tooltip>
           ) : (
             <Skeleton className="h-3.5 w-24" />
           )}
           <span className="text-xs text-muted-foreground">
-            / {editing ? "Settings" : tabLabels[currentTab] ?? "Chat"}
+            / {editing ? AGENT_PAGE_LABELS.layout.settings : tabLabels[currentTab] ?? AGENT_PAGE_LABELS.layout.tabChat}
           </span>
         </div>
         {agent ? (
@@ -102,7 +103,7 @@ export default function AgentDetailLayout({ children }: { children: ReactNode })
                 onClick={() => setEditing(false)}
               >
                 <X className="size-3" />
-                Cancel
+                {AGENT_PAGE_LABELS.layout.cancel}
               </Button>
             ) : (
               <>
@@ -121,7 +122,7 @@ export default function AgentDetailLayout({ children }: { children: ReactNode })
                       currentTab === "chat"
                         ? "max-w-16 opacity-100 ml-1"
                         : "max-w-0 opacity-0 group-hover:max-w-16 group-hover:opacity-100 group-hover:ml-1 group-hover:delay-300"
-                    }`}>Chat</span>
+                    }`}>{AGENT_PAGE_LABELS.layout.tabChat}</span>
                   </Link>
                   <Link
                     href={`/w/${slug}/agents/${agentId}/email`}
@@ -136,7 +137,7 @@ export default function AgentDetailLayout({ children }: { children: ReactNode })
                       currentTab === "email"
                         ? "max-w-16 opacity-100 ml-1"
                         : "max-w-0 opacity-0 group-hover:max-w-16 group-hover:opacity-100 group-hover:ml-1 group-hover:delay-300"
-                    }`}>Email</span>
+                    }`}>{AGENT_PAGE_LABELS.layout.tabEmail}</span>
                   </Link>
                   <Link
                     href={`/w/${slug}/agents/${agentId}/meetings`}
@@ -151,7 +152,7 @@ export default function AgentDetailLayout({ children }: { children: ReactNode })
                       currentTab === "meetings"
                         ? "max-w-20 opacity-100 ml-1"
                         : "max-w-0 opacity-0 group-hover:max-w-20 group-hover:opacity-100 group-hover:ml-1 group-hover:delay-300"
-                    }`}>Meetings</span>
+                    }`}>{AGENT_PAGE_LABELS.layout.tabMeetings}</span>
                   </Link>
                   <Link
                     href={`/w/${slug}/agents/${agentId}/activity`}
@@ -166,7 +167,7 @@ export default function AgentDetailLayout({ children }: { children: ReactNode })
                       currentTab === "activity"
                         ? "max-w-16 opacity-100 ml-1"
                         : "max-w-0 opacity-0 group-hover:max-w-16 group-hover:opacity-100 group-hover:ml-1 group-hover:delay-300"
-                    }`}>Activity</span>
+                    }`}>{AGENT_PAGE_LABELS.layout.tabActivity}</span>
                   </Link>
                   <Link
                     href={`/w/${slug}/agents/${agentId}/files`}
@@ -181,14 +182,14 @@ export default function AgentDetailLayout({ children }: { children: ReactNode })
                       currentTab === "files"
                         ? "max-w-16 opacity-100 ml-1"
                         : "max-w-0 opacity-0 group-hover:max-w-16 group-hover:opacity-100 group-hover:ml-1 group-hover:delay-300"
-                    }`}>Files</span>
+                    }`}>{AGENT_PAGE_LABELS.layout.tabFiles}</span>
                   </Link>
                   <Link
                     href={`/w/${slug}/traces?agentId=${agentId}`}
                     className="group inline-flex items-center rounded-lg text-xs text-muted-foreground h-7 px-2 hover:bg-muted hover:text-foreground transition-all"
                   >
                     <GitBranch className="size-3 shrink-0" />
-                    <span className="max-w-0 opacity-0 group-hover:max-w-20 group-hover:opacity-100 group-hover:ml-1 group-hover:delay-300 overflow-hidden transition-all duration-500 ease-out">Traces</span>
+                    <span className="max-w-0 opacity-0 group-hover:max-w-20 group-hover:opacity-100 group-hover:ml-1 group-hover:delay-300 overflow-hidden transition-all duration-500 ease-out">{AGENT_PAGE_LABELS.layout.tabTraces}</span>
                   </Link>
                   <div className="w-px h-4 bg-border mx-1" />
                   <button
@@ -196,14 +197,14 @@ export default function AgentDetailLayout({ children }: { children: ReactNode })
                     onClick={() => setEditing(true)}
                   >
                     <Pencil className="size-3 shrink-0" />
-                    <span className="max-w-0 opacity-0 group-hover:max-w-12 group-hover:opacity-100 group-hover:ml-1 group-hover:delay-300 overflow-hidden transition-all duration-500 ease-out">Edit</span>
+                    <span className="max-w-0 opacity-0 group-hover:max-w-12 group-hover:opacity-100 group-hover:ml-1 group-hover:delay-300 overflow-hidden transition-all duration-500 ease-out">{AGENT_PAGE_LABELS.layout.edit}</span>
                   </button>
                   <button
                     className="group inline-flex items-center rounded-lg text-xs text-muted-foreground h-7 px-2 hover:bg-muted hover:text-destructive transition-all"
                     onClick={() => setAgentConfirmOpen(true)}
                   >
                     <Trash2 className="size-3 shrink-0" />
-                    <span className="max-w-0 opacity-0 group-hover:max-w-16 group-hover:opacity-100 group-hover:ml-1 group-hover:delay-300 overflow-hidden transition-all duration-500 ease-out">Remove</span>
+                    <span className="max-w-0 opacity-0 group-hover:max-w-16 group-hover:opacity-100 group-hover:ml-1 group-hover:delay-300 overflow-hidden transition-all duration-500 ease-out">{AGENT_PAGE_LABELS.layout.remove}</span>
                   </button>
                 </div>
 
@@ -220,35 +221,35 @@ export default function AgentDetailLayout({ children }: { children: ReactNode })
                         <DropdownMenuItem
                           onClick={() => router.push(`/w/${slug}/agents/${agentId}`)}
                         >
-                          <MessageSquare className="size-3.5" /> Chat
+                          <MessageSquare className="size-3.5" /> {AGENT_PAGE_LABELS.layout.tabChat}
                         </DropdownMenuItem>
                       )}
                       {currentTab !== "email" && (
                         <DropdownMenuItem
                           onClick={() => router.push(`/w/${slug}/agents/${agentId}/email`)}
                         >
-                          <Mail className="size-3.5" /> Email
+                          <Mail className="size-3.5" /> {AGENT_PAGE_LABELS.layout.tabEmail}
                         </DropdownMenuItem>
                       )}
                       {currentTab !== "meetings" && (
                         <DropdownMenuItem
                           onClick={() => router.push(`/w/${slug}/agents/${agentId}/meetings`)}
                         >
-                          <Video className="size-3.5" /> Meetings
+                          <Video className="size-3.5" /> {AGENT_PAGE_LABELS.layout.tabMeetings}
                         </DropdownMenuItem>
                       )}
                       {currentTab !== "activity" && (
                         <DropdownMenuItem
                           onClick={() => router.push(`/w/${slug}/agents/${agentId}/activity`)}
                         >
-                          <History className="size-3.5" /> Activity
+                          <History className="size-3.5" /> {AGENT_PAGE_LABELS.layout.tabActivity}
                         </DropdownMenuItem>
                       )}
                       {currentTab !== "files" && (
                         <DropdownMenuItem
                           onClick={() => router.push(`/w/${slug}/agents/${agentId}/files`)}
                         >
-                          <FolderOpen className="size-3.5" /> Files
+                          <FolderOpen className="size-3.5" /> {AGENT_PAGE_LABELS.layout.tabFiles}
                         </DropdownMenuItem>
                       )}
                       <DropdownMenuItem
@@ -257,12 +258,12 @@ export default function AgentDetailLayout({ children }: { children: ReactNode })
                         }
                       >
                         <GitBranch className="size-3.5" />
-                        Traces
+                        {AGENT_PAGE_LABELS.layout.tabTraces}
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem onClick={() => setEditing(true)}>
                         <Pencil className="size-3.5" />
-                        Edit
+                        {AGENT_PAGE_LABELS.layout.edit}
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
@@ -270,7 +271,7 @@ export default function AgentDetailLayout({ children }: { children: ReactNode })
                         onClick={() => setAgentConfirmOpen(true)}
                       >
                         <Trash2 className="size-3.5" />
-                        Remove
+                        {AGENT_PAGE_LABELS.layout.remove}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -315,8 +316,8 @@ export default function AgentDetailLayout({ children }: { children: ReactNode })
         <ConfirmDialog
           open={agentConfirmOpen}
           onOpenChange={setAgentConfirmOpen}
-          title="Remove agent"
-          description={`This will permanently delete "${agent.name}" and all its conversations.`}
+          title={AGENT_PAGE_LABELS.layout.removeAgentTitle}
+          description={agentDeleteDescription(agent.name)}
           loading={agentDeleting}
           onConfirm={async () => {
             setAgentDeleting(true);

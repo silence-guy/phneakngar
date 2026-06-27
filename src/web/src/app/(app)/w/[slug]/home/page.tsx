@@ -61,6 +61,8 @@ import { LinkSidecar } from "@/components/canvas/link-sidecar";
 import { ActiveTasksFloat } from "@/components/canvas/active-tasks-float";
 import { UpcomingEventsFloat } from "@/components/canvas/upcoming-events-float";
 import { getAutoLayout, type LayoutType } from "@/components/canvas/auto-layout";
+import { HOME_LABELS, homeLayoutLabel } from "./home-labels";
+import { connectMachineLabel } from "@/lib/locale";
 
 const nodeTypes = { agent: AgentNode };
 const edgeTypes = { link: LinkEdge };
@@ -329,11 +331,11 @@ function AgentCanvas({ onAgentClick }: { onAgentClick?: (agent: Agent) => void }
         setShowHint(false);
       } catch (e) {
         if (e instanceof ApiError) {
-          if (e.status === 409) toast.error("Link already exists");
-          else if (e.status === 400) toast.error("Can't link an agent to itself");
-          else toast.error("Failed to create link");
+          if (e.status === 409) toast.error(HOME_LABELS.linkAlreadyExists);
+          else if (e.status === 400) toast.error(HOME_LABELS.cannotLinkToSelf);
+          else toast.error(HOME_LABELS.createLinkFailed);
         } else {
-          toast.error("Failed to create link");
+          toast.error(HOME_LABELS.createLinkFailed);
         }
       }
     },
@@ -346,7 +348,7 @@ function AgentCanvas({ onAgentClick }: { onAgentClick?: (agent: Agent) => void }
         const updated = await updateAgentLink(id, { instruction }, workspaceId);
         setLinks((prev) => prev.map((l) => (l.id === id ? updated : l)));
       } catch {
-        toast.error("Failed to update link");
+        toast.error(HOME_LABELS.updateLinkFailed);
       }
     },
     [workspaceId],
@@ -359,7 +361,7 @@ function AgentCanvas({ onAgentClick }: { onAgentClick?: (agent: Agent) => void }
         setLinks((prev) => prev.filter((l) => l.id !== id));
         setSidecarOpen(false);
       } catch {
-        toast.error("Failed to delete link");
+        toast.error(HOME_LABELS.deleteLinkFailed);
       }
     },
     [workspaceId],
@@ -490,14 +492,14 @@ function AgentCanvas({ onAgentClick }: { onAgentClick?: (agent: Agent) => void }
                 </PopoverTrigger>
               }
             />
-            <TooltipContent side="top">Layout</TooltipContent>
+            <TooltipContent side="top">{HOME_LABELS.layout}</TooltipContent>
           </Tooltip>
           <PopoverContent className="w-36 p-1" align="start" side="top" sideOffset={8}>
             {([
-              { type: "star" as const, label: "Star", icon: Circle },
-              { type: "tree" as const, label: "Tree", icon: GitBranch },
-              { type: "flow" as const, label: "Flow", icon: ArrowRight },
-            ]).map(({ type, label, icon: Icon }) => (
+              { type: "star" as const, icon: Circle },
+              { type: "tree" as const, icon: GitBranch },
+              { type: "flow" as const, icon: ArrowRight },
+            ]).map(({ type, icon: Icon }) => (
               <button
                 key={type}
                 type="button"
@@ -510,7 +512,7 @@ function AgentCanvas({ onAgentClick }: { onAgentClick?: (agent: Agent) => void }
                 onClick={() => handleLayoutChange(type)}
               >
                 <Icon className="size-3.5" />
-                <span className="flex-1 text-left">{label}</span>
+                <span className="flex-1 text-left">{homeLayoutLabel(type)}</span>
                 {layoutType === type && <Check className="size-3.5" />}
               </button>
             ))}
@@ -521,7 +523,7 @@ function AgentCanvas({ onAgentClick }: { onAgentClick?: (agent: Agent) => void }
       {/* No-links hint */}
       {showHint && (
         <div className="absolute bottom-14 left-4 z-40 text-xs text-muted-foreground bg-background/80 backdrop-blur-sm rounded-md px-3 py-1.5 ring-1 ring-foreground/5">
-          Drag between agent handles to create relationships.
+          {HOME_LABELS.dragHint}
         </div>
       )}
 
@@ -553,7 +555,7 @@ function AgentCanvas({ onAgentClick }: { onAgentClick?: (agent: Agent) => void }
         >
           <Plus className="size-4" />
         </TooltipTrigger>
-        <TooltipContent>Create new agent</TooltipContent>
+        <TooltipContent>{HOME_LABELS.createNewAgent}</TooltipContent>
       </Tooltip>
     </div>
   );
@@ -636,7 +638,7 @@ function MobileAgentList({ onAgentClick }: { onAgentClick?: (agent: Agent) => vo
         >
           <Plus className="size-4" />
         </TooltipTrigger>
-        <TooltipContent>Create new agent</TooltipContent>
+        <TooltipContent>{HOME_LABELS.createNewAgent}</TooltipContent>
       </Tooltip>
     </div>
   );
@@ -649,7 +651,7 @@ function ConnectComputerCard({ workspaceId }: { workspaceId: string }) {
   useEffect(() => {
     createMachineToken("cli", workspaceId)
       .then((res) => setToken(res.token))
-      .catch(() => toast.error("Failed to generate token"))
+      .catch(() => toast.error(HOME_LABELS.generateTokenFailed))
       .finally(() => setLoading(false));
   }, [workspaceId]);
 
@@ -657,18 +659,18 @@ function ConnectComputerCard({ workspaceId }: { workspaceId: string }) {
 
   const copy = () => {
     navigator.clipboard.writeText(command);
-    toast.success("Copied to clipboard");
+    toast.success(connectMachineLabel("copiedToClipboard"));
   };
 
   return (
     <div className="rounded-xl bg-muted/40 p-5 space-y-3">
-      <h3 className="text-sm font-semibold">Connect a computer</h3>
+      <h3 className="text-sm font-semibold">{connectMachineLabel("connectComputer")}</h3>
       <p className="text-xs text-muted-foreground">
-        Run this command in your terminal to link your machine.
+        {connectMachineLabel("terminalDescription")}
       </p>
       {loading ? (
         <div className="rounded-md bg-muted p-2.5 font-mono text-xs text-muted-foreground animate-pulse">
-          Generating token...
+          {connectMachineLabel("generatingToken")}
         </div>
       ) : (
         <>
@@ -679,7 +681,7 @@ function ConnectComputerCard({ workspaceId }: { workspaceId: string }) {
             {command}
           </div>
           <Button size="sm" onClick={copy} className="w-full">
-            Copy Command
+            {connectMachineLabel("copyCommand")}
           </Button>
         </>
       )}
@@ -717,13 +719,13 @@ export default function HomePage() {
             <ConnectComputerCard workspaceId={workspaceId} />
           )}
           <div className="text-center">
-            <p className="text-muted-foreground text-sm">Build your AI company</p>
+            <p className="text-muted-foreground text-sm">{HOME_LABELS.buildYourCompany}</p>
             <Button
               size="sm"
               className="mt-4 glow-border"
               onClick={() => router.push(`/studio/new?workspace_id=${workspaceId}`)}
             >
-              Get Started
+              {HOME_LABELS.getStarted}
             </Button>
           </div>
         </div>

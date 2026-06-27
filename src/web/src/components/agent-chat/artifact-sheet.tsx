@@ -14,6 +14,7 @@ import { FileText, Download, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ArtifactContentRenderer, getArtifactUrl, isHtmlType } from "@/components/artifact-content-renderer";
 import { cn } from "@/lib/utils";
+import { AGENT_CHAT_LABELS } from "@/components/agent-chat/agent-chat-labels";
 
 export function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -116,13 +117,13 @@ export function ArtifactSheet({ open, onOpenChange, artifacts, workspaceId, init
                 >
                   <ArrowLeft className="size-4" />
                 </Button>
-                <SheetTitle className="flex-1">Artifacts</SheetTitle>
+                <SheetTitle className="flex-1">{AGENT_CHAT_LABELS.artifact.title}</SheetTitle>
               </div>
             </SheetHeader>
             <SheetBody className="thin-scrollbar">
               {artifacts.length === 0 ? (
                 <p className="text-sm text-muted-foreground py-8 text-center">
-                  No artifacts uploaded yet.
+                  {AGENT_CHAT_LABELS.artifact.empty}
                 </p>
               ) : (
                 <div className="space-y-1">

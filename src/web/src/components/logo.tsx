@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTheme } from "next-themes";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
+import { appShellLabel } from "@/lib/locale";
 
 const sizes = {
   sm: { icon: 28, text: "text-2xl" },
@@ -34,7 +35,7 @@ export function Logo({
     <button
       type="button"
       onClick={toggle}
-      aria-label="Toggle theme"
+      aria-label={appShellLabel("toggleTheme")}
       className={cn(
         "flex items-center gap-1.5 cursor-pointer select-none transition-opacity hover:opacity-70",
         className

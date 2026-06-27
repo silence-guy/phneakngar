@@ -10,6 +10,7 @@ import { Plus, ArrowRight, LogOut, Loader2 } from "lucide-react"
 import { signOut } from "@/lib/auth-client"
 import { clearAllCache } from "@/lib/chat-cache"
 import { toast } from "sonner"
+import { WORKSPACE_PICKER_LABELS } from "./workspace-picker-labels"
 
 interface WorkspaceItem {
   id: string
@@ -35,12 +36,12 @@ export function WorkspaceListClient({
       })
       if (!res.ok) {
         const err = (await res.json().catch(() => ({}))) as { error?: string }
-        throw new Error(err.error || "Failed to create workspace")
+        throw new Error(err.error || WORKSPACE_PICKER_LABELS.failedToCreate)
       }
       const data = (await res.json()) as { id: string; slug: string }
       router.push(`/studio/new?workspace_id=${data.id}`)
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed to create workspace")
+      toast.error(e instanceof Error ? e.message : WORKSPACE_PICKER_LABELS.failedToCreate)
       setCreating(false)
     }
   }
@@ -60,14 +61,14 @@ export function WorkspaceListClient({
         }}
       >
         <LogOut className="size-4" />
-        Log out
+        {WORKSPACE_PICKER_LABELS.logOut}
       </Button>
 
       <div className="w-full max-w-md space-y-8">
         <div className="flex flex-col items-center gap-3">
           <Logo size="lg" />
           <p className="text-sm text-muted-foreground">
-            Choose a workspace to continue.
+            {WORKSPACE_PICKER_LABELS.chooseWorkspace}
           </p>
         </div>
 
@@ -96,9 +97,9 @@ export function WorkspaceListClient({
           disabled={creating}
         >
           {creating ? (
-            <><Loader2 className="size-4 animate-spin" /> Creating...</>
+            <><Loader2 className="size-4 animate-spin" /> {WORKSPACE_PICKER_LABELS.creating}</>
           ) : (
-            <><Plus className="size-4" /> New workspace</>
+            <><Plus className="size-4" /> {WORKSPACE_PICKER_LABELS.newWorkspace}</>
           )}
         </Button>
       </div>

@@ -28,12 +28,20 @@ import { Monitor, Plus } from "lucide-react";
 import type { AgentRuntime as Runtime } from "@phneakngar/shared";
 import { semverGte, isTauri, isDesktop, tauriInvoke } from "@phneakngar/shared";
 import { cliCmd, getAppMode } from "@/lib/utils";
+import { connectMachineLabel } from "@/lib/locale";
 import { ProviderLogo } from "@/components/provider-logo";
 import { triggerRuntimeUpdate, triggerRuntimeRescan, fetchLatestCliVersion } from "@/lib/api";
 import { Loader2, RefreshCw } from "lucide-react";
 
 import { ConnectMachineSteps } from "@/components/connect-machine-steps";
 import { trackRuntimeConnected } from "@/lib/analytics";
+import {
+  RUNTIMES_LABELS,
+  runtimeStatusLabel,
+  updateDaemonDescription,
+  rescanRuntimesDescription,
+  removeMachineDescription,
+} from "./runtimes-labels";
 
 export default function RuntimesPage() {
   const { agents, runtimes, loading, handleGenerateToken, handleDeleteMachine, subscribeWs, workspaceId } =
@@ -59,7 +67,7 @@ export default function RuntimesPage() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmTitle, setConfirmTitle] = useState("");
   const [confirmDescription, setConfirmDescription] = useState("");
-  const [confirmLabel, setConfirmLabel] = useState("Remove");
+  const [confirmLabel, setConfirmLabel] = useState<string>(RUNTIMES_LABELS.remove);
   const [confirmLoadingLabel, setConfirmLoadingLabel] = useState<string | undefined>(undefined);
   const [confirmVariant, setConfirmVariant] = useState<"destructive" | "default">("destructive");
   const [confirmLoading, setConfirmLoading] = useState(false);
@@ -103,7 +111,7 @@ export default function RuntimesPage() {
         setGeneratedToken("");
         setRegisteredDaemonId(null);
         setDaemonOnline(false);
-        toast.success("Machine connected");
+        toast.success(RUNTIMES_LABELS.machineConnected);
         if (agentsRef.current.length === 0) {
           const slug = pathname.split("/")[2];
           router.push(`/w/${slug}/agents/new`);
@@ -120,7 +128,7 @@ export default function RuntimesPage() {
   ) => {
     setConfirmTitle(title);
     setConfirmDescription(description);
-    setConfirmLabel(opts?.label ?? "Remove");
+    setConfirmLabel(opts?.label ?? RUNTIMES_LABELS.remove);
     setConfirmLoadingLabel(opts?.loadingLabel);
     setConfirmVariant(opts?.variant ?? "destructive");
     confirmAction.current = action;
@@ -153,9 +161,9 @@ export default function RuntimesPage() {
     setUpdatingDaemons((prev) => new Set(prev).add(daemonId));
     try {
       await triggerRuntimeUpdate(runtimeId, workspaceId);
-      toast.success("Update triggered");
+      toast.success(RUNTIMES_LABELS.updateTriggered);
     } catch {
-      toast.error("Failed to trigger update");
+      toast.error(RUNTIMES_LABELS.updateTriggerFailed);
       setUpdatingDaemons((prev) => {
         const next = new Set(prev);
         next.delete(daemonId);
@@ -168,9 +176,9 @@ export default function RuntimesPage() {
     setRescanningDaemons((prev) => new Set(prev).add(daemonId));
     try {
       await triggerRuntimeRescan(runtimeId, workspaceId);
-      toast.success("Rescan triggered — daemon will restart to detect runtimes");
+      toast.success(RUNTIMES_LABELS.rescanTriggered);
     } catch {
-      toast.error("Failed to trigger rescan");
+      toast.error(RUNTIMES_LABELS.rescanTriggerFailed);
       setRescanningDaemons((prev) => {
         const next = new Set(prev);
         next.delete(daemonId);
@@ -273,9 +281,9 @@ export default function RuntimesPage() {
       {/* Title bar */}
       <div className="flex items-center justify-between border-b border-border/50 px-3 md:px-5 py-2.5">
         <div className="flex items-center gap-3">
-          <h1 className="text-sm font-medium">Runtimes</h1>
+          <h1 className="text-sm font-medium">{RUNTIMES_LABELS.heading}</h1>
           <p className="text-xs text-muted-foreground">
-            Your machines and their agent runtimes.
+            {RUNTIMES_LABELS.subtitle}
           </p>
         </div>
         {!hideNewMachine && (
@@ -290,7 +298,7 @@ export default function RuntimesPage() {
             disabled={generatingToken}
           >
             <Plus className="size-3.5" />
-            New machine
+            {RUNTIMES_LABELS.newMachine}
           </Button>
         )}
       </div>
@@ -301,8 +309,8 @@ export default function RuntimesPage() {
             <div className="text-center animate-[fade-up_400ms_ease-out_both]">
               <p className="text-muted-foreground text-sm">
                 {hideNewMachine
-                  ? "No machines connected. Use the desktop app or CLI to connect a machine."
-                  : "Connect a machine to start running agents locally."}
+                  ? RUNTIMES_LABELS.noMachinesManaged
+                  : RUNTIMES_LABELS.connectToStart}
               </p>
               {!hideNewMachine && (
                 <Button
@@ -313,7 +321,7 @@ export default function RuntimesPage() {
                     setSheetOpen(true);
                   }}
                 >
-                  Connect Machine
+                  {RUNTIMES_LABELS.connectMachine}
                 </Button>
               )}
             </div>
@@ -342,7 +350,7 @@ export default function RuntimesPage() {
                         }
                         className="shrink-0"
                       >
-                        {machine.status}
+                        {runtimeStatusLabel(machine.status)}
                       </Badge>
                     </div>
                   </CardHeader>
@@ -352,7 +360,7 @@ export default function RuntimesPage() {
                         <span className="text-xs text-muted-foreground tabular-nums">
                           {machine.lastSeenAt ? new Date(
                             machine.lastSeenAt
-                          ).toLocaleString() : "Never seen"}
+                          ).toLocaleString() : RUNTIMES_LABELS.neverSeen}
                         </span>
                         <div className="flex items-center gap-1">
                           {(() => {
@@ -362,7 +370,7 @@ export default function RuntimesPage() {
                               return (
                                 <Button variant="ghost" size="sm" disabled className="text-xs h-6 px-2">
                                   <Loader2 className="size-3 animate-spin mr-1" />
-                                  Updating...
+                                  {RUNTIMES_LABELS.updating}
                                 </Button>
                               );
                             }
@@ -373,13 +381,13 @@ export default function RuntimesPage() {
                                   size="sm"
                                   className="text-xs h-6 px-2"
                                   onClick={() => openConfirm(
-                                    "Update daemon",
-                                    `This will update the daemon on "${displayName}" to the latest CLI version. The daemon will restart during the update.`,
+                                    RUNTIMES_LABELS.updateDaemonTitle,
+                                    updateDaemonDescription(displayName),
                                     async () => { await handleUpdate(machine.runtimes[0].id, daemonId); },
-                                    { label: "Update", loadingLabel: "Updating...", variant: "default" }
+                                    { label: RUNTIMES_LABELS.update, loadingLabel: RUNTIMES_LABELS.updating, variant: "default" }
                                   )}
                                 >
-                                  Update
+                                  {RUNTIMES_LABELS.update}
                                 </Button>
                               );
                             }
@@ -392,7 +400,7 @@ export default function RuntimesPage() {
                               return (
                                 <Button variant="ghost" size="sm" disabled className="text-xs h-6 px-2">
                                   <RefreshCw className="size-3 animate-spin mr-1" />
-                                  Rescanning...
+                                  {RUNTIMES_LABELS.rescanning}
                                 </Button>
                               );
                             }
@@ -402,14 +410,14 @@ export default function RuntimesPage() {
                                 size="sm"
                                 className="text-xs h-6 px-2"
                                 onClick={() => openConfirm(
-                                  "Rescan runtimes",
-                                  `This will restart the daemon on "${displayName}" to re-detect available runtimes (Claude Code, Codex, OpenCode).`,
+                                  RUNTIMES_LABELS.rescanRuntimesTitle,
+                                  rescanRuntimesDescription(displayName),
                                   async () => { await handleRescan(machine.runtimes[0].id, daemonId); },
-                                  { label: "Rescan", loadingLabel: "Triggering...", variant: "default" }
+                                  { label: RUNTIMES_LABELS.rescan, loadingLabel: RUNTIMES_LABELS.triggering, variant: "default" }
                                 )}
                               >
                                 <RefreshCw className="size-3 mr-1" />
-                                Rescan
+                                {RUNTIMES_LABELS.rescan}
                               </Button>
                             );
                           })()}
@@ -419,15 +427,15 @@ export default function RuntimesPage() {
                             className="text-xs text-muted-foreground h-6 px-2 hover:text-destructive"
                             onClick={() => {
                               openConfirm(
-                                "Remove machine",
-                                `This will remove "${displayName}" and all its runtimes. Agents using these runtimes will be unlinked.`,
+                                RUNTIMES_LABELS.removeMachineTitle,
+                                removeMachineDescription(displayName),
                                 async () => {
                                   await handleDeleteMachine(daemonId);
                                 }
                               );
                             }}
                           >
-                            Remove
+                            {RUNTIMES_LABELS.remove}
                           </Button>
                         </div>
                       </div>
@@ -451,7 +459,7 @@ export default function RuntimesPage() {
                       {machine.status !== "online" && (
                         <div className="pt-1.5 border-t border-border/50">
                           <p className="text-[11px] text-muted-foreground mb-1.5">
-                            Bring this machine online:
+                            {RUNTIMES_LABELS.bringOnline}
                           </p>
                           {mode === "desktop" && isTauri() ? (
                             <Button
@@ -461,13 +469,13 @@ export default function RuntimesPage() {
                               onClick={async () => {
                                 try {
                                   await tauriInvoke("daemon_start");
-                                  toast.success("Daemon started");
+                                  toast.success(RUNTIMES_LABELS.daemonStarted);
                                 } catch {
-                                  toast.error("Failed to start daemon");
+                                  toast.error(RUNTIMES_LABELS.startDaemonFailed);
                                 }
                               }}
                             >
-                              Start Daemon
+                              {RUNTIMES_LABELS.startDaemon}
                             </Button>
                           ) : (
                             <Tooltip>
@@ -477,7 +485,7 @@ export default function RuntimesPage() {
                                     className="relative overflow-hidden rounded-md bg-muted px-2.5 py-1.5 font-mono text-[11px] text-muted-foreground cursor-pointer hover:bg-muted/80 transition-colors"
                                     onClick={() => {
                                       navigator.clipboard.writeText(`${cliCmd()} daemon start`);
-                                      toast.success("Copied to clipboard");
+                                      toast.success(connectMachineLabel("copiedToClipboard"));
                                     }}
                                   />
                                 }
@@ -485,7 +493,7 @@ export default function RuntimesPage() {
                                 <span className="absolute inset-0 -translate-x-full animate-[shimmer_2.5s_infinite] bg-linear-to-r from-transparent via-(--shimmer-peak) to-transparent" />
                                 <span className="relative">{cliCmd()} daemon start</span>
                               </TooltipTrigger>
-                              <TooltipContent>Click to copy</TooltipContent>
+                              <TooltipContent>{connectMachineLabel("clickToCopy")}</TooltipContent>
                             </Tooltip>
                           )}
                         </div>
@@ -511,10 +519,9 @@ export default function RuntimesPage() {
       >
         <SheetContent className="data-[side=right]:sm:inset-y-2 data-[side=right]:sm:right-2 data-[side=right]:sm:h-auto data-[side=right]:sm:rounded-xl data-[side=right]:sm:border">
           <SheetHeader>
-            <SheetTitle>Connect a machine</SheetTitle>
+            <SheetTitle>{RUNTIMES_LABELS.connectMachineSheetTitle}</SheetTitle>
             <SheetDescription>
-              Your machine runs AI agents locally using Claude Code, Codex, or
-              OpenCode.
+              {RUNTIMES_LABELS.connectMachineSheetDescription}
             </SheetDescription>
           </SheetHeader>
           <SheetBody>

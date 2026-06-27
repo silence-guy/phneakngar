@@ -24,6 +24,7 @@ import { toast } from "sonner";
 import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard";
 import { useHoverCapable } from "@/hooks/use-hover-capable";
 import { useLongPress } from "@/hooks/use-long-press";
+import { AGENT_CHAT_LABELS, repliesLabel, lastReplyLabel, viewConversationLabel } from "@/components/agent-chat/agent-chat-labels";
 
 const MENTION_ALLOWED_TAGS = { mention: ["data-agent-id"] };
 const MENTION_LITERAL_TAGS = ["mention"];
@@ -495,8 +496,8 @@ export const MessageItem = memo(function MessageItem({
 
   const doCopy = React.useCallback(async () => {
     const ok = await copy(msg.content);
-    if (ok) toast.success("Copied to clipboard");
-    else toast.error("Failed to copy");
+    if (ok) toast.success(AGENT_CHAT_LABELS.messageList.copiedToClipboard);
+    else toast.error(AGENT_CHAT_LABELS.messageList.failedToCopy);
   }, [copy, msg.content]);
 
   const canCopy = msg.role === "assistant" || msg.role === "user";
@@ -504,7 +505,7 @@ export const MessageItem = memo(function MessageItem({
   if (canCopy) {
     messageActions.push({
       key: "copy",
-      label: copied ? "Copied" : "Copy",
+      label: copied ? AGENT_CHAT_LABELS.messageList.copied : AGENT_CHAT_LABELS.messageList.copy,
       icon: copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />,
       onClick: doCopy,
     });
@@ -512,7 +513,7 @@ export const MessageItem = memo(function MessageItem({
   if (onQuote && (msg.role === "assistant" || msg.role === "user")) {
     messageActions.push({
       key: "quote",
-      label: "Quote",
+      label: AGENT_CHAT_LABELS.messageList.quote,
       icon: <MessageSquareQuote className="size-3.5" />,
       onClick: () => onQuote(msg.id, msg.content.slice(0, 50)),
     });
@@ -520,7 +521,7 @@ export const MessageItem = memo(function MessageItem({
   if (onReplyInThread && (msg.role === "assistant" || msg.role === "user")) {
     messageActions.push({
       key: "thread",
-      label: "Reply in thread",
+      label: AGENT_CHAT_LABELS.messageList.replyInThread,
       icon: <MessageSquare className="size-3.5" />,
       onClick: () => onReplyInThread(msg.id),
     });
@@ -528,7 +529,7 @@ export const MessageItem = memo(function MessageItem({
   if (msg.role === "assistant" && onToggleFlag) {
     messageActions.push({
       key: "flag",
-      label: isFlagged ? "Unflag" : "Flag",
+      label: isFlagged ? AGENT_CHAT_LABELS.messageList.unflag : AGENT_CHAT_LABELS.messageList.flag,
       icon: <Flag className={cn("size-3.5", isFlagged && "fill-current")} />,
       onClick: () => onToggleFlag(msg.id),
       active: isFlagged,
@@ -691,7 +692,7 @@ export const MessageItem = memo(function MessageItem({
                 onClick={() => onRetrySend?.(msg.id)}
                 className="mt-1 px-1 text-xs text-destructive hover:underline"
               >
-                Not delivered · tap to retry
+                {AGENT_CHAT_LABELS.messageList.notDeliveredTapToRetry}
               </button>
             )}
             {threadSummary && threadSummary.reply_count > 0 && (
@@ -701,11 +702,11 @@ export const MessageItem = memo(function MessageItem({
                 className="flex items-center gap-1.5 pt-1 cursor-pointer hover:opacity-75 transition-opacity"
               >
                 <span className="text-[11px] font-semibold text-[oklch(0.72_0.19_145)]">
-                  {threadSummary.reply_count} {threadSummary.reply_count === 1 ? "reply" : "replies"}
+                  {repliesLabel(threadSummary.reply_count)}
                 </span>
                 {threadSummary.last_reply_at && (
                   <span className="text-[10px] text-muted-foreground">
-                    last reply {new Date(threadSummary.last_reply_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                    {lastReplyLabel(new Date(threadSummary.last_reply_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }))}
                   </span>
                 )}
               </button>
@@ -735,7 +736,7 @@ export const MessageItem = memo(function MessageItem({
             const agentName = agents.find(a => a.email_handle === handle)?.name;
             if (agentName) {
               touchAction = {
-                label: `View ${agentName}'s conversation`,
+                label: viewConversationLabel(agentName),
                 onClick: () => onAgentChatOpen(targetAgentId, targetConvId),
               };
             }
@@ -845,11 +846,11 @@ export const MessageItem = memo(function MessageItem({
                 className="flex items-center gap-1.5 pt-1 cursor-pointer hover:opacity-75 transition-opacity"
               >
                 <span className="text-[11px] font-semibold text-[oklch(0.72_0.19_145)]">
-                  {threadSummary.reply_count} {threadSummary.reply_count === 1 ? "reply" : "replies"}
+                  {repliesLabel(threadSummary.reply_count)}
                 </span>
                 {threadSummary.last_reply_at && (
                   <span className="text-[10px] text-muted-foreground">
-                    last reply {new Date(threadSummary.last_reply_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                    {lastReplyLabel(new Date(threadSummary.last_reply_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }))}
                   </span>
                 )}
               </button>

@@ -13,10 +13,10 @@ export default function PrivacyPage() {
   return (
     <div className="mx-auto max-w-3xl px-6 pt-12 sm:pt-24 pb-28">
       <h1 className="text-4xl sm:text-5xl font-semibold tracking-tight mb-4">
-        Privacy Policy
+        គោលការណ៍ឯកជនភាព
       </h1>
       <p className="text-sm text-muted-foreground mb-12">
-        Last updated: May 22, 2026
+        ធ្វើបច្ចុប្បន្នភាពចុងក្រោយ៖ May 22, 2026
       </p>
 
       <div className="prose prose-neutral dark:prose-invert max-w-none space-y-8 text-[1.0625rem] leading-relaxed">

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { AlertCircle, RotateCw, Loader2 } from "lucide-react";
 import { runtimeDisplayName } from "@/lib/runtime-display";
+import { AGENT_CHAT_LABELS, errorFromLabel } from "@/components/agent-chat/agent-chat-labels";
 
 /**
  * A visually distinct error block that attributes a runtime error to the agent
@@ -41,7 +42,7 @@ export function RuntimeErrorBlock({
       <div className="flex items-center gap-2">
         <p className="flex items-center gap-1.5 text-sm font-semibold text-destructive min-w-0">
           <AlertCircle className="size-3.5 shrink-0" />
-          <span>Error from {runtimeDisplayName(provider)}</span>
+          <span>{errorFromLabel(runtimeDisplayName(provider))}</span>
         </p>
         {onRetry && (
           <button
@@ -51,13 +52,13 @@ export function RuntimeErrorBlock({
             className="ml-auto shrink-0 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer disabled:opacity-50 flex items-center gap-1"
           >
             {retrying ? <Loader2 className="size-3 animate-spin" /> : <RotateCw className="size-3" />}
-            Retry
+            {AGENT_CHAT_LABELS.runtimeError.retry}
           </button>
         )}
       </div>
       <p className="mt-1.5 text-sm text-destructive/90 wrap-anywhere whitespace-pre-wrap">{message}</p>
       <p className="mt-1.5 text-xs text-muted-foreground">
-        This came from the agent runtime on your machine, not from ភ្នាក់ងារ.
+        {AGENT_CHAT_LABELS.runtimeError.explanation}
       </p>
     </div>
   );

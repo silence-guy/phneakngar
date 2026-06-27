@@ -10,14 +10,15 @@ import { MembersTab } from "./members-tab";
 import { NotificationTab } from "./notification-tab";
 import { PetTab } from "./pet-tab";
 import { UsagesTab } from "./usages-tab";
+import { SETTINGS_LABELS, settingsTabLabel } from "./settings-labels";
 
 const TABS = [
-  { id: "general", label: "General" },
-  { id: "pet", label: "Pet" },
-  { id: "instruction", label: "Global Instruction" },
-  { id: "notifications", label: "Notifications" },
-  { id: "members", label: "Members" },
-  { id: "usages", label: "Usages" },
+  { id: "general" },
+  { id: "pet" },
+  { id: "instruction" },
+  { id: "notifications" },
+  { id: "members" },
+  { id: "usages" },
 ] as const;
 
 type TabId = (typeof TABS)[number]["id"];
@@ -29,7 +30,7 @@ export default function SettingsPage() {
     <>
       <div className="flex items-center justify-between border-b border-border/50 px-3 md:px-5 py-2.5 gap-3">
         <div className="flex items-center gap-3 min-w-0">
-          <h1 className="text-sm font-medium">Settings</h1>
+          <h1 className="text-sm font-medium">{SETTINGS_LABELS.title}</h1>
         </div>
       </div>
 
@@ -47,7 +48,7 @@ export default function SettingsPage() {
                     : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
                 )}
               >
-                {tab.label}
+                {settingsTabLabel(tab.id)}
               </button>
             ))}
           </div>
@@ -64,7 +65,7 @@ export default function SettingsPage() {
               <TabsList className="h-auto gap-1">
                 {TABS.map((tab) => (
                   <TabsTrigger key={tab.id} value={tab.id}>
-                    {tab.label}
+                    {settingsTabLabel(tab.id)}
                   </TabsTrigger>
                 ))}
               </TabsList>

@@ -18,6 +18,12 @@ import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip
 import { AlertTriangle, RefreshCw, Terminal } from "lucide-react";
 import { toast } from "sonner";
 import type { AgentRuntime } from "@phneakngar/shared";
+import {
+  COMPONENT_LABELS,
+  requiresVersionLabel,
+  appOutdatedDescription,
+  machineOutdatedDescription,
+} from "@/components/component-labels";
 
 export function RuntimeVersionGate() {
   const { runtimes, workspaceId } = useAgentContext();
@@ -63,9 +69,9 @@ export function RuntimeVersionGate() {
       setUpdating((prev) => new Set(prev).add(rt.id));
       try {
         await tauriInvoke("cli_update");
-        toast.success("CLI updated");
+        toast.success(COMPONENT_LABELS.runtime.cliUpdated);
       } catch {
-        toast.error("Failed to update CLI");
+        toast.error(COMPONENT_LABELS.runtime.failedToUpdateCli);
       } finally {
         setUpdating((prev) => {
           const next = new Set(prev);
@@ -107,12 +113,12 @@ export function RuntimeVersionGate() {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <AlertTriangle className="size-5 text-amber-500" />
-            Runtime Update Required
+            {COMPONENT_LABELS.runtime.updateRequiredTitle}
           </DialogTitle>
           <DialogDescription>
             {mode === "app"
-              ? `Your local ភ្នាក់ងារ app is running an outdated version (minimum required: v${minVersion}). Please update to continue.`
-              : `The following machine(s) are running an outdated CLI version (minimum required: v${minVersion}). Please update to continue.`}
+              ? appOutdatedDescription(minVersion)
+              : machineOutdatedDescription(minVersion)}
           </DialogDescription>
         </DialogHeader>
 
@@ -133,9 +139,9 @@ export function RuntimeVersionGate() {
                       {rt.device_info || daemonId.slice(0, 12)}
                     </div>
                     <div className="text-xs text-muted-foreground flex items-center gap-2 mt-0.5">
-                      <span>v{cliVersion || "unknown"}</span>
+                      <span>v{cliVersion || COMPONENT_LABELS.runtime.unknownVersion}</span>
                       <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-amber-500 border-amber-500/30">
-                        requires v{minVersion}
+                        {requiresVersionLabel(minVersion)}
                       </Badge>
                     </div>
                   </div>
@@ -147,7 +153,7 @@ export function RuntimeVersionGate() {
                   onClick={() => handleUpdate(rt)}
                 >
                   <RefreshCw className={`size-3.5 ${isUpdating ? "animate-spin" : ""}`} />
-                  {isUpdating ? "Updating..." : "Update"}
+                  {isUpdating ? COMPONENT_LABELS.runtime.updating : COMPONENT_LABELS.runtime.update}
                 </Button>
               </div>
             );
@@ -158,9 +164,9 @@ export function RuntimeVersionGate() {
           <div className="mt-3 rounded-md bg-muted/50 border border-dashed p-2.5 text-xs text-muted-foreground">
             <div className="flex items-center gap-1.5 font-medium text-foreground mb-1">
               <Terminal className="size-3" />
-              Update taking too long?
+              {COMPONENT_LABELS.runtime.updateTakingTooLong}
             </div>
-            <p className="mb-1">Run this command on the machine to update manually:</p>
+            <p className="mb-1">{COMPONENT_LABELS.runtime.runCommandHint}</p>
             <Tooltip>
               <TooltipTrigger
                 render={
@@ -168,14 +174,14 @@ export function RuntimeVersionGate() {
                     className="block rounded bg-background px-2 py-1 font-mono text-[11px] cursor-pointer hover:bg-background/80 transition-colors"
                     onClick={() => {
                       navigator.clipboard.writeText(MANUAL_UPDATE_CMD);
-                      toast.success("Copied to clipboard");
+                      toast.success(COMPONENT_LABELS.runtime.copiedToClipboard);
                     }}
                   />
                 }
               >
                 {MANUAL_UPDATE_CMD}
               </TooltipTrigger>
-              <TooltipContent>Click to copy</TooltipContent>
+              <TooltipContent>{COMPONENT_LABELS.runtime.clickToCopy}</TooltipContent>
             </Tooltip>
           </div>
         )}

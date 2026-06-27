@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { TypewriterVisual } from "@/components/typewriter-visual";
+import { ERROR_PAGE_LABELS } from "@/app/error-page-labels";
 
 export const metadata: Metadata = {
   title: "Page Not Found",
@@ -32,16 +33,16 @@ export default function NotFound() {
                 }}
               >
                 <div className="tw-email-line">
-                  <span style={{ color: "var(--landing-text)" }}>From:</span>{" "}
+                  <span style={{ color: "var(--landing-text)" }}>{ERROR_PAGE_LABELS.fromLabel}</span>{" "}
                   postmaster@phneakngar.ai
                 </div>
                 <div className="tw-email-line">
-                  <span style={{ color: "var(--landing-text)" }}>To:</span>{" "}
-                  you
+                  <span style={{ color: "var(--landing-text)" }}>{ERROR_PAGE_LABELS.toLabel}</span>{" "}
+                  {ERROR_PAGE_LABELS.toRecipient}
                 </div>
                 <div className="tw-email-line">
-                  <span style={{ color: "var(--landing-text)" }}>Subject:</span>{" "}
-                  Undeliverable — page not found
+                  <span style={{ color: "var(--landing-text)" }}>{ERROR_PAGE_LABELS.subjectLabel}</span>{" "}
+                  {ERROR_PAGE_LABELS.notFound.subject}
                 </div>
               </div>
 
@@ -54,8 +55,7 @@ export default function NotFound() {
                   lineHeight: 1.6,
                 }}
               >
-                The page you&#39;re looking for doesn&#39;t exist or has been
-                moved. Check the address and try again.
+                {ERROR_PAGE_LABELS.notFound.body}
               </div>
             </>
           }
@@ -83,7 +83,7 @@ export default function NotFound() {
         >
           <path d="M19 12H5M12 19l-7-7 7-7" />
         </svg>
-        Go home
+        {ERROR_PAGE_LABELS.goHome}
       </Link>
     </div>
   );

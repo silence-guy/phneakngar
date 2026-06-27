@@ -6,6 +6,7 @@ import { PublicLayout } from "@/components/public-layout";
 import { TemplateCard } from "./_components/template-card";
 import type { TemplatePreset, TemplateCategory } from "@/lib/templates";
 import { trackTemplatesBrowsed } from "@/lib/analytics";
+import { TEMPLATES_LABELS } from "./templates-labels";
 
 export function TemplatesClient({
   templates,
@@ -47,27 +48,27 @@ export function TemplatesClient({
             href="/templates"
             className="hidden sm:block px-3 py-1.5 text-xs uppercase tracking-widest font-mono transition-opacity hover:opacity-70"
           >
-            Templates
+            {TEMPLATES_LABELS.nav.templates}
           </Link>
           <Link
             href="/blog"
             className="hidden sm:block px-3 py-1.5 text-xs uppercase tracking-widest font-mono transition-opacity hover:opacity-70"
           >
-            Blog
+            {TEMPLATES_LABELS.nav.blog}
           </Link>
           {isLoggedIn ? (
             <Link
               href="/workspaces?auto"
               className="inline-flex items-center gap-1.5 px-4 py-1.5 text-xs uppercase tracking-widest font-mono border border-current transition-opacity hover:opacity-70"
             >
-              App
+              {TEMPLATES_LABELS.nav.app}
             </Link>
           ) : (
             <Link
               href="/sign-in"
               className="inline-flex items-center gap-1.5 px-4 py-1.5 text-xs uppercase tracking-widest font-mono bg-foreground text-background transition-opacity hover:opacity-70"
             >
-              Get Started
+              {TEMPLATES_LABELS.nav.getStarted}
             </Link>
           )}
         </>
@@ -79,10 +80,10 @@ export function TemplatesClient({
           className="text-3xl font-semibold tracking-tight"
           style={{ fontFamily: "var(--font-news)" }}
         >
-          Start your company
+          {TEMPLATES_LABELS.list.title}
         </h1>
         <p className="mt-3 max-w-lg text-sm leading-relaxed text-muted-foreground">
-          Pre-configured AI companies, ready to work. Choose a template, make it yours, and deploy in minutes.
+          {TEMPLATES_LABELS.list.subheading}
         </p>
       </div>
 
@@ -99,7 +100,7 @@ export function TemplatesClient({
                   : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground"
               }`}
             >
-              {cat}
+              {cat === "All" ? TEMPLATES_LABELS.list.allCategory : cat}
             </button>
           ))}
         </div>
@@ -120,7 +121,7 @@ export function TemplatesClient({
         {filtered.length === 0 && (
           <div className="flex flex-col items-center justify-center py-20">
             <p className="text-sm text-muted-foreground">
-              No templates in this category yet.
+              {TEMPLATES_LABELS.list.emptyCategory}
             </p>
           </div>
         )}

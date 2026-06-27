@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { AnimatedAvatar, parseAvatarUrl } from "@/components/avatar";
 import { AgentStatusBadge } from "@/components/agent-status-badge";
 import { cn } from "@/lib/utils";
+import { COMPONENT_LABELS } from "@/components/component-labels";
 
 interface AgentPreviewCardProps {
   agent: Agent;
@@ -33,10 +34,10 @@ export function AgentPreviewCard({
     try {
       await navigator.clipboard.writeText(email);
       setCopied(true);
-      toast.success("Email copied to clipboard");
+      toast.success(COMPONENT_LABELS.preview.emailCopied);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      toast.error("Failed to copy email");
+      toast.error(COMPONENT_LABELS.preview.failedToCopyEmail);
     }
   }, [email]);
 
@@ -86,7 +87,7 @@ export function AgentPreviewCard({
               "size-1.5 rounded-full",
               !isOnline ? "bg-status-offline" : "bg-status-online"
             )} />
-            {!isOnline ? "Offline" : (activeTaskCount ?? 0) > 0 ? "Working" : null}
+            {!isOnline ? COMPONENT_LABELS.preview.offline : (activeTaskCount ?? 0) > 0 ? COMPONENT_LABELS.preview.working : null}
           </span>
         )}
       </div>

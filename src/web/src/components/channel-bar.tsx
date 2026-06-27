@@ -35,6 +35,7 @@ import {
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { AGENT_CHAT_LABELS, deleteChannelConfirmLabel } from "@/components/agent-chat/agent-chat-labels";
 
 export function ChannelBar() {
   const {
@@ -124,7 +125,7 @@ export function ChannelBar() {
                   try {
                     await renameChannel(ch.id, name);
                   } catch (err) {
-                    toast.error(err instanceof Error ? err.message : "Failed to rename");
+                    toast.error(err instanceof Error ? err.message : AGENT_CHAT_LABELS.channel.failedToRename);
                   }
                   setRenamingId(null);
                 }}
@@ -147,7 +148,7 @@ export function ChannelBar() {
                   try {
                     await deleteChannel(ch.id);
                   } catch (err) {
-                    toast.error(err instanceof Error ? err.message : "Failed to delete");
+                    toast.error(err instanceof Error ? err.message : AGENT_CHAT_LABELS.channel.failedToDelete);
                   }
                   setDeletingId(null);
                 }}
@@ -165,7 +166,7 @@ export function ChannelBar() {
               await createChannel(name);
               setActiveChannel(name);
             } catch (err) {
-              toast.error(err instanceof Error ? err.message : "Failed to create");
+              toast.error(err instanceof Error ? err.message : AGENT_CHAT_LABELS.channel.failedToCreate);
             }
             setCreating(false);
           }}
@@ -184,7 +185,7 @@ export function ChannelBar() {
             <Plus className="size-3" />
           </TooltipTrigger>
           <TooltipContent side="bottom">
-            Add New Chatting Channel
+            {AGENT_CHAT_LABELS.channel.addNew}
           </TooltipContent>
         </Tooltip>
       )}
@@ -300,7 +301,7 @@ function ChannelPill({
           <ContextMenuContent>
             <ContextMenuItem onClick={onRename}>
               <Pencil className="size-3.5 mr-2" />
-              Rename
+              {AGENT_CHAT_LABELS.channel.rename}
             </ContextMenuItem>
             <ContextMenuSeparator />
             <ContextMenuItem
@@ -308,26 +309,26 @@ function ChannelPill({
               className="text-destructive focus:text-destructive"
             >
               <Trash2 className="size-3.5 mr-2" />
-              Delete
+              {AGENT_CHAT_LABELS.channel.delete}
             </ContextMenuItem>
           </ContextMenuContent>
         </ContextMenu>
         <PopoverContent className="w-auto p-3" align="start">
           <p className="text-sm mb-3">
-            Delete &ldquo;{name}&rdquo;? Its conversations will be removed.
+            {deleteChannelConfirmLabel(name)}
           </p>
           <div className="flex gap-2 justify-end">
             <Button variant="ghost" size="sm" onClick={onDeleteCancel} disabled={isDeleting}>
-              Cancel
+              {AGENT_CHAT_LABELS.channel.cancel}
             </Button>
             <Button variant="destructive" size="sm" onClick={onDeleteConfirm} disabled={isDeleting}>
               {isDeleting && <Loader2 className="size-3 animate-spin mr-1" />}
-              Delete
+              {AGENT_CHAT_LABELS.channel.delete}
             </Button>
           </div>
         </PopoverContent>
       </Popover>
-      <TooltipContent side="bottom">Right-click for options</TooltipContent>
+      <TooltipContent side="bottom">{AGENT_CHAT_LABELS.channel.rightClickForOptions}</TooltipContent>
     </Tooltip>
   );
 }
@@ -371,7 +372,7 @@ function CreateInput({
         }}
         onBlur={() => { if (!savedRef.current) onCancel(); }}
         disabled={loading}
-        placeholder="name..."
+        placeholder={AGENT_CHAT_LABELS.channel.namePlaceholder}
         className="h-5 w-24 px-1.5 rounded-md text-[11px] bg-transparent border border-input focus:border-ring focus:ring-2 focus:ring-ring/50 placeholder:text-muted-foreground/50 outline-none shrink-0 disabled:opacity-50"
       />
       {loading && <Loader2 className="size-3 animate-spin text-muted-foreground" />}

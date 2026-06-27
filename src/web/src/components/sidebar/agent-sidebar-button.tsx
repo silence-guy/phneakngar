@@ -14,6 +14,7 @@ import { AgentPreviewCard } from "@/components/agent-preview-card";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { parseAvatarUrl } from "@/components/avatar";
 import { AnimatedAvatar } from "@/components/avatar/animated-avatar";
+import { SIDEBAR_LABELS } from "./sidebar-labels";
 
 export function AgentSidebarButton({
   agent,
@@ -86,12 +87,12 @@ export function AgentSidebarButton({
           {!hidePin && (isPinned ? (
             <ContextMenuItem onClick={onUnpin}>
               <PinOffIcon className="size-3.5 mr-1.5" />
-              Unpin
+              {SIDEBAR_LABELS.unpin}
             </ContextMenuItem>
           ) : (
             <ContextMenuItem onClick={onPin}>
               <PinIcon className="size-3.5 mr-1.5" />
-              Pin to top
+              {SIDEBAR_LABELS.pinTop}
             </ContextMenuItem>
           ))}
           {extraContextMenuItems}

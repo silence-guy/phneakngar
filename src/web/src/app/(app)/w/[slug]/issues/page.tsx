@@ -22,13 +22,14 @@ import { IssueSheet } from "@/components/issues/issue-sheet";
 import { trackIssueCreated, trackIssueStatusChanged } from "@/lib/analytics";
 import { ArtifactSheet } from "@/components/agent-chat/artifact-sheet";
 import { isPreviewable, getArtifactUrl, computeArtifactVersions } from "@/components/artifact-content-renderer";
+import { ISSUE_LABELS, issueColumnLabel, showCompletedCountLabel } from "@/components/issues/issue-labels";
 
 
 const COLUMNS = [
-  { id: "todo", label: "Todo", statuses: ["todo"] },
-  { id: "in_progress", label: "In Progress", statuses: ["in_progress"] },
-  { id: "review", label: "Review", statuses: ["review"] },
-  { id: "completed", label: "Completed", statuses: ["done", "closed", "canceled", "failed"] },
+  { id: "todo", statuses: ["todo"] },
+  { id: "in_progress", statuses: ["in_progress"] },
+  { id: "review", statuses: ["review"] },
+  { id: "completed", statuses: ["done", "closed", "canceled", "failed"] },
 ] as const;
 
 function formatDate(value: string | null) {
@@ -98,14 +99,14 @@ function IssueCard({
             <div className="line-clamp-2 min-w-0 text-sm font-medium leading-5 text-foreground">{issue.title}</div>
             {issue.status === "in_progress" && (
               <span className="flex shrink-0 items-center gap-0.5 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
-                <Loader2 className="size-2.5 animate-spin" /> Working
+                <Loader2 className="size-2.5 animate-spin" /> {ISSUE_LABELS.working}
               </span>
             )}
             {issue.status === "review" && (
-              <span className="shrink-0 rounded bg-yellow-500/10 px-1.5 py-0.5 text-[10px] font-medium text-yellow-600 dark:text-yellow-400">Review</span>
+              <span className="shrink-0 rounded bg-yellow-500/10 px-1.5 py-0.5 text-[10px] font-medium text-yellow-600 dark:text-yellow-400">{ISSUE_LABELS.reviewBadge}</span>
             )}
             {issue.status === "failed" && (
-              <span className="shrink-0 rounded bg-destructive/10 px-1.5 py-0.5 text-[10px] font-medium text-destructive">Failed</span>
+              <span className="shrink-0 rounded bg-destructive/10 px-1.5 py-0.5 text-[10px] font-medium text-destructive">{ISSUE_LABELS.failedBadge}</span>
             )}
           </div>
           {issue.description ? (
@@ -133,7 +134,7 @@ function IssueCard({
                 <span className="truncate">{agent.name}</span>
               </span>
             ) : (
-              <span className="truncate text-muted-foreground/60">{issue.agent_id ? "" : "Unassigned"}</span>
+              <span className="truncate text-muted-foreground/60">{issue.agent_id ? "" : ISSUE_LABELS.unassigned}</span>
             )}
             <span className="shrink-0">{formatDate(issue.updated_at)}</span>
           </div>
@@ -143,7 +144,7 @@ function IssueCard({
         <ContextMenuContent>
           <ContextMenuItem className="text-destructive" onClick={onDelete}>
             <Trash2 className="size-3.5 mr-1.5" />
-            Delete
+            {ISSUE_LABELS.delete}
           </ContextMenuItem>
         </ContextMenuContent>
       )}
@@ -178,7 +179,7 @@ function CollapsedCompletedStrip({ activeDragId, completedCount, onExpand }: { a
             ref={setNodeRef}
             role="button"
             tabIndex={0}
-            aria-label="Show completed column"
+            aria-label={ISSUE_LABELS.showCompletedColumn}
             onClick={() => { if (!activeDragId) onExpand(); }}
             onKeyDown={(e) => { if ((e.key === "Enter" || e.key === " ") && !activeDragId) { e.preventDefault(); onExpand(); } }}
             className={cn(
@@ -193,11 +194,11 @@ function CollapsedCompletedStrip({ activeDragId, completedCount, onExpand }: { a
         <div className="flex flex-col items-center justify-center gap-3 h-full py-3">
           <Eye className="size-3.5 text-muted-foreground/60 shrink-0" />
           <span className="text-xs font-medium text-muted-foreground" style={{ writingMode: "vertical-rl" }}>
-            Completed ({completedCount})
+            {issueColumnLabel("completed")} ({completedCount})
           </span>
         </div>
       </TooltipTrigger>
-      <TooltipContent>{activeDragId ? "Drop to complete" : "Show completed"}</TooltipContent>
+      <TooltipContent>{activeDragId ? ISSUE_LABELS.dropToComplete : ISSUE_LABELS.showCompleted}</TooltipContent>
     </Tooltip>
   );
 }
@@ -284,7 +285,7 @@ export default function IssuesPage() {
       ]);
       setIssues([...active, ...completed]);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to load issues");
+      toast.error(err instanceof Error ? err.message : ISSUE_LABELS.loadIssuesFailed);
     } finally {
       setLoading(false);
     }
@@ -339,7 +340,7 @@ export default function IssuesPage() {
           .catch(() => setTraceTasks(null));
       }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to load issue");
+      toast.error(err instanceof Error ? err.message : ISSUE_LABELS.loadIssueFailed);
     } finally {
       setDetailLoading(false);
     }
@@ -476,9 +477,9 @@ export default function IssuesPage() {
       setSelectedId(res.issue.id);
       selectedIdRef.current = res.issue.id;
       openIssue(res.issue.id);
-      toast.success("Issue created");
+      toast.success(ISSUE_LABELS.issueCreated);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to create issue");
+      toast.error(err instanceof Error ? err.message : ISSUE_LABELS.createIssueFailed);
     } finally {
       setCreating(false);
     }
@@ -490,7 +491,7 @@ export default function IssuesPage() {
       setIssues((prev) => prev.map((i) => i.id === issueId ? { ...i, ...patch, updated_at: updated.updated_at } : i));
       setDetail((prev) => prev && prev.issue.id === issueId ? { ...prev, issue: { ...prev.issue, ...patch, updated_at: updated.updated_at } } : prev);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to update issue");
+      toast.error(err instanceof Error ? err.message : ISSUE_LABELS.updateIssueFailed);
     }
   }, [workspaceId]);
 
@@ -516,7 +517,7 @@ export default function IssuesPage() {
       if (detail?.issue.id === issueId) {
         setDetail((prev) => prev ? { ...prev, issue: { ...prev.issue, status: oldStatus } } : prev);
       }
-      toast.error(err instanceof Error ? err.message : "Failed to update issue status");
+      toast.error(err instanceof Error ? err.message : ISSUE_LABELS.updateStatusFailed);
     } finally {
       pendingStatusUpdate.current = null;
     }
@@ -533,9 +534,9 @@ export default function IssuesPage() {
         setSheetOpen(false);
         setDetail(null);
       }
-      toast.success("Issue deleted");
+      toast.success(ISSUE_LABELS.issueDeleted);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to delete issue");
+      toast.error(err instanceof Error ? err.message : ISSUE_LABELS.deleteIssueFailed);
     }
   }, [workspaceId, selectedId]);
 
@@ -572,7 +573,7 @@ export default function IssuesPage() {
     if ((targetCol.statuses as readonly string[]).includes(issue.status)) return;
 
     if (issue.status === "todo" && !issue.agent_id && targetColId !== "todo" && targetColId !== "completed") {
-      toast.error("Assign an agent first to run this issue");
+      toast.error(ISSUE_LABELS.assignAgentFirst);
       return;
     }
 
@@ -595,7 +596,7 @@ export default function IssuesPage() {
       if (detail?.issue.id === issueId) {
         setDetail((prev) => prev ? { ...prev, issue: { ...prev.issue, status: oldStatus } } : prev);
       }
-      toast.error(err instanceof Error ? err.message : "Failed to update issue status");
+      toast.error(err instanceof Error ? err.message : ISSUE_LABELS.updateStatusFailed);
     } finally {
       pendingStatusUpdate.current = null;
     }
@@ -608,12 +609,12 @@ export default function IssuesPage() {
     <div className="relative flex h-full min-h-0 flex-col bg-background/30">
       <div className="flex shrink-0 flex-col gap-3 border-b border-border/60 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5 sm:py-4">
         <div className="min-w-0">
-          <h1 className="text-base font-semibold tracking-normal">Issues</h1>
+          <h1 className="text-base font-semibold tracking-normal">{ISSUE_LABELS.issuesHeading}</h1>
         </div>
         <div className="flex items-center gap-2">
           <Button size="sm" className="w-full sm:w-auto" onClick={() => { setSelectedId(null); selectedIdRef.current = null; setSheetOpen(true); }}>
             <Plus className="size-4" />
-            New issue
+            {ISSUE_LABELS.newIssue}
           </Button>
         </div>
       </div>
@@ -644,8 +645,8 @@ export default function IssuesPage() {
         ) : issues.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full animate-[fade-up_400ms_ease-out_both]">
             <CircleDot className="size-8 text-muted-foreground mb-3" />
-            <p className="text-sm text-muted-foreground">No issues</p>
-            <p className="text-xs text-muted-foreground/60 mt-1">Create one to get started.</p>
+            <p className="text-sm text-muted-foreground">{ISSUE_LABELS.noIssues}</p>
+            <p className="text-xs text-muted-foreground/60 mt-1">{ISSUE_LABELS.createToGetStarted}</p>
           </div>
         ) : (
           <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
@@ -655,7 +656,7 @@ export default function IssuesPage() {
                 return (
                   <DroppableColumn key={col.id} id={col.id}>
                     <div className="flex shrink-0 items-center justify-between border-b border-border/60 bg-muted/30 px-3 py-2 text-xs font-medium text-muted-foreground">
-                      <span>{col.label}</span>
+                      <span>{issueColumnLabel(col.id)}</span>
                       <div className="flex items-center gap-1.5">
                         <span>{columnIssues.length}</span>
                         {col.id === "completed" && (
@@ -664,7 +665,7 @@ export default function IssuesPage() {
                               render={
                                 <button
                                   type="button"
-                                  aria-label="Hide completed column"
+                                  aria-label={ISSUE_LABELS.hideCompletedColumn}
                                   disabled={!!activeDragId}
                                   onClick={() => setShowCompleted(false)}
                                   className="rounded p-0.5 text-muted-foreground/60 transition-colors hover:bg-muted hover:text-muted-foreground disabled:opacity-40"
@@ -673,7 +674,7 @@ export default function IssuesPage() {
                             >
                               <EyeOff className="size-3.5" />
                             </TooltipTrigger>
-                            <TooltipContent>Hide completed</TooltipContent>
+                            <TooltipContent>{ISSUE_LABELS.hideCompleted}</TooltipContent>
                           </Tooltip>
                         )}
                       </div>
@@ -681,7 +682,7 @@ export default function IssuesPage() {
                     <div className={cn("min-h-0 flex-1 space-y-2 overflow-y-auto thin-scrollbar p-2", col.id === "completed" && "animate-[fade-up_300ms_ease-out_both]")}>
                       {columnIssues.length === 0 ? (
                         <div className="flex h-full min-h-20 items-center justify-center rounded-lg border border-dashed border-border/45 text-xs text-muted-foreground/70">
-                          Empty
+                          {ISSUE_LABELS.empty}
                         </div>
                       ) : (
                         columnIssues.map((issue) => (
@@ -737,8 +738,8 @@ export default function IssuesPage() {
         ) : issues.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full animate-[fade-up_400ms_ease-out_both]">
             <CircleDot className="size-8 text-muted-foreground mb-3" />
-            <p className="text-sm text-muted-foreground">No issues yet</p>
-            <p className="text-xs text-muted-foreground/60 mt-1">Create one to get started.</p>
+            <p className="text-sm text-muted-foreground">{ISSUE_LABELS.noIssuesYet}</p>
+            <p className="text-xs text-muted-foreground/60 mt-1">{ISSUE_LABELS.createToGetStarted}</p>
           </div>
         ) : (
           <div className="space-y-4 animate-[fade-up_200ms_ease-out_both]">
@@ -749,7 +750,7 @@ export default function IssuesPage() {
               return (
                 <section key={col.id} className="rounded-lg border border-border/60 bg-card/60">
                   <div className="flex items-center justify-between border-b border-border/50 px-3 py-2 text-sm font-medium">
-                    <span>{col.label}</span>
+                    <span>{issueColumnLabel(col.id)}</span>
                     <div className="flex items-center gap-1.5">
                       <Badge variant="outline">{columnIssues.length}</Badge>
                       {col.id === "completed" && (
@@ -758,7 +759,7 @@ export default function IssuesPage() {
                             render={
                               <button
                                 type="button"
-                                aria-label="Hide completed column"
+                                aria-label={ISSUE_LABELS.hideCompletedColumn}
                                 onClick={() => setShowCompleted(false)}
                                 className="rounded p-0.5 text-muted-foreground/60 transition-colors hover:bg-muted hover:text-muted-foreground"
                               />
@@ -766,7 +767,7 @@ export default function IssuesPage() {
                           >
                             <EyeOff className="size-3.5" />
                           </TooltipTrigger>
-                          <TooltipContent>Hide completed</TooltipContent>
+                          <TooltipContent>{ISSUE_LABELS.hideCompleted}</TooltipContent>
                         </Tooltip>
                       )}
                     </div>
@@ -783,13 +784,13 @@ export default function IssuesPage() {
               <div
                 role="button"
                 tabIndex={0}
-                aria-label="Show completed issues"
+                aria-label={ISSUE_LABELS.showCompletedIssues}
                 onClick={() => setShowCompleted(true)}
                 onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowCompleted(true); } }}
                 className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-border/60 px-3 py-2.5 text-sm text-muted-foreground transition-colors hover:bg-muted/30"
               >
                 <Eye className="size-3.5" />
-                <span>Show Completed ({issues.filter(i => (COLUMNS[3].statuses as readonly string[]).includes(i.status)).length})</span>
+                <span>{showCompletedCountLabel(issues.filter(i => (COLUMNS[3].statuses as readonly string[]).includes(i.status)).length)}</span>
               </div>
             )}
           </div>

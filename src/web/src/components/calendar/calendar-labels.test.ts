@@ -1,11 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
+  CALENDAR_LABELS,
   calendarViewLabel,
   hiddenEventsLabel,
   hiddenEventsAriaLabel,
   collapsedTodayLabel,
   recurringTitlePrefix,
 } from "./calendar-labels";
+
+const isKhmer = (s: string) => /[ក-៿]/.test(s);
 
 describe("calendar labels", () => {
   it("maps stable view ids to Khmer display labels", () => {
@@ -23,5 +26,15 @@ describe("calendar labels", () => {
   it("adds Khmer recurring title prefix only for recurring events", () => {
     expect(recurringTitlePrefix(true)).toBe("កើតឡើងដដែល · ");
     expect(recurringTitlePrefix(false)).toBe("");
+  });
+
+  it("localizes calendar page header and toast strings to Khmer", () => {
+    expect(isKhmer(CALENDAR_LABELS.page.title)).toBe(true);
+    expect(isKhmer(CALENDAR_LABELS.page.subtitle)).toBe(true);
+    expect(isKhmer(CALENDAR_LABELS.page.newEvent)).toBe(true);
+    expect(isKhmer(CALENDAR_LABELS.page.noEventsForAgents)).toBe(true);
+    for (const toast of Object.values(CALENDAR_LABELS.toast)) {
+      expect(isKhmer(toast)).toBe(true);
+    }
   });
 });

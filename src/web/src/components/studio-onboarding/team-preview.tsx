@@ -15,6 +15,7 @@ import { ProviderLogo } from "@/components/provider-logo";
 import { toPhneakngarAddress } from "@phneakngar/shared";
 import type { AgentRuntime as Runtime } from "@phneakngar/shared";
 import type { MemberRole } from "./scenario-presets";
+import { STUDIO_ONBOARDING_LABELS, studioRoleLabel } from "./studio-onboarding-labels";
 
 export interface TeamMember {
   name: string;
@@ -26,13 +27,6 @@ export interface TeamMember {
   emailHandle?: string;
   relationship?: string;
 }
-
-const ROLE_LABELS: Record<MemberRole, string> = {
-  leader: "Lead",
-  researcher: "Researcher",
-  engineer: "Engineer",
-  assistant: "Assistant",
-};
 
 export function TeamPreview({
   members,
@@ -50,10 +44,10 @@ export function TeamPreview({
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h2 className="text-base font-semibold tracking-tight">Your company</h2>
+        <h2 className="text-base font-semibold tracking-tight">{STUDIO_ONBOARDING_LABELS.team.yourCompany}</h2>
         <Button variant="ghost" size="sm" onClick={onShuffle} className="h-7 text-xs gap-1.5">
           <RefreshCw className="size-3" />
-          Shuffle
+          {STUDIO_ONBOARDING_LABELS.team.shuffle}
         </Button>
       </div>
       <div
@@ -80,7 +74,7 @@ export function TeamPreview({
                 <div className="flex flex-col items-start gap-0.5">
                   <span className="text-sm font-medium">{m.name}</span>
                   <span className="text-[10px] text-muted-foreground bg-muted/60 px-1.5 py-0.5 rounded">
-                    {ROLE_LABELS[m.role]}
+                    {studioRoleLabel(m.role)}
                   </span>
                 </div>
               </div>
@@ -101,7 +95,7 @@ export function TeamPreview({
                       <SelectTrigger className="h-7 text-[11px]">
                         <div className="flex items-center gap-1.5 truncate">
                           {selectedRt && <ProviderLogo provider={selectedRt.provider || ""} className="size-3 shrink-0" />}
-                          <span className="truncate">{selectedRt?.provider || selectedRt?.runtime_mode || "Select"}</span>
+                          <span className="truncate">{selectedRt?.provider || selectedRt?.runtime_mode || STUDIO_ONBOARDING_LABELS.team.selectFallback}</span>
                         </div>
                       </SelectTrigger>
                       <SelectContent>

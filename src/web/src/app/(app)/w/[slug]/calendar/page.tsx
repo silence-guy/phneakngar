@@ -33,6 +33,7 @@ import { CalendarEventSheet } from "@/components/calendar/calendar-event-sheet";
 import { getWeekStart, weekRangeIso } from "@/components/calendar/calendar-week-utils";
 import type { CalendarEvent, UpdateCalendarEventRequest } from "@phneakngar/shared";
 import { isTypingTarget } from "@/components/calendar/keyboard";
+import { CALENDAR_LABELS } from "@/components/calendar/calendar-labels";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { trackCalendarEventCreated } from "@/lib/analytics";
 
@@ -147,7 +148,7 @@ export default function CalendarPage() {
       const list = await listCalendarEvents(workspaceId, { from, to });
       setEvents(list);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to load events");
+      toast.error(err instanceof Error ? err.message : CALENDAR_LABELS.toast.failedToLoad);
     } finally {
       setLoading(false);
     }
@@ -292,10 +293,10 @@ export default function CalendarPage() {
         setEvents((prev) => [...prev, created]);
       }
       setCreateOpen(false);
-      toast.success("Event created");
+      toast.success(CALENDAR_LABELS.toast.created);
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message : "Failed to create event"
+        err instanceof Error ? err.message : CALENDAR_LABELS.toast.failedToCreate
       );
     } finally {
       setSubmitting(false);
@@ -314,10 +315,10 @@ export default function CalendarPage() {
       await fetchEvents();
       setDetailOpen(false);
       setDetail(null);
-      toast.success("Event updated");
+      toast.success(CALENDAR_LABELS.toast.updated);
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message : "Failed to update event"
+        err instanceof Error ? err.message : CALENDAR_LABELS.toast.failedToUpdate
       );
     } finally {
       setSubmittingEdit(false);
@@ -341,10 +342,10 @@ export default function CalendarPage() {
       }
       setDetailOpen(false);
       setDetail(null);
-      toast.success("Event deleted");
+      toast.success(CALENDAR_LABELS.toast.deleted);
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message : "Failed to delete event"
+        err instanceof Error ? err.message : CALENDAR_LABELS.toast.failedToDelete
       );
     } finally {
       setDeletingId(null);
@@ -504,9 +505,9 @@ export default function CalendarPage() {
     <>
       <div className="flex items-center justify-between border-b border-border/50 px-3 md:px-5 py-2.5 gap-3">
         <div className="flex items-center gap-3 min-w-0">
-          <h1 className="text-sm font-medium">Calendar</h1>
+          <h1 className="text-sm font-medium">{CALENDAR_LABELS.page.title}</h1>
           <p className="text-xs text-muted-foreground hidden md:block">
-            Schedule recurring and one-time tasks for your agents.
+            {CALENDAR_LABELS.page.subtitle}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -522,7 +523,7 @@ export default function CalendarPage() {
             className="min-w-11 min-h-11 sm:min-w-0 sm:min-h-0"
           >
             <Plus className="size-3.5" />
-            <span className="hidden sm:inline">New event</span>
+            <span className="hidden sm:inline">{CALENDAR_LABELS.page.newEvent}</span>
           </Button>
         </div>
       </div>
@@ -591,7 +592,7 @@ export default function CalendarPage() {
           events.length > 0 &&
           visibleEvents.length === 0 && (
             <p className="text-center text-xs text-muted-foreground py-4">
-              No events for selected agents.
+              {CALENDAR_LABELS.page.noEventsForAgents}
             </p>
           )}
       </div>

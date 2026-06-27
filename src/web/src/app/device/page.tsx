@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { GradientBackground } from "@/components/gradient-background"
+import { DEVICE_LABELS } from "./device-labels"
 
 type Step = "loading" | "code" | "approve" | "done" | "denied"
 
@@ -46,13 +47,13 @@ function DeviceAuthPageInner() {
       try {
         const res = await authClient.device({ query: { user_code: urlCode.trim() } })
         if (res.error) {
-          setError(res.error.error_description || "Invalid or expired code")
+          setError(res.error.error_description || DEVICE_LABELS.errors.invalidOrExpired)
           setStep("code")
         } else {
           setStep("approve")
         }
       } catch {
-        setError("Failed to verify code")
+        setError(DEVICE_LABELS.errors.verifyFailed)
         setStep("code")
       }
     }
@@ -67,12 +68,12 @@ function DeviceAuthPageInner() {
     try {
       const res = await authClient.device({ query: { user_code: userCode.trim() } })
       if (res.error) {
-        setError(res.error.error_description || "Invalid or expired code")
+        setError(res.error.error_description || DEVICE_LABELS.errors.invalidOrExpired)
       } else {
         setStep("approve")
       }
     } catch {
-      setError("Failed to verify code")
+      setError(DEVICE_LABELS.errors.verifyFailed)
     }
     setLoading(false)
   }
@@ -83,12 +84,12 @@ function DeviceAuthPageInner() {
     try {
       const res = await authClient.device.approve({ userCode: userCode.trim() })
       if (res.error) {
-        setError(res.error.error_description || "Failed to approve")
+        setError(res.error.error_description || DEVICE_LABELS.errors.approveFailed)
       } else {
         setStep("done")
       }
     } catch {
-      setError("Failed to approve device")
+      setError(DEVICE_LABELS.errors.approveDeviceFailed)
     }
     setLoading(false)
   }
@@ -100,7 +101,7 @@ function DeviceAuthPageInner() {
       await authClient.device.deny({ userCode: userCode.trim() })
       setStep("denied")
     } catch {
-      setError("Failed to deny device")
+      setError(DEVICE_LABELS.errors.denyDeviceFailed)
     }
     setLoading(false)
   }
@@ -117,20 +118,20 @@ function DeviceAuthPageInner() {
           <CardContent className="p-6">
             <FieldGroup>
               <div className="flex flex-col items-center gap-2 text-center">
-                <h1 className="text-2xl font-bold">Authorize Device</h1>
+                <h1 className="text-2xl font-bold">{DEVICE_LABELS.heading}</h1>
                 {step === "loading" && (
                   <p className="text-sm text-muted-foreground">
-                    Verifying...
+                    {DEVICE_LABELS.verifying}
                   </p>
                 )}
                 {step === "code" && (
                   <p className="text-sm text-muted-foreground">
-                    Enter the code shown on your terminal
+                    {DEVICE_LABELS.enterCode}
                   </p>
                 )}
                 {step === "approve" && (
                   <p className="text-sm text-muted-foreground">
-                    A device is requesting access to your account
+                    {DEVICE_LABELS.requestingAccess}
                   </p>
                 )}
               </div>
@@ -147,7 +148,7 @@ function DeviceAuthPageInner() {
                 <form onSubmit={handleVerifyCode}>
                   <FieldGroup>
                     <Field>
-                      <FieldLabel htmlFor="user_code">Device Code</FieldLabel>
+                      <FieldLabel htmlFor="user_code">{DEVICE_LABELS.deviceCode}</FieldLabel>
                       <Input
                         id="user_code"
                         type="text"
@@ -161,7 +162,7 @@ function DeviceAuthPageInner() {
                     </Field>
                     <Field>
                       <Button type="submit" disabled={loading || !userCode.trim()} className="w-full">
-                        {loading ? "Verifying..." : "Verify Code"}
+                        {loading ? DEVICE_LABELS.verifying : DEVICE_LABELS.verifyCode}
                       </Button>
                     </Field>
                   </FieldGroup>
@@ -171,14 +172,14 @@ function DeviceAuthPageInner() {
               {step === "approve" && (
                 <FieldGroup>
                   <p className="text-sm text-center text-muted-foreground">
-                    Code: <strong className="font-mono">{userCode}</strong>
+                    {DEVICE_LABELS.code}: <strong className="font-mono">{userCode}</strong>
                   </p>
                   <Field className="grid grid-cols-2 gap-4">
                     <Button variant="outline" onClick={handleDeny} disabled={loading}>
-                      Deny
+                      {DEVICE_LABELS.deny}
                     </Button>
                     <Button onClick={handleApprove} disabled={loading}>
-                      {loading ? "Approving..." : "Approve"}
+                      {loading ? DEVICE_LABELS.approving : DEVICE_LABELS.approve}
                     </Button>
                   </Field>
                 </FieldGroup>
@@ -186,9 +187,9 @@ function DeviceAuthPageInner() {
 
               {step === "done" && (
                 <div className="text-center space-y-2">
-                  <p className="text-sm font-medium text-green-600">✓ Device authorized</p>
+                  <p className="text-sm font-medium text-green-600">{DEVICE_LABELS.deviceAuthorized}</p>
                   <p className="text-sm text-muted-foreground">
-                    You can close this tab. The CLI will continue automatically.
+                    {DEVICE_LABELS.doneCli}
                   </p>
                 </div>
               )}
@@ -196,7 +197,7 @@ function DeviceAuthPageInner() {
               {step === "denied" && (
                 <div className="text-center space-y-2">
                   <p className="text-sm text-muted-foreground">
-                    Device access denied. You can close this window.
+                    {DEVICE_LABELS.accessDenied}
                   </p>
                 </div>
               )}

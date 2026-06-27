@@ -11,6 +11,7 @@ import { Flag, X } from "lucide-react";
 import { AgentAvatar } from "@/components/avatar";
 import { relativeTime } from "@/lib/time";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import { FLAGS_LABELS } from "./flags-labels";
 
 const FLAG_LIMIT = 30;
 
@@ -74,7 +75,7 @@ function FlagRow({
           >
             <X className="size-3.5" />
           </TooltipTrigger>
-          <TooltipContent>Unflag</TooltipContent>
+          <TooltipContent>{FLAGS_LABELS.unflag}</TooltipContent>
         </Tooltip>
       </div>
     </a>
@@ -178,9 +179,9 @@ export default function FlagsPage() {
     <div className="flex flex-col h-full">
       <div className="flex items-center justify-between border-b border-border/50 px-3 md:px-5 py-2.5 gap-3">
         <div className="flex items-center gap-3 min-w-0">
-          <h1 className="text-sm font-medium">Flagged</h1>
+          <h1 className="text-sm font-medium">{FLAGS_LABELS.title}</h1>
           <p className="text-xs text-muted-foreground hidden md:block">
-            Messages you flagged for later.
+            {FLAGS_LABELS.subtitle}
           </p>
         </div>
       </div>
@@ -200,7 +201,7 @@ export default function FlagsPage() {
         ) : items.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-3 py-20">
             <Flag className="size-10 opacity-30" />
-            <p className="text-sm">No flagged messages</p>
+            <p className="text-sm">{FLAGS_LABELS.empty.noFlagged}</p>
           </div>
         ) : (
           <>

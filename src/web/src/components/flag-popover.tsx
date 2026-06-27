@@ -13,6 +13,7 @@ import { relativeTime } from "@/lib/time";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { Flag, ArrowUpRight } from "lucide-react";
 import Link from "next/link";
+import { COMPONENT_LABELS } from "@/components/component-labels";
 
 function FlagPopoverRow({
   item,
@@ -117,11 +118,11 @@ export function FlagPopover({
             </span>
           )}
         </PopoverTrigger>
-        <TooltipContent side="right">Flagged</TooltipContent>
+        <TooltipContent side="right">{COMPONENT_LABELS.flag.flagged}</TooltipContent>
       </Tooltip>
       <PopoverContent side="right" className="w-80 p-0">
         <div className="flex items-center justify-between px-3 py-2 border-b border-border/50">
-          <span className="text-xs font-medium">Flagged</span>
+          <span className="text-xs font-medium">{COMPONENT_LABELS.flag.flagged}</span>
           <Link
             href={`/w/${slug}/flags`}
             onClick={() => {
@@ -151,7 +152,7 @@ export function FlagPopover({
           ) : !items || items.length === 0 ? (
             <div className="flex flex-col items-center gap-2 py-6 text-muted-foreground">
               <Flag className="size-6 opacity-30" />
-              <p className="text-xs">No flagged messages</p>
+              <p className="text-xs">{COMPONENT_LABELS.flag.noFlagged}</p>
             </div>
           ) : (
             <div className="max-h-96 overflow-y-auto thin-scrollbar">

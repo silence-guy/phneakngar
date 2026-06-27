@@ -12,4 +12,16 @@ describe("EMAIL_LABELS", () => {
     expect(EMAIL_LABELS.toolbar.insertLink).toBe("បញ្ចូលតំណ");
     expect(EMAIL_LABELS.toolbar.validUrl).toContain("URL");
   });
+
+  it("provides Khmer agent-chat email card + event sheet labels", () => {
+    const KHMER = /[ក-៿]/;
+    expect(EMAIL_LABELS.card.fromPrefix).toMatch(KHMER);
+    expect(EMAIL_LABELS.card.toPrefix).toMatch(KHMER);
+    expect(EMAIL_LABELS.card.inbound).toMatch(KHMER);
+    expect(EMAIL_LABELS.card.sent).toMatch(KHMER);
+    expect(EMAIL_LABELS.eventSheet.notFound).toMatch(KHMER);
+    expect(EMAIL_LABELS.eventSheet.from).toMatch(KHMER);
+    expect(EMAIL_LABELS.eventSheet.to).toMatch(KHMER);
+    expect(EMAIL_LABELS.eventSheet.date).toMatch(KHMER);
+  });
 });

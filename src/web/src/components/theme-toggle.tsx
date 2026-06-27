@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
 import { Sun, Moon } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { appShellLabel } from "@/lib/locale";
 
 export function ThemeToggle() {
   const { resolvedTheme, setTheme } = useTheme();
@@ -26,7 +27,7 @@ export function ThemeToggle() {
   const Icon = resolvedTheme === "dark" ? Moon : Sun;
 
   return (
-    <Button variant="ghost" size="sm" onClick={toggle} aria-label="Toggle theme">
+    <Button variant="ghost" size="sm" onClick={toggle} aria-label={appShellLabel("toggleTheme")}>
       <Icon className="size-4" />
     </Button>
   );

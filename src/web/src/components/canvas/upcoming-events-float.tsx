@@ -9,6 +9,12 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { AvatarRenderer, parseAvatarUrl } from "@/components/avatar";
 import { listCalendarEvents } from "@/lib/api";
 import type { CalendarEvent } from "@phneakngar/shared";
+import {
+  CANVAS_LABELS,
+  upcomingCountLabel,
+  eventsTodayLabel,
+  eventCountLabel,
+} from "@/components/canvas/canvas-labels";
 
 function AgentAvatar({ name, avatarUrl, size = 20 }: { name?: string; avatarUrl?: string | null; size?: number }) {
   const config = parseAvatarUrl(avatarUrl);
@@ -76,7 +82,7 @@ export function UpcomingEventsFloat() {
     const agent = agentMap.get(agentId);
     agentSummaries.push({
       agentId,
-      agentName: agent?.name ?? "Unknown",
+      agentName: agent?.name ?? CANVAS_LABELS.events.unknownAgent,
       avatarUrl: agent?.avatar_url ?? null,
       count: eventCount,
     });
@@ -91,7 +97,7 @@ export function UpcomingEventsFloat() {
         className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-background/90 backdrop-blur-sm ring-1 ring-foreground/8 shadow-sm text-xs font-medium text-muted-foreground hover:text-foreground transition-colors animate-[fade-up_300ms_ease-out_both]"
       >
         <CalendarDays className="size-3" />
-        {count} upcoming
+        {upcomingCountLabel(count)}
       </button>
     );
   }
@@ -99,17 +105,17 @@ export function UpcomingEventsFloat() {
   return (
     <div
       role="region"
-      aria-label="Upcoming events"
+      aria-label={CANVAS_LABELS.events.upcomingEventsAria}
       className="w-72 rounded-lg ring-1 ring-foreground/8 shadow-sm bg-background/90 backdrop-blur-sm animate-[fade-up_300ms_ease-out_both]"
     >
       <div className="flex items-center justify-between px-3 py-2 border-b border-border/50">
         <div className="flex items-center gap-2 text-sm font-medium">
           <CalendarDays className="size-3.5 text-muted-foreground" />
-          <span>{count} events today</span>
+          <span>{eventsTodayLabel(count)}</span>
         </div>
         <button
           type="button"
-          aria-label="Collapse events panel"
+          aria-label={CANVAS_LABELS.events.collapsePanelAria}
           className="size-6 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
           onClick={() => setExpanded(false)}
         >
@@ -127,7 +133,7 @@ export function UpcomingEventsFloat() {
             <AgentAvatar name={summary.agentName} avatarUrl={summary.avatarUrl} size={22} />
             <span className="flex-1 text-sm truncate">{summary.agentName}</span>
             <span className="text-xs text-muted-foreground shrink-0">
-              {summary.count} event{summary.count !== 1 ? "s" : ""}
+              {eventCountLabel(summary.count)}
             </span>
           </Link>
         ))}

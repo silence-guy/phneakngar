@@ -45,7 +45,37 @@ export const ISSUE_LABELS = {
   collapseTasksPanel: "បង្រួមផ្ទាំងកិច្ចការ",
   active: "កំពុងសកម្ម",
   connectionLostRetrying: "ការតភ្ជាប់បានដាច់ - កំពុងព្យាយាមម្តងទៀត...",
+  delete: "លុប",
+  issuesHeading: "បញ្ហា",
+  noIssues: "គ្មានបញ្ហា",
+  noIssuesYet: "មិនទាន់មានបញ្ហានៅឡើយទេ",
+  createToGetStarted: "បង្កើតមួយដើម្បីចាប់ផ្តើម។",
+  empty: "ទទេ",
+  reviewBadge: "ពិនិត្យ",
+  failedBadge: "បរាជ័យ",
+  hideCompleted: "លាក់ការងាររួចរាល់",
+  showCompleted: "បង្ហាញការងាររួចរាល់",
+  hideCompletedColumn: "លាក់ជួរឈររួចរាល់",
+  showCompletedColumn: "បង្ហាញជួរឈររួចរាល់",
+  showCompletedIssues: "បង្ហាញបញ្ហារួចរាល់",
+  dropToComplete: "ទម្លាក់ដើម្បីបញ្ចប់",
+  assignAgentFirst: "ចាត់តាំងភ្នាក់ងារជាមុនសិន ដើម្បីដំណើរការបញ្ហានេះ",
+  issueCreated: "បានបង្កើតបញ្ហា",
+  issueDeleted: "បានលុបបញ្ហា",
+  loadIssuesFailed: "មិនអាចផ្ទុកបញ្ហាបានទេ",
+  loadIssueFailed: "មិនអាចផ្ទុកបញ្ហានេះបានទេ",
+  createIssueFailed: "មិនអាចបង្កើតបញ្ហាបានទេ",
+  updateIssueFailed: "មិនអាចធ្វើបច្ចុប្បន្នភាពបញ្ហាបានទេ",
+  updateStatusFailed: "មិនអាចធ្វើបច្ចុប្បន្នភាពស្ថានភាពបញ្ហាបានទេ",
+  deleteIssueFailed: "មិនអាចលុបបញ្ហាបានទេ",
 } as const;
+
+export const ISSUE_COLUMN_LABELS: Record<string, string> = {
+  todo: "ត្រូវធ្វើ",
+  in_progress: "កំពុងដំណើរការ",
+  review: "ពិនិត្យ",
+  completed: "រួចរាល់",
+};
 
 function fallbackLabel(value: string): string {
   return value.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
@@ -87,4 +117,12 @@ export function activeTaskPanelTitle(count: number): string {
 
 export function viewAllTasksLabel(count: number): string {
   return `មើលកិច្ចការ ${count} ទាំងអស់`;
+}
+
+export function issueColumnLabel(columnId: string): string {
+  return ISSUE_COLUMN_LABELS[columnId] ?? fallbackLabel(columnId);
+}
+
+export function showCompletedCountLabel(count: number): string {
+  return `${ISSUE_LABELS.showCompleted} (${count})`;
 }

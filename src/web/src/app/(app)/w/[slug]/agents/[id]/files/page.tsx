@@ -23,6 +23,7 @@ import {
   FolderOpen,
   Loader2,
 } from "lucide-react";
+import { AGENT_PAGE_LABELS } from "../agent-page-labels";
 
 // --- Tree node state ---
 
@@ -87,7 +88,7 @@ export default function AgentFilesPage() {
           if (pendingRef.current.has(request_id)) {
             pendingRef.current.delete(request_id);
             if (path === ".") {
-              setRootError("Request timed out — daemon may be offline");
+              setRootError(AGENT_PAGE_LABELS.files.requestTimedOut);
               setRootLoading(false);
             } else {
               setNodeLoading(path, false);
@@ -116,13 +117,13 @@ export default function AgentFilesPage() {
         const timer = setTimeout(() => {
           if (pendingRef.current.has(request_id)) {
             pendingRef.current.delete(request_id);
-            setFileError("Request timed out — daemon may be offline");
+            setFileError(AGENT_PAGE_LABELS.files.requestTimedOut);
             setFileLoading(false);
           }
         }, REQUEST_TIMEOUT_MS);
         pendingRef.current.set(request_id, { type: "read", path, timer });
       } catch {
-        setFileError("Failed to request file");
+        setFileError(AGENT_PAGE_LABELS.files.requestFileFailed);
         setFileLoading(false);
       }
     },
@@ -229,8 +230,8 @@ export default function AgentFilesPage() {
       <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm p-8">
         <div className="text-center space-y-2">
           <FolderOpen className="size-8 mx-auto opacity-40" />
-          <p>Agent runtime is offline</p>
-          <p className="text-xs">File browsing requires the daemon to be running.</p>
+          <p>{AGENT_PAGE_LABELS.files.offlineTitle}</p>
+          <p className="text-xs">{AGENT_PAGE_LABELS.files.offlineHint}</p>
         </div>
       </div>
     );
@@ -247,7 +248,7 @@ export default function AgentFilesPage() {
         />}>
           <Copy className="size-3" />
         </TooltipTrigger>
-        <TooltipContent>Copy full path</TooltipContent>
+        <TooltipContent>{AGENT_PAGE_LABELS.files.copyFullPath}</TooltipContent>
       </Tooltip>
       <span className="truncate opacity-60">{rootLabel}</span>
     </div>
@@ -264,7 +265,7 @@ export default function AgentFilesPage() {
       ) : rootError ? (
         <div className="p-4 text-sm text-destructive">{rootError}</div>
       ) : rootNodes.length === 0 ? (
-        <div className="p-4 text-sm text-muted-foreground">Empty directory</div>
+        <div className="p-4 text-sm text-muted-foreground">{AGENT_PAGE_LABELS.files.emptyDirectory}</div>
       ) : (
         <div className="py-0.5">
           {rootNodes.map((node) => (
@@ -308,7 +309,7 @@ export default function AgentFilesPage() {
                   viewMode === "raw" ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground"
                 }`}
               >
-                Raw
+                {AGENT_PAGE_LABELS.files.raw}
               </button>
               <button
                 onClick={() => setViewMode("preview")}
@@ -316,7 +317,7 @@ export default function AgentFilesPage() {
                   viewMode === "preview" ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground"
                 }`}
               >
-                Preview
+                {AGENT_PAGE_LABELS.files.preview}
               </button>
             </>
           )}
@@ -333,7 +334,7 @@ export default function AgentFilesPage() {
           <div className="p-4 text-sm text-destructive">{fileError}</div>
         ) : fileBinary ? (
           <div className="flex-1 flex items-center justify-center p-8 text-sm text-muted-foreground">
-            Binary file — cannot display
+            {AGENT_PAGE_LABELS.files.binaryFile}
           </div>
         ) : isMarkdown && viewMode === "preview" ? (
           <div className="markdown text-sm p-4">
@@ -348,7 +349,7 @@ export default function AgentFilesPage() {
     </div>
   ) : (
     <div className="flex-1 flex items-center justify-center text-muted-foreground text-xs h-full">
-      Select a file to view
+      {AGENT_PAGE_LABELS.files.selectFile}
     </div>
   );
 
@@ -433,7 +434,7 @@ function TreeNodeRow({
         ))}
         {node.expanded && node.children && node.children.length === 0 && (
           <div className="text-[10px] text-muted-foreground/50 py-0.5" style={{ paddingLeft: paddingLeft + 24 }}>
-            empty
+            {AGENT_PAGE_LABELS.files.empty}
           </div>
         )}
       </>

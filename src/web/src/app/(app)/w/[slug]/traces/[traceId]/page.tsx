@@ -10,19 +10,16 @@ import { trackThreadViewed } from "@/lib/analytics";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowLeft } from "lucide-react";
 import { AvatarRenderer, parseAvatarUrl } from "@/components/avatar";
+import {
+  TRACES_LABELS,
+  formatTraceRelativeTime,
+  silentTaskLabel,
+  traceTaskStatusLabel,
+  traceOutcomeLabel,
+} from "../traces-labels";
 
 function relativeTime(dateStr: string): string {
-  const date = new Date(dateStr);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMin = Math.floor(diffMs / 60000);
-  if (diffMin < 1) return "just now";
-  if (diffMin < 60) return `${diffMin}m ago`;
-  const diffHrs = Math.floor(diffMin / 60);
-  if (diffHrs < 24) return `${diffHrs}h ago`;
-  const diffDays = Math.floor(diffHrs / 24);
-  if (diffDays < 7) return `${diffDays}d ago`;
-  return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  return formatTraceRelativeTime(dateStr);
 }
 
 function formatDuration(createdAt: string, completedAt: string | null): string | null {
@@ -54,25 +51,9 @@ function StatusDot({ status }: { status: string }) {
   return <span className={`size-1.5 rounded-full shrink-0 ${colorClass}`} />;
 }
 
-const STATUS_LABELS: Record<string, string> = {
-  queued: "Queued",
-  dispatched: "Queued",
-  running: "Running",
-  completed: "Completed",
-  failed: "Failed",
-  cancelled: "Cancelled",
-  superseded: "Cancelled",
-};
-
-const OUTCOME_LABELS: Record<string, string> = {
-  visible_output: "Visible output",
-  completed_without_visible_output: "No visible output",
-  not_required: "Output not required",
-};
-
 function outcomeLabel(status: TraceTask["visible_outcome_status"]) {
   if (!status || status === "pending" || status === "visible_output") return null;
-  return OUTCOME_LABELS[status] ?? status;
+  return traceOutcomeLabel(status);
 }
 
 function AgentAvatar({ name, avatarUrl, size = 14 }: { name?: string; avatarUrl?: string | null; size?: number }) {
@@ -162,7 +143,7 @@ function TaskNode({ node, slug }: { node: TreeNode; slug: string }) {
               </>
             )}
             <StatusDot status={node.status} />
-            <span className="text-xs text-muted-foreground">{STATUS_LABELS[node.status] ?? node.status}</span>
+            <span className="text-xs text-muted-foreground">{traceTaskStatusLabel(node.status)}</span>
             {duration && (
               <>
                 <span className="text-muted-foreground/40">&middot;</span>
@@ -223,7 +204,7 @@ export default function TraceDetailPage() {
         <span className="text-xs text-muted-foreground">#{channel}</span>
         {silentTaskCount > 0 && (
           <span className="rounded-sm border border-border/60 px-1.5 py-0.5 text-[10px] leading-none text-muted-foreground">
-            {silentTaskCount === 1 ? "1 no-output task" : `${silentTaskCount} no-output tasks`}
+            {silentTaskLabel(silentTaskCount)}
           </span>
         )}
       </div>
@@ -246,7 +227,7 @@ export default function TraceDetailPage() {
           </div>
         ) : flat.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full">
-            <p className="text-sm text-muted-foreground">Trace not found</p>
+            <p className="text-sm text-muted-foreground">{TRACES_LABELS.detail.notFound}</p>
           </div>
         ) : (
           <div className="flex flex-col animate-[fade-up_400ms_ease-out_both]">

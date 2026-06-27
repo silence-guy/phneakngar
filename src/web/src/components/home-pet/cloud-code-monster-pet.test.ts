@@ -593,7 +593,7 @@ describe("production workspace PET mounting", () => {
     // Home page no longer renders pet directly
     expect(workspaceHomePage).not.toContain("CloudCodeMonsterPet");
     expect(workspaceHomePage).not.toContain("useHomePetSettings");
-    expect(settingsPage).toContain('{ id: "pet", label: "Pet" }');
+    expect(settingsPage).toContain('{ id: "pet" }');
     expect(petTab).toContain("Enable pet");
     expect(petTab).not.toContain("Homepage only");
     expect(petTab).not.toContain("Global Display");

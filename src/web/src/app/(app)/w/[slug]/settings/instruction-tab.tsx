@@ -7,6 +7,7 @@ import { getMemberMe, updateMemberMe } from "@/lib/api";
 import { MarkdownEditor } from "@/components/ui/markdown-editor";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { SETTINGS_LABELS } from "./settings-labels";
 
 const MAX_LENGTH = 50_000;
 const DEBOUNCE_MS = 500;
@@ -61,7 +62,7 @@ export function InstructionTab() {
       setValue(data.global_instruction);
       setSavedValue(data.global_instruction);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to load settings");
+      toast.error(err instanceof Error ? err.message : SETTINGS_LABELS.instruction.failedToLoad);
     } finally {
       setLoading(false);
     }
@@ -82,7 +83,7 @@ export function InstructionTab() {
       const data = await updateMemberMe(workspaceId, current);
       setSavedValue(data.global_instruction);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to save");
+      toast.error(err instanceof Error ? err.message : SETTINGS_LABELS.instruction.failedToSave);
     } finally {
       savingRef.current = false;
       if (valueRef.current !== savedValueRef.current) {
@@ -157,7 +158,7 @@ export function InstructionTab() {
         <MarkdownEditor
           value={value}
           onChange={handleChange}
-          placeholder="Write instructions that every agent you own will follow..."
+          placeholder={SETTINGS_LABELS.instruction.placeholder}
           minHeight="calc(100vh - 240px)"
           contentType="markdown"
           variant="seamless"
@@ -166,7 +167,7 @@ export function InstructionTab() {
       <div className="flex items-center gap-2 px-6 py-3">
         <UsageRing ratio={ratio} />
         <p className="text-xs text-muted-foreground">
-          This instruction is prepended to every agent&apos;s individual instruction.
+          {SETTINGS_LABELS.instruction.footerHelp}
         </p>
       </div>
     </div>

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { TypewriterVisual } from "@/components/typewriter-visual";
+import { ERROR_PAGE_LABELS } from "@/app/error-page-labels";
 
 export default function Error({
   reset,
@@ -32,16 +33,16 @@ export default function Error({
                 }}
               >
                 <div className="tw-email-line">
-                  <span style={{ color: "var(--landing-text)" }}>From:</span>{" "}
+                  <span style={{ color: "var(--landing-text)" }}>{ERROR_PAGE_LABELS.fromLabel}</span>{" "}
                   system@phneakngar.ai
                 </div>
                 <div className="tw-email-line">
-                  <span style={{ color: "var(--landing-text)" }}>To:</span>{" "}
-                  you
+                  <span style={{ color: "var(--landing-text)" }}>{ERROR_PAGE_LABELS.toLabel}</span>{" "}
+                  {ERROR_PAGE_LABELS.toRecipient}
                 </div>
                 <div className="tw-email-line">
-                  <span style={{ color: "var(--landing-text)" }}>Subject:</span>{" "}
-                  Something went wrong
+                  <span style={{ color: "var(--landing-text)" }}>{ERROR_PAGE_LABELS.subjectLabel}</span>{" "}
+                  {ERROR_PAGE_LABELS.error.subject}
                 </div>
               </div>
 
@@ -54,8 +55,7 @@ export default function Error({
                   lineHeight: 1.6,
                 }}
               >
-                An unexpected error occurred. Our team has been notified.
-                You can try again or head back home.
+                {ERROR_PAGE_LABELS.error.body}
               </div>
             </>
           }
@@ -72,7 +72,7 @@ export default function Error({
             backgroundColor: "var(--landing-text)",
           }}
         >
-          Try again
+          {ERROR_PAGE_LABELS.error.tryAgain}
         </button>
         <Link
           href="/"
@@ -83,7 +83,7 @@ export default function Error({
             border: "1px solid var(--landing-border)",
           }}
         >
-          Go home
+          {ERROR_PAGE_LABELS.goHome}
         </Link>
       </div>
     </div>

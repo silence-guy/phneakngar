@@ -25,6 +25,7 @@ import { listRuntimes, createMachineToken } from "@/lib/api";
 import { useUserWs } from "@/lib/use-user-ws";
 import { ConnectMachineSteps } from "@/components/connect-machine-steps";
 import { DEFAULT_WEB_LOCALE, onboardingLabel } from "@/lib/locale";
+import { STUDIO_ONBOARDING_LABELS } from "@/components/studio-onboarding/studio-onboarding-labels";
 import type { TemplatePreset } from "@/lib/templates";
 
 export function StudioOnboardingClient({
@@ -276,7 +277,7 @@ export function StudioOnboardingClient({
             onClick={() => router.push("/workspaces")}
           >
             <LayoutGrid className="size-3 mr-1.5" />
-            Workspaces
+            {STUDIO_ONBOARDING_LABELS.nav.workspaces}
           </Button>
         }
         rightSlot={
@@ -287,7 +288,7 @@ export function StudioOnboardingClient({
             onClick={async () => { await clearAllCache(); signOut({ fetchOptions: { onSuccess: () => router.push("/sign-in") } }); }}
           >
             <LogOut className="size-3 mr-1.5" />
-            Sign out
+            {STUDIO_ONBOARDING_LABELS.nav.signOut}
           </Button>
         }
         mainClassName="flex items-center justify-center"
@@ -298,10 +299,10 @@ export function StudioOnboardingClient({
               className="text-2xl font-semibold tracking-tight"
               style={{ fontFamily: "var(--font-news)" }}
             >
-              What will your company do?
+              {STUDIO_ONBOARDING_LABELS.scenario.question}
             </h1>
             <p className="text-sm text-muted-foreground">
-              Pick a focus area. You can always add more agents later.
+              {STUDIO_ONBOARDING_LABELS.scenario.subheading}
             </p>
           </div>
 
@@ -316,7 +317,7 @@ export function StudioOnboardingClient({
               }}
               className="text-xs text-muted-foreground hover:text-foreground transition-colors"
             >
-              Skip for now
+              {STUDIO_ONBOARDING_LABELS.scenario.skipForNow}
             </button>
           </div>
         </div>
@@ -335,7 +336,7 @@ export function StudioOnboardingClient({
             onClick={() => router.push("/workspaces")}
           >
             <LayoutGrid className="size-3 mr-1.5" />
-            Workspaces
+            {STUDIO_ONBOARDING_LABELS.nav.workspaces}
           </Button>
           <span className="text-muted-foreground/40">/</span>
           <Button
@@ -345,7 +346,7 @@ export function StudioOnboardingClient({
             onClick={() => setScenarioId(null)}
           >
             <ArrowLeft className="size-3 mr-1.5" />
-            Back
+            {STUDIO_ONBOARDING_LABELS.nav.back}
           </Button>
         </>
       }
@@ -357,7 +358,7 @@ export function StudioOnboardingClient({
           onClick={async () => { await clearAllCache(); signOut({ fetchOptions: { onSuccess: () => router.push("/sign-in") } }); }}
         >
           <LogOut className="size-3 mr-1.5" />
-          Sign out
+          {STUDIO_ONBOARDING_LABELS.nav.signOut}
         </Button>
       }
     >
@@ -367,7 +368,7 @@ export function StudioOnboardingClient({
             className="text-2xl font-semibold tracking-tight"
             style={{ fontFamily: "var(--font-news)" }}
           >
-            Build your company
+            {STUDIO_ONBOARDING_LABELS.build.title}
           </h1>
         </div>
 
@@ -388,15 +389,15 @@ export function StudioOnboardingClient({
             {/* Connect Machine — hidden in Tauri desktop (the app IS the computer) */}
             {!isTauriDesktop && (
               <div className="space-y-3">
-                <h2 className="text-base font-semibold tracking-tight">Connect a computer</h2>
+                <h2 className="text-base font-semibold tracking-tight">{STUDIO_ONBOARDING_LABELS.build.connectComputer}</h2>
                 {(hasOnlineRuntime || (machineRegistered && daemonOnline)) ? (
                   <p className="text-xs text-emerald-600 flex items-center gap-1">
-                    <CheckCircle2 className="size-3" /> Computer connected
+                    <CheckCircle2 className="size-3" /> {STUDIO_ONBOARDING_LABELS.build.computerConnected}
                   </p>
                 ) : (
                   <>
                     <p className="text-xs text-muted-foreground">
-                      Your company needs a connected computer to run tasks.
+                      {STUDIO_ONBOARDING_LABELS.build.needsComputer}
                     </p>
                     <div className="rounded-xl bg-muted/40 p-5">
                       <ConnectMachineSteps
@@ -422,10 +423,10 @@ export function StudioOnboardingClient({
               {creating ? (
                 <>
                   <Loader2 className="size-4 animate-spin mr-2" />
-                  Launching...
+                  {STUDIO_ONBOARDING_LABELS.build.launching}
                 </>
               ) : (
-                "Launch company"
+                STUDIO_ONBOARDING_LABELS.build.launchCompany
               )}
             </Button>
           </>

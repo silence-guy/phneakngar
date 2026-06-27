@@ -2,6 +2,7 @@ import React, { useRef, useEffect } from "react"
 import { createPortal } from "react-dom"
 import type { SkillEntry } from "@phneakngar/shared"
 import { cn } from "@/lib/utils"
+import { AGENT_CHAT_LABELS } from "@/components/agent-chat/agent-chat-labels"
 
 interface SlashCommandPopupProps {
   isOpen: boolean
@@ -37,7 +38,7 @@ function SkillRow({
         <span className="min-w-0 flex-1 truncate font-medium">/{skill.name}</span>
         {skill.isGlobal && (
           <span className="shrink-0 rounded px-1 py-0.5 text-[10px] font-medium bg-muted text-muted-foreground">
-            Global
+            {AGENT_CHAT_LABELS.slash.global}
           </span>
         )}
       </span>

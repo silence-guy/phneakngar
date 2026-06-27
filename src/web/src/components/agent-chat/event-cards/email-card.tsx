@@ -5,6 +5,7 @@ import { ChevronRight, MessageSquare } from "lucide-react";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useLongPress } from "@/hooks/use-long-press";
 import type { Agent } from "@phneakngar/shared";
+import { EMAIL_LABELS } from "@/components/email-labels";
 
 export function EmailCard({
   subject,
@@ -85,7 +86,7 @@ export function EmailCard({
       <span className="p-3 flex flex-col">
         <span className="flex items-start gap-1 mb-1">
           <span className="text-[0.72rem] text-(--muted-foreground) flex-1 min-w-0 whitespace-nowrap overflow-hidden text-ellipsis">
-            {direction === "inbound" ? "from " : "to "}
+            {direction === "inbound" ? EMAIL_LABELS.card.fromPrefix : EMAIL_LABELS.card.toPrefix}
             {address}
           </span>
           <span className="shrink-0 flex flex-col items-end gap-0.5">
@@ -95,7 +96,7 @@ export function EmailCard({
               </span>
             )}
             <span className="text-[0.5rem] font-bold uppercase tracking-wider text-(--te) px-1 py-0.5 rounded-[3px] border-[1.5px] border-(--te) opacity-45 -rotate-3">
-              {direction === "inbound" ? "Inbound" : "Sent"}
+              {direction === "inbound" ? EMAIL_LABELS.card.inbound : EMAIL_LABELS.card.sent}
             </span>
           </span>
         </span>

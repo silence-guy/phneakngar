@@ -11,6 +11,7 @@ import { CircleHelp } from "lucide-react";
 import { trackAgentCreated, trackSecondAgentCreated, trackCustomEmailConnected } from "@/lib/analytics";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import { AGENT_PAGE_LABELS } from "../[id]/agent-page-labels";
 
 
 export default function CreateAgentPage() {
@@ -38,7 +39,7 @@ export default function CreateAgentPage() {
   return (
     <>
       <div className="flex items-center gap-2 border-b border-border/50 px-3 md:px-5 py-2.5">
-        <h1 className="text-sm font-medium">Create Agent</h1>
+        <h1 className="text-sm font-medium">{AGENT_PAGE_LABELS.agentNew.heading}</h1>
         <Tooltip>
           <TooltipTrigger
             render={
@@ -52,7 +53,7 @@ export default function CreateAgentPage() {
           >
             <CircleHelp className="size-3.5" />
           </TooltipTrigger>
-          <TooltipContent>Show guided tour</TooltipContent>
+          <TooltipContent>{AGENT_PAGE_LABELS.agentNew.showTour}</TooltipContent>
         </Tooltip>
       </div>
 
@@ -87,11 +88,11 @@ export default function CreateAgentPage() {
               if (data.custom_email) {
                 try {
                   await createEmailAccount(agent.id, data.custom_email, workspaceId);
-                  toast.success("Custom email connected");
+                  toast.success(AGENT_PAGE_LABELS.agentNew.customEmailConnected);
                   const domain = data.custom_email.emailAddress?.split("@")[1] ?? "";
                   trackCustomEmailConnected({ email_domain: domain });
                 } catch (err) {
-                  toast.error(err instanceof Error ? err.message : "Failed to connect custom email");
+                  toast.error(err instanceof Error ? err.message : AGENT_PAGE_LABELS.agentNew.customEmailFailed);
                 }
               }
               router.push(`/w/${slug}/agents/${agent.id}/chat`);

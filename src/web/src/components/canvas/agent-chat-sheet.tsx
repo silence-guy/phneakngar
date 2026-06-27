@@ -20,6 +20,7 @@ import { AgentChatView } from "@/components/agent-chat/agent-chat-view";
 import { ArrowUpRight, XIcon } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import { CANVAS_LABELS } from "@/components/canvas/canvas-labels";
 
 interface AgentChatSheetProps {
   open: boolean;
@@ -87,7 +88,7 @@ export function AgentChatSheet({ open, onOpenChange, agentId, agent, targetConvI
                 >
                   <ArrowUpRight />
                 </TooltipTrigger>
-                <TooltipContent>Open full page</TooltipContent>
+                <TooltipContent>{CANVAS_LABELS.chat.openFullPage}</TooltipContent>
               </Tooltip>
             );
           })()}
@@ -95,7 +96,7 @@ export function AgentChatSheet({ open, onOpenChange, agentId, agent, targetConvI
             render={<Button variant="ghost" size="icon-sm" />}
           >
             <XIcon />
-            <span className="sr-only">Close</span>
+            <span className="sr-only">{CANVAS_LABELS.chat.close}</span>
           </SheetClose>
         </div>
 
@@ -112,7 +113,7 @@ export function AgentChatSheet({ open, onOpenChange, agentId, agent, targetConvI
             })()}
             <div className="flex items-baseline gap-2 min-w-0">
               <SheetTitle className="truncate shrink-0">
-                {agent?.name ?? "Chat"}
+                {agent?.name ?? CANVAS_LABELS.chat.fallbackTitle}
               </SheetTitle>
               {agent?.email_handle && (
                 <span className="text-xs text-muted-foreground truncate">{toPhneakngarAddress(agent.email_handle)}</span>

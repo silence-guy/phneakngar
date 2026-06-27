@@ -5,8 +5,8 @@ export const NOTIFICATION_EVENTS = ["completed", "failed"] as const;
 export type NotificationEvent = (typeof NOTIFICATION_EVENTS)[number];
 
 export const NOTIFICATION_EVENT_LABELS: Record<NotificationEvent, string> = {
-  completed: "Task Completed",
-  failed: "Task Failed",
+  completed: "ភារកិច្ចបានបញ្ចប់",
+  failed: "ភារកិច្ចបរាជ័យ",
 };
 
 export function isNotificationSupported(): boolean {

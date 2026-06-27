@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { getEmail, getEmailBody } from "@/lib/api";
 import { EmailBodyFrame } from "@/components/email-body-frame";
 import type { Email } from "@phneakngar/shared";
+import { EMAIL_LABELS, emailAttachmentsLabel } from "@/components/email-labels";
 
 interface EmailEventSheetProps {
   open: boolean;
@@ -54,7 +55,7 @@ export function EmailEventSheet({ open, onOpenChange, emailId, workspaceId }: Em
         setBody(bodyData);
       })
       .catch(() => {
-        toast.error("Email not found");
+        toast.error(EMAIL_LABELS.eventSheet.notFound);
         onOpenChangeRef.current(false);
       })
       .finally(() => setLoading(false));
@@ -84,7 +85,7 @@ export function EmailEventSheet({ open, onOpenChange, emailId, workspaceId }: Em
           <div className="flex items-center gap-2">
             <Mail className="h-4 w-4 shrink-0 text-muted-foreground" />
             <SheetTitle className="truncate flex-1">
-              {loading ? "Loading..." : email?.subject || "Email"}
+              {loading ? EMAIL_LABELS.eventSheet.loading : email?.subject || EMAIL_LABELS.eventSheet.title}
             </SheetTitle>
             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleOpenChange(false)}>
               <X className="h-4 w-4" />
@@ -101,15 +102,15 @@ export function EmailEventSheet({ open, onOpenChange, emailId, workspaceId }: Em
             <div className="flex flex-col gap-4">
               <div className="text-sm space-y-1 border-b pb-3">
                 <div className="flex gap-2">
-                  <span className="text-muted-foreground shrink-0">From:</span>
+                  <span className="text-muted-foreground shrink-0">{EMAIL_LABELS.eventSheet.from}</span>
                   <span className="truncate">{email.from_email}</span>
                 </div>
                 <div className="flex gap-2">
-                  <span className="text-muted-foreground shrink-0">To:</span>
+                  <span className="text-muted-foreground shrink-0">{EMAIL_LABELS.eventSheet.to}</span>
                   <span className="truncate">{email.to_email}</span>
                 </div>
                 <div className="flex gap-2">
-                  <span className="text-muted-foreground shrink-0">Date:</span>
+                  <span className="text-muted-foreground shrink-0">{EMAIL_LABELS.eventSheet.date}</span>
                   <span>{new Date(email.created_at).toLocaleString()}</span>
                 </div>
               </div>
@@ -124,7 +125,7 @@ export function EmailEventSheet({ open, onOpenChange, emailId, workspaceId }: Em
                 <div className="border-t pt-3">
                   <div className="flex items-center gap-1.5 mb-2 text-xs text-muted-foreground">
                     <Paperclip className="size-3" />
-                    {email.attachments.length} attachment{email.attachments.length > 1 ? "s" : ""}
+                    {emailAttachmentsLabel(email.attachments.length)}
                   </div>
                   <div className="flex flex-wrap gap-1.5">
                     {email.attachments.map((att, i) => (

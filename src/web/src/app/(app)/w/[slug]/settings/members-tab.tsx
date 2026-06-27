@@ -19,6 +19,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { trackTeamMemberInvited } from "@/lib/analytics";
+import { SETTINGS_LABELS, expiresLabel } from "./settings-labels";
 
 function getInviteLink(token: string) {
   return `${window.location.origin}/invite/${token}`;
@@ -47,7 +48,7 @@ export function MembersTab() {
       setMembers(membersData);
       setInvites(invitesData);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to load members");
+      toast.error(err instanceof Error ? err.message : SETTINGS_LABELS.members.failedToLoad);
     } finally {
       setLoading(false);
     }
@@ -65,9 +66,9 @@ export function MembersTab() {
       setInvites((prev) => [...prev, invite]);
       const link = getInviteLink(invite.token);
       await navigator.clipboard.writeText(link);
-      toast.success("Invite link copied to clipboard");
+      toast.success(SETTINGS_LABELS.members.inviteCopied);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to generate invite");
+      toast.error(err instanceof Error ? err.message : SETTINGS_LABELS.members.failedToGenerate);
     } finally {
       setGeneratingInvite(false);
     }
@@ -77,9 +78,9 @@ export function MembersTab() {
     const link = getInviteLink(token);
     try {
       await navigator.clipboard.writeText(link);
-      toast.success("Invite link copied");
+      toast.success(SETTINGS_LABELS.members.inviteCopiedShort);
     } catch {
-      toast.error("Failed to copy link");
+      toast.error(SETTINGS_LABELS.members.failedToCopy);
     }
   };
 
@@ -87,9 +88,9 @@ export function MembersTab() {
     try {
       await revokeInvite(workspaceId, inviteId);
       setInvites((prev) => prev.filter((i) => i.id !== inviteId));
-      toast.success("Invite revoked");
+      toast.success(SETTINGS_LABELS.members.inviteRevoked);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to revoke invite");
+      toast.error(err instanceof Error ? err.message : SETTINGS_LABELS.members.failedToRevoke);
     }
   };
 
@@ -97,9 +98,9 @@ export function MembersTab() {
     try {
       await removeMember(workspaceId, memberId);
       setMembers((prev) => prev.filter((m) => m.id !== memberId));
-      toast.success("Member removed");
+      toast.success(SETTINGS_LABELS.members.memberRemoved);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to remove member");
+      toast.error(err instanceof Error ? err.message : SETTINGS_LABELS.members.failedToRemove);
     }
   };
 
@@ -122,7 +123,7 @@ export function MembersTab() {
       {isOwner && (
         <section className="space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-medium">Pending Invites</h2>
+            <h2 className="text-sm font-medium">{SETTINGS_LABELS.members.pendingInvites}</h2>
             <Button
               size="sm"
               variant="outline"
@@ -130,13 +131,13 @@ export function MembersTab() {
               disabled={generatingInvite}
             >
               <Plus className="size-3.5 mr-1" />
-              {generatingInvite ? "Generating…" : "Generate invite link"}
+              {generatingInvite ? SETTINGS_LABELS.members.generating : SETTINGS_LABELS.members.generateInvite}
             </Button>
           </div>
 
           {invites.length === 0 ? (
             <p className="text-xs text-muted-foreground py-2">
-              No active invite links. Generate one to invite someone to this workspace.
+              {SETTINGS_LABELS.members.noInvites}
             </p>
           ) : (
             <div className="space-y-1.5">
@@ -154,8 +155,8 @@ export function MembersTab() {
                       </p>
                       <p className={cn("text-muted-foreground/70 mt-0.5", isExpired && "text-destructive/70")}>
                         {isExpired
-                          ? "Expired"
-                          : `Expires ${expiresAt.toLocaleDateString()}`}
+                          ? SETTINGS_LABELS.members.expired
+                          : expiresLabel(expiresAt.toLocaleDateString())}
                       </p>
                     </div>
                     <div className="flex items-center gap-1 ml-2 shrink-0">
@@ -169,7 +170,7 @@ export function MembersTab() {
                           />}>
                             <Copy className="size-3.5" />
                           </TooltipTrigger>
-                          <TooltipContent>Copy invite link</TooltipContent>
+                          <TooltipContent>{SETTINGS_LABELS.members.copyInvite}</TooltipContent>
                         </Tooltip>
                       )}
                       <Tooltip>
@@ -181,7 +182,7 @@ export function MembersTab() {
                         />}>
                           <Trash2 className="size-3.5" />
                         </TooltipTrigger>
-                        <TooltipContent>Revoke invite</TooltipContent>
+                        <TooltipContent>{SETTINGS_LABELS.members.revokeInvite}</TooltipContent>
                       </Tooltip>
                     </div>
                   </div>
@@ -194,7 +195,7 @@ export function MembersTab() {
 
       {/* Member list */}
       <section className="space-y-3">
-        <h2 className="text-sm font-medium">Members</h2>
+        <h2 className="text-sm font-medium">{SETTINGS_LABELS.members.membersHeading}</h2>
         <div className="space-y-1.5">
           {members.map((member) => {
             const isSelf = member.user_id === currentUserId;
@@ -226,7 +227,7 @@ export function MembersTab() {
                   <p className="text-sm font-medium truncate leading-tight">
                     {member.name || member.email}
                     {isSelf && (
-                      <span className="ml-1.5 text-xs text-muted-foreground font-normal">(you)</span>
+                      <span className="ml-1.5 text-xs text-muted-foreground font-normal">{SETTINGS_LABELS.members.you}</span>
                     )}
                   </p>
                   {member.name && (
@@ -257,7 +258,7 @@ export function MembersTab() {
                     />}>
                       <UserMinus className="size-3.5" />
                     </TooltipTrigger>
-                    <TooltipContent>Remove member</TooltipContent>
+                    <TooltipContent>{SETTINGS_LABELS.members.removeMember}</TooltipContent>
                   </Tooltip>
                 )}
               </div>

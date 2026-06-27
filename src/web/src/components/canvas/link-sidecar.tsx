@@ -14,6 +14,12 @@ import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip
 import { Trash2 } from "lucide-react";
 import { AvatarRenderer, parseAvatarUrl } from "@/components/avatar";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import {
+  CANVAS_LABELS,
+  editRelationshipTitle,
+  linkAgentPairLabel,
+  removeConnectionDescription,
+} from "@/components/canvas/canvas-labels";
 
 const DEBOUNCE_MS = 500;
 
@@ -124,7 +130,7 @@ export function LinkSidecar({
         className="data-[side=right]:sm:inset-y-2 data-[side=right]:sm:right-2 data-[side=right]:sm:h-auto data-[side=right]:sm:rounded-xl data-[side=right]:sm:border data-[side=right]:sm:max-w-md"
       >
         <SheetTitle className="sr-only">
-          Edit relationship between {sourceAgent?.name} and {targetAgent?.name}
+          {editRelationshipTitle(sourceAgent?.name, targetAgent?.name)}
         </SheetTitle>
 
         <SheetHeader className="border-b px-5 py-4">
@@ -150,14 +156,14 @@ export function LinkSidecar({
               >
                 <Trash2 className="size-4" />
               </TooltipTrigger>
-              <TooltipContent>Remove connection</TooltipContent>
+              <TooltipContent>{CANVAS_LABELS.link.removeConnection}</TooltipContent>
             </Tooltip>
           </div>
           <p className="text-sm font-medium">
-            {sourceAgent?.name ?? "Agent"} and {targetAgent?.name ?? "Agent"}
+            {linkAgentPairLabel(sourceAgent?.name, targetAgent?.name)}
           </p>
           <p className="text-xs font-medium text-muted-foreground tracking-wide mb-2">
-            use @ to mention agent
+            {CANVAS_LABELS.link.mentionHint}
           </p>
         </SheetHeader>
 
@@ -165,7 +171,7 @@ export function LinkSidecar({
           <MarkdownEditor
             variant="seamless"
             contentType="markdown"
-            placeholder="Describe how these agents should collaborate. This instruction is shared with both agents when they receive tasks."
+            placeholder={CANVAS_LABELS.link.relationshipPlaceholder}
             value={instruction}
             onChange={handleChange}
             minHeight="12rem"
@@ -177,8 +183,8 @@ export function LinkSidecar({
       <ConfirmDialog
         open={confirmOpen}
         onOpenChange={setConfirmOpen}
-        title="Remove connection"
-        description={`This will remove the connection between "${sourceAgent?.name ?? "Agent"}" and "${targetAgent?.name ?? "Agent"}".`}
+        title={CANVAS_LABELS.link.removeConnection}
+        description={removeConnectionDescription(sourceAgent?.name, targetAgent?.name)}
         onConfirm={handleDeleteConfirm}
       />
     </Sheet>

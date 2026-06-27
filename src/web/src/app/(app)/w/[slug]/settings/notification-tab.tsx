@@ -15,6 +15,7 @@ import {
   NOTIFICATION_EVENT_LABELS,
   type NotificationEvent,
 } from "@/lib/browser-notification";
+import { SETTINGS_LABELS } from "./settings-labels";
 
 export function NotificationTab() {
   const [notifEnabled, setNotifEnabled] = useState(false);
@@ -43,7 +44,7 @@ export function NotificationTab() {
       setNotificationEnabled(true);
     } else {
       setNotifDenied(true);
-      toast.error("Notification permission denied. Please enable it in browser settings.");
+      toast.error(SETTINGS_LABELS.notification.permissionDenied);
     }
   };
 
@@ -60,7 +61,7 @@ export function NotificationTab() {
   if (!notifSupported) {
     return (
       <p className="text-sm text-muted-foreground">
-        Your browser does not support notifications.
+        {SETTINGS_LABELS.notification.notSupported}
       </p>
     );
   }
@@ -68,13 +69,13 @@ export function NotificationTab() {
   return (
     <div className="space-y-6">
       <section className="space-y-4">
-        <h2 className="text-sm font-medium">Browser Notifications</h2>
+        <h2 className="text-sm font-medium">{SETTINGS_LABELS.notification.sectionTitle}</h2>
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
-              <p className="text-sm">Enable notifications</p>
+              <p className="text-sm">{SETTINGS_LABELS.notification.enable}</p>
               <p className="text-xs text-muted-foreground">
-                Get notified when tasks finish while the tab is in the background
+                {SETTINGS_LABELS.notification.enableDescription}
               </p>
             </div>
             <Switch
@@ -85,12 +86,12 @@ export function NotificationTab() {
           </div>
           {notifDenied && !notifEnabled && (
             <p className="text-xs text-destructive">
-              Notification permission was denied. Please allow it in your browser settings.
+              {SETTINGS_LABELS.notification.permissionDeniedHint}
             </p>
           )}
           {notifEnabled && (
             <div className="space-y-2 pl-0.5">
-              <p className="text-xs text-muted-foreground">Notify me when:</p>
+              <p className="text-xs text-muted-foreground">{SETTINGS_LABELS.notification.notifyWhen}</p>
               {NOTIFICATION_EVENTS.map((event) => (
                 <label key={event} className="flex items-center gap-2 text-sm cursor-pointer select-none">
                   <Checkbox

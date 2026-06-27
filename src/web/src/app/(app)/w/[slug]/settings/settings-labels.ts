@@ -1,0 +1,90 @@
+// Khmer-only labels co-located with the settings page.
+// Tab ids, slugs, URLs, and technical tokens stay in English; only display labels are localized.
+
+export const SETTINGS_LABELS = {
+  title: "ការកំណត់",
+  tabs: {
+    general: "ទូទៅ",
+    pet: "សត្វចិញ្ចឹម",
+    instruction: "សេចក្តីណែនាំសកល",
+    notifications: "ការជូនដំណឹង",
+    members: "សមាជិក",
+    usages: "ការប្រើប្រាស់",
+  } as Record<string, string>,
+
+  general: {
+    failedToLoad: "មិនអាចផ្ទុកព័ត៌មាន workspace បានទេ",
+    ownerOnly: "មានតែម្ចាស់ workspace ប៉ុណ្ណោះអាចកែការកំណត់ workspace បាន។",
+    sectionTitle: "កន្លែងការងារ",
+    nameLabel: "ឈ្មោះ",
+    namePlaceholder: "ឈ្មោះ workspace",
+    slugLabel: "Slug",
+    slugHintPrefix: "ប្រើក្នុង URL៖ ",
+    save: "រក្សាទុក",
+    saving: "កំពុងរក្សាទុក...",
+    updated: "បានធ្វើបច្ចុប្បន្នភាព workspace",
+    failedToUpdate: "មិនអាចធ្វើបច្ចុប្បន្នភាព workspace បានទេ",
+    dangerZone: "តំបន់គ្រោះថ្នាក់",
+    deleteWarning:
+      "ការលុប workspace នេះគឺជាអចិន្ត្រៃយ៍ និងមិនអាចត្រឡប់វិញបានទេ។ ភ្នាក់ងារ ការសន្ទនា និងទិន្នន័យទាំងអស់នឹងបាត់បង់។",
+    confirmPrefix: "វាយ ",
+    confirmSuffix: " ដើម្បីបញ្ជាក់",
+    delete: "លុប Workspace",
+    deleting: "កំពុងលុប...",
+    deleted: "បានលុប workspace",
+    failedToDelete: "មិនអាចលុប workspace បានទេ",
+  },
+
+  instruction: {
+    failedToLoad: "មិនអាចផ្ទុកការកំណត់បានទេ",
+    failedToSave: "មិនអាចរក្សាទុកបានទេ",
+    placeholder: "សរសេរសេចក្តីណែនាំដែលភ្នាក់ងារទាំងអស់របស់អ្នកនឹងធ្វើតាម...",
+    footerHelp: "សេចក្តីណែនាំនេះត្រូវបានដាក់ខាងមុខសេចក្តីណែនាំរបស់ភ្នាក់ងារនីមួយៗ។",
+  },
+
+  members: {
+    failedToLoad: "មិនអាចផ្ទុកសមាជិកបានទេ",
+    inviteCopied: "បានចម្លងតំណអញ្ជើញទៅ clipboard",
+    failedToGenerate: "មិនអាចបង្កើតតំណអញ្ជើញបានទេ",
+    inviteCopiedShort: "បានចម្លងតំណអញ្ជើញ",
+    failedToCopy: "មិនអាចចម្លងតំណបានទេ",
+    inviteRevoked: "បានដកហូតតំណអញ្ជើញ",
+    failedToRevoke: "មិនអាចដកហូតតំណអញ្ជើញបានទេ",
+    memberRemoved: "បានដកសមាជិកចេញ",
+    failedToRemove: "មិនអាចដកសមាជិកចេញបានទេ",
+    pendingInvites: "តំណអញ្ជើញដែលកំពុងរង់ចាំ",
+    generating: "កំពុងបង្កើត...",
+    generateInvite: "បង្កើតតំណអញ្ជើញ",
+    noInvites: "គ្មានតំណអញ្ជើញសកម្មទេ។ បង្កើតមួយដើម្បីអញ្ជើញនរណាម្នាក់ចូល workspace នេះ។",
+    expired: "ផុតកំណត់",
+    copyInvite: "ចម្លងតំណអញ្ជើញ",
+    revokeInvite: "ដកហូតតំណអញ្ជើញ",
+    membersHeading: "សមាជិក",
+    you: "(អ្នក)",
+    removeMember: "ដកសមាជិកចេញ",
+  },
+
+  notification: {
+    permissionDenied: "សិទ្ធិជូនដំណឹងត្រូវបានបដិសេធ។ សូមបើកវានៅក្នុងការកំណត់ browser។",
+    permissionDeniedHint: "សិទ្ធិជូនដំណឹងត្រូវបានបដិសេធ។ សូមអនុញ្ញាតវានៅក្នុងការកំណត់ browser របស់អ្នក។",
+    notSupported: "browser របស់អ្នកមិនគាំទ្រការជូនដំណឹងទេ។",
+    sectionTitle: "ការជូនដំណឹងតាម Browser",
+    enable: "បើកការជូនដំណឹង",
+    enableDescription: "ទទួលការជូនដំណឹងពេលភារកិច្ចបញ្ចប់ ខណៈ tab នៅផ្ទៃខាងក្រោយ",
+    notifyWhen: "ជូនដំណឹងខ្ញុំពេល៖",
+  },
+} as const;
+
+export function settingsTabLabel(id: string): string {
+  return SETTINGS_LABELS.tabs[id] ?? id;
+}
+
+// Dynamic strings — keep the literal value the user must type or read unchanged.
+
+export function slugUrlHint(slug: string): string {
+  return `${SETTINGS_LABELS.general.slugHintPrefix}/w/${slug}/`;
+}
+
+export function expiresLabel(date: string): string {
+  return `ផុតកំណត់ ${date}`;
+}

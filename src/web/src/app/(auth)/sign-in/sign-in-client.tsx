@@ -24,6 +24,12 @@ import Image from "next/image"
 import { GradientBackground } from "@/components/gradient-background"
 import { Logo } from "@/components/logo"
 import { DEV_PASSWORD } from "@phneakngar/shared"
+import {
+  SIGN_IN_LABELS,
+  showImageAriaLabel,
+  tooManyRequestsLabel,
+  waitSecondsLabel,
+} from "./sign-in-labels"
 
 const DEFAULT_POST_LOGIN = "/workspaces?auto"
 
@@ -73,12 +79,12 @@ function SignInForm({ postLoginUrl, isProd }: { postLoginUrl: string; isProd: bo
         fetchOptions: rateLimitHandler,
       })
       if (error) {
-        if (error.status !== 429) setError(error.message ?? "Failed to send code")
+        if (error.status !== 429) setError(error.message ?? SIGN_IN_LABELS.error.failedToSendCode)
       } else {
         setStep("code")
       }
     } catch {
-      setError("Failed to send code")
+      setError(SIGN_IN_LABELS.error.failedToSendCode)
     }
     setLoading(false)
   }
@@ -95,14 +101,14 @@ function SignInForm({ postLoginUrl, isProd }: { postLoginUrl: string; isProd: bo
         otp: value,
       })
       if (error) {
-        setError(error.message ?? "Invalid code")
+        setError(error.message ?? SIGN_IN_LABELS.error.invalidCode)
         setCode("")
       } else {
         window.location.href = postLoginUrl
         return
       }
     } catch {
-      setError("Invalid code")
+      setError(SIGN_IN_LABELS.error.invalidCode)
       setCode("")
     }
     setLoading(false)
@@ -122,7 +128,7 @@ function SignInForm({ postLoginUrl, isProd }: { postLoginUrl: string; isProd: bo
         { onError: () => {} },
       )
       if (signUpErr) {
-        setError(signUpErr.message ?? "Failed to sign in")
+        setError(signUpErr.message ?? SIGN_IN_LABELS.error.failedToSignIn)
         setLoading(false)
         return
       }
@@ -132,22 +138,22 @@ function SignInForm({ postLoginUrl, isProd }: { postLoginUrl: string; isProd: bo
 
   const isCoolingDown = retryAfter != null
   const sendLabel = loading
-    ? "Sending..."
+    ? SIGN_IN_LABELS.action.sending
     : isCoolingDown
-    ? `Wait ${retryAfter}s`
-    : "Send Code"
+    ? waitSecondsLabel(retryAfter)
+    : SIGN_IN_LABELS.action.sendCode
 
   const subtitle = isProd && step === "code"
-    ? "Enter the code we sent you"
+    ? SIGN_IN_LABELS.prompt.enterCode
     : isProd
-    ? "Enter your email — we’ll send you a verification code"
+    ? SIGN_IN_LABELS.prompt.enterEmail
     : undefined
 
   return (
     <FieldGroup>
       <div className="flex flex-col items-center gap-2 text-center">
-        <h1 className="text-2xl font-bold">Sign in</h1>
-        <p className="text-sm text-muted-foreground">or create an account to get started</p>
+        <h1 className="text-2xl font-bold">{SIGN_IN_LABELS.title}</h1>
+        <p className="text-sm text-muted-foreground">{SIGN_IN_LABELS.subtitle}</p>
         {subtitle && (
           <p className="text-balance text-muted-foreground">{subtitle}</p>
         )}
@@ -155,7 +161,7 @@ function SignInForm({ postLoginUrl, isProd }: { postLoginUrl: string; isProd: bo
 
       {isCoolingDown && (
         <FieldError>
-          Too many requests. Try again in {retryAfter}s.
+          {tooManyRequestsLabel(retryAfter)}
         </FieldError>
       )}
       {error && !isCoolingDown && <FieldError>{error}</FieldError>}
@@ -165,7 +171,7 @@ function SignInForm({ postLoginUrl, isProd }: { postLoginUrl: string; isProd: bo
           <form onSubmit={handleSendCode}>
             <FieldGroup>
               <Field>
-                <FieldLabel htmlFor="email">Email</FieldLabel>
+                <FieldLabel htmlFor="email">{SIGN_IN_LABELS.field.email}</FieldLabel>
                 <Input
                   id="email"
                   type="email"
@@ -190,7 +196,7 @@ function SignInForm({ postLoginUrl, isProd }: { postLoginUrl: string; isProd: bo
         ) : (
           <>
             <p className="text-sm text-muted-foreground text-center">
-              We sent a code to <strong>{email}</strong>
+              {SIGN_IN_LABELS.sentCodeToPrefix}<strong>{email}</strong>
             </p>
             <div className="flex justify-center">
               <InputOTP
@@ -219,7 +225,7 @@ function SignInForm({ postLoginUrl, isProd }: { postLoginUrl: string; isProd: bo
                 setError("")
               }}
             >
-              Use a different email
+              {SIGN_IN_LABELS.action.useDifferentEmail}
             </Button>
           </>
         )
@@ -227,7 +233,7 @@ function SignInForm({ postLoginUrl, isProd }: { postLoginUrl: string; isProd: bo
         <form onSubmit={handleDevSignIn}>
           <FieldGroup>
             <Field>
-              <FieldLabel htmlFor="email">Email</FieldLabel>
+              <FieldLabel htmlFor="email">{SIGN_IN_LABELS.field.email}</FieldLabel>
               <Input
                 id="email"
                 type="email"
@@ -240,7 +246,7 @@ function SignInForm({ postLoginUrl, isProd }: { postLoginUrl: string; isProd: bo
             </Field>
             <Field>
               <Button type="submit" disabled={loading} className="w-full">
-                {loading ? "Signing in..." : "Sign in"}
+                {loading ? SIGN_IN_LABELS.action.signingIn : SIGN_IN_LABELS.action.signIn}
               </Button>
             </Field>
           </FieldGroup>
@@ -248,7 +254,7 @@ function SignInForm({ postLoginUrl, isProd }: { postLoginUrl: string; isProd: bo
       )}
 
       <FieldSeparator className="*:data-[slot=field-separator-content]:bg-card">
-        Or continue with
+        {SIGN_IN_LABELS.action.orContinueWith}
       </FieldSeparator>
       <Field >
         <Button
@@ -268,11 +274,11 @@ function SignInForm({ postLoginUrl, isProd }: { postLoginUrl: string; isProd: bo
 }
 
 const galleryImages = [
-  { src: "/gallery/collaboration.png", label: "Collaboration" },
-  { src: "/gallery/email.png", label: "Email Inbox" },
-  { src: "/gallery/issues.png", label: "Kanban Board" },
-  { src: "/gallery/calendar.png", label: "Calendar" },
-  { src: "/gallery/local-agent.png", label: "Local Agent" },
+  { src: "/gallery/collaboration.png", label: SIGN_IN_LABELS.gallery.collaboration },
+  { src: "/gallery/email.png", label: SIGN_IN_LABELS.gallery.emailInbox },
+  { src: "/gallery/issues.png", label: SIGN_IN_LABELS.gallery.kanbanBoard },
+  { src: "/gallery/calendar.png", label: SIGN_IN_LABELS.gallery.calendar },
+  { src: "/gallery/local-agent.png", label: SIGN_IN_LABELS.gallery.localAgent },
 ]
 
 function ProductGallery() {
@@ -322,7 +328,7 @@ function ProductGallery() {
                 : "var(--muted-foreground)",
               opacity: i === active ? 1 : 0.3,
             }}
-            aria-label={`Show ${galleryImages[i].label}`}
+            aria-label={showImageAriaLabel(galleryImages[i].label)}
           />
         ))}
       </div>

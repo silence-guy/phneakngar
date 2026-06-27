@@ -13,14 +13,21 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { listMeetings, createMeeting, stopMeeting, approveMeeting, deleteMeeting } from "@/lib/api";
 import type { MeetingSession } from "@phneakngar/shared";
+import {
+  AGENT_PAGE_LABELS,
+  MEETING_STATUS_LABELS,
+  meetingParticipantsLabel,
+  meetingStartedAtLabel,
+  meetingDeleteDescription,
+} from "../agent-page-labels";
 
 const STATUS_CONFIG: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline"; icon: typeof Clock }> = {
-  pending: { label: "Pending", variant: "outline", icon: Clock },
-  scheduled: { label: "Scheduled", variant: "secondary", icon: Clock },
-  joining: { label: "Joining...", variant: "default", icon: Loader2 },
-  recording: { label: "Recording", variant: "default", icon: Video },
-  completed: { label: "Completed", variant: "secondary", icon: Check },
-  failed: { label: "Failed", variant: "destructive", icon: AlertCircle },
+  pending: { label: MEETING_STATUS_LABELS.pending!, variant: "outline", icon: Clock },
+  scheduled: { label: MEETING_STATUS_LABELS.scheduled!, variant: "secondary", icon: Clock },
+  joining: { label: MEETING_STATUS_LABELS.joining!, variant: "default", icon: Loader2 },
+  recording: { label: MEETING_STATUS_LABELS.recording!, variant: "default", icon: Video },
+  completed: { label: MEETING_STATUS_LABELS.completed!, variant: "secondary", icon: Check },
+  failed: { label: MEETING_STATUS_LABELS.failed!, variant: "destructive", icon: AlertCircle },
 };
 
 function MeetingStatusBadge({ status }: { status: string }) {
@@ -63,7 +70,7 @@ export default function AgentMeetingsPage() {
       const data = await listMeetings(agentId, workspaceId);
       setMeetings(data);
     } catch {
-      toast.error("Failed to load meetings");
+      toast.error(AGENT_PAGE_LABELS.meetings.loadFailed);
     } finally {
       setLoading(false);
     }
@@ -73,7 +80,7 @@ export default function AgentMeetingsPage() {
     let cancelled = false;
     listMeetings(agentId, workspaceId)
       .then((data) => { if (!cancelled) { setMeetings(data); setLoading(false); } })
-      .catch(() => { if (!cancelled) { toast.error("Failed to load meetings"); setLoading(false); } });
+      .catch(() => { if (!cancelled) { toast.error(AGENT_PAGE_LABELS.meetings.loadFailed); setLoading(false); } });
     return () => { cancelled = true; };
   }, [agentId, workspaceId]);
 
@@ -98,14 +105,14 @@ export default function AgentMeetingsPage() {
         title: meetTitle || undefined,
         participants: participants.length > 0 ? participants : undefined,
       });
-      toast.success("Meeting created");
+      toast.success(AGENT_PAGE_LABELS.meetings.created);
       setCreateOpen(false);
       setMeetUrl("");
       setMeetTitle("");
       setMeetParticipants("");
       loadMeetings();
     } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : "Failed to create meeting");
+      toast.error(e instanceof Error ? e.message : AGENT_PAGE_LABELS.meetings.createFailed);
     } finally {
       setCreating(false);
     }
@@ -114,20 +121,20 @@ export default function AgentMeetingsPage() {
   const handleStop = async (meeting: MeetingSession) => {
     try {
       await stopMeeting(agentId, meeting.id, workspaceId);
-      toast.success("Meeting stopped");
+      toast.success(AGENT_PAGE_LABELS.meetings.stopped);
       loadMeetings();
     } catch {
-      toast.error("Failed to stop meeting");
+      toast.error(AGENT_PAGE_LABELS.meetings.stopFailed);
     }
   };
 
   const handleApprove = async (meeting: MeetingSession) => {
     try {
       await approveMeeting(agentId, meeting.id, workspaceId);
-      toast.success("Meeting approved");
+      toast.success(AGENT_PAGE_LABELS.meetings.approved);
       loadMeetings();
     } catch {
-      toast.error("Failed to approve meeting");
+      toast.error(AGENT_PAGE_LABELS.meetings.approveFailed);
     }
   };
 
@@ -136,11 +143,11 @@ export default function AgentMeetingsPage() {
     setDeleting(true);
     try {
       await deleteMeeting(agentId, deleteTarget.id, workspaceId);
-      toast.success("Meeting deleted");
+      toast.success(AGENT_PAGE_LABELS.meetings.deleted);
       setDeleteTarget(null);
       loadMeetings();
     } catch {
-      toast.error("Failed to delete meeting");
+      toast.error(AGENT_PAGE_LABELS.meetings.deleteFailed);
     } finally {
       setDeleting(false);
     }
@@ -150,10 +157,10 @@ export default function AgentMeetingsPage() {
     <div className="flex-1 flex flex-col min-h-0">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border/50">
-        <h2 className="text-sm font-medium">Meetings</h2>
+        <h2 className="text-sm font-medium">{AGENT_PAGE_LABELS.meetings.heading}</h2>
         <Button size="sm" onClick={() => setCreateOpen(true)} className="gap-1">
           <Plus className="size-3" />
-          Join Meeting
+          {AGENT_PAGE_LABELS.meetings.joinMeeting}
         </Button>
       </div>
 
@@ -168,8 +175,8 @@ export default function AgentMeetingsPage() {
         ) : meetings.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-2 p-8">
             <Video className="size-8 opacity-40" />
-            <p className="text-sm">No meetings yet</p>
-            <p className="text-xs">Join a Google Meet to start recording transcripts.</p>
+            <p className="text-sm">{AGENT_PAGE_LABELS.meetings.emptyTitle}</p>
+            <p className="text-xs">{AGENT_PAGE_LABELS.meetings.emptyHint}</p>
           </div>
         ) : (
           <div className="p-2 space-y-1">
@@ -184,7 +191,7 @@ export default function AgentMeetingsPage() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-0.5">
                     <span className="text-sm font-medium truncate">
-                      {meeting.title || "Untitled Meeting"}
+                      {meeting.title || AGENT_PAGE_LABELS.meetings.untitled}
                     </span>
                     <MeetingStatusBadge status={meeting.status} />
                   </div>
@@ -194,13 +201,13 @@ export default function AgentMeetingsPage() {
                       <span className="shrink-0">{formatTime(meeting.scheduled_at)}</span>
                     )}
                     {meeting.started_at && !meeting.completed_at && (
-                      <span className="shrink-0">Started {formatTime(meeting.started_at)}</span>
+                      <span className="shrink-0">{meetingStartedAtLabel(formatTime(meeting.started_at))}</span>
                     )}
                     {meeting.completed_at && (
                       <span className="shrink-0">{formatTime(meeting.completed_at)}</span>
                     )}
                     {(meeting.participants as string[])?.length > 0 && (
-                      <span className="shrink-0">{(meeting.participants as string[]).length} participants</span>
+                      <span className="shrink-0">{meetingParticipantsLabel((meeting.participants as string[]).length)}</span>
                     )}
                   </div>
                   {meeting.error && (
@@ -216,7 +223,7 @@ export default function AgentMeetingsPage() {
                       onClick={() => handleApprove(meeting)}
                     >
                       <ShieldCheck className="size-3" />
-                      Approve
+                      {AGENT_PAGE_LABELS.meetings.approve}
                     </Button>
                   )}
                   {(meeting.status === "recording" || meeting.status === "joining") && (
@@ -227,7 +234,7 @@ export default function AgentMeetingsPage() {
                       onClick={() => handleStop(meeting)}
                     >
                       <Square className="size-3" />
-                      Stop
+                      {AGENT_PAGE_LABELS.meetings.stop}
                     </Button>
                   )}
                   <Button
@@ -249,12 +256,12 @@ export default function AgentMeetingsPage() {
       <Sheet open={createOpen} onOpenChange={setCreateOpen}>
         <SheetContent>
           <SheetHeader>
-            <SheetTitle>Join a Meeting</SheetTitle>
+            <SheetTitle>{AGENT_PAGE_LABELS.meetings.sheetTitle}</SheetTitle>
           </SheetHeader>
           <SheetBody className="space-y-4">
             <div>
               <label className="text-xs font-medium text-muted-foreground mb-1 block">
-                Google Meet URL *
+                {AGENT_PAGE_LABELS.meetings.urlLabel}
               </label>
               <input
                 type="url"
@@ -266,11 +273,11 @@ export default function AgentMeetingsPage() {
             </div>
             <div>
               <label className="text-xs font-medium text-muted-foreground mb-1 block">
-                Title
+                {AGENT_PAGE_LABELS.meetings.titleLabel}
               </label>
               <input
                 type="text"
-                placeholder="Weekly Standup"
+                placeholder={AGENT_PAGE_LABELS.meetings.titlePlaceholder}
                 value={meetTitle}
                 onChange={(e) => setMeetTitle(e.target.value)}
                 className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring"
@@ -278,7 +285,7 @@ export default function AgentMeetingsPage() {
             </div>
             <div>
               <label className="text-xs font-medium text-muted-foreground mb-1 block">
-                Participants (one email per line)
+                {AGENT_PAGE_LABELS.meetings.participantsLabel}
               </label>
               <textarea
                 placeholder={"alice@example.com\nbob@example.com"}
@@ -291,11 +298,11 @@ export default function AgentMeetingsPage() {
           </SheetBody>
           <SheetFooter>
             <Button variant="outline" onClick={() => setCreateOpen(false)}>
-              Cancel
+              {AGENT_PAGE_LABELS.meetings.cancel}
             </Button>
             <Button onClick={handleCreate} disabled={creating || !meetUrl}>
               {creating && <Loader2 className="size-3 animate-spin" />}
-              Join Meeting
+              {AGENT_PAGE_LABELS.meetings.joinMeeting}
             </Button>
           </SheetFooter>
         </SheetContent>
@@ -305,8 +312,8 @@ export default function AgentMeetingsPage() {
       <ConfirmDialog
         open={!!deleteTarget}
         onOpenChange={(open) => !open && setDeleteTarget(null)}
-        title="Delete meeting"
-        description={`Remove "${deleteTarget?.title || "this meeting"}" and its transcript?`}
+        title={AGENT_PAGE_LABELS.meetings.deleteTitle}
+        description={meetingDeleteDescription(deleteTarget?.title || AGENT_PAGE_LABELS.meetings.deleteFallbackName)}
         loading={deleting}
         onConfirm={handleDelete}
       />

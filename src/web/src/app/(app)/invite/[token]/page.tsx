@@ -7,6 +7,7 @@ import { getInviteInfo, acceptInvite, type InviteInfo } from "@/lib/api";
 import { trackInviteAccepted } from "@/lib/analytics";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { INVITE_LABELS, invitedByLabel, joinedWorkspaceLabel } from "./invite-labels";
 
 type State = "loading" | "ready" | "error" | "accepting" | "done";
 
@@ -26,7 +27,7 @@ export default function InvitePage() {
         setState("ready");
       })
       .catch((err) => {
-        setErrorMsg(err instanceof Error ? err.message : "Invalid or expired invite link");
+        setErrorMsg(err instanceof Error ? err.message : INVITE_LABELS.errors.invalidOrExpired);
         setState("error");
       });
   }, [token]);
@@ -38,10 +39,10 @@ export default function InvitePage() {
       const result = await acceptInvite(token);
       trackInviteAccepted({ workspace_id: result.workspace_id ?? "" });
       setState("done");
-      toast.success(`Joined ${info?.workspace_name ?? "workspace"}`);
+      toast.success(joinedWorkspaceLabel(info?.workspace_name ?? INVITE_LABELS.fallbackWorkspace));
       router.replace(`/w/${result.workspace_slug}/home`);
     } catch (err) {
-      setErrorMsg(err instanceof Error ? err.message : "Failed to join workspace");
+      setErrorMsg(err instanceof Error ? err.message : INVITE_LABELS.errors.joinFailed);
       setState("error");
     }
   };
@@ -60,19 +61,19 @@ export default function InvitePage() {
         {state === "ready" && info && (
           <>
             <div className="space-y-1">
-              <h1 className="text-xl font-semibold">You&apos;ve been invited</h1>
+              <h1 className="text-xl font-semibold">{INVITE_LABELS.invited}</h1>
               <p className="text-sm text-muted-foreground">
-                {info.invited_by} invited you to join
+                {invitedByLabel(info.invited_by)}
               </p>
             </div>
 
             <div className="rounded-md border border-border/50 px-4 py-3 text-left space-y-0.5">
               <p className="text-sm font-medium">{info.workspace_name}</p>
-              <p className="text-xs text-muted-foreground">Workspace</p>
+              <p className="text-xs text-muted-foreground">{INVITE_LABELS.workspace}</p>
             </div>
 
             <Button className="w-full" onClick={handleAccept}>
-              Join Workspace
+              {INVITE_LABELS.joinWorkspace}
             </Button>
           </>
         )}
@@ -81,18 +82,18 @@ export default function InvitePage() {
           <div className="space-y-3">
             <Skeleton className="h-6 w-48 mx-auto" />
             <Skeleton className="h-4 w-64 mx-auto" />
-            <p className="text-sm text-muted-foreground">Joining workspace…</p>
+            <p className="text-sm text-muted-foreground">{INVITE_LABELS.joiningWorkspace}</p>
           </div>
         )}
 
         {state === "error" && (
           <>
             <div className="space-y-1">
-              <h1 className="text-xl font-semibold">Invite unavailable</h1>
+              <h1 className="text-xl font-semibold">{INVITE_LABELS.inviteUnavailable}</h1>
               <p className="text-sm text-muted-foreground">{errorMsg}</p>
             </div>
             <Button variant="outline" onClick={() => router.replace("/workspaces")}>
-              Go to workspaces
+              {INVITE_LABELS.goToWorkspaces}
             </Button>
           </>
         )}

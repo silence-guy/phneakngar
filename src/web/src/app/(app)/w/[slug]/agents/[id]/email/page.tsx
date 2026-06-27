@@ -19,21 +19,13 @@ import { trackEmailComposed, trackEmailReceived } from "@/lib/analytics";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { EmailBodyFrame } from "@/components/email-body-frame";
+import { EMAIL_LABELS, emailAttachmentsLabel } from "@/components/email-labels";
+import { relativeTimeLabel } from "../agent-page-labels";
 
 type Folder = "inbox" | "sent" | "untrust";
 
 function relativeTime(dateStr: string): string {
-  const date = new Date(dateStr);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMin = Math.floor(diffMs / 60000);
-  if (diffMin < 1) return "just now";
-  if (diffMin < 60) return `${diffMin}m ago`;
-  const diffHrs = Math.floor(diffMin / 60);
-  if (diffHrs < 24) return `${diffHrs}h ago`;
-  const diffDays = Math.floor(diffHrs / 24);
-  if (diffDays < 7) return `${diffDays}d ago`;
-  return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  return relativeTimeLabel(dateStr);
 }
 
 export default function AgentEmailPage() {
@@ -97,7 +89,7 @@ export default function AgentEmailPage() {
       const data = await listEmails(agentId, workspaceId, dir, address);
       setEmails(data);
     } catch {
-      toast.error("Failed to load emails");
+      toast.error(EMAIL_LABELS.page.loadFailed);
     } finally {
       setLoading(false);
     }
@@ -156,7 +148,7 @@ export default function AgentEmailPage() {
           });
       }
     } catch {
-      setBody({ content: "(body not available)", isHtml: false });
+      setBody({ content: EMAIL_LABELS.page.bodyNotAvailable, isHtml: false });
     } finally {
       setBodyLoading(false);
     }
@@ -173,7 +165,7 @@ export default function AgentEmailPage() {
         const result = await getEmailBody(emailId, workspaceId);
         setThreadBodies((prev) => ({ ...prev, [emailId]: result }));
       } catch {
-        setThreadBodies((prev) => ({ ...prev, [emailId]: { content: "(body not available)", isHtml: false } }));
+        setThreadBodies((prev) => ({ ...prev, [emailId]: { content: EMAIL_LABELS.page.bodyNotAvailable, isHtml: false } }));
       }
     }
   };
@@ -188,9 +180,9 @@ export default function AgentEmailPage() {
         setSelectedId(null);
         setBody(null);
       }
-      toast.success("Email deleted");
+      toast.success(EMAIL_LABELS.page.deleted);
     } catch {
-      toast.error("Failed to delete email");
+      toast.error(EMAIL_LABELS.page.deleteFailed);
     } finally {
       setDeleting(false);
       setDeleteConfirmOpen(false);
@@ -202,12 +194,12 @@ export default function AgentEmailPage() {
     try {
       await sendEmail(agentId, to, subject, htmlBody, workspaceId, attachments.length > 0 ? attachments : undefined, threading, activeAccountId);
       trackEmailComposed({ agent_id: agentId, has_attachments: attachments.length > 0 });
-      toast.success("Email sent");
+      toast.success(EMAIL_LABELS.page.sent3);
       setComposing(false);
       switchFolder("sent");
       return true;
     } catch {
-      toast.error("Failed to send email");
+      toast.error(EMAIL_LABELS.page.sendFailed);
       return false;
     }
   };
@@ -215,10 +207,10 @@ export default function AgentEmailPage() {
   const buildQuotedBody = (email: Email) => [
     `<br/><br/>`,
     `<div style="border-left: 2px solid #ccc; padding-left: 12px; margin-left: 0; color: #666;">`,
-    `<p><strong>From:</strong> ${email.from_email}<br/>`,
-    `<strong>To:</strong> ${email.to_email}<br/>`,
-    `<strong>Date:</strong> ${new Date(email.created_at).toLocaleString()}<br/>`,
-    `<strong>Subject:</strong> ${email.subject}</p>`,
+    `<p><strong>${EMAIL_LABELS.page.from}:</strong> ${email.from_email}<br/>`,
+    `<strong>${EMAIL_LABELS.page.to}:</strong> ${email.to_email}<br/>`,
+    `<strong>${EMAIL_LABELS.page.received}:</strong> ${new Date(email.created_at).toLocaleString()}<br/>`,
+    `<strong>${EMAIL_LABELS.compose.subject}:</strong> ${email.subject}</p>`,
     email.html_body ? email.html_body : body?.isHtml ? body.content : `<pre>${body?.content ?? ""}</pre>`,
     `</div>`,
   ].join("");
@@ -257,11 +249,11 @@ export default function AgentEmailPage() {
     setTrusting(true);
     try {
       await trustEmail(email.id, workspaceId);
-      toast.success("Email trusted and sent to agent");
+      toast.success(EMAIL_LABELS.page.trusted);
       setEmails((prev) => prev.filter((e) => e.id !== email.id));
       setSelectedId(null);
     } catch {
-      toast.error("Failed to trust email");
+      toast.error(EMAIL_LABELS.page.trustFailed);
     } finally {
       setTrusting(false);
     }
@@ -276,7 +268,7 @@ export default function AgentEmailPage() {
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {
-      toast.error("Failed to copy");
+      toast.error(EMAIL_LABELS.page.copyFailed);
     }
   };
 
@@ -298,7 +290,7 @@ export default function AgentEmailPage() {
                   <Copy className="size-2.5 text-muted-foreground/0 group-hover:text-muted-foreground/60 shrink-0 transition-colors" />
                 )}
               </TooltipTrigger>
-              <TooltipContent>Click to copy</TooltipContent>
+              <TooltipContent>{EMAIL_LABELS.page.clickToCopy}</TooltipContent>
             </Tooltip>
           ) : (
             <>
@@ -323,7 +315,7 @@ export default function AgentEmailPage() {
                       <Copy className="size-2.5 text-muted-foreground/40 hover:text-muted-foreground/80 transition-colors" />
                     )}
                   </TooltipTrigger>
-                  <TooltipContent>Copy address</TooltipContent>
+                  <TooltipContent>{EMAIL_LABELS.page.copyAddress}</TooltipContent>
                 </Tooltip>
               </div>
               {mailboxOpen && (
@@ -352,7 +344,7 @@ export default function AgentEmailPage() {
         </div>
       ) : (
         <div className="px-3 pt-3 pb-1">
-          <p className="text-xs text-muted-foreground/60">No email configured</p>
+          <p className="text-xs text-muted-foreground/60">{EMAIL_LABELS.page.noEmailConfigured}</p>
         </div>
       )}
       <div className="p-2">
@@ -364,9 +356,9 @@ export default function AgentEmailPage() {
             disabled={mailboxes.length === 0}
           />}>
             <Plus className="size-3.5" />
-            New Email
+            {EMAIL_LABELS.page.newEmail}
           </TooltipTrigger>
-          <TooltipContent>{mailboxes.length === 0 ? "Configure an email in agent settings to send emails" : "Compose new email"}</TooltipContent>
+          <TooltipContent>{mailboxes.length === 0 ? EMAIL_LABELS.page.configureEmailHint : EMAIL_LABELS.page.composeNewEmail}</TooltipContent>
         </Tooltip>
       </div>
       <nav className="flex flex-col gap-0.5 px-2">
@@ -381,7 +373,7 @@ export default function AgentEmailPage() {
           )}
         >
           <Inbox className="size-4 shrink-0" />
-          Inbox
+          {EMAIL_LABELS.page.inbox}
           {folder === "inbox" && unreadCount > 0 && (
             <span className="ml-auto text-xs bg-blue-500 text-white rounded-full px-1.5 py-0.5 leading-none min-w-5 text-center">
               {unreadCount}
@@ -399,7 +391,7 @@ export default function AgentEmailPage() {
           )}
         >
           <Send className="size-4 shrink-0" />
-          Sent
+          {EMAIL_LABELS.page.sent}
         </button>
         <button
           type="button"
@@ -412,7 +404,7 @@ export default function AgentEmailPage() {
           )}
         >
           <ShieldAlert className="size-4 shrink-0" />
-          Untrust
+          {EMAIL_LABELS.page.untrust}
         </button>
       </nav>
     </div>
@@ -437,7 +429,7 @@ export default function AgentEmailPage() {
         <div className="flex flex-col items-center justify-center h-full animate-[fade-up_400ms_ease-out_both]">
           <Mail className="size-8 text-muted-foreground mb-3" />
           <p className="text-sm text-muted-foreground">
-            {folder === "inbox" ? "No emails from trusted senders" : folder === "sent" ? "No emails sent yet" : "No untrusted emails"}
+            {folder === "inbox" ? EMAIL_LABELS.page.noTrustedEmails : folder === "sent" ? EMAIL_LABELS.page.noSentEmails : EMAIL_LABELS.page.noUntrustedEmails}
           </p>
         </div>
       ) : (
@@ -468,7 +460,7 @@ export default function AgentEmailPage() {
                       ? "bg-blue-500/15 text-blue-600 dark:text-blue-400"
                       : "bg-muted text-muted-foreground"
                   )}>
-                    {email.status === "unread" ? "unread" : "read"}
+                    {email.status === "unread" ? EMAIL_LABELS.page.unread : EMAIL_LABELS.page.read}
                   </span>
                 )}
                 <span className="text-xs text-muted-foreground">
@@ -480,7 +472,7 @@ export default function AgentEmailPage() {
               "text-[13px] truncate",
               email.status === "unread" ? "text-foreground" : "text-muted-foreground"
             )}>
-              {email.subject || "(no subject)"}
+              {email.subject || EMAIL_LABELS.page.noSubject}
             </p>
           </button>
         ))
@@ -505,7 +497,7 @@ export default function AgentEmailPage() {
         />
       ) : !selected ? (
         <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
-          Select an email to view
+          {EMAIL_LABELS.page.selectEmail}
         </div>
       ) : (
         <div className="flex flex-col h-full md:min-w-100 max-w-3xl mx-auto w-full">
@@ -522,7 +514,7 @@ export default function AgentEmailPage() {
                 />}>
                   {trusting ? <Loader2 className="size-3.5 animate-spin" /> : <ShieldCheck className="size-3.5" />}
                 </TooltipTrigger>
-                <TooltipContent>Trust this email</TooltipContent>
+                <TooltipContent>{EMAIL_LABELS.page.trustEmail}</TooltipContent>
               </Tooltip>
             )}
             {folder !== "sent" && (
@@ -535,7 +527,7 @@ export default function AgentEmailPage() {
                 />}>
                   <Reply className="size-3.5" />
                 </TooltipTrigger>
-                <TooltipContent>Reply</TooltipContent>
+                <TooltipContent>{EMAIL_LABELS.page.reply}</TooltipContent>
               </Tooltip>
             )}
             <Tooltip>
@@ -547,7 +539,7 @@ export default function AgentEmailPage() {
               />}>
                 <Forward className="size-3.5" />
               </TooltipTrigger>
-              <TooltipContent>Forward</TooltipContent>
+              <TooltipContent>{EMAIL_LABELS.page.forward}</TooltipContent>
             </Tooltip>
             <Tooltip>
               <TooltipTrigger render={<Button
@@ -561,7 +553,7 @@ export default function AgentEmailPage() {
               />}>
                 <Trash2 className="size-3.5" />
               </TooltipTrigger>
-              <TooltipContent>Delete</TooltipContent>
+              <TooltipContent>{EMAIL_LABELS.page.delete}</TooltipContent>
             </Tooltip>
           </div>
 
@@ -612,20 +604,20 @@ export default function AgentEmailPage() {
           {/* Email detail */}
           <div className="p-5">
             <h2 className="text-lg font-heading font-semibold tracking-tight mb-1">
-              {selected.subject || "(no subject)"}
+              {selected.subject || EMAIL_LABELS.page.noSubject}
             </h2>
             <div className="text-sm space-y-1 mb-5">
               <div className="flex items-center gap-2">
-                <span className="text-muted-foreground w-16 shrink-0">From</span>
+                <span className="text-muted-foreground w-16 shrink-0">{EMAIL_LABELS.page.from}</span>
                 <span>{selected.from_email}</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-muted-foreground w-16 shrink-0">To</span>
+                <span className="text-muted-foreground w-16 shrink-0">{EMAIL_LABELS.page.to}</span>
                 <span>{selected.to_email}</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-muted-foreground w-16 shrink-0">
-                  {folder === "sent" ? "Sent" : "Received"}
+                  {folder === "sent" ? EMAIL_LABELS.page.sent2 : EMAIL_LABELS.page.received}
                 </span>
                 <span className="text-muted-foreground">
                   {new Date(selected.created_at).toLocaleString()}
@@ -657,7 +649,7 @@ export default function AgentEmailPage() {
               <div className="mt-4">
                 <div className="flex items-center gap-1.5 mb-2 text-xs text-muted-foreground">
                   <Paperclip className="size-3" />
-                  {selected.attachments.length} attachment{selected.attachments.length > 1 ? "s" : ""}
+                  {emailAttachmentsLabel(selected.attachments.length)}
                 </div>
                 <div className="flex flex-wrap gap-1.5">
                   {selected.attachments.map((att, i) => (
@@ -697,7 +689,7 @@ export default function AgentEmailPage() {
             >
               <ArrowLeft className="size-4" />
             </Button>
-            <span className="text-sm font-medium">New Email</span>
+            <span className="text-sm font-medium">{EMAIL_LABELS.page.newEmail}</span>
           </div>
           <div className="flex-1 min-h-0 overflow-y-auto thin-scrollbar">{readingPaneContent}</div>
         </div>
@@ -714,7 +706,7 @@ export default function AgentEmailPage() {
             >
               <ArrowLeft className="size-4" />
             </Button>
-            <span className="text-sm font-medium truncate">{selected.subject || "(no subject)"}</span>
+            <span className="text-sm font-medium truncate">{selected.subject || EMAIL_LABELS.page.noSubject}</span>
           </div>
           <div className="flex-1 min-h-0 overflow-y-auto thin-scrollbar">{readingPaneContent}</div>
         </div>
@@ -745,7 +737,7 @@ export default function AgentEmailPage() {
                     <Copy className="size-2.5 text-muted-foreground/40 hover:text-muted-foreground/80 transition-colors" />
                   )}
                 </TooltipTrigger>
-                <TooltipContent>Copy address</TooltipContent>
+                <TooltipContent>{EMAIL_LABELS.page.copyAddress}</TooltipContent>
               </Tooltip>
             </div>
             {mailboxOpen && (
@@ -774,9 +766,9 @@ export default function AgentEmailPage() {
         <div className="flex items-center gap-1 border-b border-border/50 px-3 py-2">
           <div className="flex items-center gap-0.5 flex-1 min-w-0">
             {([
-              { id: "inbox" as Folder, label: "Inbox" },
-              { id: "sent" as Folder, label: "Sent" },
-              { id: "untrust" as Folder, label: "Untrust" },
+              { id: "inbox" as Folder, label: EMAIL_LABELS.page.inbox },
+              { id: "sent" as Folder, label: EMAIL_LABELS.page.sent },
+              { id: "untrust" as Folder, label: EMAIL_LABELS.page.untrust },
             ]).map((f) => (
               <button
                 key={f.id}
@@ -836,8 +828,8 @@ export default function AgentEmailPage() {
       <ConfirmDialog
         open={deleteConfirmOpen}
         onOpenChange={setDeleteConfirmOpen}
-        title="Delete email"
-        description="This will permanently delete this email."
+        title={EMAIL_LABELS.page.deleteTitle}
+        description={EMAIL_LABELS.page.deleteDescription}
         loading={deleting}
         onConfirm={handleDelete}
       />

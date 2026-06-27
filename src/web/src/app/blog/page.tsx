@@ -47,7 +47,7 @@ export default async function BlogPage() {
       <div className="mx-auto max-w-3xl px-6 pt-10 sm:pt-20 pb-24">
         <header className="mb-16">
           <h1 className="font-news text-5xl sm:text-6xl font-semibold tracking-tight leading-none">
-            Blog
+            ប្លុក
           </h1>
           <p className="mt-4 text-[1.0625rem] text-muted-foreground font-sans leading-relaxed max-w-xl">
             {description}
@@ -60,7 +60,7 @@ export default async function BlogPage() {
             className="group block pb-14 mb-14 border-b border-border"
           >
             <span className="text-xs font-mono uppercase tracking-[0.2em] text-muted-foreground/60">
-              Latest
+              ថ្មីៗ
             </span>
             <h2 className="mt-3 font-news text-3xl sm:text-4xl font-semibold tracking-tight leading-tight group-hover:translate-x-1 transition-transform duration-200">
               {featured.title}

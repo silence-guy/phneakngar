@@ -94,7 +94,7 @@ export default async function BlogPostPage({
           className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-8 sm:mb-14"
         >
           <ArrowLeft className="size-3.5" />
-          All posts
+          ប្លុកទាំងអស់
         </Link>
 
         <header className="mb-10 sm:mb-16">
@@ -128,7 +128,7 @@ export default async function BlogPostPage({
             >
               <span className="text-[11px] uppercase tracking-[0.15em] font-mono text-muted-foreground flex items-center gap-1.5">
                 <ArrowLeft className="size-3" />
-                Previous
+                មុន
               </span>
               <span className="text-[15px] font-sans group-hover:-translate-x-0.5 transition-transform duration-200 leading-snug">
                 {prevPost.title}
@@ -143,7 +143,7 @@ export default async function BlogPostPage({
               className="group flex flex-col gap-1.5 text-right ml-auto max-w-[45%]"
             >
               <span className="text-[11px] uppercase tracking-[0.15em] font-mono text-muted-foreground flex items-center justify-end gap-1.5">
-                Next
+                បន្ទាប់
                 <ArrowRight className="size-3" />
               </span>
               <span className="text-[15px] font-sans group-hover:translate-x-0.5 transition-transform duration-200 leading-snug">

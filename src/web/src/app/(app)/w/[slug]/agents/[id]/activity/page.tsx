@@ -25,37 +25,28 @@ import {
   Loader2,
 } from "lucide-react";
 import { ScrollToBottomButton } from "@/components/ui/scroll-to-bottom-button";
+import { AGENT_PAGE_LABELS, ACTIVITY_STATUS_LABELS, relativeTimeLabel } from "../agent-page-labels";
 
 const ACTIVITY_LIMIT = 30;
 
 const STATUS_OPTIONS = [
-  { label: "All", value: "" },
-  { label: "Queued", value: "queued,dispatched" },
-  { label: "Running", value: "running" },
-  { label: "Completed", value: "completed" },
-  { label: "Failed", value: "failed" },
-  { label: "Cancelled", value: "cancelled,superseded" },
+  { label: AGENT_PAGE_LABELS.activity.all, value: "" },
+  { label: AGENT_PAGE_LABELS.activity.queued, value: "queued,dispatched" },
+  { label: AGENT_PAGE_LABELS.activity.running, value: "running" },
+  { label: AGENT_PAGE_LABELS.activity.completed, value: "completed" },
+  { label: AGENT_PAGE_LABELS.activity.failed, value: "failed" },
+  { label: AGENT_PAGE_LABELS.activity.cancelled, value: "cancelled,superseded" },
 ];
 
 const TYPE_OPTIONS = [
-  { label: "All", value: "" },
-  { label: "Message", value: "user_dm_message" },
-  { label: "Email", value: "email_notification" },
-  { label: "Calendar", value: "calendar_event" },
+  { label: AGENT_PAGE_LABELS.activity.all, value: "" },
+  { label: AGENT_PAGE_LABELS.activity.typeMessage, value: "user_dm_message" },
+  { label: AGENT_PAGE_LABELS.activity.typeEmail, value: "email_notification" },
+  { label: AGENT_PAGE_LABELS.activity.typeCalendar, value: "calendar_event" },
 ];
 
 function relativeTime(dateStr: string): string {
-  const date = new Date(dateStr);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMin = Math.floor(diffMs / 60000);
-  if (diffMin < 1) return "just now";
-  if (diffMin < 60) return `${diffMin}m ago`;
-  const diffHrs = Math.floor(diffMin / 60);
-  if (diffHrs < 24) return `${diffHrs}h ago`;
-  const diffDays = Math.floor(diffHrs / 24);
-  if (diffDays < 7) return `${diffDays}d ago`;
-  return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  return relativeTimeLabel(dateStr);
 }
 
 function formatDuration(startedAt: string | null, completedAt: string | null): string | null {
@@ -81,15 +72,7 @@ const TYPE_ICONS: Record<string, typeof MessageSquare> = {
   calendar_event: CalendarDays,
 };
 
-const STATUS_LABELS: Record<string, string> = {
-  queued: "Queued",
-  dispatched: "Queued",
-  running: "Running",
-  completed: "Completed",
-  failed: "Failed",
-  cancelled: "Cancelled",
-  superseded: "Cancelled",
-};
+const STATUS_LABELS: Record<string, string> = ACTIVITY_STATUS_LABELS;
 
 const TERMINAL_STATUSES = new Set(["completed", "failed", "cancelled", "superseded"]);
 
@@ -176,7 +159,7 @@ function ActivityRow({ task, slug, agentId, workspaceId, onRetry }: { task: Acti
                 ? <Loader2 className="size-3 animate-spin" />
                 : <RotateCw className="size-3" />}
             </TooltipTrigger>
-            <TooltipContent>Retry task</TooltipContent>
+            <TooltipContent>{AGENT_PAGE_LABELS.activity.retryTask}</TooltipContent>
           </Tooltip>
         )}
       </div>
@@ -319,12 +302,12 @@ export default function AgentActivityPage() {
       <div className="sticky top-0 z-10 flex items-center gap-2 px-4 py-2.5">
         <Select value={statusFilter} onValueChange={(v) => updateFilter("status", v ?? "")}>
           <SelectTrigger className="w-35 border-none bg-transparent shadow-none text-xs text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
-            <SelectValue placeholder="Status: All" />
+            <SelectValue placeholder={AGENT_PAGE_LABELS.activity.statusAll} />
           </SelectTrigger>
           <SelectContent>
             {STATUS_OPTIONS.map((opt) => (
               <SelectItem key={opt.value} value={opt.value}>
-                {opt.label === "All" ? "Status: All" : opt.label}
+                {opt.value === "" ? AGENT_PAGE_LABELS.activity.statusAll : opt.label}
               </SelectItem>
             ))}
           </SelectContent>
@@ -332,12 +315,12 @@ export default function AgentActivityPage() {
 
         <Select value={typeFilter} onValueChange={(v) => updateFilter("type", v ?? "")}>
           <SelectTrigger className="w-32.5 border-none bg-transparent shadow-none text-xs text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
-            <SelectValue placeholder="Type: All" />
+            <SelectValue placeholder={AGENT_PAGE_LABELS.activity.typeAll} />
           </SelectTrigger>
           <SelectContent>
             {TYPE_OPTIONS.map((opt) => (
               <SelectItem key={opt.value} value={opt.value}>
-                {opt.label === "All" ? "Type: All" : opt.label}
+                {opt.value === "" ? AGENT_PAGE_LABELS.activity.typeAll : opt.label}
               </SelectItem>
             ))}
           </SelectContent>
@@ -360,10 +343,10 @@ export default function AgentActivityPage() {
           ) : tasks.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full animate-[fade-up_400ms_ease-out_both]">
               <History className="size-8 text-muted-foreground mb-3" />
-              <p className="text-sm text-muted-foreground">No activity yet</p>
+              <p className="text-sm text-muted-foreground">{AGENT_PAGE_LABELS.activity.emptyTitle}</p>
               {(statusFilter || typeFilter) && (
                 <p className="text-xs text-muted-foreground/60 mt-1">
-                  Try changing your filters
+                  {AGENT_PAGE_LABELS.activity.emptyHint}
                 </p>
               )}
             </div>

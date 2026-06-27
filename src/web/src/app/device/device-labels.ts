@@ -1,0 +1,22 @@
+export const DEVICE_LABELS = {
+  heading: "អនុញ្ញាតឧបករណ៍",
+  verifying: "កំពុងផ្ទៀងផ្ទាត់...",
+  enterCode: "បញ្ចូលលេខកូដដែលបង្ហាញនៅលើ terminal របស់អ្នក",
+  requestingAccess: "ឧបករណ៍មួយកំពុងស្នើសុំចូលប្រើគណនីរបស់អ្នក",
+  deviceCode: "លេខកូដឧបករណ៍",
+  verifyCode: "ផ្ទៀងផ្ទាត់លេខកូដ",
+  code: "លេខកូដ",
+  deny: "បដិសេធ",
+  approving: "កំពុងអនុម័ត...",
+  approve: "អនុម័ត",
+  deviceAuthorized: "✓ ឧបករណ៍ត្រូវបានអនុញ្ញាត",
+  doneCli: "អ្នកអាចបិទផ្ទាំងនេះបាន។ CLI នឹងបន្តដោយស្វ័យប្រវត្តិ។",
+  accessDenied: "ការចូលប្រើឧបករណ៍ត្រូវបានបដិសេធ។ អ្នកអាចបិទផ្ទាំងនេះបាន។",
+  errors: {
+    invalidOrExpired: "លេខកូដមិនត្រឹមត្រូវ ឬផុតកំណត់",
+    verifyFailed: "មិនអាចផ្ទៀងផ្ទាត់លេខកូដបានទេ",
+    approveFailed: "មិនអាចអនុម័តបានទេ",
+    approveDeviceFailed: "មិនអាចអនុម័តឧបករណ៍បានទេ",
+    denyDeviceFailed: "មិនអាចបដិសេធឧបករណ៍បានទេ",
+  },
+} as const;

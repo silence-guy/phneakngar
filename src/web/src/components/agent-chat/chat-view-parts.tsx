@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/popover";
 import { FileCard } from "@/components/agent-chat/event-cards/file-card";
 import { getArtifactThumbnailUrl } from "@/components/artifact-content-renderer";
+import { napSeparatorLabel } from "@/components/agent-chat/agent-chat-labels";
 
 function MentionHighlight(
   props: Record<string, unknown> & { children?: React.ReactNode },
@@ -71,7 +72,7 @@ export function NapSeparator({ agentName }: { agentName: string }) {
     <div className="flex items-center gap-3 py-4 select-none" aria-hidden>
       <div className="flex-1 border-t border-border/40" />
       <span className="text-xs text-muted-foreground/60 whitespace-nowrap">
-        {agentName} took a nap 💤
+        {napSeparatorLabel(agentName)} 💤
       </span>
       <div className="flex-1 border-t border-border/40" />
     </div>

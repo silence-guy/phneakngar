@@ -22,6 +22,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Popover } from "@base-ui/react/popover";
+import { SIDEBAR_LABELS } from "./sidebar-labels";
 
 function SortablePopoverAgent({
   id,
@@ -138,7 +139,7 @@ export function FolderPopover({
                             onClick={() => onRemoveFromFolder(agent.id)}
                           >
                             <PinOffIcon className="size-3.5 mr-1.5" />
-                            Remove from group
+                            {SIDEBAR_LABELS.removeFromGroup}
                           </ContextMenuItem>
                         }
                       />

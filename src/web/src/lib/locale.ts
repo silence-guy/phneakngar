@@ -570,12 +570,31 @@ export const agentFormCopy = {
   },
 } as const satisfies Record<string, LocaleLabels>;
 
+export const runtimeSelectCopy = {
+  noRuntimes: agentFormCopy.noRuntimes,
+  allOffline: {
+    [Locale.EN]: "All runtimes offline",
+    [Locale.KM]: "Runtime ទាំងអស់ក្រៅបណ្តាញ",
+  },
+  selectRuntime: {
+    [Locale.EN]: "Select a runtime",
+    [Locale.KM]: "ជ្រើសរើស Runtime",
+  },
+} as const satisfies Record<string, LocaleLabels>;
+
 export function resolveWebLocale(locale?: string | null): WebLocale {
   return resolveLocale(locale);
 }
 
 export function webLabel(labels: LocaleLabels, locale?: string | null): string {
   return getLocalizedLabel(labels, locale);
+}
+
+export function runtimeSelectLabel(
+  key: keyof typeof runtimeSelectCopy,
+  locale?: string | null,
+): string {
+  return webLabel(runtimeSelectCopy[key], locale);
 }
 
 export function navigationLabel(

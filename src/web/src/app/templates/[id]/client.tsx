@@ -6,13 +6,11 @@ import { buttonVariants } from "@/components/ui/button";
 import { PublicLayout } from "@/components/public-layout";
 import { MemberCard } from "./_components/member-card";
 import type { TemplatePreset } from "@/lib/templates";
-
-const ROLE_LABELS: Record<string, string> = {
-  leader: "Leader",
-  researcher: "Researcher",
-  engineer: "Engineer",
-  assistant: "Assistant",
-};
+import {
+  TEMPLATES_LABELS,
+  templateRoleLabel,
+  templateAgentsWorkingLabel,
+} from "../templates-labels";
 
 export function TemplateDetailClient({
   template,
@@ -39,27 +37,27 @@ export function TemplateDetailClient({
             href="/templates"
             className="hidden sm:block px-3 py-1.5 text-xs uppercase tracking-widest font-mono transition-opacity hover:opacity-70"
           >
-            Templates
+            {TEMPLATES_LABELS.nav.templates}
           </Link>
           <Link
             href="/blog"
             className="hidden sm:block px-3 py-1.5 text-xs uppercase tracking-widest font-mono transition-opacity hover:opacity-70"
           >
-            Blog
+            {TEMPLATES_LABELS.nav.blog}
           </Link>
           {isLoggedIn ? (
             <Link
               href="/workspaces?auto"
               className="inline-flex items-center gap-1.5 px-4 py-1.5 text-xs uppercase tracking-widest font-mono border border-current transition-opacity hover:opacity-70"
             >
-              App
+              {TEMPLATES_LABELS.nav.app}
             </Link>
           ) : (
             <Link
               href="/sign-in"
               className="inline-flex items-center gap-1.5 px-4 py-1.5 text-xs uppercase tracking-widest font-mono bg-foreground text-background transition-opacity hover:opacity-70"
             >
-              Get Started
+              {TEMPLATES_LABELS.nav.getStarted}
             </Link>
           )}
         </>
@@ -69,7 +67,7 @@ export function TemplateDetailClient({
         {/* Breadcrumb */}
         <nav className="mb-8 flex items-center gap-1.5 text-xs text-muted-foreground">
           <Link href="/templates" className="hover:text-foreground transition-colors">
-            Templates
+            {TEMPLATES_LABELS.nav.templates}
           </Link>
           <span className="text-muted-foreground/50">/</span>
           <span className="text-foreground">{template.name}</span>
@@ -109,10 +107,10 @@ export function TemplateDetailClient({
           {/* CTA */}
           <div className="shrink-0 sm:ml-8 sm:pt-2">
             <Link href={href} className={buttonVariants({ size: "default" }) + " w-full sm:w-auto"}>
-              Use This Template
+              {TEMPLATES_LABELS.detail.useThisTemplate}
             </Link>
             <p className="mt-1.5 text-center text-xs text-muted-foreground sm:text-right">
-              Free to deploy
+              {TEMPLATES_LABELS.detail.freeToDeploy}
             </p>
           </div>
         </div>
@@ -122,7 +120,7 @@ export function TemplateDetailClient({
 
         {/* Features */}
         <section className="max-w-2xl">
-          <h2 className="text-base font-semibold tracking-tight">What it does</h2>
+          <h2 className="text-base font-semibold tracking-tight">{TEMPLATES_LABELS.detail.whatItDoes}</h2>
           <ul className="mt-4 space-y-2.5">
             {template.features.map((feature) => (
               <li key={feature} className="flex items-start gap-2.5 text-sm text-foreground/80">
@@ -135,7 +133,7 @@ export function TemplateDetailClient({
 
         {/* Use Cases */}
         <section className="mt-12 max-w-2xl">
-          <h2 className="text-base font-semibold tracking-tight">Use cases</h2>
+          <h2 className="text-base font-semibold tracking-tight">{TEMPLATES_LABELS.detail.useCases}</h2>
           <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {template.useCases.map((uc) => (
               <div key={uc.title} className="rounded-lg bg-muted/40 p-4">
@@ -150,16 +148,16 @@ export function TemplateDetailClient({
 
         {/* Company */}
         <section className="mt-12 max-w-2xl">
-          <h2 className="text-base font-semibold tracking-tight">Your company</h2>
+          <h2 className="text-base font-semibold tracking-tight">{TEMPLATES_LABELS.detail.yourCompany}</h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            {template.members.length} agents working together.
+            {templateAgentsWorkingLabel(template.members.length)}
           </p>
           <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
             {template.members.map((member, i) => (
               <MemberCard
                 key={i}
                 role={member.role}
-                roleLabel={ROLE_LABELS[member.role] || member.role}
+                roleLabel={templateRoleLabel(member.role)}
                 description={member.description}
               />
             ))}
@@ -169,13 +167,13 @@ export function TemplateDetailClient({
         {/* Bottom CTA */}
         <div className="mt-16 flex items-center justify-between rounded-xl bg-muted/40 p-6">
           <div>
-            <p className="text-sm font-medium">Ready to deploy?</p>
+            <p className="text-sm font-medium">{TEMPLATES_LABELS.detail.readyToDeploy}</p>
             <p className="mt-0.5 text-xs text-muted-foreground">
-              Customize the agent instructions after setup.
+              {TEMPLATES_LABELS.detail.readyToDeploySubtext}
             </p>
           </div>
           <Link href={href} className={buttonVariants({ size: "sm" })}>
-            Get Started
+            {TEMPLATES_LABELS.nav.getStarted}
           </Link>
         </div>
       </div>

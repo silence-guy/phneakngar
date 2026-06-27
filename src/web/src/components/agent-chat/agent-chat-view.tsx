@@ -92,6 +92,11 @@ import {
   PopoverTrigger,
   PopoverContent,
 } from "@/components/ui/popover";
+import {
+  AGENT_CHAT_LABELS,
+  sayHiLabel,
+  agentWellRestedLabel,
+} from "@/components/agent-chat/agent-chat-labels";
 
 export function AgentChatView({
   agentId: propAgentId,
@@ -649,7 +654,7 @@ export function AgentChatView({
     try {
       await cancelActiveTask(conversation.id, workspaceId);
     } catch {
-      toast.error("Failed to stop the task");
+      toast.error(AGENT_CHAT_LABELS.view.failedToStopTask);
     } finally {
       setStopping(false);
     }
@@ -715,7 +720,7 @@ export function AgentChatView({
   if (!messagesLoading && !conversation && messages.length === 0) {
     return (
       <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
-        Failed to load conversation
+        {AGENT_CHAT_LABELS.view.failedToLoadConversation}
       </div>
     );
   }
@@ -736,7 +741,7 @@ export function AgentChatView({
           onClick={handleQuoteSelection}
         >
           <MessageSquareQuote className="size-3" />
-          Quote
+          {AGENT_CHAT_LABELS.view.quote}
         </button>
       )}
       {/* Messages */}
@@ -749,7 +754,7 @@ export function AgentChatView({
             const btn = (e.target as HTMLElement).closest(
               '[data-streamdown="code-block-actions"] button',
             );
-            if (btn) toast.success("Copied to clipboard");
+            if (btn) toast.success(AGENT_CHAT_LABELS.view.copiedToClipboard);
           }}
         >
           <div className="mx-auto max-w-3xl pt-6 pb-15 min-w-0">
@@ -783,7 +788,7 @@ export function AgentChatView({
                   onClick={() => loadOlderMessages()}
                   className="text-xs text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  Load earlier messages
+                  {AGENT_CHAT_LABELS.view.loadEarlierMessages}
                 </button>
               </div>
             )}
@@ -814,12 +819,10 @@ export function AgentChatView({
                         </span>
                       </div>
                       <p className="text-sm text-muted-foreground text-center max-w-xs">
-                        Your agent is sending you a welcome email.
+                        {AGENT_CHAT_LABELS.view.welcomeEmailTitle}
                       </p>
                       <p className="text-xs text-muted-foreground/60 text-center max-w-xs">
-                        Wait for the email task in the top-left to complete,
-                        then check your inbox. Or send a message below to start
-                        chatting.
+                        {AGENT_CHAT_LABELS.view.welcomeEmailSubcopy}
                       </p>
                     </div>
                   );
@@ -827,7 +830,7 @@ export function AgentChatView({
 
                 return (
                   <p className="text-center text-muted-foreground py-20 text-base animate-[fade-up_400ms_ease-out_both]">
-                    Say hi to {agentFirstName}.
+                    {sayHiLabel(agentFirstName)}
                   </p>
                 );
               })()}
@@ -1003,17 +1006,17 @@ export function AgentChatView({
                             ) : (
                               <BedDouble className="size-3.5" />
                             )}
-                            <span className="text-xs">Nap</span>
+                            <span className="text-xs">{AGENT_CHAT_LABELS.view.nap}</span>
                           </Button>
                         </span>
                       )}
                     />
                     <TooltipContent side="right">
                       {isTaskActive
-                        ? "Wait for the task to finish"
+                        ? AGENT_CHAT_LABELS.view.napWaitTask
                         : currentConvHasMessages
-                          ? "Take a nap and reset the current session"
-                          : `${agentName} is well-rested and ready to go`}
+                          ? AGENT_CHAT_LABELS.view.napReset
+                          : agentWellRestedLabel(agentName)}
                     </TooltipContent>
                   </Tooltip>
                   <Tooltip>
@@ -1038,15 +1041,15 @@ export function AgentChatView({
                             ) : (
                               <Square className="size-3.5" />
                             )}
-                            <span className="text-xs">Stop</span>
+                            <span className="text-xs">{AGENT_CHAT_LABELS.view.stop}</span>
                           </Button>
                         </span>
                       )}
                     />
                     <TooltipContent side="right">
                       {isTaskActive
-                        ? "Stop the running task"
-                        : "No task running"}
+                        ? AGENT_CHAT_LABELS.view.stopRunningTask
+                        : AGENT_CHAT_LABELS.view.stopNoTask}
                     </TooltipContent>
                   </Tooltip>
                 </PopoverContent>
@@ -1078,7 +1081,7 @@ export function AgentChatView({
                   )}
                 >
                   <p className="text-sm text-muted-foreground font-medium">
-                    Drop files here
+                    {AGENT_CHAT_LABELS.view.dropFilesHere}
                   </p>
                 </div>
               )}
@@ -1090,7 +1093,7 @@ export function AgentChatView({
                     </span>
                     {slashCommand.activeSkill.isGlobal && (
                       <span className="text-[10px] font-medium text-muted-foreground bg-muted rounded px-1 py-0.5">
-                        Global
+                        {AGENT_CHAT_LABELS.view.global}
                       </span>
                     )}
                     <span className="text-xs text-muted-foreground truncate">
@@ -1262,7 +1265,7 @@ export function AgentChatView({
                   >
                     <Paperclip className="size-3.5" />
                   </TooltipTrigger>
-                  <TooltipContent side="top">Attach files</TooltipContent>
+                  <TooltipContent side="top">{AGENT_CHAT_LABELS.view.attachFiles}</TooltipContent>
                 </Tooltip>
                 {/* Send button — fixed bottom-right. Always Send; never a
                     Stop/pause affordance (task-lifecycle chrome is gone). The
@@ -1287,7 +1290,7 @@ export function AgentChatView({
                       <ArrowUp className="size-3.5" />
                     )}
                   </TooltipTrigger>
-                  <TooltipContent side="top">Send</TooltipContent>
+                  <TooltipContent side="top">{AGENT_CHAT_LABELS.view.send}</TooltipContent>
                 </Tooltip>
               </div>
             </div>
@@ -1395,7 +1398,7 @@ export function AgentChatView({
             );
           } catch (err) {
             toast.error(
-              err instanceof Error ? err.message : "Failed to update issue",
+              err instanceof Error ? err.message : AGENT_CHAT_LABELS.view.failedToUpdateIssue,
             );
           }
         }}
@@ -1414,7 +1417,7 @@ export function AgentChatView({
             );
           } catch (err) {
             toast.error(
-              err instanceof Error ? err.message : "Failed to update status",
+              err instanceof Error ? err.message : AGENT_CHAT_LABELS.view.failedToUpdateStatus,
             );
           }
         }}

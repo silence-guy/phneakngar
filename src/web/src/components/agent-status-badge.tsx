@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { listWorkspaceActiveTasks, type WorkspaceActiveTask } from "@/lib/api";
 import { useWorkspace } from "@/contexts/workspace-context";
 import { relativeTime } from "@/lib/time";
+import { COMPONENT_LABELS, viewAllTasksLabel } from "@/components/component-labels";
 
 interface AgentStatusBadgeProps {
   isOnline: boolean;
@@ -91,10 +92,10 @@ export function AgentStatusBadge({ isOnline, taskCount, agentId }: AgentStatusBa
             className={badgeBase}
           >
             <StatusDot online={false} />
-            <span className="hidden sm:inline">Offline</span>
+            <span className="hidden sm:inline">{COMPONENT_LABELS.status.offline}</span>
           </Badge>
         } />
-        <TooltipContent>Runtime offline — click to manage runtimes</TooltipContent>
+        <TooltipContent>{COMPONENT_LABELS.status.offlineTooltip}</TooltipContent>
       </Tooltip>
     );
   }
@@ -112,9 +113,9 @@ export function AgentStatusBadge({ isOnline, taskCount, agentId }: AgentStatusBa
       >
         <StatusDot online />
         {taskCount > 0 ? (
-          <span className="hidden sm:inline">Working</span>
+          <span className="hidden sm:inline">{COMPONENT_LABELS.status.working}</span>
         ) : (
-          <span className="hidden sm:inline text-muted-foreground/40">Online</span>
+          <span className="hidden sm:inline text-muted-foreground/40">{COMPONENT_LABELS.status.online}</span>
         )}
       </PopoverTrigger>
       <PopoverContent className="w-72 p-1">
@@ -132,9 +133,9 @@ export function AgentStatusBadge({ isOnline, taskCount, agentId }: AgentStatusBa
             ))}
           </div>
         ) : error ? (
-          <div className="p-3 text-xs text-muted-foreground">Failed to load</div>
+          <div className="p-3 text-xs text-muted-foreground">{COMPONENT_LABELS.status.failedToLoad}</div>
         ) : !tasks || tasks.length === 0 ? (
-          <div className="p-3 text-xs text-muted-foreground">No active tasks</div>
+          <div className="p-3 text-xs text-muted-foreground">{COMPONENT_LABELS.status.noActiveTasks}</div>
         ) : (
           <div className="max-h-75 overflow-y-auto thin-scrollbar">
             {tasks.slice(0, MAX_VISIBLE_TASKS).map((task) => (
@@ -145,7 +146,7 @@ export function AgentStatusBadge({ isOnline, taskCount, agentId }: AgentStatusBa
                 href={`/w/${slug}/agents/${agentId}/activity?status=running`}
                 className="block text-xs text-muted-foreground hover:text-foreground text-center py-1.5 transition-colors"
               >
-                View all {tasks.length} tasks
+                {viewAllTasksLabel(tasks.length)}
               </Link>
             )}
           </div>

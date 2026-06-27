@@ -3,6 +3,7 @@
 import type { ComponentProps } from "react";
 import type { AgentRuntime as Runtime } from "@phneakngar/shared";
 import { ProviderLogo } from "@/components/provider-logo";
+import { runtimeSelectLabel } from "@/lib/locale";
 import {
   Select,
   SelectTrigger,
@@ -39,9 +40,9 @@ function groupRuntimes(runtimes: Runtime[]) {
 }
 
 function getPlaceholder(runtimes: Runtime[]) {
-  if (runtimes.length === 0) return "No runtimes — start a daemon first";
-  if (runtimes.every((r) => r.status !== "online")) return "All runtimes offline";
-  return "Select a runtime";
+  if (runtimes.length === 0) return runtimeSelectLabel("noRuntimes");
+  if (runtimes.every((r) => r.status !== "online")) return runtimeSelectLabel("allOffline");
+  return runtimeSelectLabel("selectRuntime");
 }
 
 export function RuntimeSelect({

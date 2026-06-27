@@ -21,6 +21,7 @@ import {
   validateWorkspaceForm,
 } from "@/lib/form-validation";
 import { trackSettingsUpdated } from "@/lib/analytics";
+import { SETTINGS_LABELS, slugUrlHint } from "./settings-labels";
 
 export function GeneralTab() {
   const { workspaceId, slug } = useWorkspace();
@@ -62,7 +63,7 @@ export function GeneralTab() {
         setSavedWorkspaceSlug(ws.slug);
       }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to load workspace info");
+      toast.error(err instanceof Error ? err.message : SETTINGS_LABELS.general.failedToLoad);
     } finally {
       setLoading(false);
     }
@@ -92,12 +93,12 @@ export function GeneralTab() {
       trackSettingsUpdated({ setting_tab: "general" });
       setSavedWorkspaceName(updated.name);
       setSavedWorkspaceSlug(updated.slug);
-      toast.success("Workspace updated");
+      toast.success(SETTINGS_LABELS.general.updated);
       if (updated.slug !== slug) {
         router.replace(`/w/${updated.slug}/settings`);
       }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to update workspace");
+      toast.error(err instanceof Error ? err.message : SETTINGS_LABELS.general.failedToUpdate);
     } finally {
       setSavingWorkspace(false);
     }
@@ -108,10 +109,10 @@ export function GeneralTab() {
     setDeleting(true);
     try {
       await deleteWorkspace(workspaceId, savedWorkspaceName);
-      toast.success("Workspace deleted");
+      toast.success(SETTINGS_LABELS.general.deleted);
       router.replace("/workspaces");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to delete workspace");
+      toast.error(err instanceof Error ? err.message : SETTINGS_LABELS.general.failedToDelete);
     } finally {
       setDeleting(false);
     }
@@ -130,7 +131,7 @@ export function GeneralTab() {
   if (!isOwner) {
     return (
       <p className="text-sm text-muted-foreground">
-        Only workspace owners can edit workspace settings.
+        {SETTINGS_LABELS.general.ownerOnly}
       </p>
     );
   }
@@ -138,10 +139,10 @@ export function GeneralTab() {
   return (
     <div className="space-y-10">
       <section className="space-y-4">
-        <h2 className="text-sm font-medium">Workspace</h2>
+        <h2 className="text-sm font-medium">{SETTINGS_LABELS.general.sectionTitle}</h2>
         <div className="space-y-3">
           <div className="space-y-1.5">
-            <Label htmlFor="workspace-name">Name</Label>
+            <Label htmlFor="workspace-name">{SETTINGS_LABELS.general.nameLabel}</Label>
             <Input
               id="workspace-name"
               value={workspaceName}
@@ -152,7 +153,7 @@ export function GeneralTab() {
                   setWorkspaceErrors((prev) => ({ ...prev, name: undefined }));
                 }
               }}
-              placeholder="Workspace name"
+              placeholder={SETTINGS_LABELS.general.namePlaceholder}
               aria-invalid={Boolean(workspaceErrors.name)}
               aria-describedby={workspaceErrors.name ? "workspace-name-error" : undefined}
             />
@@ -163,7 +164,7 @@ export function GeneralTab() {
             )}
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="workspace-slug">Slug</Label>
+            <Label htmlFor="workspace-slug">{SETTINGS_LABELS.general.slugLabel}</Label>
             <Input
               id="workspace-slug"
               value={workspaceSlug}
@@ -184,7 +185,7 @@ export function GeneralTab() {
               </p>
             )}
             <p className="text-xs text-muted-foreground/70">
-              Used in URLs: /w/{workspaceSlug}/
+              {slugUrlHint(workspaceSlug)}
             </p>
           </div>
         </div>
@@ -193,20 +194,21 @@ export function GeneralTab() {
           onClick={handleSaveWorkspace}
           disabled={!isWorkspaceDirty || savingWorkspace}
         >
-          {savingWorkspace ? "Saving…" : "Save"}
+          {savingWorkspace ? SETTINGS_LABELS.general.saving : SETTINGS_LABELS.general.save}
         </Button>
       </section>
 
       <section className="space-y-4">
-        <h2 className="text-sm font-medium text-destructive">Danger Zone</h2>
+        <h2 className="text-sm font-medium text-destructive">{SETTINGS_LABELS.general.dangerZone}</h2>
         <div className="rounded-md border border-destructive/30 p-4 space-y-3">
           <p className="text-sm text-muted-foreground">
-            Deleting this workspace is permanent and cannot be undone. All agents,
-            conversations, and data will be lost.
+            {SETTINGS_LABELS.general.deleteWarning}
           </p>
           <div className="space-y-1.5">
             <Label htmlFor="delete-confirm" className="text-xs">
-              Type <span className="font-medium text-foreground">{savedWorkspaceName}</span> to confirm
+              {SETTINGS_LABELS.general.confirmPrefix}
+              <span className="font-medium text-foreground">{savedWorkspaceName}</span>
+              {SETTINGS_LABELS.general.confirmSuffix}
             </Label>
             <Input
               id="delete-confirm"
@@ -221,7 +223,7 @@ export function GeneralTab() {
             onClick={handleDelete}
             disabled={deleteConfirm !== savedWorkspaceName || deleting}
           >
-            {deleting ? "Deleting…" : "Delete Workspace"}
+            {deleting ? SETTINGS_LABELS.general.deleting : SETTINGS_LABELS.general.delete}
           </Button>
         </div>
       </section>

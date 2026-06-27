@@ -2,6 +2,7 @@
 
 import { useRef, useEffect, useState } from "react";
 import { useTheme } from "next-themes";
+import { EMAIL_LABELS } from "@/components/email-labels";
 
 interface EmailBodyFrameProps {
   html: string;
@@ -123,7 +124,7 @@ export function EmailBodyFrame({ html, className }: EmailBodyFrameProps) {
       sandbox="allow-same-origin"
       className={className}
       style={{ width: "100%", height: `${height}px`, border: "none", display: "block" }}
-      title="Email content"
+      title={EMAIL_LABELS.frame.iframeTitle}
     />
   );
 }

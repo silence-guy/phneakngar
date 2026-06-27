@@ -16,12 +16,17 @@ import { AgentAvatar } from "@/components/avatar";
 import { relativeTime } from "@/lib/time";
 import {
   INBOX_FILTER_TYPES,
-  INBOX_FILTER_LABELS,
   MANDATORY_INBOX_TYPES,
   getInboxFilterTypes,
   setInboxFilterTypes,
   type InboxFilterType,
 } from "@/lib/inbox-filter";
+import {
+  UNREAD_LABELS,
+  inboxStatusLabel,
+  inboxTypeBadgeLabel,
+  inboxFilterTypeLabel,
+} from "./unread-labels";
 import type { WsMessage } from "@phneakngar/shared";
 
 const INBOX_LIMIT = 30;
@@ -36,15 +41,9 @@ function StatusDot({ status }: { status: string | null }) {
   return <span className={`size-1.5 rounded-full shrink-0 ${colorClass}`} />;
 }
 
-const TYPE_LABELS: Record<string, string> = {
-  user_dm_message: "DM",
-  calendar_event: "Calendar",
-  email_notification: "Email",
-};
-
 function TypeBadge({ type }: { type: string | null }) {
   if (!type) return null;
-  const label = TYPE_LABELS[type] ?? type;
+  const label = inboxTypeBadgeLabel(type);
   return (
     <span className="text-[10px] leading-none px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground font-medium">
       {label}
@@ -53,7 +52,7 @@ function TypeBadge({ type }: { type: string | null }) {
 }
 
 function InboxRow({ item, slug, onClick }: { item: InboxItem; slug: string; onClick?: (e: React.MouseEvent) => void }) {
-  const statusLabel = item.root_task_status === "failed" ? "Failed" : "Completed";
+  const statusLabel = inboxStatusLabel(item.root_task_status);
 
   return (
     <a
@@ -237,9 +236,9 @@ export default function InboxPage() {
     <div className="flex flex-col h-full">
       <div className="flex items-center justify-between border-b border-border/50 px-3 md:px-5 py-2.5 gap-3">
         <div className="flex items-center gap-3 min-w-0">
-          <h1 className="text-sm font-medium">Unread</h1>
+          <h1 className="text-sm font-medium">{UNREAD_LABELS.title}</h1>
           <p className="text-xs text-muted-foreground hidden md:block">
-            Unread responses from your agents.
+            {UNREAD_LABELS.subtitle}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -248,7 +247,7 @@ export default function InboxPage() {
               className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
             >
               <ListFilter className="size-3.5" />
-              <span>Filter</span>
+              <span>{UNREAD_LABELS.filter}</span>
               {activeFilterCount > 0 && (
                 <span className="size-4 flex items-center justify-center rounded-full bg-primary text-primary-foreground text-[10px] font-medium leading-none">
                   {activeFilterCount}
@@ -256,7 +255,7 @@ export default function InboxPage() {
               )}
             </PopoverTrigger>
             <PopoverContent side="bottom" align="end" className="w-48">
-              <p className="text-xs font-medium text-muted-foreground mb-2">Show in inbox:</p>
+              <p className="text-xs font-medium text-muted-foreground mb-2">{UNREAD_LABELS.showInInbox}</p>
               <div className="flex flex-col gap-2">
                 {INBOX_FILTER_TYPES.map((type) => {
                   const isMandatory = MANDATORY_INBOX_TYPES.includes(type);
@@ -268,7 +267,7 @@ export default function InboxPage() {
                         disabled={isMandatory}
                         onCheckedChange={(checked) => handleFilterToggle(type, !!checked)}
                       />
-                      <span className="text-sm">{INBOX_FILTER_LABELS[type]}</span>
+                      <span className="text-sm">{inboxFilterTypeLabel(type)}</span>
                     </label>
                   );
                 })}
@@ -283,7 +282,7 @@ export default function InboxPage() {
               className="text-xs text-muted-foreground"
             >
               <CheckCheck className="size-3.5" />
-              <span>Mark all as read</span>
+              <span>{UNREAD_LABELS.markAllRead}</span>
             </Button>
           )}
         </div>
@@ -304,7 +303,7 @@ export default function InboxPage() {
         ) : items.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-3 py-20">
             <Inbox className="size-10 opacity-30" />
-            <p className="text-sm">No unread messages</p>
+            <p className="text-sm">{UNREAD_LABELS.empty.noUnread}</p>
           </div>
         ) : (
           <>

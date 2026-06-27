@@ -19,28 +19,25 @@ import { GitBranch, RefreshCw } from "lucide-react";
 import { AvatarRenderer, parseAvatarUrl } from "@/components/avatar";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import {
+  TRACES_LABELS,
+  formatTraceRelativeTime,
+  silentTaskLabel,
+  traceStatusFilterLabel,
+  traceStatusLabel,
+} from "./traces-labels";
 
 const TRACE_LIMIT = 30;
 
 const STATUS_OPTIONS = [
-  { label: "All", value: "all" },
-  { label: "Active", value: "active" },
-  { label: "Completed", value: "completed" },
-  { label: "Failed", value: "failed" },
+  { value: "all" },
+  { value: "active" },
+  { value: "completed" },
+  { value: "failed" },
 ];
 
 function relativeTime(dateStr: string): string {
-  const date = new Date(dateStr);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMin = Math.floor(diffMs / 60000);
-  if (diffMin < 1) return "just now";
-  if (diffMin < 60) return `${diffMin}m ago`;
-  const diffHrs = Math.floor(diffMin / 60);
-  if (diffHrs < 24) return `${diffHrs}h ago`;
-  const diffDays = Math.floor(diffHrs / 24);
-  if (diffDays < 7) return `${diffDays}d ago`;
-  return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  return formatTraceRelativeTime(dateStr);
 }
 
 function formatDuration(startedAt: string, completedAt: string | null): string | null {
@@ -87,8 +84,8 @@ function AgentAvatar({ name, avatarUrl, size = 14 }: { name?: string; avatarUrl?
 
 function TraceRow({ trace, slug }: { trace: TraceListItem; slug: string }) {
   const duration = formatDuration(trace.started_at, trace.completed_at);
-  const statusLabel = trace.status === "active" ? "Active" : trace.status === "failed" ? "Failed" : "Completed";
-  const silentTaskLabel = trace.silent_task_count === 1 ? "1 no-output task" : `${trace.silent_task_count} no-output tasks`;
+  const statusLabel = traceStatusLabel(trace.status);
+  const silentTaskText = silentTaskLabel(trace.silent_task_count);
 
   return (
     <Link
@@ -130,7 +127,7 @@ function TraceRow({ trace, slug }: { trace: TraceListItem; slug: string }) {
               <>
                 <span className="text-muted-foreground/40">&middot;</span>
                 <span className="rounded-sm border border-border/60 px-1.5 py-0.5 text-[10px] leading-none text-muted-foreground">
-                  {silentTaskLabel}
+                  {silentTaskText}
                 </span>
               </>
             )}
@@ -283,9 +280,9 @@ export default function TracesPage() {
     <div className="flex flex-col h-full">
       <div className="flex items-center justify-between border-b border-border/50 px-3 md:px-5 py-2.5 gap-3">
         <div className="flex items-center gap-3 min-w-0">
-          <h1 className="text-sm font-medium">Traces</h1>
+          <h1 className="text-sm font-medium">{TRACES_LABELS.title}</h1>
           <p className="text-xs text-muted-foreground hidden md:block">
-            Execution traces across your agents.
+            {TRACES_LABELS.subtitle}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -302,7 +299,7 @@ export default function TracesPage() {
             >
               <RefreshCw className="size-3.5" />
             </TooltipTrigger>
-            <TooltipContent>Refresh</TooltipContent>
+            <TooltipContent>{TRACES_LABELS.refresh}</TooltipContent>
           </Tooltip>
         </div>
       </div>
@@ -310,12 +307,12 @@ export default function TracesPage() {
       <div className="flex items-center gap-2 px-4 py-2">
         <Select value={statusFilter} onValueChange={(v) => updateFilter("status", v ?? "")}>
           <SelectTrigger className="w-35 border-none bg-transparent shadow-none text-xs text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
-            <SelectValue placeholder="Status: All" />
+            <SelectValue placeholder={TRACES_LABELS.filters.statusAll} />
           </SelectTrigger>
           <SelectContent>
             {STATUS_OPTIONS.map((opt) => (
               <SelectItem key={opt.value} value={opt.value}>
-                {opt.label === "All" ? "Status: All" : opt.label}
+                {traceStatusFilterLabel(opt.value)}
               </SelectItem>
             ))}
           </SelectContent>
@@ -323,10 +320,10 @@ export default function TracesPage() {
 
         <Select value={agentFilter} onValueChange={(v) => updateFilter("agentId", v ?? "")}>
           <SelectTrigger className="w-40 border-none bg-transparent shadow-none text-xs text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
-            {agentFilter ? agents.find((a) => a.id === agentFilter)?.name ?? agentFilter : "Agent: All"}
+            {agentFilter ? agents.find((a) => a.id === agentFilter)?.name ?? agentFilter : TRACES_LABELS.filters.agentAll}
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Agent: All</SelectItem>
+            <SelectItem value="">{TRACES_LABELS.filters.agentAll}</SelectItem>
             {agents.map((a) => (
               <SelectItem key={a.id} value={a.id}>
                 <span className="flex items-center gap-1.5">
@@ -340,10 +337,10 @@ export default function TracesPage() {
 
         <Select value={channelFilter} onValueChange={(v) => updateFilter("channel", v ?? "")}>
           <SelectTrigger className="w-40 border-none bg-transparent shadow-none text-xs text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
-            <SelectValue placeholder="Channel: All" />
+            <SelectValue placeholder={TRACES_LABELS.filters.channelAll} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Channel: All</SelectItem>
+            <SelectItem value="">{TRACES_LABELS.filters.channelAll}</SelectItem>
             {channels.map((ch) => (
               <SelectItem key={ch.id} value={ch.name}>
                 #{ch.name}
@@ -367,13 +364,13 @@ export default function TracesPage() {
         ) : traces.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full animate-[fade-up_400ms_ease-out_both]">
             <GitBranch className="size-8 text-muted-foreground mb-3" />
-            <p className="text-sm text-muted-foreground">No traces yet</p>
+            <p className="text-sm text-muted-foreground">{TRACES_LABELS.empty.noTraces}</p>
             <p className="text-xs text-muted-foreground/60 mt-1">
-              Only tasks involving multiple agents appear here.
+              {TRACES_LABELS.empty.onlyMultiAgent}
             </p>
             {(statusFilter || agentFilter || channelFilter) && (
               <p className="text-xs text-muted-foreground/60 mt-1">
-                Try changing your filter
+                {TRACES_LABELS.empty.tryChangingFilter}
               </p>
             )}
           </div>
