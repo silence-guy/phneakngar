@@ -13,7 +13,7 @@
     "typecheck": "turbo run typecheck",
     "lint": "turbo run lint",
     "dev:web": "pnpm --filter @phneakngar/web dev",
-    "dev:cli": "PHNEAKNGAR_SERVER_URL=http://localhost:3000 PHNEAKNGAR_PROJECT_ROOT=$PWD/.phneakngar PHNEAKNGAR_HEALTH_PORT=19515 pnpm --filter @phneakngar/cli dev",
+    "dev:cli": "PHNEAKNGAR_SERVER_URL=http://localhost:15210 PHNEAKNGAR_WS_DO_PORT=15212 PHNEAKNGAR_PROJECT_ROOT=$PWD/.phneakngar PHNEAKNGAR_HEALTH_PORT=19515 pnpm --filter @phneakngar/cli dev",
     "dev:desktop": "pnpm --filter @phneakngar/desktop dev",
     "build:desktop": "pnpm --filter @phneakngar/desktop build",
     "dev:email": "pnpm --filter @phneakngar/email-worker dev",

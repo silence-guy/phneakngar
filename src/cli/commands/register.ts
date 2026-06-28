@@ -39,18 +39,17 @@ export function registerCommand(): Command {
 
       const client = new APIClient(serverUrl, token);
 
-      // Verify token
+      const result = await activateAndSave({ token, serverUrl, profile });
+
       let me: MeResponse;
       try {
         me = await client.getJSON<MeResponse>("/api/me");
       } catch (err) {
         console.error(
-          `Error: failed to verify token: ${err instanceof Error ? err.message : err}`,
+          `Error: failed to verify activated token: ${err instanceof Error ? err.message : err}`,
         );
         process.exit(1);
       }
-
-      const result = await activateAndSave({ token, serverUrl, profile });
 
       console.log(`\nRegistered as ${me.email}`);
       console.log(`Workspace: ${result.workspaceName} (${result.workspaceId})`);

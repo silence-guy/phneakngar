@@ -5,6 +5,7 @@ import {
   SCENARIO_PRESETS_KM,
   getScenarioPresetById,
   getScenarioPresets,
+  shuffleMembers,
 } from "./scenario-presets";
 
 describe("scenario preset localization", () => {
@@ -49,5 +50,13 @@ describe("scenario preset localization", () => {
     expect(engineer?.relationship).toContain("Brief and report in Khmer by default");
     expect(engineer?.relationship).toContain("acceptance criteria");
     expect(engineer?.relationship).toContain("status values exact");
+  });
+
+  it("generates Khmer member names with valid ASCII email handles", () => {
+    const members = shuffleMembers(4);
+
+    expect(members).toHaveLength(4);
+    expect(members.every((member) => /[\u1780-\u17ff]/.test(member.name))).toBe(true);
+    expect(members.every((member) => /^[a-z0-9-]+$/.test(member.emailHandle))).toBe(true);
   });
 });

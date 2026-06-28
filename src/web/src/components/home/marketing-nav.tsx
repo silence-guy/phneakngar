@@ -31,35 +31,35 @@ export function MarketingNav({ isLoggedIn }: { isLoggedIn: boolean }) {
         <div className="flex items-center gap-3">
           <Link
             href="/templates"
-            className="hidden sm:block px-3 py-1.5 text-xs uppercase tracking-widest transition-opacity duration-150 hover:opacity-70"
+            className="hidden sm:block px-3 py-1.5 text-xs transition-opacity duration-150 hover:opacity-70"
             style={{
               fontFamily: "var(--font-mono)",
               color: "var(--landing-text)",
             }}
           >
-            Templates
+            គំរូ
           </Link>
           <Link
             href="/blog"
-            className="hidden sm:block px-3 py-1.5 text-xs uppercase tracking-widest transition-opacity duration-150 hover:opacity-70"
+            className="hidden sm:block px-3 py-1.5 text-xs transition-opacity duration-150 hover:opacity-70"
             style={{
               fontFamily: "var(--font-mono)",
               color: "var(--landing-text)",
             }}
           >
-            Blog
+            ប្លុក
           </Link>
           {isLoggedIn ? (
             <Link
               href="/workspaces?auto"
-              className="inline-flex items-center gap-1.5 px-4 py-1.5 text-xs uppercase tracking-widest transition-opacity duration-150 hover:opacity-70"
+            className="inline-flex items-center gap-1.5 px-4 py-1.5 text-xs transition-opacity duration-150 hover:opacity-70"
               style={{
                 fontFamily: "var(--font-mono)",
                 color: "var(--landing-text)",
                 border: "1px solid var(--landing-text)",
               }}
             >
-              App
+            កម្មវិធី
               <svg
                 width="12"
                 height="12"
@@ -76,14 +76,14 @@ export function MarketingNav({ isLoggedIn }: { isLoggedIn: boolean }) {
           ) : (
             <a
               href="/sign-in"
-              className="inline-flex items-center gap-1.5 px-4 py-1.5 text-xs uppercase tracking-widest transition-opacity duration-150 hover:opacity-70"
+            className="inline-flex items-center gap-1.5 px-4 py-1.5 text-xs transition-opacity duration-150 hover:opacity-70"
               style={{
                 fontFamily: "var(--font-mono)",
                 color: "var(--landing-bg)",
                 backgroundColor: "var(--landing-text)",
               }}
             >
-              Get Started
+            ចាប់ផ្តើម
             </a>
           )}
         </div>

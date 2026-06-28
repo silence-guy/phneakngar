@@ -124,12 +124,13 @@ export function StudioOnboardingClient({
     });
   }, [onlineRuntimes]);
 
-  const resolveHandles = useCallback(async (memberNames: string[]) => {
+  const resolveHandles = useCallback(async (memberInputs: Pick<TeamMember, "name" | "emailHandle">[]) => {
+    const requestedHandles = memberInputs.map((member) => member.emailHandle || member.name);
     try {
       const res = await fetch("/api/studios/check-handles", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ names: memberNames }),
+        body: JSON.stringify({ names: requestedHandles }),
       });
       if (!res.ok) return null;
       return (await res.json()) as { name: string; handle: string }[];
@@ -149,15 +150,16 @@ export function StudioOnboardingClient({
       description: m.description,
       instructions: m.instructions,
       avatarUrl: generated[i].avatarUrl,
+      emailHandle: generated[i].emailHandle,
       runtimeId: defaultRuntimeId,
       relationship: m.relationship,
     }));
     setMembers(newMembers);
-    resolveHandles(newMembers.map((m) => m.name)).then((handles) => {
+    resolveHandles(newMembers).then((handles) => {
       if (handles) {
         setMembers((prev) =>
           prev.map((m) => {
-            const h = handles.find((r) => r.name === m.name);
+            const h = handles.find((r) => r.name === (m.emailHandle || m.name));
             return h ? { ...m, emailHandle: h.handle } : m;
           }),
         );
@@ -177,14 +179,15 @@ export function StudioOnboardingClient({
       description: m.description,
       instructions: m.instructions,
       avatarUrl: generated[i].avatarUrl,
+      emailHandle: generated[i].emailHandle,
       runtimeId: defaultRuntimeId,
       relationship: m.relationship,
     }));
     setMembers(newMembers);
-    const handles = await resolveHandles(newMembers.map((m) => m.name));
+    const handles = await resolveHandles(newMembers);
     if (handles) {
       setMembers((prev) => prev.map((m) => {
-        const h = handles.find((r) => r.name === m.name);
+        const h = handles.find((r) => r.name === (m.emailHandle || m.name));
         return h ? { ...m, emailHandle: h.handle } : m;
       }));
     }
@@ -192,12 +195,17 @@ export function StudioOnboardingClient({
 
   const handleShuffle = async () => {
     const generated = shuffleMembers(members.length);
-    const newMembers = members.map((m, i) => ({ ...m, name: generated[i].name, avatarUrl: generated[i].avatarUrl, emailHandle: undefined }));
+    const newMembers = members.map((m, i) => ({
+      ...m,
+      name: generated[i].name,
+      avatarUrl: generated[i].avatarUrl,
+      emailHandle: generated[i].emailHandle,
+    }));
     setMembers(newMembers);
-    const handles = await resolveHandles(newMembers.map((m) => m.name));
+    const handles = await resolveHandles(newMembers);
     if (handles) {
       setMembers((prev) => prev.map((m) => {
-        const h = handles.find((r) => r.name === m.name);
+        const h = handles.find((r) => r.name === (m.emailHandle || m.name));
         return h ? { ...m, emailHandle: h.handle } : m;
       }));
     }

@@ -34,43 +34,43 @@ interface Scenario {
 const scenarios: Scenario[] = [
   {
     id: "lead-followup",
-    title: "Lead auto follow-up",
-    subtitle: "Personalized reply in minutes. Not hours.",
+    title: "តាមដាន lead ដោយស្វ័យប្រវត្តិ",
+    subtitle: "ឆ្លើយតបផ្ទាល់ខ្លួនក្នុងប៉ុន្មាននាទី មិនមែនប៉ុន្មានម៉ោង។",
     icon: <DollarSign className="size-4" />,
     script: leadFollowupScript,
   },
   {
     id: "weekly-brief",
-    title: "Monday 8am briefing",
-    subtitle: "Your week is planned before coffee.",
+    title: "សង្ខេបថ្ងៃចន្ទ ម៉ោង 8 ព្រឹក",
+    subtitle: "សប្តាហ៍របស់អ្នកត្រូវបានរៀបចំមុនកាហ្វេ។",
     icon: <Calendar className="size-4" />,
     script: weeklyBriefScript,
   },
   {
     id: "store-ops",
-    title: "Daily store operations",
-    subtitle: "Your AI ops manager checks in every morning.",
+    title: "ប្រតិបត្តិការហាងប្រចាំថ្ងៃ",
+    subtitle: "អ្នកគ្រប់គ្រងប្រតិបត្តិការ AI ពិនិត្យរាល់ព្រឹក។",
     icon: <BarChart3 className="size-4" />,
     script: storeOpsScript,
   },
   {
     id: "bug-to-pr",
-    title: "Bug report → PR ready",
-    subtitle: "Three agents turn a bug email into a merged fix.",
+    title: "របាយការណ៍ bug → PR រួចរាល់",
+    subtitle: "ភ្នាក់ងារ 3 បម្លែងអ៊ីមែល bug ទៅជា fix ដែល merge រួច។",
     icon: <Bug className="size-4" />,
     script: bugToPrScript,
   },
   {
     id: "post-update",
-    title: "\"Post an update\"",
-    subtitle: "One sentence. Five minutes. Published.",
+    title: "\"បង្ហោះ update\"",
+    subtitle: "មួយប្រយោគ។ ប្រាំនាទី។ បោះពុម្ពផ្សាយ។",
     icon: <MessageSquare className="size-4" />,
     script: postUpdateScript,
   },
   {
     id: "fill-form",
     title: "\"Fill this form\"",
-    subtitle: "It remembers everything. You just sign.",
+    subtitle: "វាចងចាំអ្វីៗទាំងអស់។ អ្នកគ្រាន់តែចុះហត្ថលេខា។",
     icon: <Brain className="size-4" />,
     script: fillFormScript,
   },
@@ -128,7 +128,7 @@ export function UseCasesSection() {
             color: "var(--landing-text-muted)",
           }}
         >
-          Use Cases
+          ករណីប្រើប្រាស់
         </div>
         <h2
           style={{
@@ -137,7 +137,7 @@ export function UseCasesSection() {
             fontSize: "clamp(1.75rem, 4vw, 3rem)",
           }}
         >
-          See It In Action
+          មើលវាដំណើរការពិត
         </h2>
         <p
           className="mx-auto mt-3 max-w-xl"
@@ -147,7 +147,7 @@ export function UseCasesSection() {
             fontSize: "0.85rem",
           }}
         >
-          Real scenarios running on real agents. Every day.
+          ស្ថានភាពពិតៗដែលរត់លើភ្នាក់ងារពិត រាល់ថ្ងៃ។
         </p>
       </div>
 

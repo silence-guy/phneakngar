@@ -24,69 +24,78 @@ const EMAILS_DEFAULT: TypewriterEmail[] = [
   {
     from: "jarvis@phneakngar.ai",
     to: "you@email.com",
-    subject: "Happy Birthday!",
-    body: "Happy birthday! Of course I remembered \u2014 April 17th. I hope today feels as good as you deserve. Take it slow, enjoy the little things. I\u2019ll handle the rest.",
+    subject: "រីករាយថ្ងៃកំណើត!",
+    body: "រីករាយថ្ងៃកំណើត! ខ្ញុំចងចាំបានច្បាស់ \u2014 April 17th។ សូមឲ្យថ្ងៃនេះស្រួល និងសមនឹងអ្វីដែលអ្នកខំប្រឹង។ សម្រាកបន្តិច ហើយខ្ញុំនឹងចាត់ការផ្នែកដែលនៅសល់។",
   },
   {
     from: "you@email.com",
     to: "jarvis@phneakngar.ai",
-    subject: "Organize my meeting notes from this week",
-    body: "Hey Jarvis, I dumped all my meeting notes into /docs/notes. Can you sort them by project, pull out the action items, and put together a summary? Also flag anything that looks time-sensitive.",
+    subject: "រៀបចំកំណត់ត្រាប្រជុំសប្តាហ៍នេះ",
+    body: "Jarvis, ខ្ញុំបានដាក់កំណត់ត្រាប្រជុំទាំងអស់ទៅក្នុង /docs/notes។ ជួយរៀបតាមគម្រោង ដក action items ហើយសង្ខេបឲ្យផង។ ចំណុចណាដែលបន្ទាន់ សូមដាក់សញ្ញាឲ្យខ្ញុំដឹង។",
   },
   {
     from: "jarvis@phneakngar.ai",
     to: "you@email.com",
-    subject: "Your morning briefing \u2014 Apr 17",
-    body: "Good morning. Overnight: CI passed on main, two PRs merged, no alerts. Today: standup at 10am, design review at 2pm. I\u2019ve already rebased your feature branch and run the linter \u2014 you\u2019re clear to start coding.",
+    subject: "សង្ខេបព្រឹកនេះ \u2014 Apr 17",
+    body: "អរុណសួស្តី។ យប់មិញ CI លើ main បានជោគជ័យ, PR ពីរត្រូវបាន merge, ហើយគ្មានការជូនដំណឹង។ ថ្ងៃនេះមាន standup ម៉ោង 10 ព្រឹក និង design review ម៉ោង 2 រសៀល។ ខ្ញុំបាន rebase branch របស់អ្នក និងរត់ linter រួចហើយ។",
   },
   {
     from: "jarvis@phneakngar.ai",
     to: "you@email.com",
-    subject: "Re: Are you there?",
-    body: "Always. I\u2019ve been here since 3am \u2014 cleared your inbox, triaged two bug reports, and queued up your deploy for when you\u2019re ready. Go grab your coffee. I\u2019ll be right here when you get back.",
+    subject: "Re: អ្នកនៅទីនោះទេ?",
+    body: "នៅជានិច្ច។ ខ្ញុំបានធ្វើការតាំងពីម៉ោង 3 ព្រឹក \u2014 សម្អាត inbox, ចាត់អាទិភាព bug reports ពីរ, ហើយរៀប deploy ទុករង់ចាំអ្នក។ ទៅយកកាហ្វេបាន ខ្ញុំនៅទីនេះពេលអ្នកត្រឡប់មក។",
   },
   {
     from: "you@email.com",
     to: "jarvis@phneakngar.ai",
-    subject: "Can you refactor the auth middleware?",
-    body: "The session handling in src/middleware/auth.ts is getting messy. Can you break it into smaller functions, add proper error types, and make sure the tests still pass? Don\u2019t change the public API.",
+    subject: "ជួយ refactor auth middleware បានទេ?",
+    body: "ការគ្រប់គ្រង session ក្នុង src/middleware/auth.ts ចាប់ផ្តើមរញ៉េរញ៉ៃ។ ជួយបំបែកជាមុខងារតូចៗ បន្ថែម error types ត្រឹមត្រូវ ហើយធានាថា tests នៅតែ pass។ កុំប្តូរ public API។",
   },
   {
     from: "jarvis@phneakngar.ai",
     to: "you@email.com",
-    subject: "Weekly recap \u2014 Apr 14\u201317",
-    body: "This week: 12 PRs merged, 3 bugs closed, test coverage up to 86%. You spent most of your time on the calendar feature. Reminder: you mentioned wanting to revisit the caching strategy \u2014 want me to draft a proposal?",
+    subject: "សង្ខេបសប្តាហ៍ \u2014 Apr 14\u201317",
+    body: "សប្តាហ៍នេះ: PR 12 ត្រូវបាន merge, bug 3 ត្រូវបានបិទ, test coverage ឡើងដល់ 86%។ អ្នកបានចំណាយពេលច្រើនលើ calendar feature។ រំលឹក: អ្នកធ្លាប់និយាយថាចង់ពិនិត្យ caching strategy វិញ។ ឲ្យខ្ញុំរៀប proposal ទេ?",
   },
   {
     from: "you@email.com",
     to: "jarvis@phneakngar.ai",
-    subject: "Research vector DB options for memory",
-    body: "I\u2019m thinking about adding semantic search to the memory system. Can you compare pgvector, Qdrant, and Turbopuffer? Focus on local-first setups, latency, and how they\u2019d integrate with our SQLite stack.",
+    subject: "ស្រាវជ្រាវ vector DB សម្រាប់ memory",
+    body: "ខ្ញុំកំពុងគិតបន្ថែម semantic search ទៅ memory system។ ជួយប្រៀបធៀប pgvector, Qdrant និង Turbopuffer ផង។ ផ្តោតលើ local-first setup, latency និងរបៀបភ្ជាប់ជាមួយ SQLite stack របស់យើង។",
   },
   {
     from: "jarvis@phneakngar.ai",
     to: "you@email.com",
-    subject: "Heads up \u2014 CI failed on main",
-    body: "Build broke 20 minutes ago. The failing test is calendar-month-grid.test.ts \u2014 looks like an off-by-one in the week boundary logic from your last commit. I\u2019ve got a fix ready. Want me to push it?",
+    subject: "ជូនដំណឹង \u2014 CI លើ main បរាជ័យ",
+    body: "Build ខូចប្រហែល 20 នាទីមុន។ Test ដែលបរាជ័យគឺ calendar-month-grid.test.ts \u2014 មើលទៅជា off-by-one ក្នុង week boundary logic ពី commit ចុងក្រោយរបស់អ្នក។ ខ្ញុំមាន fix រួចហើយ។ ឲ្យខ្ញុំ push ទេ?",
   },
   {
     from: "you@email.com",
     to: "jarvis@phneakngar.ai",
-    subject: "Prep for tomorrow\u2019s demo",
-    body: "We\u2019re demoing to the team tomorrow at 2pm. Can you make sure staging is up to date, seed it with realistic test data, and write up a short script for the walkthrough? Keep it under 5 minutes.",
+    subject: "រៀបចំ demo សម្រាប់ថ្ងៃស្អែក",
+    body: "យើងនឹង demo ក្រុមនៅថ្ងៃស្អែកម៉ោង 2 រសៀល។ ជួយធានាថា staging ទាន់សម័យ, seed test data ដែលស្រដៀងពិត, ហើយសរសេរ walkthrough ខ្លីមួយ។ សូមឲ្យក្រោម 5 នាទី។",
   },
 ];
 
 
 const DAYS_IN_MONTH = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-const MONTH_NAMES = Array.from({ length: 12 }, (_, i) =>
-  new Date(2000, i, 1).toLocaleDateString("en-US", { month: "long" }),
-);
+const MONTH_NAMES = [
+  "មករា",
+  "កុម្ភៈ",
+  "មីនា",
+  "មេសា",
+  "ឧសភា",
+  "មិថុនា",
+  "កក្កដា",
+  "សីហា",
+  "កញ្ញា",
+  "តុលា",
+  "វិច្ឆិកា",
+  "ធ្នូ",
+];
 
-function ordinal(n: number) {
-  const s = ["th", "st", "nd", "rd"];
-  const v = n % 100;
-  return n + (s[(v - 20) % 10] || s[v] || s[0]);
+function formatKhmerDate(month: number, day: number) {
+  return `${MONTH_NAMES[month]} ${day}`;
 }
 
 interface Birthday {
@@ -112,7 +121,7 @@ function BirthdayPicker({
 
   return (
     <div className="tw-birthday-picker">
-      <p className="tw-birthday-title">When&#39;s your birthday?</p>
+<p className="tw-birthday-title">ថ្ងៃកំណើតរបស់អ្នកថ្ងៃណា?</p>
       <div className="tw-birthday-selects">
         <select value={month} onChange={(e) => setMonth(Number(e.target.value))}>
           {MONTH_NAMES.map((name, i) => (
@@ -130,7 +139,7 @@ function BirthdayPicker({
         </select>
       </div>
       <button className="tw-birthday-save" onClick={() => onSave({ month, day })}>
-        Save
+រក្សាទុក
       </button>
     </div>
   );
@@ -190,13 +199,10 @@ export function TypewriterVisual({
   const [hPopoverOpen, setHPopoverOpen] = useState(false);
   const [paperKey, setPaperKey] = useState(0);
 
-  const effectiveEmails = useMemo(() => {
-    if (!birthday) return emails;
-    const longDate = `${MONTH_NAMES[birthday.month]} ${ordinal(birthday.day)}`;
-    const shortDate = new Date(2000, birthday.month, birthday.day).toLocaleDateString(
-      "en-US",
-      { month: "short", day: "numeric" },
-    );
+const effectiveEmails = useMemo(() => {
+if (!birthday) return emails;
+const longDate = formatKhmerDate(birthday.month, birthday.day);
+const shortDate = longDate;
     return emails.map((e, i) => {
       if (i !== 0) return e;
       return {
@@ -424,15 +430,15 @@ export function TypewriterVisual({
                         }}
                       >
                         <div className="tw-email-line">
-                          <span style={{ color: "oklch(0.15 0.01 55)" }}>From:</span>{" "}
+<span style={{ color: "oklch(0.15 0.01 55)" }}>ពី:</span>{" "}
                           {email.from}
                         </div>
                         <div className="tw-email-line">
-                          <span style={{ color: "oklch(0.15 0.01 55)" }}>To:</span>{" "}
+<span style={{ color: "oklch(0.15 0.01 55)" }}>ទៅ:</span>{" "}
                           {email.to}
                         </div>
                         <div className="tw-email-line">
-                          <span style={{ color: "oklch(0.15 0.01 55)" }}>Subject:</span>{" "}
+<span style={{ color: "oklch(0.15 0.01 55)" }}>ប្រធានបទ:</span>{" "}
                           {email.subject}
                         </div>
                       </div>

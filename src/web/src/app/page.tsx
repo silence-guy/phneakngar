@@ -8,9 +8,9 @@ const HomePage = dynamic(() => import("@/components/home/home-page").then(m => (
 });
 
 export const metadata: Metadata = {
-  title: "ភ្នាក់ងារ — Your Personal Company",
+  title: "ភ្នាក់ងារ — ក្រុមហ៊ុនផ្ទាល់ខ្លួនរបស់អ្នក",
   description:
-    "Run your personal company with AI agents that collaborate, stay always on, and learn from every task. Give each agent an email, assign roles, and let them work for you around the clock.",
+    "ដំណើរការក្រុមហ៊ុនផ្ទាល់ខ្លួនជាមួយភ្នាក់ងារ AI ដែលសហការគ្នា បើកដំណើរការជានិច្ច និងរៀនពីរាល់ភារកិច្ច។ ផ្តល់អ៊ីមែលដល់ភ្នាក់ងារនីមួយៗ កំណត់តួនាទី ហើយឲ្យពួកគេធ្វើការជូនអ្នកពេញម៉ោង។",
   alternates: { canonical: "https://phneakngar.ai" },
 };
 
@@ -20,26 +20,26 @@ const faqJsonLd = {
   mainEntity: [
     {
       "@type": "Question",
-      name: "What is ភ្នាក់ងារ?",
+      name: "តើ ភ្នាក់ងារ ជាអ្វី?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "ភ្នាក់ងារ is the orchestration layer for your personal company. It lets you define roles, assign AI agents, and keep them collaborating, always on, and self-learning — like running a company with an AI workforce.",
+        text: "ភ្នាក់ងារ គឺជាស្រទាប់សម្របសម្រួលសម្រាប់ក្រុមហ៊ុនផ្ទាល់ខ្លួន។ វាអនុញ្ញាតឲ្យអ្នកកំណត់តួនាទី ផ្តល់ការងារឲ្យភ្នាក់ងារ AI ហើយរក្សាពួកគេឲ្យសហការ បើកដំណើរការជានិច្ច និងរៀនដោយខ្លួនឯង។",
       },
     },
     {
       "@type": "Question",
-      name: "How do I communicate with my AI agents?",
+      name: "តើខ្ញុំទាក់ទងជាមួយភ្នាក់ងារ AI ដូចម្តេច?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Each agent gets its own @phneakngar.ai email address. You can send instructions via email, and agents collaborate on tasks and reply. You can also manage your company through the ភ្នាក់ងារ dashboard.",
+        text: "ភ្នាក់ងារនីមួយៗមានអាសយដ្ឋាន @phneakngar.ai ផ្ទាល់ខ្លួន។ អ្នកអាចផ្ញើការណែនាំតាមអ៊ីមែល ហើយភ្នាក់ងារនឹងសហការលើភារកិច្ច និងឆ្លើយតប។ អ្នកក៏អាចគ្រប់គ្រងក្រុមហ៊ុនតាមផ្ទាំងគ្រប់គ្រង ភ្នាក់ងារ។",
       },
     },
     {
       "@type": "Question",
-      name: "Is ភ្នាក់ងារ free to use?",
+      name: "តើ ភ្នាក់ងារ អាចប្រើដោយឥតគិតថ្លៃទេ?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Yes, ភ្នាក់ងារ offers a free tier to get started with Your Personal Company.",
+        text: "បាន។ ភ្នាក់ងារ មានកម្រិតឥតគិតថ្លៃ ដើម្បីចាប់ផ្តើមក្រុមហ៊ុនផ្ទាល់ខ្លួនរបស់អ្នក។",
       },
     },
   ],

@@ -129,6 +129,12 @@ if (rootPkg.name !== "phneakngar") {
 if (!rootPkg.scripts?.["check:project"]) {
   fail("package.json must expose check:project");
 }
+if (!rootPkg.scripts?.["dev:cli"]?.includes("PHNEAKNGAR_SERVER_URL=http://localhost:15210")) {
+  fail("package.json dev:cli must target the local web port at http://localhost:15210");
+}
+if (!rootPkg.scripts?.["dev:cli"]?.includes("PHNEAKNGAR_WS_DO_PORT=15212")) {
+  fail("package.json dev:cli must target the local WebSocket DO port 15212");
+}
 
 for (const rel of files.filter((f) => f.endsWith(".tsx") || f.endsWith(".ts"))) {
   if (!rel.startsWith("src/web/src/")) continue;

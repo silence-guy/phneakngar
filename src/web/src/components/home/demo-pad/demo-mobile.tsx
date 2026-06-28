@@ -6,10 +6,10 @@ import { AnimatedAvatar } from "@/components/avatar/animated-avatar";
 import { AvatarRenderer } from "@/components/avatar/avatar-parts";
 import { Logo } from "@/components/logo";
 import { cn } from "@/lib/utils";
-import type { DashboardState, DashboardConfig } from "./demo-dashboard";
+import { getAgentKey, resolveDashboardAgent, type DashboardState, type DashboardConfig } from "./demo-dashboard";
 
 export function DemoMobile({ state, config, className }: { state: DashboardState; config: DashboardConfig; className?: string }) {
-  const agent = config.agents.find(a => a.name.toLowerCase() === state.activeAgent) ?? config.agents[0];
+ const agent = resolveDashboardAgent(config.agents, state.activeAgent);
   const visibleSteps = state.steps.slice(0, state.visibleCount);
 
   return (
@@ -26,7 +26,7 @@ export function DemoMobile({ state, config, className }: { state: DashboardState
         </div>
         <div className="flex-1 flex items-center gap-1 ml-1 overflow-hidden">
           {config.agents.map((a) => {
-            const isActive = state.activeAgent === a.name.toLowerCase();
+            const isActive = state.activeAgent === getAgentKey(a);
             return (
               <div
                 key={a.name}
@@ -48,7 +48,7 @@ export function DemoMobile({ state, config, className }: { state: DashboardState
         <div className="flex items-center gap-1 px-2 py-1 border-b border-border/40">
           <span className="size-1 rounded-full bg-green-500" />
           <span className="text-[9px] font-medium text-foreground">{agent.name}</span>
-          <span className="text-[8px] text-muted-foreground">/ Chat</span>
+          <span className="text-[8px] text-muted-foreground">/ សន្ទនា</span>
         </div>
 
         {/* Chat */}

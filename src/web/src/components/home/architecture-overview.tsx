@@ -13,31 +13,31 @@ import { useScriptedTimeline, type TimelineStep } from "./demo-pad/use-scripted-
 gsap.registerPlugin(ScrollTrigger);
 
 const ARCH_AGENTS: AgentInfo[] = [
-  { name: "Planner", email: "planner@phneakngar.ai", config: { shape: "hexagon", eye: "dots", nose: "dash", bg: 5 } },
-  { name: "Coder", email: "coder@phneakngar.ai", config: { shape: "task", eye: "happy", nose: "dot", bg: 0 } },
+  { id: "planner", name: "វិចិត្រ", email: "planner@phneakngar.ai", config: { shape: "hexagon", eye: "dots", nose: "dash", bg: 5 } },
+  { id: "coder", name: "ដារ៉ា", email: "coder@phneakngar.ai", config: { shape: "task", eye: "happy", nose: "dot", bg: 0 } },
 ];
 const ARCH_CONFIG: DashboardConfig = { agents: ARCH_AGENTS };
 
-/* ─── Planner's chat steps ─── */
+/* ─── អ្នករៀបចំ's chat steps ─── */
 const PLANNER_STEPS: DashboardStep[] = [
-  { type: "user-message", text: "A user reported Safari crashes on login — can you fix it?" },
-  { type: "message", text: "On it. Let me investigate and delegate to Coder." },
-  { type: "email-out", subject: "Fix Safari flex gap in login page", address: "coder@phneakngar.ai" },
-  // After Coder finishes:
-  { type: "email-in", subject: "Re: Fix Safari flex gap — Done, PR #142", address: "coder@phneakngar.ai" },
-  { type: "message", markdown: "Coder fixed it — <strong>PR #142</strong> opened. Both <code>login-page.tsx</code> and <code>signup.tsx</code> patched, 42 tests passing." },
-  { type: "user-message", text: "Nice, ship it" },
-  { type: "message", text: "Done. Merged and replied to the reporter." },
-  { type: "email-out", subject: "Re: Login crashes on Safari — Fixed", address: "user@company.com" },
+  { type: "user-message", text: "មានអ្នកប្រើប្រាស់រាយការណ៍ថា Safari គាំងពេល login — ជួយជួសជុលបានទេ?" },
+  { type: "message", text: "ខ្ញុំកំពុងពិនិត្យ ហើយនឹងផ្ទេរទៅ ដារ៉ា សម្រាប់ផ្នែកកូដ។" },
+  { type: "email-out", subject: "ជួសជុល Safari flex gap ក្នុង login page", address: "coder@phneakngar.ai" },
+  // After អ្នកសរសេរកូដ finishes:
+  { type: "email-in", subject: "Re: ជួសជុល Safari flex gap — រួចរាល់, PR #142", address: "coder@phneakngar.ai" },
+  { type: "message", markdown: "ដារ៉ា បានជួសជុលរួច — បើក <strong>PR #142</strong> ហើយ។ បានកែ <code>login-page.tsx</code> និង <code>signup.tsx</code>; tests 42 pass។" },
+  { type: "user-message", text: "ល្អណាស់ បញ្ចូលវាទៅ" },
+  { type: "message", text: "រួចរាល់។ Merge ហើយ និងឆ្លើយតបទៅអ្នករាយការណ៍។" },
+  { type: "email-out", subject: "Re: Login គាំងលើ Safari — បានជួសជុល", address: "user@company.com" },
 ];
 
-/* ─── Coder's chat steps ─── */
+/* ─── អ្នកសរសេរកូដ's chat steps ─── */
 const CODER_STEPS: DashboardStep[] = [
-  { type: "email-in", subject: "Fix Safari flex gap in login page", address: "planner@phneakngar.ai" },
-  { type: "message", text: "Got it. Searching for flex gap usage..." },
-  { type: "message", markdown: `Found 2 affected files:<br/><code>login-page.tsx:42</code> and <code>signup.tsx:18</code>. Fixing both.` },
-  { type: "message", markdown: "Done — replaced flex gap → margin spacing. <strong>42 tests passing ✓</strong>" },
-  { type: "email-out", subject: "Re: Fix Safari flex gap — Done, PR #142", address: "planner@phneakngar.ai" },
+  { type: "email-in", subject: "ជួសជុល Safari flex gap ក្នុង login page", address: "planner@phneakngar.ai" },
+  { type: "message", text: "ទទួលបានហើយ។ កំពុងស្វែងរកការប្រើ flex gap..." },
+  { type: "message", markdown: `រកឃើញឯកសារប៉ះពាល់ 2:<br/><code>login-page.tsx:42</code> និង <code>signup.tsx:18</code>។ កំពុងជួសជុលទាំងពីរ។` },
+  { type: "message", markdown: "រួចរាល់ — ប្តូរ flex gap ទៅជា margin spacing។ <strong>tests 42 pass ✓</strong>" },
+  { type: "email-out", subject: "Re: ជួសជុល Safari flex gap — រួចរាល់, PR #142", address: "planner@phneakngar.ai" },
 ];
 
 /* ─── Terminal lines ─── */
@@ -48,14 +48,14 @@ const TERMINAL_LINES: TerminalLine[] = [
     { text: "Task ", color: "info" },
     { text: "PhGFC9l ", color: "string" },
     { text: "claimed agent=", color: "info" },
-    { text: "Planner", color: "string" },
+    { text: "វិចិត្រ", color: "string" },
   ] },
   { spans: [
     { text: "INFO  ", color: "keyword" },
     { text: "[session-runner] ", color: "muted" },
     { text: "send-dm", color: "highlight" },
     { text: ": ", color: "muted" },
-    { text: "\"Let me investigate and delegate...\"", color: "string" },
+    { text: "\"កំពុងពិនិត្យ ហើយផ្ទេរទៅ ដារ៉ា...\"", color: "string" },
   ] },
   { spans: [
     { text: "INFO  ", color: "keyword" },
@@ -70,7 +70,7 @@ const TERMINAL_LINES: TerminalLine[] = [
     { text: "Task ", color: "info" },
     { text: "xK9mT2r ", color: "string" },
     { text: "claimed agent=", color: "info" },
-    { text: "Coder", color: "string" },
+    { text: "ដារ៉ា", color: "string" },
   ] },
   { spans: [
     { text: "INFO  ", color: "keyword" },
@@ -131,7 +131,7 @@ const TERMINAL_LINES: TerminalLine[] = [
     { text: "[session-runner] ", color: "muted" },
     { text: "send-dm", color: "highlight" },
     { text: ": ", color: "muted" },
-    { text: "\"Coder fixed it — PR #142 opened.\"", color: "string" },
+    { text: "\"ដារ៉ា បានជួសជុលរួច — បើក PR #142។\"", color: "string" },
   ] },
   { spans: [
     { text: "INFO  ", color: "keyword" },
@@ -146,12 +146,12 @@ const TERMINAL_LINES: TerminalLine[] = [
 
 /* ─── Timeline ─── */
 const TIMELINE: TimelineStep[] = [
-  // Planner phase 1: user asks, planner responds + delegates
+  // អ្នករៀបចំ phase 1: user asks, planner responds + delegates
   { id: "user-asks", duration: 2000 },
   { id: "planner-typing", duration: 1500 },
   { id: "planner-msg1", duration: 1500 },
   { id: "planner-email-out", duration: 2000 },
-  // Switch to Coder
+  // Switch to អ្នកសរសេរកូដ
   { id: "switch-to-coder", duration: 1200 },
   { id: "coder-email-in", duration: 1800 },
   { id: "coder-typing", duration: 1200 },
@@ -159,7 +159,7 @@ const TIMELINE: TimelineStep[] = [
   { id: "coder-msg2", duration: 1800 },
   { id: "coder-msg3", duration: 1800 },
   { id: "coder-email-out", duration: 2000 },
-  // Switch back to Planner
+  // Switch back to អ្នករៀបចំ
   { id: "switch-to-planner", duration: 1200 },
   { id: "planner-email-in", duration: 1800 },
   { id: "planner-msg2", duration: 2000 },
@@ -179,15 +179,15 @@ export function ArchitectureOverview() {
   // Derive dashboard state from timeline
   const dashboardState: DashboardState = useMemo(() => {
     // Which agent is active?
-    const showCoder = isStepVisible(4) && !isStepVisible(11);
-    const activeAgent = showCoder ? "coder" as const : "planner" as const;
+    const showអ្នកសរសេរកូដ = isStepVisible(4) && !isStepVisible(11);
+    const activeAgent = showអ្នកសរសេរកូដ ? "coder" as const : "planner" as const;
 
     let steps: DashboardStep[];
     let vis: number;
     let isTyping: boolean;
     let isWorking: boolean;
 
-    if (showCoder) {
+    if (showអ្នកសរសេរកូដ) {
       steps = CODER_STEPS;
       vis = 0;
       if (isStepVisible(5)) vis = 1;  // email-in
@@ -204,8 +204,8 @@ export function ArchitectureOverview() {
       if (isStepVisible(2)) vis = 2;  // planner msg1
       if (isStepVisible(3)) vis = 3;  // email-out to coder
       if (isStepVisible(12)) vis = 4; // email-in from coder
-      if (isStepVisible(13)) vis = 5; // planner msg2 "Coder fixed it"
-      if (isStepVisible(14)) vis = 6; // user "Nice, ship it"
+      if (isStepVisible(13)) vis = 5; // planner msg2 "អ្នកសរសេរកូដ fixed it"
+      if (isStepVisible(14)) vis = 6; // user "ល្អណាស់ បញ្ចូលវាទៅ"
       if (isStepVisible(15)) vis = 7; // planner msg3 "Done"
       if (isStepVisible(16)) vis = 8; // email-out to user
       isTyping = isStepVisible(1) && !isStepVisible(2);
@@ -252,17 +252,17 @@ export function ArchitectureOverview() {
           className="mb-3 text-xs uppercase tracking-[0.3em]"
           style={{ fontFamily: "var(--font-mono)", color: "var(--landing-text-muted)" }}
         >
-          How It Works
+          របៀបដំណើរការ
         </div>
         <h2 style={{ fontFamily: "var(--font-crt)", color: "var(--landing-text)", fontSize: "clamp(1.75rem, 4vw, 3rem)" }}>
-          Local Agent, Global Reach
+          ភ្នាក់ងារមូលដ្ឋាន ឈានទៅពិភពខាងក្រៅ
         </h2>
         <p
           className="mt-2 max-w-2xl mx-auto"
           style={{ fontFamily: "var(--font-mono)", color: "var(--landing-text-muted)", fontSize: "0.85rem" }}
         >
-          Your agent runs on your machine with full access to your tools.
-          ភ្នាក់ងារ connects it to email, dashboards, and the outside world.
+          ភ្នាក់ងាររត់លើម៉ាស៊ីនរបស់អ្នក និងមានសិទ្ធិប្រើឧបករណ៍របស់អ្នក។
+          ភ្នាក់ងារ ភ្ជាប់វាទៅអ៊ីមែល ផ្ទាំងគ្រប់គ្រង និងពិភពខាងក្រៅ។
         </p>
       </div>
 
@@ -302,7 +302,7 @@ export function ArchitectureOverview() {
           </div>
           {/* Terminal */}
           <div className="flex-1 min-w-0 h-full">
-            <DemoWindow title="Your Machine" className="h-full shadow-[0_28px_70px_rgba(0,0,0,0.18),0_14px_32px_rgba(0,0,0,0.12)]">
+            <DemoWindow title="ម៉ាស៊ីនរបស់អ្នក" className="h-full shadow-[0_28px_70px_rgba(0,0,0,0.18),0_14px_32px_rgba(0,0,0,0.12)]">
               <DemoTerminal lines={TERMINAL_LINES} visibleCount={terminalVisible} />
             </DemoWindow>
           </div>

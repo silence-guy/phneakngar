@@ -11,6 +11,7 @@ import { Logo } from "@/components/logo";
 import { cn } from "@/lib/utils";
 
 export interface AgentInfo {
+  id?: string;
   name: string;
   email: string;
   config: AvatarConfig;
@@ -37,8 +38,16 @@ export interface DashboardConfig {
   agents: AgentInfo[];
 }
 
+export function getAgentKey(agent: AgentInfo) {
+  return agent.id ?? agent.name.toLowerCase();
+}
+
+export function resolveDashboardAgent(agents: AgentInfo[], activeAgent: string) {
+  return agents.find((agent) => getAgentKey(agent) === activeAgent) ?? agents[0];
+}
+
 export function DemoDashboard({ state, config, className }: { state: DashboardState; config: DashboardConfig; className?: string }) {
-  const agent = config.agents.find(a => a.name.toLowerCase() === state.activeAgent) ?? config.agents[0];
+  const agent = resolveDashboardAgent(config.agents, state.activeAgent);
   const visibleSteps = state.steps.slice(0, state.visibleCount);
 
   return (
@@ -58,7 +67,7 @@ export function DemoDashboard({ state, config, className }: { state: DashboardSt
         </div>
         <div className="flex flex-col items-center gap-1.5 flex-1">
           {config.agents.map((a) => {
-            const isActive = state.activeAgent === a.name.toLowerCase();
+            const isActive = state.activeAgent === getAgentKey(a);
             return (
               <div
                 key={a.name}
@@ -83,12 +92,12 @@ export function DemoDashboard({ state, config, className }: { state: DashboardSt
           <div className="flex items-center gap-2 min-w-0">
             <span className="size-2 rounded-full bg-green-500" />
             <span className="text-sm font-medium text-foreground">{agent.name}</span>
-            <span className="text-xs text-muted-foreground">/ Chat</span>
+            <span className="text-xs text-muted-foreground">/ សន្ទនា</span>
           </div>
           <div className="flex items-center gap-0.5">
             <span className="inline-flex items-center rounded-lg text-xs h-6 px-2 text-foreground bg-muted">
               <MessageSquare className="size-3 mr-1" />
-              Chat
+              សន្ទនា
             </span>
             <span className="inline-flex items-center rounded-lg text-xs h-6 px-2 text-muted-foreground hover:bg-muted">
               <Mail className="size-3 mr-1" />
@@ -191,7 +200,7 @@ export function DemoDashboard({ state, config, className }: { state: DashboardSt
             <PresenceLine agentFirstName={agent.name} taskStatus="running" />
           )}
           <div className="flex items-center gap-2 rounded-3xl border border-border/60 bg-muted/20 px-4 py-2.5">
-            <span className="flex-1 text-sm text-muted-foreground/50">Message {agent.name}...</span>
+            <span className="flex-1 text-sm text-muted-foreground/50">ផ្ញើសារ {agent.name}...</span>
             <div className="size-6 rounded-full bg-primary flex items-center justify-center">
               <ArrowUp className="size-3.5 text-primary-foreground" />
             </div>

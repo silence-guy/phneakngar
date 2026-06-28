@@ -54,6 +54,7 @@ const notoSansKhmer = Noto_Sans_Khmer({
 
 const SITE_URL = "https://phneakngar.ai";
 const SITE_TITLE = "ភ្នាក់ងារ — ក្រុមហ៊ុនផ្ទាល់ខ្លួន";
+const ENABLE_GTM = process.env.NODE_ENV === "production";
 const SITE_DESCRIPTION =
   "ភ្នាក់ងារ AI របស់អ្នក ដំណើរការជានិច្ច។ ផ្តល់អ៊ីមែលឱ្យពួកគេ ហើយឱ្យពួកគេធ្វើការជំនួសអ្នកបានពេញមួយថ្ងៃ។";
 const OG_IMAGE_URL = "/og?title=Your Personal Company";
@@ -138,7 +139,7 @@ export default function RootLayout({
           document.addEventListener('gesturestart', function(e) { e.preventDefault(); });
         `}} />
       </head>
-      <GoogleTagManager gtmId="GTM-56VHCCQZ" />
+        {ENABLE_GTM && <GoogleTagManager gtmId="GTM-56VHCCQZ" />}
       <body
         className="min-h-full flex flex-col"
       >

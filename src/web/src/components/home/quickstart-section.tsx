@@ -8,9 +8,9 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 gsap.registerPlugin(ScrollTrigger);
 
 const points = [
-  "Your Machine, Your Rules",
-  "No Vendor Lock-In",
-  "One Command to Start",
+  "ម៉ាស៊ីនរបស់អ្នក ច្បាប់របស់អ្នក",
+  "មិនជាប់អ្នកផ្គត់ផ្គង់ណាមួយ",
+  "ពាក្យបញ្ជាមួយដើម្បីចាប់ផ្តើម",
 ];
 
 export function QuickstartSection() {
@@ -70,7 +70,7 @@ export function QuickstartSection() {
             opacity: 0.6,
           }}
         >
-          Open Source & Self-Hosted
+          បើកចំហ និង host ដោយខ្លួនឯង
         </div>
         <h2
           style={{
@@ -80,7 +80,7 @@ export function QuickstartSection() {
             textShadow: "0 0 12px oklch(0.75 0.18 80 / 30%)",
           }}
         >
-          Own Your Infrastructure
+          គ្រប់គ្រងហេដ្ឋារចនាសម្ព័ន្ធរបស់អ្នក
         </h2>
         <p
           className="mx-auto mt-3 max-w-xl"
@@ -148,7 +148,7 @@ export function QuickstartSection() {
             boxShadow: "0 0 20px oklch(0.75 0.18 80 / 30%)",
           }}
         >
-          START YOUR COMPANY
+          ចាប់ផ្តើមក្រុមហ៊ុនរបស់អ្នក
         </a>
       </div>
     </section>

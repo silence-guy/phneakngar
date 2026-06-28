@@ -19,10 +19,10 @@ interface Feature {
 const features: Feature[] = [
   {
     number: "I",
-    title: "Collaboration",
-    spec: "DEFINE YOUR COMPANY STRUCTURE",
+    title: "សហការ",
+    spec: "កំណត់រចនាសម្ព័ន្ធក្រុមហ៊ុនរបស់អ្នក",
     description:
-      "You're the CEO. Assign agents to roles — dev, ops, research — and let them coordinate. Define your org chart, and ភ្នាក់ងារ keeps everyone in sync.",
+      "អ្នកជានាយក។ កំណត់តួនាទីឲ្យភ្នាក់ងារ ដូចជា dev, ops, research ហើយឲ្យពួកគេសម្របសម្រួលគ្នា។ ភ្នាក់ងារ រក្សាក្រុមទាំងមូលឲ្យដើរតាមគ្នា។",
     terminal: [
       "▓▓▓▓▓▓▓▓▓           ▓▓▓▓▓▓▓▓▓           ▓▓▓▓▓▓▓▓▓",
       "▓  YOU  ▓░░░░░░░░░░░▓  DEV  ▓░░░░░░░░░░░▓  OPS  ▓",
@@ -33,14 +33,14 @@ const features: Feature[] = [
       "▓  R&D  ▓░░░░░░░░░░░▓ SALES ▓░░░░░░░░░░░▓  BIZ  ▓",
       "▓▓▓▓▓▓▓▓▓           ▓▓▓▓▓▓▓▓▓           ▓▓▓▓▓▓▓▓▓",
     ],
-    cta: { tagline: "Design your org chart", label: "BUILD YOUR TEAM", href: "/sign-in" },
+    cta: { tagline: "រចនាផែនទីក្រុមរបស់អ្នក", label: "បង្កើតក្រុម", href: "/sign-in" },
   },
   {
     number: "II",
-    title: "Traceable",
-    spec: "EVERY INTERACTION · RECORDED · AUDITABLE",
+    title: "តាមដានបាន",
+    spec: "រាល់អន្តរកម្មត្រូវបានកត់ត្រា និងពិនិត្យបាន",
     description:
-      "Agents communicate through email and work on your local machine. Every instruction, decision, and reply is recorded — in your inbox or in local files. Full accountability, no black boxes.",
+      "ភ្នាក់ងារទាក់ទងតាមអ៊ីមែល និងធ្វើការលើម៉ាស៊ីនរបស់អ្នក។ រាល់ការណែនាំ ការសម្រេចចិត្ត និងការឆ្លើយតបត្រូវបានកត់ត្រា ដូច្នេះអ្នកអាចពិនិត្យបានគ្រប់ពេល។",
     terminal: [
       "█████████████████████████",
       "█▓▒                   ▒▓█",
@@ -53,14 +53,14 @@ const features: Feature[] = [
       "█                       █",
       "█████████████████████████",
     ],
-    cta: { tagline: "Full audit trail, zero black boxes", label: "SEE EVERY DECISION", href: "/sign-in" },
+    cta: { tagline: "មានកំណត់ត្រាពេញលេញ គ្មានប្រអប់ខ្មៅ", label: "មើលការសម្រេចចិត្ត", href: "/sign-in" },
   },
   {
     number: "III",
-    title: "Calendar",
-    spec: "SHOWS UP AT THE RIGHT TIME",
+    title: "ប្រតិទិន",
+    spec: "មកដល់ពេលវេលាត្រឹមត្រូវ",
     description:
-      "Your agent manages its own schedule. It knows when to work, when to follow up, and when to wait — always on time, never in the way.",
+      "ភ្នាក់ងាររបស់អ្នកគ្រប់គ្រងកាលវិភាគដោយខ្លួនឯង។ ដឹងពេលត្រូវធ្វើការ តាមដាន ឬរង់ចាំ ដោយមិនរំខានលំហូរការងាររបស់អ្នក។",
     terminal: [
       "▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓",
       "▓  M  T  W  T  F  S  S  ▓",
@@ -72,14 +72,14 @@ const features: Feature[] = [
       "▓  ░  ░  ░  ░  ░  ░  ░  ▓",
       "▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓",
     ],
-    cta: { tagline: "Agents that show up on time", label: "SET UP SCHEDULES", href: "/sign-in" },
+    cta: { tagline: "ភ្នាក់ងារមកតាមពេល", label: "រៀបចំកាលវិភាគ", href: "/sign-in" },
   },
   {
     number: "IV",
-    title: "Always-On",
-    spec: "YOUR COMPANY NEVER SLEEPS",
+    title: "បើកជានិច្ច",
+    spec: "ក្រុមហ៊ុនរបស់អ្នកមិនដេក",
     description:
-      "A persistent daemon keeps every agent running around the clock — picking up tasks, responding to emails, shipping work while you sleep.",
+      "daemon បន្តដំណើរការរក្សាភ្នាក់ងារឲ្យធ្វើការ ព្រមទាំងទទួលភារកិច្ច ឆ្លើយអ៊ីមែល និងបញ្ជូនលទ្ធផល ខណៈពេលអ្នកសម្រាក។",
     terminal: [
       "                         ",
       "                         ",
@@ -92,14 +92,14 @@ const features: Feature[] = [
       "                         ",
       "                         ",
     ],
-    cta: { tagline: "Ship while you sleep", label: "START THE DAEMON", href: "/sign-in" },
+    cta: { tagline: "បញ្ជូនការងារខណៈអ្នកសម្រាក", label: "ចាប់ផ្តើម daemon", href: "/sign-in" },
   },
   {
     number: "V",
-    title: "Self-Learning",
-    spec: "EVERY TASK MAKES THE TEAM SMARTER",
+    title: "រៀនដោយខ្លួនឯង",
+    spec: "រាល់ភារកិច្ចធ្វើឲ្យក្រុមឆ្លាតជាងមុន",
     description:
-      "Agents build memory from past work — decisions, preferences, context. Your company gets sharper with every conversation, every task, every day.",
+      "ភ្នាក់ងារបង្កើតការចងចាំពីការងារមុនៗ ដូចជាការសម្រេចចិត្ត ចំណូលចិត្ត និងបរិបទ។ ក្រុមហ៊ុនរបស់អ្នកកាន់តែច្បាស់លាស់ពីរាល់ការសន្ទនា និងភារកិច្ច។",
     terminal: [
       "                         ",
       "            █            ",
@@ -112,7 +112,7 @@ const features: Feature[] = [
       "     ░░░░░▒▓█▓▒░░░░░     ",
       "                         ",
     ],
-    cta: { tagline: "Smarter with every task", label: "GROW YOUR TEAM", href: "/sign-in" },
+    cta: { tagline: "ឆ្លាតជាងមុនពីរាល់ភារកិច្ច", label: "ពង្រីកក្រុម", href: "/sign-in" },
   },
 ];
 
@@ -165,7 +165,7 @@ export function FeatureShowcase() {
             color: "var(--landing-text-muted)",
           }}
         >
-          Features
+          មុខងារ
         </div>
         <h2
           style={{
@@ -174,7 +174,7 @@ export function FeatureShowcase() {
             fontSize: "clamp(1.75rem, 4vw, 3rem)",
           }}
         >
-          Your Company, Your Agents
+          ក្រុមហ៊ុនរបស់អ្នក ភ្នាក់ងាររបស់អ្នក
         </h2>
         <p
           className="mx-auto mt-3 max-w-xl"
@@ -184,8 +184,8 @@ export function FeatureShowcase() {
             fontSize: "0.85rem",
           }}
         >
-          Define roles, assign agents, and let them run. ភ្នាក់ងារ is the
-          orchestration layer that turns agents into a company.
+          កំណត់តួនាទី ផ្តល់ភារកិច្ចឲ្យភ្នាក់ងារ ហើយឲ្យពួកគេដំណើរការ។
+          ភ្នាក់ងារ គឺជាស្រទាប់សម្របសម្រួលដែលបម្លែងភ្នាក់ងារ AI ទៅជាក្រុមហ៊ុន។
         </p>
       </div>
 

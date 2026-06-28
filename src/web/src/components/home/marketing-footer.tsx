@@ -9,9 +9,9 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 gsap.registerPlugin(ScrollTrigger);
 
 const footerLinks = [
-  { href: "/templates", label: "Templates" },
-  { href: "/blog", label: "Blog" },
-  { href: "/privacy", label: "Privacy" },
+  { href: "/templates", label: "គំរូ" },
+  { href: "/blog", label: "ប្លុក" },
+  { href: "/privacy", label: "ឯកជនភាព" },
 ];
 
 export function MarketingFooter() {
@@ -38,8 +38,7 @@ export function MarketingFooter() {
     fontFamily: "var(--font-mono)",
     color: "var(--landing-text-muted)",
     fontSize: "11px",
-    textTransform: "uppercase" as const,
-    letterSpacing: "0.15em",
+    letterSpacing: "0",
   };
 
   return (
@@ -72,7 +71,7 @@ export function MarketingFooter() {
               color: "var(--landing-text-muted)",
             }}
           >
-            Your Personal Company
+          ក្រុមហ៊ុនផ្ទាល់ខ្លួនរបស់អ្នក
           </span>
         </div>
 

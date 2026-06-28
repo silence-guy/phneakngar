@@ -58,22 +58,24 @@ describe("phneakngar register", () => {
     vi.unstubAllGlobals();
   });
 
-  function mockFetch(responses: Record<string, { status: number; body: unknown }>) {
-    vi.stubGlobal("fetch", vi.fn(async (url: string | URL | Request) => {
-      const urlStr = typeof url === "string" ? url : url instanceof URL ? url.toString() : url.url;
-      for (const [pattern, resp] of Object.entries(responses)) {
-        if (urlStr.includes(pattern)) {
-          return {
+function mockFetch(responses: Record<string, { status: number; body: unknown }>) {
+  const fetchMock = vi.fn(async (url: string | URL | Request) => {
+    const urlStr = typeof url === "string" ? url : url instanceof URL ? url.toString() : url.url;
+    for (const [pattern, resp] of Object.entries(responses)) {
+      if (urlStr.includes(pattern)) {
+        return {
             ok: resp.status >= 200 && resp.status < 300,
             status: resp.status,
             json: async () => resp.body,
             text: async (): Promise<string> => JSON.stringify(resp.body),
           };
         }
-      }
-      return { ok: false, status: 404, text: async (): Promise<string> => "not found" };
-    }));
-  }
+    }
+    return { ok: false, status: 404, text: async (): Promise<string> => "not found" };
+  });
+  vi.stubGlobal("fetch", fetchMock);
+  return fetchMock;
+}
 
   const activateResponse = {
     daemon_id: "host1",
@@ -88,7 +90,7 @@ describe("phneakngar register", () => {
     });
     mockReadDaemonPid.mockReturnValue(null);
 
-    mockFetch({
+    const fetchMock = mockFetch({
       "/api/me": { status: 200, body: { id: "u1", email: "test@test.com" } },
       "/api/machine-tokens/activate": { status: 200, body: activateResponse },
       "/api/workspaces": { status: 200, body: [{ id: "ws_1", name: "Personal" }] },
@@ -97,6 +99,10 @@ describe("phneakngar register", () => {
 
     const cmd = registerCommand();
     await cmd.parseAsync(["node", "register", "--token", "al_testtoken123", "--server", "http://localhost:3000"]);
+    const fetchPaths = fetchMock.mock.calls.map(([url]) => String(url));
+    expect(fetchPaths.findIndex((url) => url.includes("/api/machine-tokens/activate"))).toBeLessThan(
+      fetchPaths.findIndex((url) => url.includes("/api/me")),
+    );
 
     expect(mockSaveCLIConfigForProfile).toHaveBeenCalledWith(
       undefined,

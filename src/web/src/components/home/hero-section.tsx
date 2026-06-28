@@ -107,11 +107,11 @@ export function HeroSection({ isLoggedIn }: { isLoggedIn: boolean }) {
                 fontFamily: "var(--font-crt)",
                 color: "var(--landing-text)",
                 fontSize: "clamp(26px, 4vw, 44px)",
-                letterSpacing: "-0.01em",
+                letterSpacing: "0",
                 opacity: 0,
               }}
             >
-              Run Your Personal Company
+              ដំណើរការក្រុមហ៊ុនផ្ទាល់ខ្លួន
             </h1>
             <p
               ref={sublineRef}
@@ -123,8 +123,8 @@ export function HeroSection({ isLoggedIn }: { isLoggedIn: boolean }) {
                 opacity: 0,
               }}
             >
-              You have ideas that need ten people to execute.
-              Now you only need yourself and ភ្នាក់ងារ.
+              គំនិតរបស់អ្នកត្រូវការក្រុមមនុស្សដើម្បីសម្រេច។
+              ឥឡូវនេះអ្នកត្រូវការតែខ្លួនឯង និង ភ្នាក់ងារ។
             </p>
           </div>
 
@@ -142,7 +142,7 @@ export function HeroSection({ isLoggedIn }: { isLoggedIn: boolean }) {
           style={{ opacity: 0 }}
           onClick={() => {
             navigator.clipboard.writeText(
-              `Read ${window.location.origin}/onboard.md and follow the instructions to install and configure ភ្នាក់ងារ`
+              `អាន ${window.location.origin}/onboard.md ហើយធ្វើតាមការណែនាំ ដើម្បីដំឡើង និងកំណត់រចនាសម្ព័ន្ធ ភ្នាក់ងារ`
             );
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
@@ -157,7 +157,7 @@ export function HeroSection({ isLoggedIn }: { isLoggedIn: boolean }) {
               backgroundColor: "var(--landing-bg)",
             }}
           >
-            Copy and Paste Into Your Agent&apos;s Chat to Get Started
+          ចម្លងទៅក្នុងការជជែករបស់ភ្នាក់ងារដើម្បីចាប់ផ្តើម
           </span>
           {/* Content box */}
           <div
@@ -169,7 +169,7 @@ export function HeroSection({ isLoggedIn }: { isLoggedIn: boolean }) {
             }}
           >
             <span className="flex-1 overflow-hidden whitespace-nowrap text-ellipsis">
-              Read{" "}
+                  អាន{" "}
               <a
                 href="/onboard.md"
                 target="_blank"
@@ -180,7 +180,7 @@ export function HeroSection({ isLoggedIn }: { isLoggedIn: boolean }) {
               >
                 Onboard.md
               </a>
-              {" "}and follow the instructions to install and configure ភ្នាក់ងារ
+                  {" "}ហើយធ្វើតាមការណែនាំ ដើម្បីដំឡើង និងកំណត់រចនាសម្ព័ន្ធ ភ្នាក់ងារ
             </span>
             <span
               className="shrink-0 p-1"
@@ -231,7 +231,7 @@ export function HeroSection({ isLoggedIn }: { isLoggedIn: boolean }) {
                 fontFamily: "var(--font-mono)",
                 color: "var(--landing-bg)",
                 backgroundColor: "var(--landing-text)",
-                letterSpacing: "0.12em",
+                    letterSpacing: "0",
               }}
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -239,7 +239,7 @@ export function HeroSection({ isLoggedIn }: { isLoggedIn: boolean }) {
                 <polyline points="10 17 15 12 10 7" />
                 <line x1="15" y1="12" x2="3" y2="12" />
               </svg>
-              OPEN APP
+                  បើកកម្មវិធី
             </a>
           ) : (
             <a
@@ -250,7 +250,7 @@ export function HeroSection({ isLoggedIn }: { isLoggedIn: boolean }) {
                 fontFamily: "var(--font-mono)",
                 color: "var(--landing-bg)",
                 backgroundColor: "var(--landing-text)",
-                letterSpacing: "0.12em",
+                    letterSpacing: "0",
               }}
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -258,7 +258,7 @@ export function HeroSection({ isLoggedIn }: { isLoggedIn: boolean }) {
                 <polyline points="10 17 15 12 10 7" />
                 <line x1="15" y1="12" x2="3" y2="12" />
               </svg>
-              GET STARTED
+                  ចាប់ផ្តើម
             </a>
           )}
           <Link
@@ -269,7 +269,7 @@ export function HeroSection({ isLoggedIn }: { isLoggedIn: boolean }) {
               fontFamily: "var(--font-mono)",
               color: "var(--landing-text)",
               border: "1px solid var(--landing-text)",
-              letterSpacing: "0.12em",
+                letterSpacing: "0",
             }}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -278,7 +278,7 @@ export function HeroSection({ isLoggedIn }: { isLoggedIn: boolean }) {
               <rect x="3" y="14" width="7" height="7" />
               <rect x="14" y="14" width="7" height="7" />
             </svg>
-            TEMPLATES
+              គំរូ
           </Link>
         </div>
 

@@ -60,6 +60,7 @@ function makeEnv(overrides: Partial<Record<string, unknown>> = {}) {
 }
 
 type AuthOptions = {
+  socialProviders?: Record<string, { clientId: string; clientSecret: string }>
   rateLimit: {
     enabled: boolean
     customRules: Record<string, { window: number; max: number }>
@@ -88,6 +89,40 @@ async function loadCreateAuth() {
   const mod = await import("./auth")
   return mod.createAuth
 }
+
+describe("createAuth social providers", () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it("omits OAuth providers when local credentials are blank", async () => {
+    const createAuth = await loadCreateAuth()
+    const opts = (createAuth(makeEnv({
+      NODE_ENV: "development",
+      GITHUB_CLIENT_ID: "",
+      GITHUB_CLIENT_SECRET: "",
+      GOOGLE_CLIENT_ID: "",
+      GOOGLE_CLIENT_SECRET: "",
+    }) as never) as { __options: AuthOptions }).__options
+
+    expect(opts.socialProviders).toEqual({})
+  })
+
+  it("includes only OAuth providers with complete credentials", async () => {
+    const createAuth = await loadCreateAuth()
+    const opts = (createAuth(makeEnv({
+      GITHUB_CLIENT_ID: "github-id",
+      GITHUB_CLIENT_SECRET: "github-secret",
+      GOOGLE_CLIENT_ID: "google-id",
+      GOOGLE_CLIENT_SECRET: "",
+    }) as never) as { __options: AuthOptions }).__options
+
+    expect(opts.socialProviders).toEqual({
+      github: {
+        clientId: "github-id",
+        clientSecret: "github-secret",
+      },
+    })
+  })
+})
 
 describe("createAuth rate limiting", () => {
   beforeEach(() => vi.clearAllMocks())

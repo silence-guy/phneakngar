@@ -2,13 +2,13 @@ import type { DashboardStep, AgentInfo } from "./demo-dashboard";
 import type { UseCaseScript } from "./use-case-demo";
 
 /* ─── Agent Configs ─── */
-const SALES: AgentInfo = { name: "Sales", email: "sales@phneakngar.ai", config: { shape: "hexagon", eye: "dots", nose: "dash", bg: 5 } };
-const PLANNER: AgentInfo = { name: "Planner", email: "planner@phneakngar.ai", config: { shape: "hexagon", eye: "dots", nose: "dash", bg: 5 } };
-const CODER: AgentInfo = { name: "Coder", email: "coder@phneakngar.ai", config: { shape: "task", eye: "happy", nose: "dot", bg: 0 } };
-const REVIEWER: AgentInfo = { name: "Reviewer", email: "reviewer@phneakngar.ai", config: { shape: "circle", eye: "arches", nose: "smile", bg: 8 } };
-const MARKETER: AgentInfo = { name: "Marketer", email: "marketer@phneakngar.ai", config: { shape: "mail", eye: "dots", nose: "smile", bg: 3 } };
-const OPS: AgentInfo = { name: "Ops", email: "ops@phneakngar.ai", config: { shape: "folder", eye: "lines", nose: "dash", bg: 7 } };
-const ASSISTANT: AgentInfo = { name: "Assistant", email: "assistant@phneakngar.ai", config: { shape: "bulb", eye: "rings", nose: "oh", bg: 11 } };
+const SALES: AgentInfo = { id: "sales", name: "សុភា", email: "sales@phneakngar.ai", config: { shape: "hexagon", eye: "dots", nose: "dash", bg: 5 } };
+const PLANNER: AgentInfo = { id: "planner", name: "វិចិត្រ", email: "planner@phneakngar.ai", config: { shape: "hexagon", eye: "dots", nose: "dash", bg: 5 } };
+const CODER: AgentInfo = { id: "coder", name: "ដារ៉ា", email: "coder@phneakngar.ai", config: { shape: "task", eye: "happy", nose: "dot", bg: 0 } };
+const REVIEWER: AgentInfo = { id: "reviewer", name: "រតនា", email: "reviewer@phneakngar.ai", config: { shape: "circle", eye: "arches", nose: "smile", bg: 8 } };
+const MARKETER: AgentInfo = { id: "marketer", name: "មាលា", email: "marketer@phneakngar.ai", config: { shape: "mail", eye: "dots", nose: "smile", bg: 3 } };
+const OPS: AgentInfo = { id: "ops", name: "សុវណ្ណ", email: "ops@phneakngar.ai", config: { shape: "folder", eye: "lines", nose: "dash", bg: 7 } };
+const ASSISTANT: AgentInfo = { id: "assistant", name: "បញ្ញា", email: "assistant@phneakngar.ai", config: { shape: "bulb", eye: "rings", nose: "oh", bg: 11 } };
 
 /* ═══════════════════════════════════════════
    1. Lead Auto Follow-up
@@ -292,22 +292,22 @@ export const bugToPrScript: UseCaseScript = {
 };
 
 /* ═══════════════════════════════════════════
-   5. "Post an update"
+   5. "បង្ហោះ update"
    User → Marketer asks Coder what shipped → drafts + publishes
    ═══════════════════════════════════════════ */
 
 const POST_MARKETER_STEPS: DashboardStep[] = [
-  { type: "user-message", text: "Post something about today's release" },
+  { type: "user-message", text: "សូមបង្ហោះអំពី release ថ្ងៃនេះ" },
   { type: "message", text: "I need to know what shipped today. Emailing Coder." },
-  { type: "email-out", subject: "What did we ship today? I need to write a post.", address: "coder@phneakngar.ai" },
-  { type: "email-in", subject: "Re: Shipped calendar recurring events, email forwarding, and 3 bug fixes.", address: "coder@phneakngar.ai" },
-  { type: "message", markdown: "Got it. Drafting and publishing now.<br/><br/>✓ Posted update: <em>\"Just shipped: recurring calendar events, email forwarding, and squashed 3 bugs. Your AI team never sleeps.\"</em>" },
+  { type: "email-out", subject: "ថ្ងៃនេះយើងបានបញ្ជូនអ្វីខ្លះ? ខ្ញុំត្រូវសរសេរ post។", address: "coder@phneakngar.ai" },
+  { type: "email-in", subject: "Re: បានបញ្ជូន recurring events សម្រាប់ calendar, email forwarding និងកែ bug 3។", address: "coder@phneakngar.ai" },
+  { type: "message", markdown: "ទទួលបានហើយ។ កំពុងសរសេរ និងបោះពុម្ពផ្សាយឥឡូវនេះ។<br/><br/>✓ បានបង្ហោះ update: <em>\"ទើបបញ្ជូន recurring calendar events, email forwarding និងកែ bug 3។ ក្រុម AI របស់អ្នកមិនដែលសម្រាក។\"</em>" },
 ];
 
 const POST_CODER_STEPS: DashboardStep[] = [
-  { type: "email-in", subject: "What did we ship today? I need to write a post.", address: "marketer@phneakngar.ai" },
-  { type: "message", text: "Shipped calendar recurring events, email forwarding, and 3 bug fixes." },
-  { type: "email-out", subject: "Re: Shipped calendar recurring events, email forwarding, and 3 bug fixes.", address: "marketer@phneakngar.ai" },
+  { type: "email-in", subject: "ថ្ងៃនេះយើងបានបញ្ជូនអ្វីខ្លះ? ខ្ញុំត្រូវសរសេរ post។", address: "marketer@phneakngar.ai" },
+  { type: "message", text: "បានបញ្ជូន recurring events សម្រាប់ calendar, email forwarding និងកែ bug 3។" },
+  { type: "email-out", subject: "Re: បានបញ្ជូន recurring events សម្រាប់ calendar, email forwarding និងកែ bug 3។", address: "marketer@phneakngar.ai" },
 ];
 
 export const postUpdateScript: UseCaseScript = {

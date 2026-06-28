@@ -16,12 +16,12 @@ interface Agent {
 }
 
 const agents: Agent[] = [
-  { name: "Claude Code", provider: "claude", detail: "Anthropic's CLI agent" },
-  { name: "Codex", provider: "codex", detail: "OpenAI's coding agent" },
-  { name: "OpenCode", provider: "opencode", detail: "Open-source coding agent" },
-  { name: "Cursor", provider: "cursor", detail: "AI-powered code editor", comingSoon: true },
-  { name: "Hermes", provider: "hermes", detail: "Autonomous coding agent", comingSoon: true },
-  { name: "OpenClaw", provider: "openclaw", detail: "Open-source AI agent", comingSoon: true },
+  { name: "Claude Code", provider: "claude", detail: "ភ្នាក់ងារ CLI របស់ Anthropic" },
+  { name: "Codex", provider: "codex", detail: "ភ្នាក់ងារសរសេរកូដរបស់ OpenAI" },
+  { name: "OpenCode", provider: "opencode", detail: "ភ្នាក់ងារសរសេរកូដបើកចំហ" },
+  { name: "Cursor", provider: "cursor", detail: "កម្មវិធីកែសម្រួលកូដដោយ AI", comingSoon: true },
+  { name: "Hermes", provider: "hermes", detail: "ភ្នាក់ងារសរសេរកូដស្វ័យប្រវត្តិ", comingSoon: true },
+  { name: "OpenClaw", provider: "openclaw", detail: "ភ្នាក់ងារ AI បើកចំហ", comingSoon: true },
 ];
 
 function AgentCard({ agent }: { agent: Agent }) {
@@ -143,7 +143,7 @@ export function ByoaSection() {
             color: "var(--landing-text-muted)",
           }}
         >
-          Agent Agnostic
+          មិនជាប់នឹងភ្នាក់ងារតែមួយ
         </div>
         <h2
           style={{
@@ -152,7 +152,7 @@ export function ByoaSection() {
             fontSize: "clamp(1.75rem, 4vw, 3rem)",
           }}
         >
-          Bring Your Own Agent
+          យកភ្នាក់ងារដែលអ្នកទុកចិត្តមកប្រើ
         </h2>
         <p
           className="mx-auto mt-2 max-w-lg"

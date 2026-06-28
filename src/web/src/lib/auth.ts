@@ -30,6 +30,24 @@ export function createAuth(env: Env) {
     const allowed = (env.DEVICE_CLIENT_IDS || "").split(",").map((s) => s.trim()).filter(Boolean)
     return allowed.includes(clientId)
   }
+  const socialProviders = {
+    ...(env.GITHUB_CLIENT_ID && env.GITHUB_CLIENT_SECRET
+      ? {
+          github: {
+            clientId: env.GITHUB_CLIENT_ID,
+            clientSecret: env.GITHUB_CLIENT_SECRET,
+          },
+        }
+      : {}),
+    ...(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET
+      ? {
+          google: {
+            clientId: env.GOOGLE_CLIENT_ID,
+            clientSecret: env.GOOGLE_CLIENT_SECRET,
+          },
+        }
+      : {}),
+  }
 
   return betterAuth({
     baseURL: env.BETTER_AUTH_URL,
@@ -51,16 +69,7 @@ export function createAuth(env: Env) {
       enabled: !isProd,
       requireEmailVerification: false,
     },
-    socialProviders: {
-      github: {
-        clientId: env.GITHUB_CLIENT_ID,
-        clientSecret: env.GITHUB_CLIENT_SECRET,
-      },
-      google: {
-        clientId: env.GOOGLE_CLIENT_ID,
-        clientSecret: env.GOOGLE_CLIENT_SECRET,
-      },
-    },
+    socialProviders,
     rateLimit: {
       enabled: isProd,
       customRules: {

@@ -1,6 +1,5 @@
 import { Locale, defaultLocale, resolveLocale } from "@phneakngar/shared";
 import type { Locale as SharedLocale } from "@phneakngar/shared";
-import { uniqueNamesGenerator, names } from "unique-names-generator";
 import { randomConfig, serializeAvatarConfig } from "@/components/avatar";
 
 export type ScenarioId = "software-dev" | "content-research" | "personal-assistant" | "sales-outreach" | "customer-support" | "custom";
@@ -23,6 +22,21 @@ export interface ScenarioPreset {
 }
 
 export type ScenarioLocale = SharedLocale;
+
+const KHMER_MEMBER_IDENTITIES = [
+  { name: "សុភា", emailHandle: "sopha" },
+  { name: "វិចិត្រ", emailHandle: "vichet" },
+  { name: "មាលា", emailHandle: "mala" },
+  { name: "សុវណ្ណ", emailHandle: "sovann" },
+  { name: "ចន្ទ្រា", emailHandle: "chantra" },
+  { name: "បញ្ញា", emailHandle: "panha" },
+  { name: "រស្មី", emailHandle: "reaksmey" },
+  { name: "ដារ៉ា", emailHandle: "dara" },
+  { name: "ស្រីនាង", emailHandle: "sreyneang" },
+  { name: "សុខា", emailHandle: "sokha" },
+  { name: "ពិសិដ្ឋ", emailHandle: "piseth" },
+  { name: "រតនា", emailHandle: "rathana" },
+] as const;
 
 // --- Leader: scenario-specific ---
 
@@ -289,19 +303,17 @@ export function getScenarioPresetById(
   return getScenarioPresets(locale).find((preset) => preset.id === id);
 }
 
-export function shuffleMembers(count: number): { name: string; avatarUrl: string }[] {
-  const used = new Set<string>();
-  const result: { name: string; avatarUrl: string }[] = [];
+export function shuffleMembers(count: number): { name: string; emailHandle: string; avatarUrl: string }[] {
+  const available = [...KHMER_MEMBER_IDENTITIES];
+  const result: { name: string; emailHandle: string; avatarUrl: string }[] = [];
   for (let i = 0; i < count; i++) {
-    let name: string;
-    let attempts = 0;
-    do {
-      name = uniqueNamesGenerator({ dictionaries: [names], length: 1, style: "capital" });
-      attempts++;
-    } while (used.has(name) && attempts < 100);
-    used.add(name);
+    const pickIndex = available.length > 0 ? Math.floor(Math.random() * available.length) : -1;
+    const picked = pickIndex >= 0
+      ? available.splice(pickIndex, 1)[0]
+      : { name: `ភ្នាក់ងារ ${i + 1}`, emailHandle: `agent-${i + 1}` };
     result.push({
-      name,
+      name: picked.name,
+      emailHandle: picked.emailHandle,
       avatarUrl: serializeAvatarConfig(randomConfig()),
     });
   }
