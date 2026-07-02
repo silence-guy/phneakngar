@@ -3,35 +3,36 @@ import Link from "next/link";
 import { getAllPosts } from "@/lib/blog/posts";
 
 const description =
-  "Thoughts on building AI companies, agent collaboration, and the future of personal software.";
+  "គំនិតអំពីការកសាងក្រុមហ៊ុន AI ការសហការភ្នាក់ងារ និងអនាគតនៃកម្មវិធីផ្ទាល់ខ្លួន។";
+
+// Set NEXT_PUBLIC_SITE_URL in your environment to your canonical domain; empty = relative.
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "";
 
 export const metadata: Metadata = {
-  title: "Blog",
+  title: "ប្លុក",
   description,
   alternates: {
-    canonical: "https://phneakngar.ai/blog",
     types: { "application/rss+xml": "/blog/feed.xml" },
   },
   openGraph: {
-    title: "Blog",
+    title: "ប្លុក",
     description,
-    url: "https://phneakngar.ai/blog",
-    images: [{ url: "/og?title=Blog", width: 1200, height: 630 }],
+    images: [{ url: "/og?title=ប្លុក", width: 1200, height: 630 }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Blog",
+    title: "ប្លុក",
     description,
-    images: ["/og?title=Blog"],
+    images: ["/og?title=ប្លុក"],
   },
 };
 
 const collectionJsonLd = {
   "@context": "https://schema.org",
   "@type": "CollectionPage",
-  name: "ភ្នាក់ងារ Blog",
+  name: "ភ្នាក់ងារ ប្លុក",
   description,
-  url: "https://phneakngar.ai/blog",
+  ...(SITE_URL ? { url: `${SITE_URL}/blog` } : {}),
 };
 
 export default async function BlogPage() {

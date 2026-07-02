@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1280" height="820" viewBox="0 0 1280 820" role="img" aria-labelledby="title desc">
-  <title id="title">A-Look PET work-state animation map</title>
+  <title id="title">ភ្នាក់ងារ PET work-state animation map</title>
   <desc id="desc">A diagram of the PET animations added for platform work state, user typing, notifications, idle, dozing, sleeping, and wake-up transitions.</desc>
   <defs>
     <style>
@@ -31,8 +31,8 @@
   </defs>
 
   <rect class="bg" width="1280" height="820"/>
-  <text class="title" x="64" y="62">A-Look PET: platform-driven animation states</text>
-  <text class="subtitle" x="64" y="91">Each motion is triggered by A-Look workspace signals, not random behavior.</text>
+  <text class="title" x="64" y="62">ភ្នាក់ងារ PET: platform-driven animation states</text>
+  <text class="subtitle" x="64" y="91">Each motion is triggered by workspace signals, not random behavior.</text>
 
   <rect class="panel" x="475" y="300" width="330" height="180" rx="22"/>
   <ellipse class="shadow" cx="640" cy="456" rx="86" ry="18"/>
@@ -73,7 +73,7 @@
     <rect class="panel" width="282" height="118" rx="18"/>
     <circle class="chip accent4" cx="36" cy="38" r="18"/>
     <text class="label" x="68" y="42">Working</text>
-    <text class="body" x="24" y="73">Trigger: any A-Look agent is running.</text>
+    <text class="body" x="24" y="73">Trigger: any agent is running.</text>
     <text class="small" x="24" y="96">1 task: coding; 2: juggling; 3+: building.</text>
   </g>
 

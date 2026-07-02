@@ -51,7 +51,7 @@ function TypewriterIllustration() {
           }}
         >
           <div style={{ display: "flex", fontSize: 11, color: "#8a7e6e", marginBottom: 4 }}>
-            From: jarvis@phneakngar.ai
+            From: agent@phneakngar.ai
           </div>
           <div style={{ display: "flex", fontSize: 11, color: "#8a7e6e", marginBottom: 4 }}>
             To: you@email.com
@@ -61,7 +61,7 @@ function TypewriterIllustration() {
           </div>
         </div>
         <div style={{ display: "flex", fontSize: 12, color: "#8a7e6e", lineHeight: 1.5 }}>
-          Your agents are always on. I handled everything overnight.
+          ភ្នាក់ងារបើកដំណើរការជានិច្ច។ ខ្ញុំបានដោះស្រាយគម្រោងទាំងអស់ពេលយប់។
         </div>
       </div>
 
@@ -129,7 +129,7 @@ function TypewriterIllustration() {
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = request.nextUrl;
-    const title = searchParams.get("title") || "Your Personal Company";
+    const title = searchParams.get("title") || "ក្រុមហ៊ុនផ្ទាល់ខ្លួនរបស់អ្នក";
 
     const fontData = await loadFont();
 
@@ -164,7 +164,7 @@ export async function GET(request: NextRequest) {
               {title}
             </div>
             <div style={{ display: "flex", fontSize: 22, color: "#8a7e6e", marginTop: 20 }}>
-              AI agents that collaborate, stay always on, and learn.
+              ភ្នាក់ងារ AI ដែលសហការគ្នា បើកដំណើរការជានិច្ច និងរៀន។
             </div>
           </div>
 

@@ -1,7 +1,7 @@
 {
-  "name": "ភ្នាក់ងារ — Personal Company",
+  "name": "ភ្នាក់ងារ — ក្រុមហ៊ុនផ្ទាល់ខ្លួន",
   "short_name": "ភ្នាក់ងារ",
-  "description": "Your AI agents, always on. Give them an email, let them work for you around the clock.",
+  "description": "ភ្នាក់ងារ AI របស់អ្នក បើកដំណើរការជានិច្ច។ ផ្តល់អ៊ីមែលដល់ពួកគេ ហើយទុកឲ្យពួកគេធ្វើការជូនអ្នកពេញម៉ោង។",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#f5f0e8",

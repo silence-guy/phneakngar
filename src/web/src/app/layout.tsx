@@ -52,12 +52,14 @@ const notoSansKhmer = Noto_Sans_Khmer({
   weight: ["400", "500", "600"],
 });
 
-const SITE_URL = "https://phneakngar.ai";
+// Set NEXT_PUBLIC_SITE_URL to your canonical domain (e.g. https://yourdomain.com).
+// Empty = use relative URLs / request origin so nothing breaks before you configure it.
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://phneakngar.ai";
 const SITE_TITLE = "ភ្នាក់ងារ — ក្រុមហ៊ុនផ្ទាល់ខ្លួន";
 const ENABLE_GTM = process.env.NODE_ENV === "production";
 const SITE_DESCRIPTION =
   "ភ្នាក់ងារ AI របស់អ្នក ដំណើរការជានិច្ច។ ផ្តល់អ៊ីមែលឱ្យពួកគេ ហើយឱ្យពួកគេធ្វើការជំនួសអ្នកបានពេញមួយថ្ងៃ។";
-const OG_IMAGE_URL = "/og?title=Your Personal Company";
+const OG_IMAGE_URL = "/og?title=ក្រុមហ៊ុនផ្ទាល់ខ្លួនរបស់អ្នក";
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -73,7 +75,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  metadataBase: new URL(SITE_URL),
+  ...(SITE_URL ? { metadataBase: new URL(SITE_URL) } : {}),
   title: {
     default: SITE_TITLE,
     template: "%s — ភ្នាក់ងារ",
@@ -96,13 +98,13 @@ export const metadata: Metadata = {
     siteName: "ភ្នាក់ងារ",
     title: SITE_TITLE,
     description: SITE_DESCRIPTION,
-    url: SITE_URL,
+    ...(SITE_URL ? { url: SITE_URL } : {}),
     images: [
       {
         url: OG_IMAGE_URL,
         width: 1200,
         height: 630,
-        alt: "ភ្នាក់ងារ — Your Personal Company",
+        alt: "ភ្នាក់ងារ — ក្រុមហ៊ុនផ្ទាល់ខ្លួនរបស់អ្នក",
       },
     ],
   },
@@ -112,9 +114,6 @@ export const metadata: Metadata = {
     title: SITE_TITLE,
     description: SITE_DESCRIPTION,
     images: [OG_IMAGE_URL],
-  },
-  alternates: {
-    canonical: SITE_URL,
   },
 };
 

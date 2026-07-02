@@ -1,8 +1,12 @@
 import { getAllPosts } from "@/lib/blog/posts";
 
+// Set NEXT_PUBLIC_SITE_URL in your environment to your canonical domain (e.g. https://yourdomain.com).
+// Falls back to relative URLs so nothing breaks before you configure it.
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "";
+
 export async function GET() {
   const posts = await getAllPosts();
-  const siteUrl = "https://phneakngar.ai";
+  const siteUrl = SITE_URL;
 
   const items = posts
     .map(
@@ -27,8 +31,8 @@ export async function GET() {
   <channel>
     <title>ភ្នាក់ងារ Blog</title>
     <link>${siteUrl}/blog</link>
-    <description>Thoughts on building AI companies, agent collaboration, and the future of personal software.</description>
-    <language>en-us</language>
+    <description>គំនិតអំពីការកសាងក្រុមហ៊ុន AI ការសហការភ្នាក់ងារ និងអនាគតនៃកម្មវិធីផ្ទាល់ខ្លួន។</description>
+    <language>km-kh</language>
     <lastBuildDate>${lastBuildDate}</lastBuildDate>
     <atom:link href="${siteUrl}/blog/feed.xml" rel="self" type="application/rss+xml" />${items}
   </channel>

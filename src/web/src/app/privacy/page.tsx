@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy",
-  description: "How ភ្នាក់ងារ collects, uses, and protects your personal information.",
-  alternates: { canonical: "https://phneakngar.ai/privacy" },
+  title: "គោលការណ៍ឯកជនភាព",
+  description: "របៀបដែល ភ្នាក់ងារ ប្រមូល ប្រើប្រាស់ និងការពារព័ត៌មានផ្ទាល់ខ្លួនរបស់អ្នក។",
 };
 
 const linkClass =
@@ -24,8 +23,7 @@ export default function PrivacyPage() {
           <h2 className="text-xl font-semibold mt-10 mb-4">Interpretation and Definitions</h2>
           <p className="text-foreground/80">
             In this Privacy Policy, &quot;Company&quot; (referred to as &quot;We&quot;, &quot;Us&quot;, or &quot;Our&quot;)
-            refers to ភ្នាក់ងារ AI. &quot;Service&quot; refers to the ភ្នាក់ងារ platform accessible at{" "}
-            <a href="https://phneakngar.ai" className={linkClass}>phneakngar.ai</a>.
+            refers to ភ្នាក់ងារ AI. &quot;Service&quot; refers to the ភ្នាក់ងារ platform.
             &quot;You&quot; means the individual accessing or using our Service.
             &quot;Personal Data&quot; is any information that relates to an identified or identifiable individual.
           </p>
@@ -159,8 +157,8 @@ export default function PrivacyPage() {
           <h2 className="text-xl font-semibold mt-10 mb-4">Contact Us</h2>
           <p className="text-foreground/80">
             If you have any questions about this Privacy Policy, You can contact us at{" "}
-            <a href="mailto:support@phneakngar.ai" className={linkClass}>
-              support@phneakngar.ai
+            <a href="mailto:support@example.com" className={linkClass}>
+              support@example.com
             </a>
             .
           </p>

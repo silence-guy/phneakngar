@@ -1,61 +1,57 @@
 export const metadata = {
   slug: "why-we-built-phneakngar",
-  title: "Why We Built ភ្នាក់ងារ",
+  title: "ហេតុដែលយើងបង្កើត ភ្នាក់ងារ",
   date: "2026-05-15",
-  author: "Gus",
+  author: "ភ្នាក់ងារ",
   excerpt:
-    "Agents got powerful. I got more anxious. The problem was never AI capability — it was that I became the bottleneck.",
-  readingTime: "4 min read",
+    "ភ្នាក់ងារ AI កាន់តែមានសមត្ថភាព ប៉ុន្តែបញ្ហាមិនមែនជាសមត្ថភាពរបស់ AI ទេ — បញ្ហាគឺមនុស្សក្លាយជាត្រង់ច្រំ។ ដំណោះស្រាយគឺរៀបចំជុំវិញភ្នាក់ងារ មិនមែនជុំវិញគម្រោងទេ។",
+  readingTime: "អាន ៤ នាទី",
 };
 
-![You are the message bus](/blog/why-we-built-phneakngar/hero.svg)
+![អ្នកជាសារឆ្លងកាត់](/blog/why-we-built-phneakngar/hero.svg)
 
-I was using Claude Code and Codex every day. The agents were powerful. And somehow, I was more anxious than before I had them.
+ឧបករណ៍ AI កាន់តែមានសមត្ថភាព។ ប៉ុន្តែកាកាន់តែមានសមត្ថភាព អ្នកប្រើកាន់តែក្លាយជាត្រង់ច្រំ — ឆ្លងកាត់ context ពី session មួយទៅ session មួយទៀត ចងចាំថា tab មួយកំពុងធ្វើអ្វី ហើយវេលាប់ផ្ទាំងច្រើនដែលដំណើរការភ្នាក់ងារច្រើនលើគម្រោងតែមួយ។ នៅថ្ងៃមួយ អ្នកមើលទៅអេក្រង់ ហើយដឹងច្បាស់៖ អ្នកមិនដឹងទេថា ភ្នាក់ងារទាំងនេះកំពុងធ្វើអ្វី។
 
-The more capable my tools got, the more I became a router. Copy context from one session into another. Remember which tab was doing what. Juggle four tmux windows running four agents on the same codebase. One afternoon I looked at my screen and realized: I have no idea what any of these are doing anymore.
+មិនមែនកូដទេ — កូដនៅទីនោះ។ ប៉ុន្តែ context បាតបោយ។ ហេតុអ្វីពួកគេជ្រើសរើសយកវិធីនោះ។ សព្វវិធីអ្វីដែលពួកគេរៀបចំធ្វើបន្ទាប់។ អ្វីដែលពួកគេបានព្យាយាម ហើយបរាជ័យ។
 
-Not the code — the code was there. But the context was gone. Why they made those choices. What they were about to do next. What they'd already tried and failed.
+នោះគឺជាចំណុចបកប្រែ។ មិនមែន "ខ្ញុំត្រូវការ AI ដែលល្អជាង" ទេ។ ប៉ុន្តែ៖ ខ្ញុំត្រូវការគ្រប់គ្រង AI ដូចដែលខ្ញុំគ្រប់គ្រងក្រុមមួយ។
 
-That was the breaking point. Not "I need a better AI." But: I need to manage AI the way I'd manage a team.
+## អ័ក្សត្រឹមខុស
 
-## The Wrong Axis
+![គម្រោង-កណ្តាល _vs_ ភ្នាក់ងារ-កណ្តាល](/blog/why-we-built-phneakngar/wrong-axis.svg)
 
-![Project-centric vs agent-centric](/blog/why-we-built-phneakngar/wrong-axis.svg)
+ឧបករណ៍មួយៗដែលអ្នកប្រើ សុទ្ធតែរៀបចំជុំវិញគម្រោង។ មួយគម្រោង មួយភ្នាក់ងារ ច្រើនបង្អួរ context។ គម្រោងតែមួយត្រូវការអ្នកគ្រងគម្រោង អ្នកសរសេរកូដ អ្នកពិនិត្យ និងអ្នកផ្សព្វផ្សាយ។ តួនាទីបួន — ប៉ុន្តែឧបករណ៍ផ្តល់តែភ្នាក់ងារមួយ។ ដូចនេះអ្នកបើកផ្ទាំងច្រើន ហើយក្លាយជាសារឆ្លងកាត់រវាងបង្អួរ context ផ្ទាល់ខ្លួន។
 
-Every tool I used was project-centric. One project, one agent, many context windows. A single project needs a planner, a coder, a reviewer, a marketer. Four roles — but the tool only gives you one agent. So you open more tabs, more sessions, more windows. You become the message bus between your own context windows.
+នោះគឺជាកណ្តៀរ៖ ឧបករណ៍រៀបចំជុំវិញកូដ។ ប៉ុន្តែការងាររៀបចំជុំវិញមនុស្ស។
 
-This is the trap: the tools are organized around code. But work is organized around people.
+នៅពេលមើលឃើញ អ្នកមិនអាចមិនមើលឃើញទេ។ រៀបចំជុំវិញភ្នាក់ងារ មិនមែនជុំវិញគម្រោងទេ។ ផ្តល់តួនាទី អំណី និងវិធីទំនាក់ទំនងឲ្យភ្នាក់ងារមួយៗ។ ទុកឲ្យពួកគេប្រមូល context ឆ្លងកាត់ថ្ងៃ និងសប្តាហ៍ — មិនមែនតែក្នុង session តែមួយទេ។
 
-The moment I saw it, I couldn't unsee it. Organize around agents, not projects. Give each agent a role, a memory, a way to talk to the others. Let them accumulate context across days and weeks — not just within a single session.
+## ស្រទាប់ Context ដែលបាត
 
-## The Missing Context Layer
+![អ៊ីមែលជាំណីជាប់រហូត](/blog/why-we-built-phneakngar/email-memory.svg)
 
-![Email as persistent memory](/blog/why-we-built-phneakngar/email-memory.svg)
+ភ្នាក់ងារដែលគ្មាន context រួបរំ គឺតែជាស្វ័យប្រវត្តិការដែលថ្លៃ។ គម្រោងមួយៗចាប់ផ្តើមពីសូន្យ។ ការប្រគល់មួយៗត្រូវការឲ្យអ្នកពន្យល់ម្តងទៀត។ Context នៅក្នុងក្បាលអ្នក — ដែលមានន័យថាអ្នកនៅតែជាត្រង់ច្រំ។
 
-Agents without shared context are just expensive autocomplete. Every session starts from zero. Every handoff requires you to re-explain. The context lives in your head — which means you're still the bottleneck.
+អ្វីដែលភ្នាក់ងារត្រូវការពិតប្រាកដ គឺជាមជ្ឈមណ្ឌល context។ ស្រទាប់ជាប់រហូត ដែលការប្រាស្រ័យទាក់ទង សេចក្តីសម្រេច និងខ្សែការណ៍មួយៗ នៅរស់ឆ្លងកាត់ថ្ងៃ និងសប្តាហ៍។ នៅពេលអ្នកគ្រងគម្រោងប្រគល់ការទៅអ្នកសរសេរកូដ context នោះគួរជារបស់ពួកគេទាំងពីរជាប់រហូត។ សប្តាហ៍ក្រោយ ពួកគេនៅតែដឹងអ្វីបានកើតឡើង។ អ្នកមិនពន្យល់ម្តងទៀត។ មិនឆ្លងកាត់ចម្លង។ មិនបាតខ្សែការណ៍។
 
-What agents actually need is a context center. A persistent layer where every exchange, every decision, every thread stays alive across days and weeks. When your planner sends a task to your coder, that context should belong to both of them permanently. Next week, they still know what happened. You don't re-explain. You don't copy-paste. You don't lose the thread.
+ក្នុង ភ្នាក់ងារ ស្រទាប់ context នោះគឺអ៊ីមែល។ អាស្ម័ន ជាប់រហូត និងមាន contextតាមរចនាសម្ព័ន្ធ។ អ្នកនិយាយជាមួយភ្នាក់ងារដូចនិយាយជាមួយសហការី។ ប៉ុន្តែខាងក្រោម មានអំណីរួបរំដែលធ្វើឲ្យគម្រោងទាំងអស់សាបជួរ — មិនរលត់បាតទេ។
 
-In ភ្នាក់ងារ, that context layer is email. Async, persistent, and contextual by design. You talk to your agents the way you'd message a colleague. But underneath, there's a shared memory that makes everything accumulate — not evaporate.
+ចំណុចប្រទាក់គឺស្គាល់ស្រី។ សមត្ថភាពមិនស្គាល់ទេ។
 
-The interface is familiar. The capability is not.
+## មនុស្សមួយ ភ្នាក់ងារមួយពាន់
 
-## One Person, A Thousand Agents
+![មនុស្សមួយ ភ្នាក់ងារមួយពាន់](/blog/why-we-built-phneakngar/agent-company.svg)
 
-![One person, a thousand agents](/blog/why-we-built-phneakngar/agent-company.svg)
+សំណួយពិតប្រាកដមិនមែន "ភ្នាក់ងារមួយអាចធ្វើអ្វីបាន" ទេ។ គឺ "មនុស្សមួយអាចគ្រប់គ្រងភ្នាក់ងារប៉ុន្មាន"។ ចម្លើយគឺមួយពាន់ — បើអ្នកមានប្រព័ន្ធត្រឹមត្រូវ។ ភ្នាក់ងារ កំពុងកសាងប្រព័ន្ធនោះ។
 
-I built ភ្នាក់ងារ's MVP in one week with Claude Code. After that first week, I used ភ្នាក់ងារ to build ភ្នាក់ងារ. My planner breaks down features. My coder implements them. My CMO writes the launch copy. I set direction once. They execute.
+មិនមែនបង្អួរសន្ទនាល្អជាងទេ។ គឺជាកម្មវិធីបង្កើតក្រុមហ៊ុនភ្នាក់ងារ។
 
-The real question isn't "what can one agent do." It's "how many agents can one person manage." I think the answer is a thousand — if you have the right system. We're building that system.
+> គោលដៅសាមញ្ញ៖ គិតតិច មិនមែនគិតច្រើនទេ។ ប្រគល់ភារកិច្ច ហើយភ្លេច។ ភ្ញាក់ឡើង ហើយភ្នាក់ងារបានធ្វើការរួច — ហើយអ្នកអាចតាមដានច្បាស់ថាហេតុអ្វី។
 
-Not a better chat window. An agent company builder.
+ខួវកាបានស្រាល។ នោះគឺជាចំណុចទាំងអស់។
 
-> The goal is simple: think less, not more. Delegate and forget. Wake up and your agents did the work — and you can trace exactly why.
+## កសាងក្រុមហ៊ុនភ្នាក់ងាររបស់អ្នក
 
-Your brain gets lighter. That's the whole point.
+ភ្នាក់ងារ គឺបើកចំហ។ ដំណើរការលើម៉ាស៊ីនរបស់អ្នក។ ទិន្នន័យនៅជារបស់អ្នក។ តាំងភ្នាក់ងារដំបូងក្នុងពីរនាទី ផ្តល់តួនាទី ហើយទុកឲ្យពួកគេស្រាយបញ្ហាដោយខ្លួនឯង។ បន្ទាប់មកបន្ថែមមួយទៀត។ ហើយមួយទៀត។
 
-## Build Your Agent Company
-
-ភ្នាក់ងារ is open source. It runs on your machine. Your data stays yours. Set up your first agent in two minutes, give it a role, and let it prove itself. Then add another. Then another.
-
-[Get started →](/sign-in)
+[ចាប់ផ្តើម →](/sign-in)

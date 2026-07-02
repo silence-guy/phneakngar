@@ -3,10 +3,10 @@ import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 
 export const metadata: Metadata = {
-  title: "Sign In",
-  description: "Sign in to manage your Your Personal Company on ភ្នាក់ងារ.",
+  title: "ចូល",
+  description: "ចូលដើម្បីគ្រប់គ្រងក្រុមហ៊ុនផ្ទាល់ខ្លួនរបស់អ្នកលើ ភ្នាក់ងារ។",
   openGraph: {
-    images: [{ url: "/og?title=Sign In", width: 1200, height: 630 }],
+    images: [{ url: "/og?title=ចូល", width: 1200, height: 630 }],
   },
 };
 

@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 
-const GITHUB_REPO = "phneakngarai/phneakngar";
+// Point this at your own fork/org by setting DESKTOP_UPDATE_REPO (e.g. "yourname/repo").
+// Falls back to the upstream repo so updates keep working until you publish your own.
+const GITHUB_REPO = process.env.DESKTOP_UPDATE_REPO ?? "phneakngarai/phneakngar";
 const TAG_PREFIX = "v";
 const CACHE_TTL = 300;
 

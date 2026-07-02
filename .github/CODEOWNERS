@@ -1,5 +1,4 @@
-# Default owners for the entire repository
-* @phneakngarai/core-dev
-
-# CI/CD workflows require review
-.github/ @phneakngarai/core-dev
+# Default owners for the entire repository.
+# Replace with your own team handle once you've created it, e.g. * @yourname/core-dev
+# @phneakngarai/core-dev
+*
