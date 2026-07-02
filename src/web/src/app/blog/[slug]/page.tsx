@@ -4,6 +4,12 @@ import Link from "next/link";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { getAllPosts, getPostBySlug } from "@/lib/blog/posts";
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "";
+
+function absoluteUrl(path: string): string | undefined {
+  return SITE_URL ? `${SITE_URL}${path}` : undefined;
+}
+
 export const dynamicParams = false;
 
 export async function generateStaticParams(): Promise<{ slug: string }[]> {
@@ -19,15 +25,16 @@ export async function generateMetadata({
   const { slug } = await params;
   const post = await getPostBySlug(slug);
   if (!post) return {};
+  const postUrl = absoluteUrl(`/blog/${post.slug}`);
 
   return {
     title: `${post.title} — ភ្នាក់ងារ Blog`,
     description: post.excerpt,
-    alternates: { canonical: `https://phneakngar.ai/blog/${post.slug}` },
+    ...(postUrl ? { alternates: { canonical: postUrl } } : {}),
     openGraph: {
       title: post.title,
       description: post.excerpt,
-      url: `https://phneakngar.ai/blog/${post.slug}`,
+      ...(postUrl ? { url: postUrl } : {}),
       type: "article",
       publishedTime: post.date,
       authors: [post.author],
@@ -63,6 +70,7 @@ export default async function BlogPostPage({
   const nextPost = currentIndex > 0 ? posts[currentIndex - 1] : null;
 
   const { default: PostContent } = await import(`@/content/${slug}.mdx`);
+  const postUrl = absoluteUrl(`/blog/${post.slug}`);
 
   const blogPostingJsonLd = {
     "@context": "https://schema.org",
@@ -77,9 +85,9 @@ export default async function BlogPostPage({
     publisher: {
       "@type": "Organization",
       name: "ភ្នាក់ងារ AI",
-      url: "https://phneakngar.ai",
+      ...(SITE_URL ? { url: SITE_URL } : {}),
     },
-    url: `https://phneakngar.ai/blog/${post.slug}`,
+    ...(postUrl ? { url: postUrl } : {}),
   };
 
   return (

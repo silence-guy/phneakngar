@@ -2,56 +2,66 @@ import type { MetadataRoute } from "next";
 import { TEMPLATES } from "@/lib/templates";
 import { getAllPosts } from "@/lib/blog/posts";
 
-const SITE_URL = "https://phneakngar.ai";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "";
+
+type SitemapEntry = MetadataRoute.Sitemap[number];
+
+function buildEntry(path: string, options: Omit<SitemapEntry, "url">): SitemapEntry {
+  return {
+    url: `${SITE_URL}${path}`,
+    ...options,
+  };
+}
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const templateEntries: MetadataRoute.Sitemap = TEMPLATES.map((t) => ({
-    url: `${SITE_URL}/templates/${t.id}`,
-    lastModified: new Date(),
-    changeFrequency: "monthly",
-    priority: 0.7,
-  }));
+  if (!SITE_URL) return [];
+
+  const templateEntries: MetadataRoute.Sitemap = TEMPLATES.map((t) =>
+    buildEntry(`/templates/${t.id}`, {
+      lastModified: new Date(),
+      changeFrequency: "monthly",
+      priority: 0.7,
+    })
+  );
 
   const posts = await getAllPosts();
-  const blogEntries: MetadataRoute.Sitemap = posts.map((post) => ({
-    url: `${SITE_URL}/blog/${post.slug}`,
-    lastModified: new Date(post.date),
-    changeFrequency: "monthly",
-    priority: 0.6,
-  }));
+  const blogEntries: MetadataRoute.Sitemap = posts.map((post) =>
+    buildEntry(`/blog/${post.slug}`, {
+      lastModified: new Date(post.date),
+      changeFrequency: "monthly",
+      priority: 0.6,
+    })
+  );
 
-  return [
-    {
-      url: SITE_URL,
+  const baseEntries: MetadataRoute.Sitemap = [
+    buildEntry("/", {
       lastModified: new Date(),
       changeFrequency: "weekly",
       priority: 1,
-    },
-    {
-      url: `${SITE_URL}/templates`,
+    }),
+    buildEntry("/templates", {
       lastModified: new Date(),
       changeFrequency: "weekly",
       priority: 0.8,
-    },
+    }),
     ...templateEntries,
-    {
-      url: `${SITE_URL}/blog`,
+    buildEntry("/blog", {
       lastModified: new Date(),
       changeFrequency: "weekly",
       priority: 0.8,
-    },
+    }),
     ...blogEntries,
-    {
-      url: `${SITE_URL}/privacy`,
+    buildEntry("/privacy", {
       lastModified: new Date(),
       changeFrequency: "yearly",
       priority: 0.3,
-    },
-    {
-      url: `${SITE_URL}/sign-in`,
+    }),
+    buildEntry("/sign-in", {
       lastModified: new Date(),
       changeFrequency: "monthly",
       priority: 0.5,
-    },
+    }),
   ];
+
+  return baseEntries;
 }

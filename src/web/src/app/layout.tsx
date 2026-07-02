@@ -52,9 +52,7 @@ const notoSansKhmer = Noto_Sans_Khmer({
   weight: ["400", "500", "600"],
 });
 
-// Set NEXT_PUBLIC_SITE_URL to your canonical domain (e.g. https://yourdomain.com).
-// Empty = use relative URLs / request origin so nothing breaks before you configure it.
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://phneakngar.ai";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "";
 const SITE_TITLE = "ភ្នាក់ងារ — ក្រុមហ៊ុនផ្ទាល់ខ្លួន";
 const ENABLE_GTM = process.env.NODE_ENV === "production";
 const SITE_DESCRIPTION =
@@ -117,6 +115,38 @@ export const metadata: Metadata = {
   },
 };
 
+const webApplicationJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  name: "ភ្នាក់ងារ",
+  ...(SITE_URL ? { url: SITE_URL } : {}),
+  description: SITE_DESCRIPTION,
+  applicationCategory: "DeveloperApplication",
+  operatingSystem: "All",
+  offers: {
+    "@type": "Offer",
+    price: "0",
+    priceCurrency: "USD",
+  },
+};
+
+const organizationJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: "ភ្នាក់ងារ",
+  ...(SITE_URL
+    ? {
+        url: SITE_URL,
+        logo: `${SITE_URL}/phneakngar.svg`,
+      }
+    : {}),
+  contactPoint: {
+    "@type": "ContactPoint",
+    email: "support@phneakngar.ai",
+    contactType: "customer support",
+  },
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -146,34 +176,7 @@ export default function RootLayout({
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
-            __html: JSON.stringify([
-              {
-                "@context": "https://schema.org",
-                "@type": "WebApplication",
-                name: "ភ្នាក់ងារ",
-                url: SITE_URL,
-                description: SITE_DESCRIPTION,
-                applicationCategory: "DeveloperApplication",
-                operatingSystem: "All",
-                offers: {
-                  "@type": "Offer",
-                  price: "0",
-                  priceCurrency: "USD",
-                },
-              },
-              {
-                "@context": "https://schema.org",
-                "@type": "Organization",
-                name: "ភ្នាក់ងារ",
-                url: SITE_URL,
-                logo: `${SITE_URL}/phneakngar.svg`,
-                contactPoint: {
-                  "@type": "ContactPoint",
-                  email: "support@phneakngar.ai",
-                  contactType: "customer support",
-                },
-              },
-            ]),
+            __html: JSON.stringify([webApplicationJsonLd, organizationJsonLd]),
           }}
         />
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
