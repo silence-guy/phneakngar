@@ -39,17 +39,19 @@ export function registerCommand(): Command {
 
       const client = new APIClient(serverUrl, token);
 
-      const result = await activateAndSave({ token, serverUrl, profile });
-
+      // Verify the token first so we don't activate-and-save a token
+      // the server will reject, leaving the CLI with a broken config on disk.
       let me: MeResponse;
       try {
         me = await client.getJSON<MeResponse>("/api/me");
       } catch (err) {
         console.error(
-          `Error: failed to verify activated token: ${err instanceof Error ? err.message : err}`,
+          `Error: failed to verify token: ${err instanceof Error ? err.message : err}`,
         );
         process.exit(1);
       }
+
+      const result = await activateAndSave({ token, serverUrl, profile });
 
       console.log(`\nRegistered as ${me.email}`);
       console.log(`Workspace: ${result.workspaceName} (${result.workspaceId})`);

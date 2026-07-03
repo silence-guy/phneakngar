@@ -100,8 +100,8 @@ function mockFetch(responses: Record<string, { status: number; body: unknown }>)
     const cmd = registerCommand();
     await cmd.parseAsync(["node", "register", "--token", "al_testtoken123", "--server", "http://localhost:3000"]);
     const fetchPaths = fetchMock.mock.calls.map(([url]) => String(url));
-    expect(fetchPaths.findIndex((url) => url.includes("/api/machine-tokens/activate"))).toBeLessThan(
-      fetchPaths.findIndex((url) => url.includes("/api/me")),
+    expect(fetchPaths.findIndex((url) => url.includes("/api/me"))).toBeLessThan(
+      fetchPaths.findIndex((url) => url.includes("/api/machine-tokens/activate")),
     );
 
     expect(mockSaveCLIConfigForProfile).toHaveBeenCalledWith(

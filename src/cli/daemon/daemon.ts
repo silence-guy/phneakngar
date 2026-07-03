@@ -323,7 +323,7 @@ export async function startDaemon(
   const workspaceStates: WorkspaceState[] = [];
   const runtimeIndex = new Map<string, RuntimeData>();
   let hadWorkspaces = workspaces.length > 0;
-  const registerHeadroom = headroomHealthForRegister(detectHeadroomHealth());
+  const registerHeadroom = headroomHealthForRegister(await detectHeadroomHealth());
 
   for (const ws of workspaces) {
     const runtimes = providers.map((p) => ({

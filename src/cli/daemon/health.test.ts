@@ -1,5 +1,5 @@
-import { describe, it, expect, afterAll } from "vitest";
-import { createHealthServer, detectHeadroomHealth, type HeadroomHealth } from "./health.js";
+import { describe, it, expect, afterAll, beforeAll, beforeEach } from "vitest";
+import { createHealthServer, detectHeadroomHealth, resetHealthCache, type HeadroomHealth } from "./health.js";
 
 const TEST_PORT = 19614;
 const healthUrl = `http://127.0.0.1:${TEST_PORT}`;
@@ -88,9 +88,9 @@ describe("health server re-detection", () => {
       configured: true,
       available,
       mode: "proxy",
-      port: 8787,
+      port: 8799,
       executable: "headroom",
-      proxy_url: "http://127.0.0.1:8787",
+      proxy_url: "http://127.0.0.1:8799",
       next_actions: available ? [] : ["install_headroom", "configure_headroom_path"],
     });
     const { server } = createHealthServer(PORT, { detectHeadroom: detect, detectTtlMs: 0 });
@@ -112,8 +112,11 @@ describe("health server re-detection", () => {
 });
 
 describe("detectHeadroomHealth", () => {
-  it("marks Headroom disabled by default while preserving local proxy defaults", () => {
-    const health = detectHeadroomHealth({ PATH: "" });
+  beforeAll(() => resetHealthCache());
+  beforeEach(() => resetHealthCache());
+
+  it("marks Headroom disabled by default while preserving local proxy defaults", async () => {
+    const health = await detectHeadroomHealth({ PATH: "" });
 
     expect(health).toMatchObject({
       status: "disabled",
@@ -127,8 +130,8 @@ describe("detectHeadroomHealth", () => {
     });
   });
 
-  it("suggests enabling Headroom when the executable is available but not configured", () => {
-    const health = detectHeadroomHealth({
+  it("suggests enabling Headroom when the executable is available but not configured", async () => {
+    const health = await detectHeadroomHealth({
       PATH: "",
       PHNEAKNGAR_HEADROOM_PATH: process.execPath,
     });
@@ -141,8 +144,8 @@ describe("detectHeadroomHealth", () => {
     });
   });
 
-  it("reports missing when Headroom is explicitly enabled but unavailable", () => {
-    const health = detectHeadroomHealth({
+  it("reports missing when Headroom is explicitly enabled but unavailable", async () => {
+    const health = await detectHeadroomHealth({
       PATH: "",
       PHNEAKNGAR_HEADROOM_ENABLED: "1",
     });
@@ -155,8 +158,8 @@ describe("detectHeadroomHealth", () => {
     });
   });
 
-  it("reports no next actions when Headroom is configured and executable", () => {
-    const health = detectHeadroomHealth({
+  it("reports no next actions when Headroom is configured and executable", async () => {
+    const health = await detectHeadroomHealth({
       PATH: "",
       PHNEAKNGAR_HEADROOM_ENABLED: "1",
       PHNEAKNGAR_HEADROOM_PATH: process.execPath,

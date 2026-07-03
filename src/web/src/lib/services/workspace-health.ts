@@ -96,44 +96,38 @@ function asJsonRecord(value: unknown): Record<string, unknown> | null {
   }
 }
 
-function headroomSettings(runtimeConfig: unknown) {
-  const config = asJsonRecord(runtimeConfig);
-  const headroom = asRecord(config?.headroom);
-  return {
-    enabled: headroom?.enabled === true,
-    requireOptimization: headroom?.requireOptimization === true,
-  };
-}
-
-function headroomAvailableFromMetadata(metadata: unknown): boolean | null {
-  const meta = asJsonRecord(metadata);
-  const headroom = asRecord(meta?.headroom);
-  if (!headroom || typeof headroom.available !== "boolean") return null;
-  return headroom.available;
-}
-
 function unique(values: string[]): string[] {
   return [...new Set(values)];
 }
 
-function headroomNextActionsFromMetadata(metadata: unknown): string[] {
-  const meta = asJsonRecord(metadata);
-  const headroom = asRecord(meta?.headroom);
-  if (!headroom) return [];
+type ParsedMetadata = {
+  parsed: Record<string, unknown>;
+  headroomAvailable: boolean | null;
+  headroomNextActions: string[];
+};
 
-  const actions = Array.isArray(headroom.next_actions) ? headroom.next_actions : [];
-  const sanitized = actions.filter(
-    (action): action is string => typeof action === "string" && HEADROOM_NEXT_ACTIONS.has(action),
-  );
-  if (sanitized.length > 0) return unique(sanitized);
-
-  if (headroom.available === false) {
-    return headroom.configured === false
+function parseMetadataOnce(runtime: { metadata: unknown }): ParsedMetadata {
+  const parsed = asJsonRecord(runtime.metadata) ?? {};
+  const headroom = asRecord(parsed.headroom);
+  const actions = Array.isArray(headroom?.next_actions)
+    ? (headroom.next_actions as unknown[]).filter(
+        (a): a is string => typeof a === "string" && HEADROOM_NEXT_ACTIONS.has(a),
+      )
+    : [];
+  let headroomNextActions: string[] = actions.length > 0 ? unique(actions) : [];
+  if (headroomNextActions.length === 0 && headroom?.available === false) {
+    headroomNextActions = headroom.configured === false
       ? ["enable_headroom", "install_headroom"]
       : ["install_headroom", "configure_headroom_path"];
   }
-
-  return [];
+  return {
+    parsed,
+    headroomAvailable:
+      headroom && typeof headroom.available === "boolean"
+        ? headroom.available
+        : null,
+    headroomNextActions,
+  };
 }
 
 export async function getWorkspaceHealth(
@@ -164,32 +158,44 @@ export async function getWorkspaceHealth(
   ).length;
   const unassignedAgents = agents.length - assignedAgents;
   const runtimeById = new Map(runtimes.map((runtime) => [runtime.id, runtime]));
+
+  // Pre-parse metadata once per runtime; accumulate reporting/available counts.
+  let headroomReportingRuntimes = 0;
+  let headroomAvailableRuntimes = 0;
+  const runtimeParsed = new Map<string, ParsedMetadata>();
+  for (const runtime of runtimes) {
+    const parsed = parseMetadataOnce(runtime);
+    runtimeParsed.set(runtime.id, parsed);
+    if (parsed.headroomAvailable !== null) {
+      headroomReportingRuntimes++;
+      if (parsed.headroomAvailable) headroomAvailableRuntimes++;
+    }
+  }
+
   const headroomAgentSettings = agents
-    .map((agent) => ({
-      runtimeId: agent.runtimeId,
-      ...headroomSettings(agent.runtimeConfig),
-    }))
+    .map((agent) => {
+      const meta = agent.runtimeId ? runtimeParsed.get(agent.runtimeId) : null;
+      const config = asJsonRecord(agent.runtimeConfig);
+      const headroomConfig = asRecord(config?.headroom);
+      const enabled = headroomConfig?.enabled === true;
+      const requireOptimization = headroomConfig?.requireOptimization === true;
+      return { runtimeId: agent.runtimeId, enabled, requireOptimization, meta };
+    })
     .filter((agent) => agent.enabled);
   const headroomUnavailableAgents = headroomAgentSettings.filter((agent) => {
-    const runtime = agent.runtimeId ? runtimeById.get(agent.runtimeId) : null;
-    return runtime ? headroomAvailableFromMetadata(runtime.metadata) !== true : true;
+    return agent.meta ? agent.meta.headroomAvailable !== true : true;
   });
   const headroomRequiredUnavailableAgents = headroomUnavailableAgents.filter(
     (agent) => agent.requireOptimization,
   );
-  const headroomUnavailableNextActions = unique(headroomUnavailableAgents.flatMap((agent) => {
-    const runtime = agent.runtimeId ? runtimeById.get(agent.runtimeId) : null;
-    return runtime ? headroomNextActionsFromMetadata(runtime.metadata) : [];
-  }));
+  const headroomUnavailableNextActions = unique(
+    headroomUnavailableAgents.flatMap((agent) =>
+      agent.meta ? agent.meta.headroomNextActions : [],
+    ),
+  );
   const headroomIssueGuidance = headroomUnavailableNextActions.length > 0
     ? { next_actions: headroomUnavailableNextActions }
     : {};
-  const headroomReportingRuntimes = runtimes.filter(
-    (runtime) => headroomAvailableFromMetadata(runtime.metadata) !== null,
-  ).length;
-  const headroomAvailableRuntimes = runtimes.filter(
-    (runtime) => headroomAvailableFromMetadata(runtime.metadata) === true,
-  ).length;
 
   const issues: WorkspaceHealthIssue[] = [];
   if (runtimes.length === 0) {

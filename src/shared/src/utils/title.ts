@@ -19,6 +19,12 @@ const graphemeSegmenter: Intl.Segmenter | null =
 /**
  * Split text into grapheme clusters. Falls back to code points (Array.from)
  * when Intl.Segmenter is unavailable — still far safer than UTF-16 code units.
+ *
+ * NOTE: the Array.from fallback splits on code points, not grapheme clusters.
+ * For scripts that encode a single grapheme as a surrogate pair (e.g. Khmer
+ * COENG + base), this can orphan the combining mark and produce a broken
+ * "dotted circle" glyph. This is a known limitation; Intl.Segmenter is
+ * preferred.
  */
 export function toGraphemes(text: string): string[] {
   if (graphemeSegmenter) {
@@ -49,9 +55,8 @@ export function truncateGraphemes(
   maxGraphemes: number,
   ellipsis = "…",
 ): string {
-  const graphemes = toGraphemes(text);
-  if (graphemes.length <= maxGraphemes) return text;
-  return graphemes.slice(0, maxGraphemes).join("") + ellipsis;
+  const cut = sliceGraphemes(text, maxGraphemes);
+  return cut === text ? cut : cut + ellipsis;
 }
 
 /**
@@ -64,13 +69,8 @@ export function truncateGraphemes(
  */
 export function truncateTitle(text: string, maxLen = 50): string {
   const trimmed = text.replace(/\s+/g, " ").trim();
-  const graphemes = toGraphemes(trimmed);
-  if (graphemes.length <= maxLen) return trimmed;
-
-  const cut = graphemes.slice(0, maxLen).join("");
-  // Prefer a word boundary when one exists late enough in the cut. For
-  // space-less scripts (e.g. Khmer) there is no space, so we keep the
-  // grapheme-safe hard cut rather than splitting a cluster.
+  const cut = sliceGraphemes(trimmed, maxLen);
+  if (cut === trimmed) return trimmed;
   const lastSpace = cut.lastIndexOf(" ");
   const title = lastSpace > 20 ? cut.slice(0, lastSpace) : cut;
   return title + "...";
