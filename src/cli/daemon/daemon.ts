@@ -431,92 +431,98 @@ export async function startDaemon(
 
   // Staggered per-workspace polling
   const pollCycle = async () => {
-    let remaining = config.maxConcurrentTasks - activeTasks.size;
+    const remaining = config.maxConcurrentTasks - activeTasks.size;
     if (remaining <= 0) return;
 
     const N = workspaceStates.length;
-    const staggerMs = N > 1 ? Math.floor(config.pollInterval / N) : 0;
     const evictedIds: string[] = [];
 
-    for (let i = 0; i < N; i++) {
-      if (remaining <= 0) break;
-      const ws = workspaceStates[i];
+    // Poll all workspaces concurrently; give each an even slice of the task budget.
+    // Only stagger before the first poll to avoid a thundering-herd on startup.
+    const staggerMs = N > 1 ? Math.floor(config.pollInterval / N) : 0;
+    if (staggerMs > 0) {
+      await new Promise((r) => setTimeout(r, staggerMs));
+    }
 
-      if (i > 0 && staggerMs > 0) {
-        await new Promise((r) => setTimeout(r, staggerMs));
+    const budgetPerWs = Math.max(1, Math.floor(remaining / N));
+
+    const results = await Promise.all(
+      workspaceStates.map((ws) =>
+        client
+          .poll(ws.token, config.daemonId, budgetPerWs, config.cliVersion)
+          .then((r) => ({ ws, r }))
+          .catch((e) => ({ ws, e })),
+      ),
+    );
+
+    // Process results sequentially so eviction/rescan ordering is deterministic
+    for (const result of results) {
+      if ('e' in result) {
+        const e = result.e;
+        if (e instanceof Error && e.message.startsWith('HTTP 401')) {
+          log.warn(`Workspace ${result.ws.workspaceId} poll returned 401 — will retry next cycle`);
+        } else {
+          log.debug('Poll error', e);
+        }
+        continue;
+      }
+      const { ws, r } = result;
+      const { tasks: apiTasks, evicted, pending_update, pending_rescan, file_requests, meetings } = r;
+
+      if (evicted) {
+        evictedIds.push(ws.workspaceId);
+        continue;
       }
 
-      try {
-        const { tasks: apiTasks, evicted, pending_update, pending_rescan, file_requests, meetings } = await client.poll(
-          ws.token,
-          config.daemonId,
-          remaining,
-          config.cliVersion,
-        );
+      if (pending_update && !isUpdating() && pending_update.version !== config.cliVersion) {
+        handleCliUpdate(pending_update.version, () => requestRestart(), profile);
+      }
 
-        if (evicted) {
-          evictedIds.push(ws.workspaceId);
-          continue;
+      if (pending_rescan) {
+        log.info('Rescan requested — restarting daemon to re-detect runtimes');
+        for (const id of evictedIds) {
+          evictWorkspace(id);
         }
+        requestRestart();
+        return;
+      }
 
-        if (pending_update && !isUpdating() && pending_update.version !== config.cliVersion) {
-          handleCliUpdate(pending_update.version, () => requestRestart(), profile);
+      for (const apiTask of apiTasks) {
+        const task = fromApiTask(apiTask);
+        syncAgentId(task.agentId, ws.workspaceId);
+        activeTasks.add(task.id);
+        handleTask(client, config, runtimeIndex, task, ws.token, activeTasks, pendingSteer)
+          .catch((e) => {
+            log.error('Task error', e);
+            activeTasks.delete(task.id);
+          });
+      }
+
+      // Handle workspace file browse requests
+      if (file_requests) {
+        for (const req of file_requests) {
+          handleFileRequest(client, config, ws.workspaceId, req, ws.token)
+            .catch((e) => log.debug('File request error', e));
         }
+      }
 
-        if (pending_rescan) {
-          log.info("Rescan requested — restarting daemon to re-detect runtimes");
-          for (const id of evictedIds) {
-            evictWorkspace(id);
-          }
-          requestRestart();
-          return;
-        }
-
-        for (const apiTask of apiTasks) {
-          const task = fromApiTask(apiTask);
-          syncAgentId(task.agentId, ws.workspaceId);
-          activeTasks.add(task.id);
-          remaining--;
-          handleTask(client, config, runtimeIndex, task, ws.token, activeTasks, pendingSteer)
-            .catch((e) => {
-              log.error("Task error", e);
-              activeTasks.delete(task.id);
-            });
-        }
-
-        // Handle workspace file browse requests
-        if (file_requests) {
-          for (const req of file_requests) {
-            handleFileRequest(client, config, ws.workspaceId, req, ws.token)
-              .catch((e) => log.debug("File request error", e));
-          }
-        }
-
-
-        // Spawn meeting bots from merged poll response
-        if (meetings) {
-          for (const m of meetings) {
-            const agentBaseDir = join(config.workspacesRoot, m.workspace_id, m.agent_id, "workdir");
-            const timelineDir = join(agentBaseDir, ".context_timeline");
-            spawnMeetingRunner({
-              meetingId: m.id,
-              meetingUrl: m.meeting_url,
-              participants: m.participants,
-              workspaceId: m.workspace_id,
-              callbackUrl: config.serverURL,
-              authToken: ws.token,
-              agentName: m.agent_name,
-              agentId: m.agent_id,
-              timelineDir,
-              title: m.title,
-            });
-          }
-        }
-      } catch (e) {
-        if (e instanceof Error && e.message.startsWith("HTTP 401")) {
-          log.warn(`Workspace ${ws.workspaceId} poll returned 401 — will retry next cycle`);
-        } else {
-          log.debug("Poll error", e);
+      // Spawn meeting bots from merged poll response
+      if (meetings) {
+        for (const m of meetings) {
+          const agentBaseDir = join(config.workspacesRoot, m.workspace_id, m.agent_id, 'workdir');
+          const timelineDir = join(agentBaseDir, '.context_timeline');
+          spawnMeetingRunner({
+            meetingId: m.id,
+            meetingUrl: m.meeting_url,
+            participants: m.participants,
+            workspaceId: m.workspace_id,
+            callbackUrl: config.serverURL,
+            authToken: ws.token,
+            agentName: m.agent_name,
+            agentId: m.agent_id,
+            timelineDir,
+            title: m.title,
+          });
         }
       }
     }

@@ -789,8 +789,9 @@ describe("daemon with multi-workspace config", () => {
     await startDaemon();
 
     expect(mockClientInstance.poll).toHaveBeenCalledTimes(2);
-    expect(mockClientInstance.poll).toHaveBeenCalledWith("al_tok_ws1", "d1", 20, "0.1.0");
-    expect(mockClientInstance.poll).toHaveBeenCalledWith("al_tok_ws2", "d1", 20, "0.1.0");
+    // Each workspace gets an even share: floor(20/2) = 10
+    expect(mockClientInstance.poll).toHaveBeenCalledWith("al_tok_ws1", "d1", 10, "0.1.0");
+    expect(mockClientInstance.poll).toHaveBeenCalledWith("al_tok_ws2", "d1", 10, "0.1.0");
   });
 
   it("registers each workspace with its own token", async () => {
@@ -824,39 +825,16 @@ describe("daemon with multi-workspace config", () => {
     expect(body.runtimes[0].headroom).not.toHaveProperty("proxy_url");
   });
 
-  it("concurrency accounting: spawned tasks reduce remaining for next workspace", async () => {
-    const fakeTask = {
-      id: "t1",
-      agent_id: "a1",
-      runtime_id: "rt1",
-      conversation_id: "c1",
-      workspace_id: "ws1",
-      prompt: "do stuff",
-      status: "dispatched",
-      priority: 0,
-      dispatched_at: null,
-      started_at: null,
-      completed_at: null,
-      created_at: "2026-01-01T00:00:00Z",
-      type: "user_dm_message",
-      result: null,
-      error: null,
-      agent: { name: "Agent 1", instructions: "be helpful" },
-    };
-
-    // W1 returns 3 tasks, W2 should get remaining (20 - 3 = 17)
-    let pollCall = 0;
-    mockClientInstance.poll.mockImplementation((async () => {
-      pollCall++;
-      if (pollCall === 1) return { tasks: [fakeTask, { ...fakeTask, id: "t2" }, { ...fakeTask, id: "t3" }], evicted: false };
-      return { tasks: [], evicted: false };
-    }) as any);
+  it("polls each workspace with an even budget share", async () => {
+    mockClientInstance.poll.mockResolvedValue({ tasks: [], evicted: false });
 
     await startDaemon();
-    await new Promise((r) => setTimeout(r, 50));
 
-    // W2 should be called with max_tasks = 20 - 3 = 17
-    expect(mockClientInstance.poll).toHaveBeenCalledWith("al_tok_ws2", "d1", 17, "0.1.0");
+    // Two workspaces, each gets floor(20/2) = 10 task budget
+    const calls = mockClientInstance.poll.mock.calls;
+    expect(calls).toHaveLength(2);
+    expect(calls[0][2]).toBe(10);
+    expect(calls[1][2]).toBe(10);
   });
 
   it("multi-workspace: passes correct token per workspace into session runner", async () => {
