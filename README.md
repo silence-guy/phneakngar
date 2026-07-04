@@ -4,7 +4,7 @@
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache_2.0-blue.svg" alt="License" /></a>
-  <a href="https://codecov.io/gh/phneakngarai/phneakngar"><img src="https://codecov.io/gh/phneakngarai/phneakngar/branch/main/graph/badge.svg" alt="codecov" /></a>
+  <a href="https://codecov.io/gh/phneakngar/phneakngar"><img src="https://codecov.io/gh/phneakngar/phneakngar/branch/main/graph/badge.svg" alt="codecov" /></a>
   <a href="https://www.npmjs.com/package/@phneakngar/app"><img src="https://img.shields.io/npm/v/@phneakngar/app.svg" alt="npm version" /></a>
 </p>
 
