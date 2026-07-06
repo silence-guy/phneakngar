@@ -1,7 +1,7 @@
 import type { Task } from "../types.js";
-import { normalizeHeadroomRuntimeConfig, resolveHeadroomPaths, type HeadroomStatus } from "./config.js";
+import { normalizeHeadroomRuntimeConfig, resolveHeadroomPaths, type HeadroomStatus, type HeadroomRuntimeConfig, type HeadroomPaths } from "./config.js";
 import { buildProviderHeadroomEnv } from "./env.js";
-import { ensureHeadroomProxy } from "./supervisor.js";
+import { ensureHeadroomProxy, type HeadroomProxyResult } from "./supervisor.js";
 import { hasUpstreamConfig, generateUpstreamConfig } from "./config-generator.js";
 
 export interface HeadroomPreparation {
@@ -13,9 +13,15 @@ export interface HeadroomPreparation {
 
 const SUPPORTED_PROVIDERS = new Set(["claude", "codex", "opencode"]);
 
+export interface PrepareHeadroomDeps {
+  ensureProxy?: (config: HeadroomRuntimeConfig, paths: HeadroomPaths) => Promise<HeadroomProxyResult>;
+  resolvePaths?: (root?: string) => HeadroomPaths;
+}
+
 export async function prepareHeadroomForTask(
   task: Task,
   provider: string,
+  deps: PrepareHeadroomDeps = {},
 ): Promise<HeadroomPreparation> {
   const config = normalizeHeadroomRuntimeConfig(task.agent?.runtimeConfig);
   if (!config.enabled) {
@@ -31,8 +37,8 @@ export async function prepareHeadroomForTask(
     };
   }
 
-  const paths = resolveHeadroomPaths();
-  const proxy = await ensureHeadroomProxy(config, paths);
+  const paths = (deps.resolvePaths ?? resolveHeadroomPaths)();
+  const proxy = await (deps.ensureProxy ?? ensureHeadroomProxy)(config, paths);
   if (proxy.status !== "ready") {
     return {
       status: "failed",

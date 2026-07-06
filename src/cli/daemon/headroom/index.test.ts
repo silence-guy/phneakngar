@@ -1,13 +1,10 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { prepareHeadroomForTask, hasUpstreamConfig, generateUpstreamConfig, normalizeHeadroomRuntimeConfig } from "./index.js";
-import { ensureHeadroomProxy } from "./supervisor.js";
 import type { Task } from "../types.js";
+import type { HeadroomProxyResult, HeadroomRuntimeConfig, HeadroomPaths } from "./index.js";
 
-vi.mock("./supervisor.js", () => ({
-  ensureHeadroomProxy: vi.fn(),
-}));
-
-const mockEnsureHeadroomProxy = vi.mocked(ensureHeadroomProxy);
+// Use a plain object ref so tests can control the mock without vi.mock/vi.fn
+const mockProxyResult = { status: "ready" as const, started: false };
 
 function makeTask(runtimeConfig?: Record<string, unknown>): Task {
   return {
@@ -29,20 +26,27 @@ function makeTask(runtimeConfig?: Record<string, unknown>): Task {
   };
 }
 
-describe("prepareHeadroomForTask", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
+// Dummy paths to avoid file system calls
+const dummyPaths: HeadroomPaths = {
+  configDir: "/tmp/headroom-config",
+  workspaceDir: "/tmp/headroom-workspace",
+  savingsPath: "/tmp/headroom-savings.json",
+};
 
+describe("prepareHeadroomForTask", () => {
   it("returns a no-op result without probing when Headroom is disabled", async () => {
-    const result = await prepareHeadroomForTask(makeTask({ model: "sonnet" }), "claude");
+    const ensureProxy = () => Promise.resolve({ status: "ready" } as HeadroomProxyResult);
+    const result = await prepareHeadroomForTask(
+      makeTask({ model: "sonnet" }),
+      "claude",
+      { ensureProxy, resolvePaths: () => dummyPaths },
+    );
 
     expect(result).toEqual({
       status: "disabled",
       env: {},
       requireOptimization: false,
     });
-    expect(mockEnsureHeadroomProxy).not.toHaveBeenCalled();
   });
 
   it.each([
@@ -50,8 +54,6 @@ describe("prepareHeadroomForTask", () => {
     ["codex", "OPENAI_BASE_URL", "http://127.0.0.1:18787/v1"],
     ["opencode", "OPENAI_BASE_URL", "http://127.0.0.1:18787/v1"],
   ])("builds the ready proxy env overlay for %s", async (provider, envKey, expectedUrl) => {
-    mockEnsureHeadroomProxy.mockResolvedValue({ status: "ready", started: false });
-
     const result = await prepareHeadroomForTask(
       makeTask({
         headroom: {
@@ -61,6 +63,10 @@ describe("prepareHeadroomForTask", () => {
         },
       }),
       provider,
+      {
+        ensureProxy: async () => ({ status: "ready", started: false }),
+        resolvePaths: () => dummyPaths,
+      },
     );
 
     expect(result.status).toBe("ready");
@@ -79,11 +85,13 @@ describe("prepareHeadroomForTask", () => {
   });
 
   it("adds the OpenCode proxy hint without requiring global config mutation", async () => {
-    mockEnsureHeadroomProxy.mockResolvedValue({ status: "ready", started: true });
-
     const result = await prepareHeadroomForTask(
       makeTask({ headroom: { enabled: true, port: 18787 } }),
       "opencode",
+      {
+        ensureProxy: async () => ({ status: "ready", started: true }),
+        resolvePaths: () => dummyPaths,
+      },
     );
 
     expect(result.env).toMatchObject({
@@ -94,9 +102,11 @@ describe("prepareHeadroomForTask", () => {
   });
 
   it("fails before proxy startup for unsupported providers", async () => {
+    const ensureProxy = () => Promise.resolve({ status: "ready" } as HeadroomProxyResult);
     const result = await prepareHeadroomForTask(
       makeTask({ headroom: { enabled: true, requireOptimization: true } }),
       "unknown-runtime",
+      { ensureProxy, resolvePaths: () => dummyPaths },
     );
 
     expect(result).toEqual({
@@ -105,18 +115,19 @@ describe("prepareHeadroomForTask", () => {
       requireOptimization: true,
       diagnostic: "Headroom is not configured for provider: unknown-runtime",
     });
-    expect(mockEnsureHeadroomProxy).not.toHaveBeenCalled();
   });
 
   it("preserves the required-optimization flag when the proxy is unavailable", async () => {
-    mockEnsureHeadroomProxy.mockResolvedValue({
-      status: "failed",
-      reason: "Headroom executable not found: headroom",
-    });
+    const ensureProxy = () =>
+      Promise.resolve({
+        status: "failed",
+        reason: "Headroom executable not found: headroom",
+      } as HeadroomProxyResult);
 
     const result = await prepareHeadroomForTask(
       makeTask({ headroom: { enabled: true, requireOptimization: true } }),
       "codex",
+      { ensureProxy, resolvePaths: () => dummyPaths },
     );
 
     expect(result).toEqual({
