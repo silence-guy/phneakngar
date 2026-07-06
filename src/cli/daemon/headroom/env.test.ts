@@ -58,4 +58,35 @@ describe("headroom env", () => {
   it("returns the loopback proxy URL", () => {
     expect(headroomProxyUrl(config)).toBe("http://127.0.0.1:8787");
   });
+
+  it("sets ANTHROPIC_BASE_URL even when upstream is configured (Headroom handles routing)", () => {
+    const configWithUpstream: HeadroomRuntimeConfig = {
+      ...config,
+      upstream: { claude: "https://custom.com" },
+    };
+    expect(buildProviderHeadroomEnv("claude", configWithUpstream, paths)).toMatchObject({
+      ANTHROPIC_BASE_URL: "http://127.0.0.1:8787",
+    });
+  });
+
+  it("sets OPENAI_BASE_URL even when upstream is configured (Headroom handles routing)", () => {
+    const configWithUpstream: HeadroomRuntimeConfig = {
+      ...config,
+      upstream: { openai: "https://custom.com/v1" },
+    };
+    expect(buildProviderHeadroomEnv("codex", configWithUpstream, paths)).toMatchObject({
+      OPENAI_BASE_URL: "http://127.0.0.1:8787/v1",
+    });
+  });
+
+  it("sets OPENAI_BASE_URL for opencode even when upstream is configured", () => {
+    const configWithUpstream: HeadroomRuntimeConfig = {
+      ...config,
+      upstream: { openai: "https://custom.com/v1" },
+    };
+    expect(buildProviderHeadroomEnv("opencode", configWithUpstream, paths)).toMatchObject({
+      OPENAI_BASE_URL: "http://127.0.0.1:8787/v1",
+      HEADROOM_PROXY_URL: "http://127.0.0.1:8787",
+    });
+  });
 });

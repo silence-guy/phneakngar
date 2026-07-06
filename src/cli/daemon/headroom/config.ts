@@ -5,6 +5,11 @@ import { configDir } from "../../lib/config.js";
 export type HeadroomStatus = "disabled" | "ready" | "failed";
 export type HeadroomMode = "proxy";
 
+export interface HeadroomUpstreamConfig {
+  claude?: string;
+  openai?: string;
+}
+
 export interface HeadroomRuntimeConfig {
   enabled: boolean;
   mode: HeadroomMode;
@@ -14,6 +19,7 @@ export interface HeadroomRuntimeConfig {
   ccr: boolean;
   port: number;
   executable: string;
+  upstream?: HeadroomUpstreamConfig;
 }
 
 export interface HeadroomPaths {
@@ -74,6 +80,19 @@ export function normalizeHeadroomRuntimeConfig(
     parsePort(env.HEADROOM_PORT) ??
     DEFAULT_PORT;
 
+  // Only parse upstream when headroom is enabled
+  const upstream: HeadroomUpstreamConfig | undefined = enabled
+    ? (() => {
+        const upstreamRaw = asRecord(headroom?.upstream);
+        return upstreamRaw
+          ? {
+              claude: typeof upstreamRaw.claude === "string" ? upstreamRaw.claude : undefined,
+              openai: typeof upstreamRaw.openai === "string" ? upstreamRaw.openai : undefined,
+            }
+          : undefined;
+      })()
+    : undefined;
+
   return {
     enabled,
     mode: "proxy",
@@ -85,6 +104,7 @@ export function normalizeHeadroomRuntimeConfig(
     executable: typeof env.PHNEAKNGAR_HEADROOM_PATH === "string" && env.PHNEAKNGAR_HEADROOM_PATH.trim()
       ? env.PHNEAKNGAR_HEADROOM_PATH.trim()
       : "headroom",
+    upstream,
   };
 }
 

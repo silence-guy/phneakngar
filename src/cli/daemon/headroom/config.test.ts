@@ -102,6 +102,42 @@ describe("normalizeHeadroomRuntimeConfig", () => {
       ).enabled,
     ).toBe(true);
   });
+
+  it("parses upstream third-party provider configuration", () => {
+    const config = normalizeHeadroomRuntimeConfig({
+      headroom: {
+        enabled: true,
+        upstream: {
+          claude: "https://api.anthropic-proxy.com",
+          openai: "https://api.openai-proxy.com/v1",
+        },
+      },
+    }, {});
+
+    expect(config.upstream).toEqual({
+      claude: "https://api.anthropic-proxy.com",
+      openai: "https://api.openai-proxy.com/v1",
+    });
+  });
+
+  it("defaults upstream to undefined when not provided", () => {
+    const config = normalizeHeadroomRuntimeConfig({
+      headroom: { enabled: true },
+    }, {});
+
+    expect(config.upstream).toBeUndefined();
+  });
+
+  it("ignores upstream when headroom is disabled", () => {
+    const config = normalizeHeadroomRuntimeConfig({
+      headroom: {
+        enabled: false,
+        upstream: { claude: "https://fake.com" },
+      },
+    }, {});
+
+    expect(config.upstream).toBeUndefined();
+  });
 });
 
 describe("resolveHeadroomPaths", () => {
