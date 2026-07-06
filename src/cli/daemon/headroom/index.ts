@@ -2,6 +2,7 @@ import type { Task } from "../types.js";
 import { normalizeHeadroomRuntimeConfig, resolveHeadroomPaths, type HeadroomStatus } from "./config.js";
 import { buildProviderHeadroomEnv } from "./env.js";
 import { ensureHeadroomProxy } from "./supervisor.js";
+import { hasUpstreamConfig, generateUpstreamConfig } from "./config-generator.js";
 
 export interface HeadroomPreparation {
   status: HeadroomStatus;
@@ -54,3 +55,4 @@ export type { HeadroomRuntimeConfig } from "./config.js";
 export { normalizeHeadroomRuntimeConfig, resolveHeadroomPaths } from "./config.js";
 export { buildProviderHeadroomEnv, buildHeadroomProcessEnv } from "./env.js";
 export { ensureHeadroomProxy } from "./supervisor.js";
+export { hasUpstreamConfig, generateUpstreamConfig } from "./config-generator.js";

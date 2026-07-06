@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { prepareHeadroomForTask } from "./index.js";
+import { prepareHeadroomForTask, hasUpstreamConfig, generateUpstreamConfig, normalizeHeadroomRuntimeConfig } from "./index.js";
 import { ensureHeadroomProxy } from "./supervisor.js";
 import type { Task } from "../types.js";
 
@@ -125,5 +125,42 @@ describe("prepareHeadroomForTask", () => {
       requireOptimization: true,
       diagnostic: "Headroom executable not found: headroom",
     });
+  });
+});
+
+describe("upstream config exports", () => {
+  it("exports hasUpstreamConfig and generateUpstreamConfig", () => {
+    expect(typeof hasUpstreamConfig).toBe("function");
+    expect(typeof generateUpstreamConfig).toBe("function");
+  });
+
+  it("hasUpstreamConfig returns false for config without upstream", () => {
+    const config = normalizeHeadroomRuntimeConfig({ headroom: { enabled: true } });
+    expect(hasUpstreamConfig(config)).toBe(false);
+  });
+
+  it("hasUpstreamConfig returns true for config with upstream", () => {
+    const config = normalizeHeadroomRuntimeConfig({
+      headroom: { enabled: true, upstream: { claude: "https://test.com" } },
+    });
+    expect(hasUpstreamConfig(config)).toBe(true);
+  });
+
+  it("generateUpstreamConfig generates valid YAML for Claude", () => {
+    const config = normalizeHeadroomRuntimeConfig({
+      headroom: { enabled: true, upstream: { claude: "https://test.com" } },
+    });
+    const yaml = generateUpstreamConfig(config);
+    expect(yaml).toContain("anthropic:");
+    expect(yaml).toContain("base_url: https://test.com");
+  });
+
+  it("generateUpstreamConfig generates valid YAML for OpenAI", () => {
+    const config = normalizeHeadroomRuntimeConfig({
+      headroom: { enabled: true, upstream: { openai: "https://test.com/v1" } },
+    });
+    const yaml = generateUpstreamConfig(config);
+    expect(yaml).toContain("openai:");
+    expect(yaml).toContain("base_url: https://test.com/v1");
   });
 });
