@@ -6,6 +6,15 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { ensureHeadroomProxy, canConnectToHeadroom } from "./supervisor.js";
 import type { HeadroomPaths, HeadroomRuntimeConfig } from "./config.js";
 
+function existsSync(path: string): boolean {
+  try {
+    require("fs").accessSync(path);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 const roots: string[] = [];
 
 function makePaths(): HeadroomPaths {
@@ -86,6 +95,57 @@ describe("ensureHeadroomProxy", () => {
       ["proxy", "--host", "127.0.0.1", "--port", "8787"],
       expect.objectContaining({ detached: expect.any(Boolean), stdio: "ignore" }),
     );
+  });
+
+  it("writes upstream.yaml when third-party providers are configured", async () => {
+    const spawn = vi.fn(() => ({ unref: vi.fn() })) as any;
+    const canConnect = vi
+      .fn()
+      .mockResolvedValueOnce(false)
+      .mockResolvedValueOnce(true);
+    const wait = vi.fn(async () => undefined);
+    const canRun = vi.fn(async () => true);
+
+    const configWithUpstream: HeadroomRuntimeConfig = {
+      enabled: true,
+      mode: "proxy",
+      requireOptimization: false,
+      outputShaper: false,
+      memory: false,
+      ccr: false,
+      port: 8787,
+      executable: "headroom",
+      upstream: {
+        claude: "https://custom.anthropic.com",
+        openai: "https://custom.openai.com/v1",
+      },
+    };
+
+    const paths = makePaths();
+    await ensureHeadroomProxy(configWithUpstream, paths, { spawn, canConnect, canRun, wait });
+
+    // Verify upstream.yaml was written
+    const upstreamPath = `${paths.configDir}/upstream.yaml`;
+    expect(existsSync(upstreamPath)).toBe(true);
+    const content = require("fs").readFileSync(upstreamPath, "utf-8");
+    expect(content).toContain("anthropic:");
+    expect(content).toContain("base_url: https://custom.anthropic.com");
+    expect(content).toContain("openai:");
+    expect(content).toContain("base_url: https://custom.openai.com/v1");
+  });
+
+  it("does not write upstream.yaml when no upstream configured", async () => {
+    const spawn = vi.fn(() => ({ unref: vi.fn() })) as any;
+    const canConnect = vi.fn(async () => false);
+    const wait = vi.fn(async () => undefined);
+    const canRun = vi.fn(async () => true);
+
+    const paths = makePaths();
+    await ensureHeadroomProxy(config, paths, { spawn, canConnect, canRun, wait });
+
+    // Verify upstream.yaml was NOT written
+    const upstreamPath = `${paths.configDir}/upstream.yaml`;
+    expect(existsSync(upstreamPath)).toBe(false);
   });
 });
 

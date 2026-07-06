@@ -1,8 +1,10 @@
+import { mkdirSync, writeFileSync } from "fs";
 import { spawn as nodeSpawn, type ChildProcess } from "child_process";
 import { request as httpRequest } from "http";
 import type { HeadroomPaths, HeadroomRuntimeConfig, HeadroomStatus } from "./config.js";
 import { ensureHeadroomDirs } from "./config.js";
 import { buildHeadroomProcessEnv } from "./env.js";
+import { generateUpstreamConfig, hasUpstreamConfig } from "./config-generator.js";
 
 export interface HeadroomProxyResult {
   status: HeadroomStatus;
@@ -111,6 +113,9 @@ export async function ensureHeadroomProxy(
 
   ensureHeadroomDirs(paths);
 
+  // Write upstream config if third-party providers are configured
+  writeUpstreamConfig(config, paths);
+
   if (await canConnect(config.port)) {
     return { status: "ready", started: false };
   }
@@ -141,4 +146,22 @@ export async function ensureHeadroomProxy(
   }
 
   return { status: "failed", reason: `Headroom proxy did not become ready on 127.0.0.1:${config.port}` };
+}
+
+/**
+ * Write Headroom upstream configuration to configDir/upstream.yaml
+ * if any upstream providers are configured.
+ */
+function writeUpstreamConfig(
+  config: HeadroomRuntimeConfig,
+  paths: HeadroomPaths,
+): void {
+  if (!hasUpstreamConfig(config)) {
+    return;
+  }
+
+  mkdirSync(paths.configDir, { recursive: true, mode: 0o700 });
+  const yaml = generateUpstreamConfig(config);
+  const configPath = `${paths.configDir}/upstream.yaml`;
+  writeFileSync(configPath, yaml, { mode: 0o600 });
 }
