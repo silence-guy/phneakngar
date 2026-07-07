@@ -5,6 +5,7 @@ import type { AgentMessage } from "../../types.js";
 
 let currentMockProc: ReturnType<typeof createMockProc> | null = null;
 let lastSpawnOpts: Record<string, unknown> | null = null;
+let mockKillProcessTree: ReturnType<typeof vi.fn>;
 
 function createMockProc() {
   const stdinWrites: string[] = [];
@@ -27,6 +28,8 @@ function createMockProc() {
   return { proc, stdout, stderr, stdinWrites, stdinEnd };
 }
 
+mockKillProcessTree = vi.fn().mockResolvedValue(undefined);
+
 vi.mock("child_process", () => ({
   spawn: vi.fn((_cmd: string, _args: string[], opts: Record<string, unknown>) => {
     lastSpawnOpts = opts;
@@ -36,7 +39,7 @@ vi.mock("child_process", () => ({
 }));
 
 vi.mock("../../kill-tree.js", () => ({
-  killProcessTree: vi.fn().mockResolvedValue(undefined),
+  killProcessTree: mockKillProcessTree,
   killGraceMs: () => 2000,
   isAlive: () => false,
 }));
@@ -975,12 +978,11 @@ describe("CodexBackend", () => {
 
   it("timeout kills process and sets status to timeout", async () => {
     vi.useFakeTimers();
-    const killTree = await vi.importMock<typeof import("../../kill-tree.js")>("../../kill-tree.js");
     const session = backend.execute("hello", { cwd: "/tmp", timeout: 5000 });
     const mock = getMock();
 
     vi.advanceTimersByTime(5000);
-    expect(killTree.killProcessTree).toHaveBeenCalledWith(12345);
+    expect(mockKillProcessTree).toHaveBeenCalledWith(12345);
 
     mock.proc.emit("close", null);
 
