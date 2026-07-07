@@ -19,14 +19,9 @@ import { trackEmailComposed, trackEmailReceived } from "@/lib/analytics";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { EmailBodyFrame } from "@/components/email-body-frame";
-import { EMAIL_LABELS, emailAttachmentsLabel } from "@/components/email-labels";
-import { relativeTimeLabel } from "../agent-page-labels";
+import { EMAIL_LABELS, emailAttachmentsLabel, relativeTime } from "@/components/email-labels";
 
 type Folder = "inbox" | "sent" | "untrust";
-
-function relativeTime(dateStr: string): string {
-  return relativeTimeLabel(dateStr);
-}
 
 export default function AgentEmailPage() {
   const params = useParams();

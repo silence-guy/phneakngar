@@ -1,15 +1,17 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { EventEmitter } from "events";
 import { Readable } from "stream";
-import { spawn } from "child_process";
 import type { AgentMessage } from "../../types.js";
 
 let currentMockProc: ReturnType<typeof createMockProc> | null = null;
+let mockSpawn: ReturnType<typeof vi.fn>;
+let mockKillProcessTree: ReturnType<typeof vi.fn>;
 
 function createMockProc() {
   const stdinWrites: string[] = [];
   const stdout = new Readable({ read() {} });
   const stderr = new Readable({ read() {} });
+  const killFn = mockKillProcessTree;
   const proc = Object.assign(new EventEmitter(), {
     stdout,
     stderr,
@@ -19,21 +21,25 @@ function createMockProc() {
         return true;
       },
     },
-    kill: vi.fn(),
+    kill: killFn,
     pid: 12345,
   });
   return { proc, stdout, stderr, stdinWrites };
 }
 
+// Initialize mocks at module level for bun test
+mockSpawn = vi.fn(() => {
+  currentMockProc = createMockProc();
+  return currentMockProc.proc;
+});
+mockKillProcessTree = vi.fn().mockResolvedValue(undefined);
+
 vi.mock("child_process", () => ({
-  spawn: vi.fn(() => {
-    currentMockProc = createMockProc();
-    return currentMockProc.proc;
-  }),
+  spawn: mockSpawn,
 }));
 
 vi.mock("../../kill-tree.js", () => ({
-  killProcessTree: vi.fn().mockResolvedValue(undefined),
+  killProcessTree: mockKillProcessTree,
   killGraceMs: () => 2000,
   isAlive: () => false,
 }));
@@ -63,7 +69,8 @@ describe("ClaudeBackend", () => {
   let backend: InstanceType<typeof ClaudeBackend>;
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    mockSpawn.mockClear();
+    mockKillProcessTree.mockClear();
     currentMockProc = null;
     backend = new ClaudeBackend("/usr/bin/claude");
   });
@@ -247,12 +254,12 @@ describe("ClaudeBackend", () => {
 
   it("sets status to timeout when process is killed by timeout", async () => {
     vi.useFakeTimers();
-    const killTree = await vi.importMock<typeof import("../../kill-tree.js")>("../../kill-tree.js");
+
     const session = backend.execute("hello", { cwd: "/tmp", timeout: 1000 });
     const mock = getMock();
 
     vi.advanceTimersByTime(1000);
-    expect(killTree.killProcessTree).toHaveBeenCalledWith(12345);
+    expect(mockKillProcessTree).toHaveBeenCalledWith(12345);
 
     mock.proc.emit("close", null);
 
@@ -264,7 +271,8 @@ describe("ClaudeBackend", () => {
   it("TC8: spawns the CLI detached on POSIX so its group can be reaped", () => {
     const session = backend.execute("hello", { cwd: "/tmp" });
     expect(session.pid).toBe(12345);
-    const opts = vi.mocked(spawn).mock.calls.at(-1)![2] as Record<string, unknown>;
+    const calls = mockSpawn.mock.calls as unknown[][];
+    const opts = calls.at(-1)![2] as Record<string, unknown>;
     expect(opts.detached).toBe(process.platform !== "win32");
   });
 });

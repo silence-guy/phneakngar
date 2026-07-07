@@ -21,7 +21,7 @@ describe("services", () => {
     if (existsSync(testDir)) {
       rmSync(testDir, { recursive: true, force: true });
     }
-    vi.resetModules();
+    // bun test handles module caching differently - no resetModules needed
   });
 
   describe("isRunning", () => {

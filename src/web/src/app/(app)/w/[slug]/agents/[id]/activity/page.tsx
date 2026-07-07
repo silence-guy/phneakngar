@@ -25,7 +25,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { ScrollToBottomButton } from "@/components/ui/scroll-to-bottom-button";
-import { AGENT_PAGE_LABELS, ACTIVITY_STATUS_LABELS, relativeTimeLabel } from "../agent-page-labels";
+import { AGENT_PAGE_LABELS, ACTIVITY_STATUS_LABELS, relativeTime, formatDuration } from "../agent-page-labels";
 
 const ACTIVITY_LIMIT = 30;
 
@@ -44,27 +44,6 @@ const TYPE_OPTIONS = [
   { label: AGENT_PAGE_LABELS.activity.typeEmail, value: "email_notification" },
   { label: AGENT_PAGE_LABELS.activity.typeCalendar, value: "calendar_event" },
 ];
-
-function relativeTime(dateStr: string): string {
-  return relativeTimeLabel(dateStr);
-}
-
-function formatDuration(startedAt: string | null, completedAt: string | null): string | null {
-  if (!startedAt || !completedAt) return null;
-  const ms = new Date(completedAt).getTime() - new Date(startedAt).getTime();
-  const totalSeconds = Math.max(0, Math.floor(ms / 1000));
-  if (totalSeconds >= 3600) {
-    const h = Math.floor(totalSeconds / 3600);
-    const m = Math.floor((totalSeconds % 3600) / 60);
-    return `${h}h ${m}m`;
-  }
-  if (totalSeconds >= 60) {
-    const m = Math.floor(totalSeconds / 60);
-    const s = totalSeconds % 60;
-    return `${m}m ${s}s`;
-  }
-  return `${totalSeconds}s`;
-}
 
 const TYPE_ICONS: Record<string, typeof MessageSquare> = {
   user_dm_message: MessageSquare,

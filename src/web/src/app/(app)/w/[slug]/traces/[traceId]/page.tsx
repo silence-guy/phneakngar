@@ -12,15 +12,11 @@ import { ArrowLeft } from "lucide-react";
 import { AvatarRenderer, parseAvatarUrl } from "@/components/avatar";
 import {
   TRACES_LABELS,
-  formatTraceRelativeTime,
+  relativeTime,
   silentTaskLabel,
   traceTaskStatusLabel,
   traceOutcomeLabel,
 } from "../traces-labels";
-
-function relativeTime(dateStr: string): string {
-  return formatTraceRelativeTime(dateStr);
-}
 
 function formatDuration(createdAt: string, completedAt: string | null): string | null {
   if (!completedAt) return null;

@@ -21,7 +21,7 @@ import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import {
   TRACES_LABELS,
-  formatTraceRelativeTime,
+  relativeTime,
   silentTaskLabel,
   traceStatusFilterLabel,
   traceStatusLabel,
@@ -35,10 +35,6 @@ const STATUS_OPTIONS = [
   { value: "completed" },
   { value: "failed" },
 ];
-
-function relativeTime(dateStr: string): string {
-  return formatTraceRelativeTime(dateStr);
-}
 
 function formatDuration(startedAt: string, completedAt: string | null): string | null {
   if (!completedAt) return null;

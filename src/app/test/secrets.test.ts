@@ -22,7 +22,7 @@ describe("secrets", () => {
     if (existsSync(testDir)) {
       rmSync(testDir, { recursive: true, force: true });
     }
-    vi.resetModules();
+    // bun test handles module caching differently - no resetModules needed
   });
 
   it("generates new secrets when none exist", async () => {

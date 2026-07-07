@@ -102,3 +102,6 @@ export const EMAIL_LABELS = {
 export function emailAttachmentsLabel(count: number): string {
   return `ឯកសារភ្ជាប់ ${count}`;
 }
+
+// Re-export relativeTime from the shared datetime module
+export { relativeTime } from "@/lib/datetime";

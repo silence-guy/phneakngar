@@ -11,7 +11,7 @@ describe("install", () => {
   beforeEach(() => mkdirSync(testDir, { recursive: true }));
   afterEach(() => {
     if (existsSync(testDir)) rmSync(testDir, { recursive: true, force: true });
-    vi.resetModules();
+    // bun test handles module caching differently - no resetModules needed
   });
 
   describe("isInstalled", () => {

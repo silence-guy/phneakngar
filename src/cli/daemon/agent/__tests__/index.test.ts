@@ -1,8 +1,10 @@
-import { describe, it, expect } from "vitest";
-import { createBackend } from "../index.js";
+import { describe, it, expect, vi } from "vitest";
 import { ClaudeBackend } from "../claude.js";
 import { CodexBackend } from "../codex.js";
 import { OpenCodeBackend } from "../opencode.js";
+
+// Import createBackend after class definitions are available
+const { createBackend } = await import("../index.js");
 
 describe("createBackend", () => {
   it('returns ClaudeBackend for "claude"', () => {

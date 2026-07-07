@@ -3,6 +3,11 @@
 // Technical product tokens (Runtime, Model, IMAP, Google Meet, daemon, etc.)
 // are kept in parentheses or left as-is per the localization policy.
 
+import { relativeTime, formatDuration } from "@/lib/datetime";
+
+// Re-export for backward compatibility with pages that import these
+export { relativeTime, formatDuration };
+
 export const AGENT_PAGE_LABELS = {
   // Shared top navbar / layout (layout.tsx)
   layout: {
@@ -122,18 +127,9 @@ export function activityStatusLabel(status: string): string {
 }
 
 // Relative-time labels shared by the email and activity lists.
+// Delegates to shared relativeTime for consistent formatting.
 export function relativeTimeLabel(dateStr: string): string {
-  const date = new Date(dateStr);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMin = Math.floor(diffMs / 60000);
-  if (diffMin < 1) return "ទើបតែឥឡូវ";
-  if (diffMin < 60) return `${diffMin} នាទីមុន`;
-  const diffHrs = Math.floor(diffMin / 60);
-  if (diffHrs < 24) return `${diffHrs} ម៉ោងមុន`;
-  const diffDays = Math.floor(diffHrs / 24);
-  if (diffDays < 7) return `${diffDays} ថ្ងៃមុន`;
-  return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  return relativeTime(dateStr);
 }
 
 export function meetingParticipantsLabel(count: number): string {

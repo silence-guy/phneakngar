@@ -1,6 +1,11 @@
 // Khmer-only labels co-located with the traces pages (list + detail).
 // Keys/enum values stay in English; only display strings are localized.
 
+import { relativeTime, formatDuration } from "@/lib/datetime";
+
+// Re-export for backward compatibility with pages that import these
+export { relativeTime, formatDuration };
+
 export const TRACES_LABELS = {
   title: "ដានដំណើរការ",
   subtitle: "ដានដំណើរការនៃភ្នាក់ងាររបស់អ្នក។",
@@ -47,9 +52,6 @@ export const TRACES_LABELS = {
   detail: {
     notFound: "រកមិនឃើញដាន",
   },
-  relativeTime: {
-    justNow: "មុននេះបន្តិច",
-  },
 } as const;
 
 export function traceStatusFilterLabel(value: string): string {
@@ -79,16 +81,7 @@ export function silentTaskLabel(count: number): string {
   return `${count} ភារកិច្ចគ្មានលទ្ធផល`;
 }
 
+// Keep formatTraceRelativeTime for backward compatibility - delegates to shared relativeTime
 export function formatTraceRelativeTime(dateStr: string): string {
-  const date = new Date(dateStr);
-  if (Number.isNaN(date.getTime())) return "";
-  const diffMs = Date.now() - date.getTime();
-  const diffMin = Math.floor(diffMs / 60000);
-  if (diffMin < 1) return TRACES_LABELS.relativeTime.justNow;
-  if (diffMin < 60) return `${diffMin} នាទីមុន`;
-  const diffHrs = Math.floor(diffMin / 60);
-  if (diffHrs < 24) return `${diffHrs} ម៉ោងមុន`;
-  const diffDays = Math.floor(diffHrs / 24);
-  if (diffDays < 7) return `${diffDays} ថ្ងៃមុន`;
-  return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  return relativeTime(dateStr);
 }
