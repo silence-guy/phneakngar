@@ -43,7 +43,7 @@ This triggers:
 - **Auto-Tag & Release** — CI detects the `release: vX.Y.Z` commit message, creates the git tag, and creates a GitHub Release with generated changelog (`auto-tag-release.yml`)
 - **@phneakngar/cli** → auto-published to npm via `publish-cli.yml` (watches `src/cli/package.json`)
 - **@phneakngar/app** → auto-published to npm via `publish-app.yml` (watches `src/app/package.json`)
-- **CF Workers** → each module redeploys when its own `package.json` changes
+- **CF Workers** → deploy **manually** with `pnpm deploy:ws-do` → `pnpm deploy:email` → `pnpm deploy:web` (CI does not auto-deploy Workers)
 
 ## Plan-driven Development
 - You must make a markdown plan at `plans/` before you implement any my request, otherwise I will reject your implementation.

@@ -10,15 +10,19 @@ vi.mock("@opennextjs/cloudflare", () => ({
   getCloudflareContext: vi.fn(() => ({ env: { DB: {} } })),
 }));
 vi.mock("@/lib/db", () => ({ getDb: vi.fn(() => ({})) }));
-vi.mock("@phneakngar/shared", () => ({
-  queries: {
+vi.mock("@phneakngar/shared", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@phneakngar/shared")>();
+  return {
+    ...actual,
+    queries: {
     task: { getTask: (...args: any[]) => mockGetTask(...args) },
     runtime: {
       getAgentRuntimeForWorkspace: (...args: any[]) => mockGetAgentRuntimeForWorkspace(...args),
     },
     conversation: { getConversation: (...args: any[]) => mockGetConversation(...args) },
   },
-}));
+  };
+});
 
 vi.mock("@/lib/services/task", () => ({
   TaskService: function () { return { supersedeTask: mockSupersede }; },

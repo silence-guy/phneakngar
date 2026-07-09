@@ -5,13 +5,11 @@ import { tmpdir } from "os";
 import PostalMime from "postal-mime";
 import { Command } from "commander";
 
-const { postMultipartMock, postJSONMock, getJSONMock, getTextMock, deleteJSONMock } = vi.hoisted(() => ({
-  postMultipartMock: vi.fn(),
-  postJSONMock: vi.fn(),
-  getJSONMock: vi.fn(),
-  getTextMock: vi.fn(),
-  deleteJSONMock: vi.fn(),
-}));
+const postMultipartMock = vi.fn();
+const postJSONMock = vi.fn();
+const getJSONMock = vi.fn();
+const getTextMock = vi.fn();
+const deleteJSONMock = vi.fn();
 
 vi.mock("../lib/client.js", () => ({
   APIClient: class {

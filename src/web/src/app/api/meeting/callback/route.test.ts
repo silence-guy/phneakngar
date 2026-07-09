@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
+import * as sharedMock from "@/test/shared-mock";
 
 const mockGetMeetingSession = vi.fn();
 const mockUpdateMeetingSession = vi.fn();
@@ -21,17 +22,17 @@ vi.mock("@opennextjs/cloudflare", () => ({
 
 vi.mock("@/lib/db", () => ({ getDb: vi.fn(() => ({})) }));
 
-vi.mock("@phneakngar/shared", async () => {
-  const real = await vi.importActual<typeof import("@phneakngar/shared")>("@phneakngar/shared");
+vi.mock("@phneakngar/shared", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@phneakngar/shared")>();
   return {
-    ...real,
+    ...actual,
     queries: {
-      meetingSession: {
-        getMeetingSession: (...args: unknown[]) => mockGetMeetingSession(...args),
-        updateMeetingSession: (...args: unknown[]) => mockUpdateMeetingSession(...args),
-      },
-      agent: {
-        getAgent: (...args: unknown[]) => mockGetAgent(...args),
+    meetingSession: {
+      getMeetingSession: (...args: unknown[]) => mockGetMeetingSession(...args),
+      updateMeetingSession: (...args: unknown[]) => mockUpdateMeetingSession(...args),
+    },
+    agent: {
+      getAgent: (...args: unknown[]) => mockGetAgent(...args),
       },
       email: {
         getEmailByMessageId: (...args: unknown[]) => mockGetEmailByMessageId(...args),
@@ -48,7 +49,7 @@ vi.mock("@/lib/middleware/auth", () => ({
 }));
 
 vi.mock("@/lib/middleware/helpers", async () =>
-  await vi.importActual<typeof import("@/lib/middleware/helpers")>("@/lib/middleware/helpers")
+  await import("@/lib/middleware/helpers")
 );
 
 vi.mock("@/lib/logger", () => ({

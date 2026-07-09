@@ -11,8 +11,11 @@ const mockCreateTask = vi.fn();
 
 vi.mock("@/lib/db", () => ({ getDb: vi.fn(() => ({})) }));
 
-vi.mock("@phneakngar/shared", () => ({
-  queries: {
+vi.mock("@phneakngar/shared", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@phneakngar/shared")>();
+  return {
+    ...actual,
+    queries: {
     task: {
       failStaleDispatchedTasks: (...args: unknown[]) => mockFailStaleDispatchedTasks(...args),
       failStaleKillTasks: (...args: unknown[]) => mockFailStaleKillTasks(...args),
@@ -33,7 +36,8 @@ vi.mock("@phneakngar/shared", () => ({
   },
   TASK_TYPES: { USER_DM_MESSAGE: "user_dm_message", KILL_TASK: "kill_task" },
   buildEmailMapKey: (agentId: string, threadId: string) => `email:${agentId}:${threadId}`,
-}));
+  };
+});
 
 vi.mock("@/lib/logger", () => ({
   log: { warn: vi.fn(), info: vi.fn(), error: vi.fn() },

@@ -22,7 +22,7 @@ const mockCreateTask = vi.fn();
 vi.mock("@/lib/db", () => ({ getDb: vi.fn(() => ({})) }));
 
 vi.mock("@phneakngar/shared", async () => {
-  const actual = await vi.importActual<typeof import("@phneakngar/shared")>("@phneakngar/shared");
+  const actual = await import("@phneakngar/shared");
   return {
     ...actual,
     queries: {

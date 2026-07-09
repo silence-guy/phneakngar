@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 let mockHostname: string | undefined;
 
 vi.mock("./utils", async () => {
-  const actual = await vi.importActual<typeof import("./utils")>("./utils");
+  const actual = await import("./utils");
   return {
     ...actual,
     isLocalMode: () => {

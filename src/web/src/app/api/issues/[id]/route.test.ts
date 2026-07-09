@@ -1,5 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
+import * as sharedMock from "@/test/shared-mock";
 
 const mockGetIssue = vi.fn();
 const mockListIssueMessages = vi.fn();
@@ -17,22 +18,22 @@ vi.mock("@opennextjs/cloudflare", () => ({
 
 vi.mock("@/lib/db", () => ({ getDb: vi.fn(() => ({})) }));
 
-vi.mock("@phneakngar/shared", async () => {
-  const actual = await vi.importActual<typeof import("@phneakngar/shared")>("@phneakngar/shared");
+vi.mock("@phneakngar/shared", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@phneakngar/shared")>();
   return {
     ...actual,
     queries: {
-      issue: {
-        getIssue: (...a: unknown[]) => mockGetIssue(...a),
-        listIssueMessages: (...a: unknown[]) => mockListIssueMessages(...a),
-        updateIssue: (...a: unknown[]) => mockUpdateIssue(...a),
-        deleteIssue: (...a: unknown[]) => mockDeleteIssue(...a),
-      },
-      task: {
-        getTask: (...a: unknown[]) => mockGetTask(...a),
-      },
-      message: { createMessage: (...a: unknown[]) => mockCreateMessage(...a) },
-      issueComment: {
+    issue: {
+      getIssue: (...a: unknown[]) => mockGetIssue(...a),
+      listIssueMessages: (...a: unknown[]) => mockListIssueMessages(...a),
+      updateIssue: (...a: unknown[]) => mockUpdateIssue(...a),
+      deleteIssue: (...a: unknown[]) => mockDeleteIssue(...a),
+    },
+    task: {
+      getTask: (...a: unknown[]) => mockGetTask(...a),
+    },
+    message: { createMessage: (...a: unknown[]) => mockCreateMessage(...a) },
+    issueComment: {
         listComments: (...a: unknown[]) => mockListComments(...a),
         createComment: (...a: unknown[]) => mockCreateComment(...a),
         commentToResponse: (c: any) => ({ id: c.id, content: c.content, author_type: c.authorType ?? "user", author_id: c.authorId ?? "u1", created_at: c.createdAt ?? new Date().toISOString() }),

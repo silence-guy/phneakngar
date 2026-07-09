@@ -10,8 +10,11 @@ vi.mock("@opennextjs/cloudflare", () => ({
 }));
 vi.mock("@/lib/db", () => ({ getDb: vi.fn(() => ({})) }));
 
-vi.mock("@phneakngar/shared", () => ({
-  createDb: vi.fn(() => ({})),
+vi.mock("@phneakngar/shared", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@phneakngar/shared")>();
+  return {
+    ...actual,
+    createDb: vi.fn(() => ({})),
   createLogger: vi.fn(() => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() })),
   TASK_TYPES: { USER_DM_MESSAGE: "user_dm_message", KILL_TASK: "kill_task" },
   buildEmailMapKey: (agentId: string, threadId: string) => `email:${agentId}:${threadId}`,
@@ -37,7 +40,8 @@ vi.mock("@phneakngar/shared", () => ({
       createMessage: vi.fn(),
     },
   },
-}));
+  };
+});
 vi.mock("@/lib/logger", () => ({
   log: { warn: vi.fn(), info: vi.fn(), error: vi.fn(), debug: vi.fn() },
 }));

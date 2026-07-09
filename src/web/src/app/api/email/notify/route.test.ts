@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
+import * as sharedMock from "@/test/shared-mock";
 
 const mockGetAgent = vi.fn();
 const mockCreateEmail = vi.fn();
@@ -20,49 +21,54 @@ vi.mock("@opennextjs/cloudflare", () => ({
 }));
 vi.mock("@/lib/db", () => ({ getDb: vi.fn(() => ({})) }));
 
-vi.mock("@phneakngar/shared", async () => {
-  const actual = await vi.importActual("@phneakngar/shared");
+vi.mock("@phneakngar/shared", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@phneakngar/shared")>();
   return {
     ...actual,
     createDb: vi.fn(() => ({})),
-    queries: {
-      agent: {
-        getAgent: (...args: unknown[]) => mockGetAgent(...args),
-      },
-      email: {
-        createEmail: (...args: unknown[]) => mockCreateEmail(...args),
-      },
-      conversation: {
-        getConversation: (...args: unknown[]) => mockGetConversation(...args),
-        createConversation: (...args: unknown[]) => mockCreateConversation(...args),
-      },
-      message: {
-        createMessage: (...args: unknown[]) => mockCreateMessage(...args),
-        updateMessageTaskId: vi.fn().mockResolvedValue(undefined),
-      },
-      meetingSession: {
-        createMeetingSession: (...args: unknown[]) => mockCreateMeetingSession(...args),
-      },
-      conversationMap: {
-        findByKey: (...args: unknown[]) => mockFindByKey(...args),
-        createMapping: (...args: unknown[]) => mockCreateMapping(...args),
-      },
-      user: {
-        getUser: (...args: unknown[]) => mockGetUser(...args),
-      },
+  queries: {
+    agent: {
+      getAgent: (...args: unknown[]) => mockGetAgent(...args),
     },
+    email: {
+      createEmail: (...args: unknown[]) => mockCreateEmail(...args),
+    },
+    conversation: {
+      getConversation: (...args: unknown[]) => mockGetConversation(...args),
+      createConversation: (...args: unknown[]) => mockCreateConversation(...args),
+    },
+    message: {
+      createMessage: (...args: unknown[]) => mockCreateMessage(...args),
+      updateMessageTaskId: vi.fn().mockResolvedValue(undefined),
+    },
+    meetingSession: {
+      createMeetingSession: (...args: unknown[]) => mockCreateMeetingSession(...args),
+    },
+    conversationMap: {
+      findByKey: (...args: unknown[]) => mockFindByKey(...args),
+      createMapping: (...args: unknown[]) => mockCreateMapping(...args),
+    },
+    user: {
+      getUser: (...args: unknown[]) => mockGetUser(...args),
+    },
+  },
   };
 });
 
-vi.mock("@/lib/middleware/helpers", async () => {
-  const { NextResponse } = require("next/server");
-  const actual = await vi.importActual("@/lib/middleware/helpers");
-  return {
-    ...actual,
-    writeJSON: (data: unknown, status = 200) => NextResponse.json(data, { status }),
-    writeError: (msg: string, status: number) => NextResponse.json({ error: msg }, { status }),
-  };
-});
+vi.mock("@/lib/middleware/helpers", () => ({
+  writeJSON: (data: unknown, status = 200) => { const { NextResponse } = require("next/server"); return NextResponse.json(data, { status }); },
+  writeError: (message: string, status: number) => { const { NextResponse } = require("next/server"); return NextResponse.json({ error: message }, { status }); },
+  formatTimestamp: (date: Date | string | null) => date ? new Date(date as string).toISOString().replace(/\.\d{3}Z$/, "Z") : "",
+  formatTimestampNullable: (date: Date | string | null) => date ? new Date(date as string).toISOString().replace(/\.\d{3}Z$/, "Z") : null,
+  parseBody: async (req: Request, schema: { parse: (d: unknown) => unknown }) => {
+    try {
+      const data = await req.json();
+      return [schema.parse(data), null];
+    } catch {
+      return [null, { status: 400, error: "invalid request body" }];
+    }
+  },
+}));
 
 vi.mock("@/lib/services/task", () => {
   return {

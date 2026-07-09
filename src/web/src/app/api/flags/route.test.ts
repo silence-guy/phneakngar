@@ -12,8 +12,11 @@ const mockListFlaggedMessages = vi.fn();
 const mockGetMessageWorkspaceId = vi.fn();
 const mockFlagMessage = vi.fn();
 
-vi.mock("@phneakngar/shared", () => ({
-  createDb: vi.fn(() => ({})),
+vi.mock("@phneakngar/shared", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@phneakngar/shared")>();
+  return {
+    ...actual,
+    createDb: vi.fn(() => ({})),
   queries: {
     messageFlag: {
       listFlaggedMessageIds: (...args: unknown[]) => mockListFlaggedMessageIds(...args),
@@ -22,7 +25,8 @@ vi.mock("@phneakngar/shared", () => ({
       flagMessage: (...args: unknown[]) => mockFlagMessage(...args),
     },
   },
-}));
+  };
+});
 
 vi.mock("@/lib/middleware/auth", () => ({
   withAuth: vi.fn((handler: any) => async (req: any, ctx?: any) => {

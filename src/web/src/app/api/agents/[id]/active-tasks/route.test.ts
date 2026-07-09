@@ -19,13 +19,17 @@ vi.mock("@/lib/middleware/helpers", () => ({
 vi.mock("@opennextjs/cloudflare", () => ({
   getCloudflareContext: vi.fn(() => ({ env: { DB: {} } })),
 }));
-vi.mock("@phneakngar/shared", () => ({
-  createDb: vi.fn(() => ({})),
+vi.mock("@phneakngar/shared", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@phneakngar/shared")>();
+  return {
+    ...actual,
+    createDb: vi.fn(() => ({})),
   queries: {
     agent: { getAgent: (...args: any[]) => mockGetAgent(...args) },
     task: { listActiveTasksByAgent: (...args: any[]) => mockListActiveTasksByAgent(...args) },
   },
-}));
+  };
+});
 vi.mock("@/lib/middleware/auth", () => ({
   withAuth: vi.fn((handler: any) => async (req: any, ctx?: any) => {
     const params = ctx?.params instanceof Promise ? await ctx.params : ctx?.params;

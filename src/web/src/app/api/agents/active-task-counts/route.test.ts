@@ -29,8 +29,11 @@ vi.mock("@/lib/cache", () => ({
     allAgentAccess: (ws: string) => `aa:${ws}`,
   },
 }));
-vi.mock("@phneakngar/shared", () => ({
-  queries: {
+vi.mock("@phneakngar/shared", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@phneakngar/shared")>();
+  return {
+    ...actual,
+    queries: {
     task: {
       listActiveTaskCountsByWorkspace: (...args: any[]) =>
         mockListActiveTaskCountsByWorkspace(...args),
@@ -44,7 +47,8 @@ vi.mock("@phneakngar/shared", () => ({
         mockGetAllAgentAccessForWorkspace(...args),
     },
   },
-}));
+  };
+});
 vi.mock("@/lib/middleware/auth", () => ({
   withAuth: vi.fn((handler: any) => async (req: any, ctx?: any) => {
     const params = ctx?.params instanceof Promise ? await ctx.params : ctx?.params;

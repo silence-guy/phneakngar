@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
+import * as sharedMock from "@/test/shared-mock";
 
 const mockGetEmailById = vi.fn();
 const mockUpdateEmailWhitelisted = vi.fn();
@@ -18,21 +19,21 @@ vi.mock("@opennextjs/cloudflare", () => ({
 }));
 vi.mock("@/lib/db", () => ({ getDb: vi.fn(() => ({})) }));
 
-vi.mock("@phneakngar/shared", async () => {
-  const actual = await vi.importActual("@phneakngar/shared");
+vi.mock("@phneakngar/shared", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@phneakngar/shared")>();
   return {
     ...actual,
     createDb: vi.fn(() => ({})),
-    queries: {
-      agent: { getAgent: (...args: unknown[]) => mockGetAgent(...args) },
-      email: {
-        getEmailById: (...args: unknown[]) => mockGetEmailById(...args),
-        updateEmailWhitelisted: (...args: unknown[]) => mockUpdateEmailWhitelisted(...args),
-      },
-      conversation: {
-        getConversation: (...args: unknown[]) => mockGetConversation(...args),
-        createConversation: (...args: unknown[]) => mockCreateConversation(...args),
-      },
+  queries: {
+    agent: { getAgent: (...args: unknown[]) => mockGetAgent(...args) },
+    email: {
+      getEmailById: (...args: unknown[]) => mockGetEmailById(...args),
+      updateEmailWhitelisted: (...args: unknown[]) => mockUpdateEmailWhitelisted(...args),
+    },
+    conversation: {
+      getConversation: (...args: unknown[]) => mockGetConversation(...args),
+      createConversation: (...args: unknown[]) => mockCreateConversation(...args),
+    },
       message: {
         createMessage: (...args: unknown[]) => mockCreateMessage(...args),
         updateMessageTaskId: vi.fn().mockResolvedValue(undefined),

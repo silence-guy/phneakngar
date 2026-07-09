@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import * as sharedMock from "@/test/shared-mock";
 
 vi.mock("@opennextjs/cloudflare", () => ({
   getCloudflareContext: vi.fn(() => ({ env: { DB: {} } })),
@@ -11,26 +12,26 @@ const mockGetAgentRuntimeForWorkspace = vi.fn();
 
 vi.mock("@/lib/db", () => ({ getDb: vi.fn(() => ({})) }));
 
-vi.mock("@phneakngar/shared", async () => {
-  const actual = await vi.importActual("@phneakngar/shared");
+vi.mock("@phneakngar/shared", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@phneakngar/shared")>();
   return {
     ...actual,
     createDb: vi.fn(() => ({})),
-    isOnline: vi.fn((t: string | null) => !!t && Date.now() - new Date(t).getTime() < 30_000),
-    queries: {
-      agent: {
-        listAgents: (...args: unknown[]) => mockListAgents(...args),
-        getAllAgentsForWorkspace: (...args: unknown[]) => mockListAgents(...args),
-        createAgent: (...args: unknown[]) => mockCreateAgent(...args),
-        getAgent: (...args: unknown[]) => mockGetAgent(...args),
-      },
-      agentAccess: {
-        getAllAgentAccessForWorkspace: vi.fn().mockResolvedValue([]),
-      },
-      runtime: {
-        getAgentRuntimeForWorkspace: (...args: unknown[]) => mockGetAgentRuntimeForWorkspace(...args),
-      },
+  isOnline: vi.fn((t: string | null) => !!t && Date.now() - new Date(t).getTime() < 30_000),
+  queries: {
+    agent: {
+      listAgents: (...args: unknown[]) => mockListAgents(...args),
+      getAllAgentsForWorkspace: (...args: unknown[]) => mockListAgents(...args),
+      createAgent: (...args: unknown[]) => mockCreateAgent(...args),
+      getAgent: (...args: unknown[]) => mockGetAgent(...args),
     },
+    agentAccess: {
+      getAllAgentAccessForWorkspace: vi.fn().mockResolvedValue([]),
+    },
+    runtime: {
+      getAgentRuntimeForWorkspace: (...args: unknown[]) => mockGetAgentRuntimeForWorkspace(...args),
+    },
+  },
   };
 });
 

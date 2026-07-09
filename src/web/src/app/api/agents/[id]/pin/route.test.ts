@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import * as sharedMock from "@/test/shared-mock";
 
 vi.mock("@opennextjs/cloudflare", () => ({
   getCloudflareContext: vi.fn(async () => ({ env: { DB: {} } })),
@@ -10,19 +11,19 @@ const mockGetAgent = vi.fn();
 const mockPinAgent = vi.fn();
 const mockUnpinAgent = vi.fn();
 
-vi.mock("@phneakngar/shared", async () => {
-  const actual = await vi.importActual("@phneakngar/shared");
+vi.mock("@phneakngar/shared", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@phneakngar/shared")>();
   return {
     ...actual,
     queries: {
-      agent: {
-        getAgent: (...args: unknown[]) => mockGetAgent(...args),
-      },
-      agentPin: {
-        pinAgent: (...args: unknown[]) => mockPinAgent(...args),
-        unpinAgent: (...args: unknown[]) => mockUnpinAgent(...args),
-      },
+    agent: {
+      getAgent: (...args: unknown[]) => mockGetAgent(...args),
     },
+    agentPin: {
+      pinAgent: (...args: unknown[]) => mockPinAgent(...args),
+      unpinAgent: (...args: unknown[]) => mockUnpinAgent(...args),
+    },
+  },
   };
 });
 
@@ -33,9 +34,20 @@ vi.mock("@/lib/middleware/auth", () => ({
   }),
 }));
 
-vi.mock("@/lib/middleware/helpers", async () =>
-  await vi.importActual<typeof import("@/lib/middleware/helpers")>("@/lib/middleware/helpers"),
-);
+vi.mock("@/lib/middleware/helpers", () => ({
+  writeJSON: (data: unknown, status = 200) => { const { NextResponse } = require("next/server"); return NextResponse.json(data, { status }); },
+  writeError: (message: string, status: number) => { const { NextResponse } = require("next/server"); return NextResponse.json({ error: message }, { status }); },
+  formatTimestamp: (date: Date | string | null) => date ? new Date(date as string).toISOString().replace(/\.\d{3}Z$/, "Z") : "",
+  formatTimestampNullable: (date: Date | string | null) => date ? new Date(date as string).toISOString().replace(/\.\d{3}Z$/, "Z") : null,
+  parseBody: async (req: Request, schema: { parse: (d: unknown) => unknown }) => {
+    try {
+      const data = await req.json();
+      return [schema.parse(data), null];
+    } catch {
+      return [null, { status: 400, error: "invalid request body" }];
+    }
+  },
+}));
 
 vi.mock("@/lib/middleware/workspace", () => ({
   withWorkspaceMember: vi.fn(async () => ({ workspaceId: "w1", memberRole: "member" })),

@@ -12,8 +12,11 @@ const mockEnqueueTask = vi.fn();
 
 vi.mock("@/lib/db", () => ({ getDb: vi.fn(() => ({})) }));
 
-vi.mock("@phneakngar/shared", () => ({
-  createDb: vi.fn(() => ({})),
+vi.mock("@phneakngar/shared", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@phneakngar/shared")>();
+  return {
+    ...actual,
+    createDb: vi.fn(() => ({})),
   TASK_TYPES: { USER_DM_MESSAGE: "user_dm_message", EMAIL_NOTIFICATION: "email_notification", CALENDAR_EVENT: "calendar_event" },
   queries: {
     agent: {
@@ -38,7 +41,8 @@ vi.mock("@phneakngar/shared", () => ({
       return { email: String(d.email) };
     },
   },
-}));
+  };
+});
 
 vi.mock("@/lib/middleware/auth", () => ({
   withAuth: vi.fn((handler: any) => async (req: any, ctx?: any) => {

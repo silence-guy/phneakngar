@@ -21,8 +21,11 @@ vi.mock("@opennextjs/cloudflare", () => ({
   getCloudflareContext: vi.fn(() => ({ env: { DB: {} } })),
 }));
 vi.mock("@/lib/db", () => ({ getDb: vi.fn(() => ({})) }));
-vi.mock("@phneakngar/shared", () => ({
-  queries: {
+vi.mock("@phneakngar/shared", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@phneakngar/shared")>();
+  return {
+    ...actual,
+    queries: {
     task: {
       listTraces: (...args: any[]) => mockListTraces(...args),
     },
@@ -33,7 +36,8 @@ vi.mock("@phneakngar/shared", () => ({
       getAllAgentAccessForWorkspace: (...args: any[]) => mockGetAllAgentAccessForWorkspace(...args),
     },
   },
-}));
+  };
+});
 vi.mock("@/lib/middleware/auth", () => ({
   withAuth: vi.fn((handler: any) => async (req: any, ctx?: any) => {
     const params = ctx?.params instanceof Promise ? await ctx.params : ctx?.params;

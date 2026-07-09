@@ -5,10 +5,11 @@ import { tmpdir } from "os";
 
 const mockState = { home: "/tmp" };
 
-vi.mock("os", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("os")>();
-  return { ...actual, homedir: () => mockState.home };
-});
+// Mock os module with a synchronous factory (Bun-compatible)
+vi.mock("os", () => ({
+  homedir: () => mockState.home,
+  tmpdir: () => "/tmp",
+}));
 
 vi.mock("../lib/logger.js", () => ({
   createLogger: () => ({ info: vi.fn(), debug: vi.fn(), warn: vi.fn(), error: vi.fn() }),

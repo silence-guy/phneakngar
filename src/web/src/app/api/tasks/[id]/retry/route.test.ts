@@ -28,8 +28,11 @@ vi.mock("@opennextjs/cloudflare", () => ({
   getCloudflareContext: vi.fn(() => ({ env: { DB: {} } })),
 }));
 vi.mock("@/lib/db", () => ({ getDb: vi.fn(() => ({})) }));
-vi.mock("@phneakngar/shared", () => ({
-  createDb: vi.fn(() => ({})),
+vi.mock("@phneakngar/shared", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@phneakngar/shared")>();
+  return {
+    ...actual,
+    createDb: vi.fn(() => ({})),
   queries: {
     task: {
       getTask: (...args: any[]) => mockGetTask(...args),
@@ -38,7 +41,8 @@ vi.mock("@phneakngar/shared", () => ({
       getAgent: (...args: any[]) => mockGetAgent(...args),
     },
   },
-}));
+  };
+});
 vi.mock("@/lib/services/task", () => {
   const MockTaskService = function (this: any) {
     this.retryTask = (...a: any[]) => mockRetryTask(...a);

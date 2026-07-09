@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
+import * as sharedMock from "@/test/shared-mock";
 
 vi.mock("@opennextjs/cloudflare", () => ({
   getCloudflareContext: vi.fn(() => ({ env: { DB: {} } })),
@@ -19,24 +20,24 @@ const q = {
   calendar: vi.fn(),
 };
 
-vi.mock("@phneakngar/shared", async () => {
-  const actual = await vi.importActual("@phneakngar/shared");
+vi.mock("@phneakngar/shared", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@phneakngar/shared")>();
   return {
     ...actual,
     queries: {
-      agent: { getAllAgentsForWorkspace: (...a: unknown[]) => q.getAllAgents(...a) },
-      agentAccess: { getAllAgentAccessForWorkspace: (...a: unknown[]) => q.getAllAccess(...a) },
-      overview: {
-        getEmailStatsByWorkspace: (...a: unknown[]) => q.emailStats(...a),
-        getEmailAccountsByWorkspace: (...a: unknown[]) => q.emailAccounts(...a),
-        getTaskStatsByWorkspace: (...a: unknown[]) => q.taskStats(...a),
-        getRecentTerminalTasks: (...a: unknown[]) => q.recentTasks(...a),
-        getConversationCountsByAgent: (...a: unknown[]) => q.convCounts(...a),
-      },
-      member: { listMembers: (...a: unknown[]) => q.members(...a) },
-      workspaceInvite: { listActiveInvites: (...a: unknown[]) => q.invites(...a) },
-      calendarEvent: { listCalendarEvents: (...a: unknown[]) => q.calendar(...a) },
+    agent: { getAllAgentsForWorkspace: (...a: unknown[]) => q.getAllAgents(...a) },
+    agentAccess: { getAllAgentAccessForWorkspace: (...a: unknown[]) => q.getAllAccess(...a) },
+    overview: {
+      getEmailStatsByWorkspace: (...a: unknown[]) => q.emailStats(...a),
+      getEmailAccountsByWorkspace: (...a: unknown[]) => q.emailAccounts(...a),
+      getTaskStatsByWorkspace: (...a: unknown[]) => q.taskStats(...a),
+      getRecentTerminalTasks: (...a: unknown[]) => q.recentTasks(...a),
+      getConversationCountsByAgent: (...a: unknown[]) => q.convCounts(...a),
     },
+    member: { listMembers: (...a: unknown[]) => q.members(...a) },
+    workspaceInvite: { listActiveInvites: (...a: unknown[]) => q.invites(...a) },
+    calendarEvent: { listCalendarEvents: (...a: unknown[]) => q.calendar(...a) },
+  },
   };
 });
 vi.mock("@/lib/middleware/auth", () => ({

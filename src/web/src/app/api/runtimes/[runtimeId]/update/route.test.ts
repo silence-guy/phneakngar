@@ -12,8 +12,11 @@ vi.mock("@opennextjs/cloudflare", () => ({
 
 vi.mock("@/lib/db", () => ({ getDb: vi.fn(() => ({})) }));
 
-vi.mock("@phneakngar/shared", () => ({
-  createDb: vi.fn(() => ({})),
+vi.mock("@phneakngar/shared", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@phneakngar/shared")>();
+  return {
+    ...actual,
+    createDb: vi.fn(() => ({})),
   queries: {
     runtime: {
       getAgentRuntimeForWorkspace: (...args: any[]) =>
@@ -30,7 +33,8 @@ vi.mock("@phneakngar/shared", () => ({
         mockGetMemberByUserAndWorkspace(...args),
     },
   },
-}));
+  };
+});
 
 vi.mock("@/lib/middleware/auth", () => ({
   withAuth: vi.fn((handler: any) => async (req: any, ctx?: any) => {
@@ -68,7 +72,7 @@ vi.mock("@/lib/broadcast", () => ({
 
 // Mock global fetch for npm registry
 const mockFetch = vi.fn();
-vi.stubGlobal("fetch", mockFetch);
+globalThis.fetch = mockFetch;
 
 import { POST, DELETE } from "./route";
 

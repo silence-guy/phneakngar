@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
+import * as sharedMock from "@/test/shared-mock";
 
 const mockBucketGet = vi.fn();
 vi.mock("@opennextjs/cloudflare", () => ({
@@ -13,15 +14,15 @@ vi.mock("postal-mime", () => ({ default: { parse: (...a: unknown[]) => mockParse
 const mockGetById = vi.fn();
 const mockFilter = vi.fn();
 const mockGetAgent = vi.fn();
-vi.mock("@phneakngar/shared", async () => {
-  const actual = await vi.importActual("@phneakngar/shared");
+vi.mock("@phneakngar/shared", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@phneakngar/shared")>();
   return {
     ...actual,
     filterDownloadableAttachments: (...a: unknown[]) => mockFilter(...a),
-    queries: {
-      email: { getEmailById: (...a: unknown[]) => mockGetById(...a) },
-      agent: { getAgent: (...a: unknown[]) => mockGetAgent(...a) },
-    },
+  queries: {
+    email: { getEmailById: (...a: unknown[]) => mockGetById(...a) },
+    agent: { getAgent: (...a: unknown[]) => mockGetAgent(...a) },
+  },
   };
 });
 vi.mock("@/lib/middleware/auth", () => ({

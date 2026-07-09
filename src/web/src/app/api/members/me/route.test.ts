@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
+import * as sharedMock from "@/test/shared-mock";
 
 const mockGetMemberByUserAndWorkspace = vi.fn();
 const mockUpdateMemberSettings = vi.fn();
@@ -10,17 +11,17 @@ vi.mock("@opennextjs/cloudflare", () => ({
 
 vi.mock("@/lib/db", () => ({ getDb: vi.fn(() => ({})) }));
 
-vi.mock("@phneakngar/shared", async () => {
-  const real = await vi.importActual<typeof import("@phneakngar/shared")>("@phneakngar/shared");
+vi.mock("@phneakngar/shared", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@phneakngar/shared")>();
   return {
-    ...real,
+    ...actual,
     createDb: vi.fn(() => ({})),
-    queries: {
-      member: {
-        getMemberByUserAndWorkspace: (...args: unknown[]) => mockGetMemberByUserAndWorkspace(...args),
-        updateMemberSettings: (...args: unknown[]) => mockUpdateMemberSettings(...args),
-      },
+  queries: {
+    member: {
+      getMemberByUserAndWorkspace: (...args: unknown[]) => mockGetMemberByUserAndWorkspace(...args),
+      updateMemberSettings: (...args: unknown[]) => mockUpdateMemberSettings(...args),
     },
+  },
   };
 });
 
@@ -31,12 +32,23 @@ vi.mock("@/lib/middleware/auth", () => ({
   }),
 }));
 
-vi.mock("@/lib/middleware/helpers", async () =>
-  await vi.importActual<typeof import("@/lib/middleware/helpers")>("@/lib/middleware/helpers")
-);
+vi.mock("@/lib/middleware/helpers", () => ({
+  writeJSON: (data: unknown, status = 200) => { const { NextResponse } = require("next/server"); return NextResponse.json(data, { status }); },
+  writeError: (message: string, status: number) => { const { NextResponse } = require("next/server"); return NextResponse.json({ error: message }, { status }); },
+  formatTimestamp: (date: Date | string | null) => date ? new Date(date as string).toISOString().replace(/\.\d{3}Z$/, "Z") : "",
+  formatTimestampNullable: (date: Date | string | null) => date ? new Date(date as string).toISOString().replace(/\.\d{3}Z$/, "Z") : null,
+  parseBody: async (req: Request, schema: { parse: (d: unknown) => unknown }) => {
+    try {
+      const data = await req.json();
+      return [schema.parse(data), null];
+    } catch {
+      return [null, { status: 400, error: "invalid request body" }];
+    }
+  },
+}));
 
 vi.mock("@/lib/middleware/workspace", async () => {
-  const real = await vi.importActual<typeof import("@/lib/middleware/workspace")>("@/lib/middleware/workspace");
+  const real = await import("@/lib/middleware/workspace");
   return {
     ...real,
     withWorkspaceMember: vi.fn(async (req: any) => {

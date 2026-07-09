@@ -22,11 +22,11 @@ vi.mock("@/lib/middleware/auth", () => ({
 }));
 
 vi.mock("@/lib/middleware/helpers", async () =>
-  await vi.importActual<typeof import("@/lib/middleware/helpers")>("@/lib/middleware/helpers")
+  await import("@/lib/middleware/helpers")
 );
 
 vi.mock("@/lib/middleware/workspace", async () => {
-  const real = await vi.importActual<typeof import("@/lib/middleware/workspace")>("@/lib/middleware/workspace");
+  const real = await import("@/lib/middleware/workspace");
   return {
     ...real,
     withWorkspaceMember: vi.fn(async () => {

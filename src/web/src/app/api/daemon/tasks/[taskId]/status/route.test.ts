@@ -13,8 +13,11 @@ vi.mock("@/lib/db", () => ({
   withD1Retry: vi.fn((fn: () => Promise<any>) => fn()),
 }));
 
-vi.mock("@phneakngar/shared", () => ({
-  createDb: vi.fn(() => ({})),
+vi.mock("@phneakngar/shared", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@phneakngar/shared")>();
+  return {
+    ...actual,
+    createDb: vi.fn(() => ({})),
   queries: {
     task: {
       getTask: (...args: any[]) => mockGetTask(...args),
@@ -24,7 +27,8 @@ vi.mock("@phneakngar/shared", () => ({
       getAgentRuntimeForWorkspace: (...args: any[]) => mockGetAgentRuntimeForWorkspace(...args),
     },
   },
-}));
+  };
+});
 vi.mock("@/lib/middleware/auth", () => ({
   withAuth: vi.fn((handler: any) => async (req: any, ctx?: any) => {
     const params = ctx?.params instanceof Promise ? await ctx.params : ctx?.params;
@@ -38,10 +42,21 @@ vi.mock("@/lib/middleware/auth", () => ({
     });
   }),
 }));
-vi.mock("@/lib/middleware/helpers", async () => {
-  return await vi.importActual<typeof import("@/lib/middleware/helpers")>(
-    "@/lib/middleware/helpers"
-  );
+vi.mock("@/lib/middleware/helpers", () => {
+  const { NextResponse } = require("next/server");
+  return {
+    writeJSON: (data: unknown, status = 200) => NextResponse.json(data, { status }),
+    writeError: (message: string, status: number) => NextResponse.json({ error: message }, { status }),
+    formatTimestamp: (d: Date | string | null) => d instanceof Date ? d.toISOString() : d || "",
+    parseBody: async (req: Request, schema: { parse: (d: unknown) => unknown }) => {
+      try {
+        const data = await req.json();
+        return [schema.parse(data), null];
+      } catch {
+        return [null, NextResponse.json({ error: "invalid request body" }, { status: 400 })];
+      }
+    },
+  };
 });
 
 import { GET } from "./route";

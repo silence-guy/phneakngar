@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
+import * as sharedMock from "@/test/shared-mock";
 
 const mockGetMember = vi.fn();
 const mockUpsertMachine = vi.fn();
@@ -14,10 +15,10 @@ function sharedMocks() {
       getCloudflareContext: vi.fn(() => ({ env: { DB: {} } })),
     },
     "@phneakngar/shared": async () => {
-      const real = await import("@phneakngar/shared");
+      const actual = await vi.importActual<typeof import("@phneakngar/shared")>("@phneakngar/shared");
       return {
+        ...actual,
         createDb: vi.fn(() => ({})),
-        semverGte: real.semverGte,
         queries: {
           member: {
             getMemberByUserAndWorkspace: (...a: any[]) => mockGetMember(...a),
@@ -31,8 +32,6 @@ function sharedMocks() {
             upsertAgentRuntime: (...a: any[]) => mockUpsertAgentRuntime(...a),
           },
         },
-        RegisterDaemonRequestSchema: real.RegisterDaemonRequestSchema,
-        generateWorkspaceSlug: real.generateWorkspaceSlug,
       };
     },
     "@/lib/broadcast": {
@@ -85,10 +84,32 @@ describe("POST /api/daemon/register", () => {
         return handler(req, { ...authCtx, params });
       }),
     }));
-    vi.doMock("@/lib/middleware/helpers", async () => {
-      return await vi.importActual<typeof import("@/lib/middleware/helpers")>(
-        "@/lib/middleware/helpers"
-      );
+    vi.doMock("@/lib/middleware/helpers", () => {
+      const { NextResponse } = require("next/server");
+      return {
+        writeJSON: (data: unknown, status = 200) => NextResponse.json(data, { status }),
+        writeError: (message: string, status: number) => NextResponse.json({ error: message }, { status }),
+        formatTimestamp: (date: Date | string | null) =>
+          date ? new Date(date as string).toISOString().replace(/\.\d{3}Z$/, "Z") : "",
+        formatTimestampNullable: (date: Date | string | null) =>
+          date ? new Date(date as string).toISOString().replace(/\.\d{3}Z$/, "Z") : null,
+        parseBody: async (req: Request, schema: { parse: (d: unknown) => unknown }) => {
+          let raw: unknown;
+          try {
+            raw = await req.json();
+          } catch {
+            return [null, NextResponse.json({ error: "invalid request body" }, { status: 400 })];
+          }
+          try {
+            return [schema.parse(raw), null];
+          } catch (err: unknown) {
+            const e = err as { issues?: { path: (string | number)[]; message: string }[]; errors?: { path: (string | number)[]; message: string }[] };
+            const issues = e.issues ?? e.errors ?? [];
+            const fields = issues.map((issue) => `${issue.path.join(".")}: ${issue.message}`);
+            return [null, NextResponse.json({ error: "validation error", details: fields }, { status: 400 })];
+          }
+        },
+      };
     });
 
     const { POST } = await import("./route");

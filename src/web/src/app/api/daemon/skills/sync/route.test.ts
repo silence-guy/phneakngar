@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
+import * as sharedMock from "@/test/shared-mock";
 
 vi.mock("@opennextjs/cloudflare", () => ({
   getCloudflareContext: vi.fn(() => ({ env: { DB: {} } })),
@@ -12,19 +13,19 @@ vi.mock("@/lib/db", () => ({
 const mockSyncGlobal = vi.fn();
 const mockSyncAgent = vi.fn();
 const mockGetMachineByDaemon = vi.fn();
-vi.mock("@phneakngar/shared", async () => {
-  const actual = await vi.importActual("@phneakngar/shared");
+vi.mock("@phneakngar/shared", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@phneakngar/shared")>();
   return {
     ...actual,
     queries: {
-      machine: {
-        getMachineByDaemon: (...a: unknown[]) => mockGetMachineByDaemon(...a),
-      },
-      agentSkill: {
-        syncGlobalSkills: (...a: unknown[]) => mockSyncGlobal(...a),
-        syncAgentSkills: (...a: unknown[]) => mockSyncAgent(...a),
-      },
+    machine: {
+      getMachineByDaemon: (...a: unknown[]) => mockGetMachineByDaemon(...a),
     },
+    agentSkill: {
+      syncGlobalSkills: (...a: unknown[]) => mockSyncGlobal(...a),
+      syncAgentSkills: (...a: unknown[]) => mockSyncAgent(...a),
+    },
+  },
   };
 });
 

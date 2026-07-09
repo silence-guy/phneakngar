@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
+import * as sharedMock from "@/test/shared-mock";
 
 const mockGetEmailById = vi.fn();
 const mockDeleteEmail = vi.fn();
@@ -14,19 +15,19 @@ vi.mock("@opennextjs/cloudflare", () => ({
 
 vi.mock("@/lib/db", () => ({ getDb: vi.fn(() => ({})) }));
 
-vi.mock("@phneakngar/shared", async () => {
-  const actual = await vi.importActual("@phneakngar/shared");
+vi.mock("@phneakngar/shared", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@phneakngar/shared")>();
   return {
     ...actual,
     createDb: vi.fn(() => ({})),
-    queries: {
-      email: {
-        getEmailById: (...args: unknown[]) => mockGetEmailById(...args),
-        deleteEmail: (...args: unknown[]) => mockDeleteEmail(...args),
-        updateEmailStatus: (...args: unknown[]) => mockUpdateEmailStatus(...args),
-      },
-      agent: { getAgent: (...args: unknown[]) => mockGetAgent(...args) },
+  queries: {
+    email: {
+      getEmailById: (...args: unknown[]) => mockGetEmailById(...args),
+      deleteEmail: (...args: unknown[]) => mockDeleteEmail(...args),
+      updateEmailStatus: (...args: unknown[]) => mockUpdateEmailStatus(...args),
     },
+    agent: { getAgent: (...args: unknown[]) => mockGetAgent(...args) },
+  },
   };
 });
 
@@ -43,7 +44,7 @@ vi.mock("@/lib/middleware/workspace", () => ({
 
 vi.mock("@/lib/middleware/helpers", async () => {
   const { NextResponse } = require("next/server");
-  const actual = await vi.importActual("@/lib/middleware/helpers");
+  const actual = await import("@/lib/middleware/helpers");
   return {
     ...actual,
     writeJSON: (data: unknown, status = 200) => NextResponse.json(data, { status }),

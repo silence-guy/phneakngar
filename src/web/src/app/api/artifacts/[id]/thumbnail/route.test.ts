@@ -1,5 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
+import * as sharedMock from "@/test/shared-mock";
 
 const mockGetArtifact = vi.fn();
 const mockGetAgent = vi.fn();
@@ -16,14 +17,14 @@ vi.mock("@opennextjs/cloudflare", () => ({
 
 vi.mock("@/lib/db", () => ({ getDb: vi.fn(() => ({})) }));
 
-vi.mock("@phneakngar/shared", async () => {
-  const actual = await vi.importActual<typeof import("@phneakngar/shared")>("@phneakngar/shared");
+vi.mock("@phneakngar/shared", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@phneakngar/shared")>();
   return {
     ...actual,
     queries: {
-      artifact: { getArtifact: (...a: unknown[]) => mockGetArtifact(...a) },
-      agent: { getAgent: (...a: unknown[]) => mockGetAgent(...a) },
-    },
+    artifact: { getArtifact: (...a: unknown[]) => mockGetArtifact(...a) },
+    agent: { getAgent: (...a: unknown[]) => mockGetAgent(...a) },
+  },
   };
 });
 

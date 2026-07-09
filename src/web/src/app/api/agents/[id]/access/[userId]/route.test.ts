@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
+import * as sharedMock from "@/test/shared-mock";
 
 const mockGetAgent = vi.fn();
 const mockListAgentAccess = vi.fn();
@@ -12,22 +13,22 @@ vi.mock("@opennextjs/cloudflare", () => ({
 
 vi.mock("@/lib/db", () => ({ getDb: vi.fn(() => ({})) }));
 
-vi.mock("@phneakngar/shared", async () => {
-  const real = await vi.importActual<typeof import("@phneakngar/shared")>("@phneakngar/shared");
+vi.mock("@phneakngar/shared", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@phneakngar/shared")>();
   return {
-    ...real,
+    ...actual,
     queries: {
-      agent: {
-        getAgent: (...args: unknown[]) => mockGetAgent(...args),
-      },
-      agentAccess: {
-        listAgentAccess: (...args: unknown[]) => mockListAgentAccess(...args),
-        revokeAgentAccess: (...args: unknown[]) => mockRevokeAgentAccess(...args),
-      },
-      whitelist: {
-        removeWhitelistByEmail: (...args: unknown[]) => mockRemoveWhitelistByEmail(...args),
-      },
+    agent: {
+      getAgent: (...args: unknown[]) => mockGetAgent(...args),
     },
+    agentAccess: {
+      listAgentAccess: (...args: unknown[]) => mockListAgentAccess(...args),
+      revokeAgentAccess: (...args: unknown[]) => mockRevokeAgentAccess(...args),
+    },
+    whitelist: {
+      removeWhitelistByEmail: (...args: unknown[]) => mockRemoveWhitelistByEmail(...args),
+    },
+  },
   };
 });
 
@@ -38,9 +39,20 @@ vi.mock("@/lib/middleware/auth", () => ({
   }),
 }));
 
-vi.mock("@/lib/middleware/helpers", async () =>
-  await vi.importActual<typeof import("@/lib/middleware/helpers")>("@/lib/middleware/helpers")
-);
+vi.mock("@/lib/middleware/helpers", () => ({
+  writeJSON: (data: unknown, status = 200) => { const { NextResponse } = require("next/server"); return NextResponse.json(data, { status }); },
+  writeError: (message: string, status: number) => { const { NextResponse } = require("next/server"); return NextResponse.json({ error: message }, { status }); },
+  formatTimestamp: (date: Date | string | null) => date ? new Date(date as string).toISOString().replace(/\.\d{3}Z$/, "Z") : "",
+  formatTimestampNullable: (date: Date | string | null) => date ? new Date(date as string).toISOString().replace(/\.\d{3}Z$/, "Z") : null,
+  parseBody: async (req: Request, schema: { parse: (d: unknown) => unknown }) => {
+    try {
+      const data = await req.json();
+      return [schema.parse(data), null];
+    } catch {
+      return [null, { status: 400, error: "invalid request body" }];
+    }
+  },
+}));
 
 vi.mock("@/lib/middleware/workspace", () => ({
   withWorkspaceMember: vi.fn(async () => ({ workspaceId: "w1", memberRole: "member" })),

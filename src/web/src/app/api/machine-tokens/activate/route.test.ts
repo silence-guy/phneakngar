@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
+import * as sharedMock from "@/test/shared-mock";
 
 const mockGetMachineTokenByToken = vi.fn();
 const mockActivateMachineToken = vi.fn();
@@ -8,11 +9,13 @@ const mockUpsertAgentRuntime = vi.fn();
 const mockBroadcastToUser = vi.fn();
 
 function sharedMocks() {
+  const shared = sharedMock as unknown as Record<string, unknown>;
   return {
     "@opennextjs/cloudflare": {
       getCloudflareContext: vi.fn(() => Promise.resolve({ env: { DB: {} } })),
     },
-    "@phneakngar/shared": async () => ({
+    "@phneakngar/shared": () => ({
+      ...shared,
       createDb: vi.fn(() => ({})),
       queries: {
         machineToken: {
@@ -26,8 +29,7 @@ function sharedMocks() {
           upsertAgentRuntime: (...a: any[]) => mockUpsertAgentRuntime(...a),
         },
       },
-      ActivateTokenRequestSchema: (await import("@phneakngar/shared"))
-        .ActivateTokenRequestSchema,
+      ActivateTokenRequestSchema: shared.ActivateTokenRequestSchema,
       createLogger: () => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() }),
     }),
     "@/lib/broadcast": {
@@ -65,9 +67,7 @@ describe("POST /api/machine-tokens/activate", () => {
       },
     }));
     vi.doMock("@/lib/middleware/helpers", async () => {
-      return await vi.importActual<typeof import("@/lib/middleware/helpers")>(
-        "@/lib/middleware/helpers"
-      );
+      return await import("@/lib/middleware/helpers");
     });
     vi.doMock("@/lib/api/responses", () => ({
       runtimeToResponse: (r: any) => ({ id: r.id, provider: r.provider }),

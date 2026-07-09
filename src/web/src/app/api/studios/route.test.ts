@@ -1,8 +1,5 @@
 import { NextRequest } from "next/server";
-
-vi.mock("@opennextjs/cloudflare", () => ({
-  getCloudflareContext: vi.fn(() => ({ env: { DB: {} } })),
-}));
+import * as sharedMock from "@/test/shared-mock";
 
 vi.mock("@/components/avatar", () => ({
   randomConfig: vi.fn(() => ({ shape: "circle", color: "#ff0000" })),
@@ -38,40 +35,40 @@ vi.mock("@/lib/cache", () => ({
   },
 }));
 
-vi.mock("@phneakngar/shared", async () => {
-  const actual = await vi.importActual("@phneakngar/shared");
+vi.mock("@phneakngar/shared", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@phneakngar/shared")>();
   return {
     ...actual,
     createDb: vi.fn(() => ({})),
-    isOnline: vi.fn((t: string | null) => !!t && Date.now() - new Date(t).getTime() < 30_000),
-    queries: {
-      agent: {
-        createAgent: (...args: unknown[]) => mockCreateAgent(...args),
-        getAgentByHandle: (...args: unknown[]) => mockGetAgentByHandle(...args),
-        listAgents: (...args: unknown[]) => mockListAgents(...args),
-        getAllHandlesForWorkspace: vi.fn().mockResolvedValue([]),
-      },
-      runtime: {
-        getAgentRuntimeForWorkspace: (...args: unknown[]) => mockGetAgentRuntimeForWorkspace(...args),
-        getAgentRuntimesForWorkspace: (...args: unknown[]) => mockGetAgentRuntimesForWorkspace(...args),
-      },
-      workspace: {
-        getWorkspace: (...args: unknown[]) => mockGetWorkspace(...args),
-        getWorkspaceBySlug: (...args: unknown[]) => mockGetWorkspaceBySlug(...args),
-        updateWorkspace: (...args: unknown[]) => mockUpdateWorkspace(...args),
-      },
-      whitelist: {
-        addWhitelist: (...args: unknown[]) => mockAddWhitelist(...args),
-      },
-      agentLink: {
-        create: (...args: unknown[]) => mockCreateLink(...args),
-      },
-      conversation: {
-        createConversation: (...args: unknown[]) => mockCreateConversation(...args),
-      },
-      agentPin: {
-        pinAgent: vi.fn(),
-      },
+  isOnline: vi.fn((t: string | null) => !!t && Date.now() - new Date(t).getTime() < 30_000),
+  queries: {
+    agent: {
+      createAgent: (...args: unknown[]) => mockCreateAgent(...args),
+      getAgentByHandle: (...args: unknown[]) => mockGetAgentByHandle(...args),
+      listAgents: (...args: unknown[]) => mockListAgents(...args),
+      getAllHandlesForWorkspace: vi.fn().mockResolvedValue([]),
+    },
+    runtime: {
+      getAgentRuntimeForWorkspace: (...args: unknown[]) => mockGetAgentRuntimeForWorkspace(...args),
+      getAgentRuntimesForWorkspace: (...args: unknown[]) => mockGetAgentRuntimesForWorkspace(...args),
+    },
+    workspace: {
+      getWorkspace: (...args: unknown[]) => mockGetWorkspace(...args),
+      getWorkspaceBySlug: (...args: unknown[]) => mockGetWorkspaceBySlug(...args),
+      updateWorkspace: (...args: unknown[]) => mockUpdateWorkspace(...args),
+    },
+    whitelist: {
+      addWhitelist: (...args: unknown[]) => mockAddWhitelist(...args),
+    },
+    agentLink: {
+      create: (...args: unknown[]) => mockCreateLink(...args),
+    },
+    conversation: {
+      createConversation: (...args: unknown[]) => mockCreateConversation(...args),
+    },
+    agentPin: {
+      pinAgent: vi.fn(),
+    },
     },
   };
 });

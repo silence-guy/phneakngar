@@ -1,7 +1,16 @@
 import { vi, describe, it, expect, afterEach } from "vitest";
-import { hostname } from "os";
 import { join } from "path";
-import { homedir } from "os";
+import { homedir, hostname } from "os";
+
+// Mock os module for Bun test compatibility
+vi.mock("os", () => ({
+  homedir: () => "/home/testuser",
+  hostname: () => "test-host",
+  tmpdir: () => "/tmp",
+  platform: "linux",
+  arch: () => "x64",
+}));
+
 import { loadDaemonConfig, normalizeServerBaseURL, daemonLogFilePath, daemonLogDir, sessionRunnerLogDir } from "./config.js";
 
 const DAEMON_ENV_KEYS = [

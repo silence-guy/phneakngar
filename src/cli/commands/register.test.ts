@@ -55,7 +55,6 @@ describe("phneakngar register", () => {
     consoleErrSpy.mockRestore();
     mockExit.mockRestore();
     mockKill.mockRestore();
-    vi.unstubAllGlobals();
   });
 
 function mockFetch(responses: Record<string, { status: number; body: unknown }>) {
@@ -73,7 +72,7 @@ function mockFetch(responses: Record<string, { status: number; body: unknown }>)
     }
     return { ok: false, status: 404, text: async (): Promise<string> => "not found" };
   });
-  vi.stubGlobal("fetch", fetchMock);
+  globalThis.fetch = fetchMock;
   return fetchMock;
 }
 

@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
+import * as sharedMock from "@/test/shared-mock";
 
 vi.mock("@opennextjs/cloudflare", () => ({
   getCloudflareContext: vi.fn(() => ({ env: { DB: {} } })),
@@ -11,18 +12,18 @@ const mockCreateMember = vi.fn();
 
 vi.mock("@/lib/db", () => ({ getDb: vi.fn(() => ({})) }));
 
-vi.mock("@phneakngar/shared", async () => {
-  const actual = await vi.importActual("@phneakngar/shared");
+vi.mock("@phneakngar/shared", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@phneakngar/shared")>();
   return {
     ...actual,
     createDb: vi.fn(() => ({})),
-    queries: {
-      workspace: {
-        listWorkspaces: (...args: unknown[]) => mockListWorkspaces(...args),
-        createWorkspace: (...args: unknown[]) => mockCreateWorkspace(...args),
-      },
-      member: {
-        createMember: (...args: unknown[]) => mockCreateMember(...args),
+  queries: {
+    workspace: {
+      listWorkspaces: (...args: unknown[]) => mockListWorkspaces(...args),
+      createWorkspace: (...args: unknown[]) => mockCreateWorkspace(...args),
+    },
+    member: {
+      createMember: (...args: unknown[]) => mockCreateMember(...args),
       },
     },
   };
@@ -37,7 +38,7 @@ vi.mock("@/lib/middleware/auth", () => ({
 
 vi.mock("@/lib/middleware/helpers", async () => {
   const { NextResponse } = require("next/server");
-  const actual = await vi.importActual("@/lib/middleware/helpers");
+  const actual = await import("@/lib/middleware/helpers");
   return {
     ...actual,
     writeJSON: (data: unknown, status = 200) => NextResponse.json(data, { status }),

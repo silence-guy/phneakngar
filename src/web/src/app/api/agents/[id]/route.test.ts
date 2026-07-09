@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import * as sharedMock from "@/test/shared-mock";
 
 vi.mock("@opennextjs/cloudflare", () => ({
   getCloudflareContext: vi.fn(() => ({ env: { DB: {} } })),
@@ -11,21 +12,21 @@ const mockGetAgentRuntimeForWorkspace = vi.fn();
 
 vi.mock("@/lib/db", () => ({ getDb: vi.fn(() => ({})) }));
 
-vi.mock("@phneakngar/shared", async () => {
-  const actual = await vi.importActual("@phneakngar/shared");
+vi.mock("@phneakngar/shared", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@phneakngar/shared")>();
   return {
     ...actual,
     createDb: vi.fn(() => ({})),
-    queries: {
-      agent: {
-        getAgent: (...args: unknown[]) => mockGetAgent(...args),
-        deleteAgent: (...args: unknown[]) => mockDeleteAgent(...args),
-        updateAgent: (...args: unknown[]) => mockUpdateAgent(...args),
-      },
-      runtime: {
-        getAgentRuntimeForWorkspace: (...args: unknown[]) => mockGetAgentRuntimeForWorkspace(...args),
-      },
+  queries: {
+    agent: {
+      getAgent: (...args: unknown[]) => mockGetAgent(...args),
+      deleteAgent: (...args: unknown[]) => mockDeleteAgent(...args),
+      updateAgent: (...args: unknown[]) => mockUpdateAgent(...args),
     },
+    runtime: {
+      getAgentRuntimeForWorkspace: (...args: unknown[]) => mockGetAgentRuntimeForWorkspace(...args),
+    },
+  },
   };
 });
 

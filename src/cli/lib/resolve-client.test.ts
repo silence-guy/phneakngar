@@ -1,7 +1,20 @@
 import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
+import { join } from "path";
+import { homedir } from "os";
 
-vi.mock("./config.js", () => ({
-  loadCLIConfigForProfile: vi.fn(),
+const { mocks } = vi.hoisted(() => {
+  const mocks = {
+  readFileSync: vi.fn(),
+  writeFileSync: vi.fn(),
+  mkdirSync: vi.fn(),
+  };
+  return { mocks };
+});
+
+vi.mock("fs", () => ({
+  readFileSync: mocks.readFileSync,
+  writeFileSync: mocks.writeFileSync,
+  mkdirSync: mocks.mkdirSync,
 }));
 
 vi.mock("./env.js", () => ({
@@ -9,9 +22,6 @@ vi.mock("./env.js", () => ({
 }));
 
 import { resolveClientOpts } from "./resolve-client.js";
-import { loadCLIConfigForProfile } from "./config.js";
-
-const mockedLoadConfig = vi.mocked(loadCLIConfigForProfile);
 
 function makeCommand(opts: Record<string, unknown> = {}) {
   return { parent: null, opts: () => opts } as any;
@@ -32,9 +42,9 @@ describe("resolveClientOpts", () => {
       savedEnv[k] = process.env[k];
       delete process.env[k];
     }
-    mockedLoadConfig.mockReturnValue({
-      server_url: "",
-      watched_workspaces: [],
+    // Default: no config file (throws ENOENT)
+    mocks.readFileSync.mockImplementation(() => {
+      throw new Error("ENOENT");
     });
   });
 
@@ -53,18 +63,57 @@ describe("resolveClientOpts", () => {
     const result = resolveClientOpts(makeCommand(), { agentId: "ag1" });
 
     expect(result.serverUrl).toBe("https://self-hosted.example.com");
+    // When config has no workspaces, env workspaceId is used
     expect(result.workspaceId).toBe("ws_env");
     expect(result.token).toBe("tok_env");
   });
 
+  it("resolves from env vars when config has empty workspaces", () => {
+    // When config has empty watched_workspaces, agent lookup fails,
+    // so it falls back to env workspaceId
+    process.env.PHNEAKNGAR_SERVER_URL = "https://self-hosted.example.com";
+    process.env.PHNEAKNGAR_WORKSPACE_ID = "ws_env";
+    process.env.PHNEAKNGAR_TOKEN = "tok_env";
+    
+    mocks.readFileSync.mockReturnValue(JSON.stringify({
+      server_url: "https://config.example.com",
+      watched_workspaces: [],  // Empty workspaces
+    }));
+
+    const result = resolveClientOpts(makeCommand(), { agentId: "ag1" });
+
+    expect(result.serverUrl).toBe("https://self-hosted.example.com");
+    expect(result.workspaceId).toBe("ws_env");
+    expect(result.token).toBe("tok_env");
+  });
+
+  it("config workspace takes priority when agentId matches", () => {
+    process.env.PHNEAKNGAR_SERVER_URL = "https://self-hosted.example.com";
+    process.env.PHNEAKNGAR_WORKSPACE_ID = "ws_env";
+    process.env.PHNEAKNGAR_TOKEN = "tok_env";
+    
+    mocks.readFileSync.mockReturnValue(JSON.stringify({
+      server_url: "https://self-hosted.example.com",
+      watched_workspaces: [
+        { id: "ws1", name: "WS1", token: "tok_config", agent_ids: ["ag1"] },
+      ],
+    }));
+
+    const result = resolveClientOpts(makeCommand(), { agentId: "ag1" });
+
+    // Config workspace is found for agentId, so it takes priority
+    expect(result.workspaceId).toBe("ws1");
+    expect(result.token).toBe("tok_env");  // But env token still wins
+  });
+
   it("env token takes priority over config token", () => {
     process.env.PHNEAKNGAR_TOKEN = "tok_env";
-    mockedLoadConfig.mockReturnValue({
+    mocks.readFileSync.mockReturnValue(JSON.stringify({
       server_url: "https://config.example.com",
       watched_workspaces: [
         { id: "ws1", name: "WS1", token: "tok_config", agent_ids: ["ag1"] },
       ],
-    });
+    }));
 
     const result = resolveClientOpts(makeCommand(), { agentId: "ag1" });
 
@@ -74,12 +123,12 @@ describe("resolveClientOpts", () => {
 
   it("flag > env > config for server URL", () => {
     process.env.PHNEAKNGAR_SERVER_URL = "https://env.example.com";
-    mockedLoadConfig.mockReturnValue({
+    mocks.readFileSync.mockReturnValue(JSON.stringify({
       server_url: "https://config.example.com",
       watched_workspaces: [
         { id: "ws1", name: "WS1", token: "tok1", agent_ids: ["ag1"] },
       ],
-    });
+    }));
 
     const result = resolveClientOpts(
       makeCommand({ server: "https://flag.example.com" }),
@@ -90,13 +139,13 @@ describe("resolveClientOpts", () => {
   });
 
   it("resolves workspace by agent_id from config", () => {
-    mockedLoadConfig.mockReturnValue({
+    mocks.readFileSync.mockReturnValue(JSON.stringify({
       server_url: "https://phneakngar.ai",
       watched_workspaces: [
         { id: "ws1", name: "WS1", token: "tok1", agent_ids: ["ag1"] },
         { id: "ws2", name: "WS2", token: "tok2", agent_ids: ["ag2"] },
       ],
-    });
+    }));
 
     const result = resolveClientOpts(makeCommand(), { agentId: "ag2" });
 
@@ -105,12 +154,12 @@ describe("resolveClientOpts", () => {
   });
 
   it("falls back to single workspace when agent not found", () => {
-    mockedLoadConfig.mockReturnValue({
+    mocks.readFileSync.mockReturnValue(JSON.stringify({
       server_url: "https://phneakngar.ai",
       watched_workspaces: [
         { id: "ws1", name: "WS1", token: "tok1", agent_ids: ["other"] },
       ],
-    });
+    }));
 
     const result = resolveClientOpts(makeCommand(), { agentId: "ag_unknown" });
 
@@ -121,13 +170,13 @@ describe("resolveClientOpts", () => {
   it("resolves via env when agent_id not in config and no single fallback", () => {
     process.env.PHNEAKNGAR_WORKSPACE_ID = "ws_env";
     process.env.PHNEAKNGAR_TOKEN = "tok_env";
-    mockedLoadConfig.mockReturnValue({
+    mocks.readFileSync.mockReturnValue(JSON.stringify({
       server_url: "https://phneakngar.ai",
       watched_workspaces: [
         { id: "ws1", name: "WS1", token: "tok1", agent_ids: ["other1"] },
         { id: "ws2", name: "WS2", token: "tok2", agent_ids: ["other2"] },
       ],
-    });
+    }));
 
     const result = resolveClientOpts(makeCommand(), { agentId: "ag_self_hosted" });
 
@@ -136,6 +185,13 @@ describe("resolveClientOpts", () => {
   });
 
   it("exits with error when nothing available", () => {
+    mocks.readFileSync.mockImplementation(() => {
+      throw new Error("ENOENT");
+    });
+    // Make sure no env vars are set
+    delete process.env.PHNEAKNGAR_SERVER_URL;
+    delete process.env.PHNEAKNGAR_TOKEN;
+
     const exitSpy = vi.spyOn(process, "exit").mockImplementation((() => {
       throw new Error("__exit__");
     }) as never);
@@ -149,6 +205,7 @@ describe("resolveClientOpts", () => {
   });
 
   it("traverses to root command for parent opts", () => {
+    process.env.PHNEAKNGAR_SERVER_URL = "https://from-root.example.com";
     process.env.PHNEAKNGAR_TOKEN = "tok_env";
     process.env.PHNEAKNGAR_WORKSPACE_ID = "ws_env";
 
@@ -159,13 +216,13 @@ describe("resolveClientOpts", () => {
   });
 
   it("workspace flag selects specific workspace from config", () => {
-    mockedLoadConfig.mockReturnValue({
+    mocks.readFileSync.mockReturnValue(JSON.stringify({
       server_url: "https://phneakngar.ai",
       watched_workspaces: [
         { id: "ws1", name: "WS1", token: "tok1", agent_ids: ["ag1"] },
         { id: "ws2", name: "WS2", token: "tok2", agent_ids: ["ag2"] },
       ],
-    });
+    }));
 
     const result = resolveClientOpts(makeCommand(), { workspace: "ws2", agentId: "ag1" });
 
@@ -176,13 +233,13 @@ describe("resolveClientOpts", () => {
   it("errors with workspace guidance when token is set but workspace cannot be determined", () => {
     process.env.PHNEAKNGAR_TOKEN = "tok_env";
     // No PHNEAKNGAR_WORKSPACE_ID, no config match, multiple workspaces
-    mockedLoadConfig.mockReturnValue({
+    mocks.readFileSync.mockReturnValue(JSON.stringify({
       server_url: "https://phneakngar.ai",
       watched_workspaces: [
         { id: "ws1", name: "WS1", token: "tok1", agent_ids: ["other1"] },
         { id: "ws2", name: "WS2", token: "tok2", agent_ids: ["other2"] },
       ],
-    });
+    }));
 
     const exitSpy = vi.spyOn(process, "exit").mockImplementation((() => {
       throw new Error("__exit__");

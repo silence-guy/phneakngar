@@ -17,6 +17,7 @@ describe("resolveLoginShellEnv", () => {
   beforeEach(() => {
     process.env = { ...originalEnv, SHELL: "/bin/zsh", PATH: "/usr/bin" };
     vi.resetModules();
+    vi.doMock("./platform.js", () => ({ isWindows: false }));
   });
 
   afterEach(() => {
@@ -94,8 +95,8 @@ describe("resolveLoginShellEnv", () => {
 
 describe("resolveLoginShellEnv (windows)", () => {
   it("returns process.env copy on Windows", async () => {
-    vi.doMock("./platform.js", () => ({ isWindows: true }));
     vi.resetModules();
+    vi.doMock("./platform.js", () => ({ isWindows: true }));
     mockedExecSync.mockClear();
     const { resolveLoginShellEnv } = await import("./shell-env.js");
     const env = resolveLoginShellEnv();

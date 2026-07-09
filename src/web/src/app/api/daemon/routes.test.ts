@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
+import * as sharedMock from "@/test/shared-mock";
 
 // ---------------------------------------------------------------------------
 // Cross-route body-validation tests for daemon endpoints.
@@ -21,10 +22,22 @@ function baseMocks() {
         return handler(req, { ...daemonAuth, params });
       }),
     }),
-    "@/lib/middleware/helpers": async () =>
-      await vi.importActual<typeof import("@/lib/middleware/helpers")>(
-        "@/lib/middleware/helpers"
-      ),
+    "@/lib/middleware/helpers": () => {
+      const { NextResponse } = require("next/server");
+      return {
+        writeJSON: (data: unknown, status = 200) => NextResponse.json(data, { status }),
+        writeError: (message: string, status: number) => NextResponse.json({ error: message }, { status }),
+        formatTimestamp: (d: Date | string | null) => d instanceof Date ? d.toISOString() : d || "",
+        parseBody: async (req: Request, schema: { parse: (d: unknown) => unknown }) => {
+          try {
+            const data = await req.json();
+            return [schema.parse(data), null];
+          } catch {
+            return [null, NextResponse.json({ error: "invalid request body" }, { status: 400 })];
+          }
+        },
+      };
+    },
     "@/lib/logger": () => ({
       log: { warn: vi.fn(), info: vi.fn(), error: vi.fn(), debug: vi.fn() },
     }),
@@ -72,24 +85,22 @@ describe("daemon route body validation", () => {
       applyBase();
 
       vi.doMock("@phneakngar/shared", async () => {
-        const real = await vi.importActual<typeof import("@phneakngar/shared")>(
-          "@phneakngar/shared"
-        );
+        const actual = await vi.importActual<typeof import("@phneakngar/shared")>("@phneakngar/shared");
         return {
-          ...real,
+          ...actual,
           createDb: vi.fn(() => ({})),
-          queries: {
-            member: {
-              getMemberByUserAndWorkspace: vi.fn().mockResolvedValue({ id: "m1" }),
-            },
-            machine: {
-              getMachineByDaemon: vi.fn().mockResolvedValue(null),
-              upsertMachine: vi.fn().mockResolvedValue({ daemonId: "d1", workspaceId: "w1" }),
-            },
-            runtime: {
-              upsertAgentRuntime: vi.fn().mockResolvedValue({ id: "rt1", workspaceId: "w1" }),
-            },
+        queries: {
+          member: {
+            getMemberByUserAndWorkspace: vi.fn().mockResolvedValue({ id: "m1" }),
           },
+          machine: {
+            getMachineByDaemon: vi.fn().mockResolvedValue(null),
+            upsertMachine: vi.fn().mockResolvedValue({ daemonId: "d1", workspaceId: "w1" }),
+          },
+          runtime: {
+            upsertAgentRuntime: vi.fn().mockResolvedValue({ id: "rt1", workspaceId: "w1" }),
+          },
+        },
         };
       });
       vi.doMock("@/lib/api/responses", () => ({
@@ -146,24 +157,22 @@ describe("daemon route body validation", () => {
       vi.resetModules();
       applyBase();
       vi.doMock("@phneakngar/shared", async () => {
-        const real = await vi.importActual<typeof import("@phneakngar/shared")>(
-          "@phneakngar/shared"
-        );
+        const actual = await vi.importActual<typeof import("@phneakngar/shared")>("@phneakngar/shared");
         return {
-          ...real,
+          ...actual,
           createDb: vi.fn(() => ({})),
-          queries: {
-            member: {
-              getMemberByUserAndWorkspace: vi.fn().mockResolvedValue({ id: "m1" }),
-            },
-            machine: {
-              getMachineByDaemon: vi.fn().mockResolvedValue(null),
-              upsertMachine: vi.fn().mockResolvedValue({ daemonId: "d1", workspaceId: "w1" }),
-            },
-            runtime: {
-              upsertAgentRuntime: upsertMock,
-            },
+        queries: {
+          member: {
+            getMemberByUserAndWorkspace: vi.fn().mockResolvedValue({ id: "m1" }),
           },
+          machine: {
+            getMachineByDaemon: vi.fn().mockResolvedValue(null),
+            upsertMachine: vi.fn().mockResolvedValue({ daemonId: "d1", workspaceId: "w1" }),
+          },
+          runtime: {
+            upsertAgentRuntime: upsertMock,
+          },
+        },
         };
       });
       vi.doMock("@/lib/api/responses", () => ({
@@ -196,24 +205,22 @@ describe("daemon route body validation", () => {
       });
 
       vi.doMock("@phneakngar/shared", async () => {
-        const real = await vi.importActual<typeof import("@phneakngar/shared")>(
-          "@phneakngar/shared"
-        );
+        const actual = await vi.importActual<typeof import("@phneakngar/shared")>("@phneakngar/shared");
         return {
-          ...real,
+          ...actual,
           createDb: vi.fn(() => ({})),
-          queries: {
-            member: {
-              getMemberByUserAndWorkspace: vi.fn().mockResolvedValue({ id: "m1" }),
-            },
-            machine: {
-              getMachineByDaemon: vi.fn().mockResolvedValue(null),
-              upsertMachine: vi.fn().mockResolvedValue({ daemonId: "d1", workspaceId: "w1" }),
-            },
-            runtime: {
-              upsertAgentRuntime: upsertMock,
-            },
+        queries: {
+          member: {
+            getMemberByUserAndWorkspace: vi.fn().mockResolvedValue({ id: "m1" }),
           },
+          machine: {
+            getMachineByDaemon: vi.fn().mockResolvedValue(null),
+            upsertMachine: vi.fn().mockResolvedValue({ daemonId: "d1", workspaceId: "w1" }),
+          },
+          runtime: {
+            upsertAgentRuntime: upsertMock,
+          },
+        },
         };
       });
       vi.doMock("@/lib/api/responses", () => ({
@@ -249,24 +256,22 @@ describe("daemon route body validation", () => {
       applyBase();
 
       vi.doMock("@phneakngar/shared", async () => {
-        const real = await vi.importActual<typeof import("@phneakngar/shared")>(
-          "@phneakngar/shared"
-        );
+        const actual = await vi.importActual<typeof import("@phneakngar/shared")>("@phneakngar/shared");
         return {
-          ...real,
+          ...actual,
           createDb: vi.fn(() => ({})),
-          queries: {
-            runtime: {
-              getRuntimeIdsByDaemon: vi.fn().mockResolvedValue(["r1"]),
-            },
-            machine: {
-              getMachineByDaemon: vi.fn().mockResolvedValue(null),
-              updateMachineLastSeen: vi.fn().mockResolvedValue(undefined),
-            },
-            agent: {
-              getAgent: vi.fn().mockResolvedValue(null),
-            },
+        queries: {
+          runtime: {
+            getRuntimeIdsByDaemon: vi.fn().mockResolvedValue(["r1"]),
           },
+          machine: {
+            getMachineByDaemon: vi.fn().mockResolvedValue(null),
+            updateMachineLastSeen: vi.fn().mockResolvedValue(undefined),
+          },
+          agent: {
+            getAgent: vi.fn().mockResolvedValue(null),
+          },
+        },
         };
       });
       vi.doMock("@/lib/services/task", () => ({
@@ -341,18 +346,16 @@ describe("daemon route body validation", () => {
       applyBase();
 
       vi.doMock("@phneakngar/shared", async () => {
-        const real = await vi.importActual<typeof import("@phneakngar/shared")>(
-          "@phneakngar/shared"
-        );
+        const actual = await vi.importActual<typeof import("@phneakngar/shared")>("@phneakngar/shared");
         return {
-          ...real,
+          ...actual,
           createDb: vi.fn(() => ({})),
-          queries: {
-            machine: {
-              getMachineByDaemon: vi.fn().mockResolvedValue(null),
-              setMachineLastSeenNull: vi.fn().mockResolvedValue(undefined),
-            },
+        queries: {
+          machine: {
+            getMachineByDaemon: vi.fn().mockResolvedValue(null),
+            setMachineLastSeenNull: vi.fn().mockResolvedValue(undefined),
           },
+        },
         };
       });
       vi.doMock("@/lib/broadcast", () => ({
@@ -402,11 +405,9 @@ describe("daemon route body validation", () => {
       applyBase();
 
       vi.doMock("@phneakngar/shared", async () => {
-        const real = await vi.importActual<typeof import("@phneakngar/shared")>(
-          "@phneakngar/shared"
-        );
+        const actual = await vi.importActual<typeof import("@phneakngar/shared")>("@phneakngar/shared");
         return {
-          ...real,
+          ...actual,
           createDb: vi.fn(() => ({})),
         };
       });
@@ -458,11 +459,9 @@ describe("daemon route body validation", () => {
       applyBase();
 
       vi.doMock("@phneakngar/shared", async () => {
-        const real = await vi.importActual<typeof import("@phneakngar/shared")>(
-          "@phneakngar/shared"
-        );
+        const actual = await vi.importActual<typeof import("@phneakngar/shared")>("@phneakngar/shared");
         return {
-          ...real,
+          ...actual,
           createDb: vi.fn(() => ({})),
         };
       });
@@ -514,26 +513,24 @@ describe("daemon route body validation", () => {
       applyBase();
 
       vi.doMock("@phneakngar/shared", async () => {
-        const real = await vi.importActual<typeof import("@phneakngar/shared")>(
-          "@phneakngar/shared"
-        );
+        const actual = await vi.importActual<typeof import("@phneakngar/shared")>("@phneakngar/shared");
         return {
-          ...real,
+          ...actual,
           createDb: vi.fn(() => ({})),
-          queries: {
-            task: {
-              getTask: vi.fn().mockResolvedValue({ id: "t1", workspaceId: "w1", runtimeId: "rt1", conversationId: "c1" }),
-            },
-            runtime: {
-              getAgentRuntimeForWorkspace: vi.fn().mockResolvedValue({ id: "rt1" }),
-            },
-            taskMessage: {
-              createTaskMessage: vi.fn().mockResolvedValue(undefined),
-            },
-            conversation: {
-              getConversation: vi.fn().mockResolvedValue({ id: "c1", userId: "u1" }),
-            },
+        queries: {
+          task: {
+            getTask: vi.fn().mockResolvedValue({ id: "t1", workspaceId: "w1", runtimeId: "rt1", conversationId: "c1" }),
           },
+          runtime: {
+            getAgentRuntimeForWorkspace: vi.fn().mockResolvedValue({ id: "rt1" }),
+          },
+          taskMessage: {
+            createTaskMessage: vi.fn().mockResolvedValue(undefined),
+          },
+          conversation: {
+            getConversation: vi.fn().mockResolvedValue({ id: "c1", userId: "u1" }),
+          },
+        },
         };
       });
       vi.doMock("@/lib/api/responses", () => ({
@@ -566,24 +563,22 @@ describe("daemon route body validation", () => {
       const broadcastMock = vi.fn().mockResolvedValue(undefined);
 
       vi.doMock("@phneakngar/shared", async () => {
-        const real = await vi.importActual<typeof import("@phneakngar/shared")>(
-          "@phneakngar/shared"
-        );
+        const actual = await vi.importActual<typeof import("@phneakngar/shared")>("@phneakngar/shared");
         return {
-          ...real,
+          ...actual,
           createDb: vi.fn(() => ({})),
-          queries: {
-            task: {
-              getTask: vi.fn().mockResolvedValue({ id: "t1", workspaceId: "w1", runtimeId: "rt1", conversationId: "c1" }),
-            },
-            runtime: {
-              getAgentRuntimeForWorkspace: vi.fn().mockResolvedValue({ id: "rt1" }),
-            },
-            taskMessage: { createTaskMessage: createMock },
-            conversation: {
-              getConversation: vi.fn().mockResolvedValue({ id: "c1", userId: "owner-u2" }),
-            },
+        queries: {
+          task: {
+            getTask: vi.fn().mockResolvedValue({ id: "t1", workspaceId: "w1", runtimeId: "rt1", conversationId: "c1" }),
           },
+          runtime: {
+            getAgentRuntimeForWorkspace: vi.fn().mockResolvedValue({ id: "rt1" }),
+          },
+          taskMessage: { createTaskMessage: createMock },
+          conversation: {
+            getConversation: vi.fn().mockResolvedValue({ id: "c1", userId: "owner-u2" }),
+          },
+        },
         };
       });
       vi.doMock("@/lib/api/responses", () => ({
@@ -624,9 +619,7 @@ describe("daemon route body validation", () => {
       const broadcastMock = vi.fn().mockResolvedValue(undefined);
 
       vi.doMock("@phneakngar/shared", async () => {
-        const real = await vi.importActual<typeof import("@phneakngar/shared")>(
-          "@phneakngar/shared"
-        );
+        const real = await import("@phneakngar/shared");
         return {
           ...real,
           createDb: vi.fn(() => ({})),

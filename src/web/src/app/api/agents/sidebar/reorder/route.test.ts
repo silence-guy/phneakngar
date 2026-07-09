@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
+import * as sharedMock from "@/test/shared-mock";
 
 vi.mock("@opennextjs/cloudflare", () => ({
   getCloudflareContext: vi.fn(async () => ({ env: { DB: {} } })),
@@ -9,15 +10,15 @@ vi.mock("@/lib/db", () => ({ getDb: vi.fn(() => ({})) }));
 const mockGetAllAgents = vi.fn();
 const mockListPins = vi.fn();
 const mockReorder = vi.fn();
-vi.mock("@phneakngar/shared", async () => {
-  const actual = await vi.importActual("@phneakngar/shared");
+vi.mock("@phneakngar/shared", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@phneakngar/shared")>();
   return {
     ...actual,
     queries: {
-      agent: { getAllAgentsForWorkspace: (...a: unknown[]) => mockGetAllAgents(...a) },
-      agentPin: { listPins: (...a: unknown[]) => mockListPins(...a) },
-      agentSidebarOrder: { reorder: (...a: unknown[]) => mockReorder(...a) },
-    },
+    agent: { getAllAgentsForWorkspace: (...a: unknown[]) => mockGetAllAgents(...a) },
+    agentPin: { listPins: (...a: unknown[]) => mockListPins(...a) },
+    agentSidebarOrder: { reorder: (...a: unknown[]) => mockReorder(...a) },
+  },
   };
 });
 vi.mock("@/lib/middleware/auth", () => ({

@@ -9,8 +9,11 @@ const mockGetOrCreateAgentConversation = vi.fn();
 
 vi.mock("@/lib/db", () => ({ getDb: vi.fn(() => ({})) }));
 
-vi.mock("@phneakngar/shared", () => ({
-  createDb: vi.fn(() => ({})),
+vi.mock("@phneakngar/shared", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@phneakngar/shared")>();
+  return {
+    ...actual,
+    createDb: vi.fn(() => ({})),
   queries: {
     agent: {
       getAgent: (...args: unknown[]) => mockGetAgent(...args),
@@ -20,7 +23,8 @@ vi.mock("@phneakngar/shared", () => ({
         mockGetOrCreateAgentConversation(...args),
     },
   },
-}));
+  };
+});
 
 vi.mock("@/lib/middleware/auth", () => ({
   withAuth: vi.fn((handler: any) => async (req: any, ctx?: any) => {

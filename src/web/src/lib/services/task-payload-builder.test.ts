@@ -10,7 +10,7 @@ const mockGetConversationsByIds = vi.fn();
 const mockGetWorkspaceDefaultLocale = vi.fn();
 
 vi.mock("@phneakngar/shared", async () => {
-  const real = await vi.importActual<typeof import("@phneakngar/shared")>("@phneakngar/shared");
+  const real = await import("@phneakngar/shared");
   return {
     ...real,
     queries: {

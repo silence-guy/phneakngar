@@ -7,15 +7,19 @@ vi.mock("@opennextjs/cloudflare", () => ({
 
 vi.mock("@/lib/db", () => ({ getDb: vi.fn(() => ({})) }));
 
-vi.mock("@phneakngar/shared", () => ({
-  createDb: vi.fn(() => ({})),
+vi.mock("@phneakngar/shared", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@phneakngar/shared")>();
+  return {
+    ...actual,
+    createDb: vi.fn(() => ({})),
   queries: {
     machineToken: {
       getMachineTokenByToken: vi.fn(),
       updateMachineTokenLastUsed: vi.fn(),
     },
   },
-}));
+  };
+});
 
 const mockGetSession = vi.fn();
 vi.mock("@/lib/auth", () => ({

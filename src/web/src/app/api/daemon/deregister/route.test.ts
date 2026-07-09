@@ -1,26 +1,27 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
+import * as sharedMock from "@/test/shared-mock";
 
 const mockSetMachineLastSeenNull = vi.fn();
 const mockGetMachineByDaemon = vi.fn();
 const mockBroadcastToUser = vi.fn();
 
 function sharedMocks() {
+  const shared = sharedMock as unknown as Record<string, unknown>;
   return {
     "@opennextjs/cloudflare": {
       getCloudflareContext: vi.fn(() => ({ env: { DB: {} } })),
     },
-    "@phneakngar/shared": async () => ({
+    "@phneakngar/shared": () => ({
+      ...shared,
       createDb: vi.fn(() => ({})),
       queries: {
         machine: {
           getMachineByDaemon: (...a: any[]) => mockGetMachineByDaemon(...a),
-          setMachineLastSeenNull: (...a: any[]) =>
-            mockSetMachineLastSeenNull(...a),
+          setMachineLastSeenNull: (...a: any[]) => mockSetMachineLastSeenNull(...a),
         },
       },
-      DeregisterRequestSchema: (await import("@phneakngar/shared"))
-        .DeregisterRequestSchema,
+      DeregisterRequestSchema: shared.DeregisterRequestSchema,
     }),
     "@/lib/broadcast": {
       broadcastToUser: (...a: any[]) => mockBroadcastToUser(...a),
@@ -65,9 +66,7 @@ describe("POST /api/daemon/deregister", () => {
       }),
     }));
     vi.doMock("@/lib/middleware/helpers", async () => {
-      return await vi.importActual<typeof import("@/lib/middleware/helpers")>(
-        "@/lib/middleware/helpers"
-      );
+      return await import("@/lib/middleware/helpers");
     });
 
     const { POST } = await import("./route");

@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
+import * as sharedMock from "@/test/shared-mock";
 
 const mockGetRuntimeIdsByDaemon = vi.fn();
 const mockUpsertMachine = vi.fn();
@@ -35,56 +36,56 @@ vi.mock("@/lib/db", () => ({
   withD1Retry: vi.fn((fn: () => Promise<any>) => fn()),
 }));
 
-vi.mock("@phneakngar/shared", async () => {
-  const real = await vi.importActual<typeof import("@phneakngar/shared")>("@phneakngar/shared");
+vi.mock("@phneakngar/shared", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@phneakngar/shared")>();
   return {
-    ...real,
+    ...actual,
     createDb: vi.fn(() => ({})),
-    queries: {
-      runtime: {
-        getRuntimeIdsByDaemon: (...args: unknown[]) => mockGetRuntimeIdsByDaemon(...args),
-      },
-      machine: {
-        upsertMachine: (...args: unknown[]) => mockUpsertMachine(...args),
-        getMachineByDaemon: (...args: unknown[]) => mockGetMachineByDaemon(...args),
-        clearPendingUpdateVersion: (...args: unknown[]) => mockClearPendingUpdateVersion(...args),
-        clearPendingRescan: (...args: unknown[]) => mockClearPendingRescan(...args),
-      },
-      agent: {
-        getAgentsByIds: (...args: unknown[]) => mockGetAgentsByIds(...args),
-        getAllAgentsForWorkspace: (...args: unknown[]) => mockGetAllAgentsForWorkspace(...args),
-      },
-      member: {
-        getMemberByUserAndWorkspace: (...args: unknown[]) => mockGetMemberByUserAndWorkspace(...args),
-      },
-      conversation: {
-        getConversation: (...args: unknown[]) => mockGetConversation(...args),
-        getConversationsByIds: (...args: unknown[]) => mockGetConversationsByIds(...args),
-      },
-      user: {
-        getUser: (...args: unknown[]) => mockGetUser(...args),
-      },
-      emailAccount: {
-        getEmailAccountsByAgents: (...args: unknown[]) => mockGetAllEmailAccountsForWorkspace(...args),
-        getAllEmailAccountsForWorkspace: (...args: unknown[]) => mockGetAllEmailAccountsForWorkspace(...args),
-      },
-      workspaceFileRequest: {
-        getPendingByWorkspace: (...args: unknown[]) => mockGetPendingFileRequests(...args),
-        markDispatched: (...args: unknown[]) => mockMarkFileRequestsDispatched(...args),
-        expireStale: (...args: unknown[]) => mockExpireStaleFileRequests(...args),
-      },
-      meetingSession: {
-        listScheduledMeetings: (...args: unknown[]) => mockListScheduledMeetings(...args),
-        claimMeetingSessions: (...args: unknown[]) => mockClaimMeetingSessions(...args),
-      },
-      agentLink: {
-        getColleaguesForAgents: (...args: unknown[]) => mockGetAllColleaguesForWorkspace(...args),
-        getAllColleaguesForWorkspace: (...args: unknown[]) => mockGetAllColleaguesForWorkspace(...args),
-      },
-      workspace: {
-        getWorkspaceDefaultLocale: (...args: unknown[]) => mockGetWorkspaceDefaultLocale(...args),
-      },
+  queries: {
+    runtime: {
+      getRuntimeIdsByDaemon: (...args: unknown[]) => mockGetRuntimeIdsByDaemon(...args),
     },
+    machine: {
+      upsertMachine: (...args: unknown[]) => mockUpsertMachine(...args),
+      getMachineByDaemon: (...args: unknown[]) => mockGetMachineByDaemon(...args),
+      clearPendingUpdateVersion: (...args: unknown[]) => mockClearPendingUpdateVersion(...args),
+      clearPendingRescan: (...args: unknown[]) => mockClearPendingRescan(...args),
+    },
+    agent: {
+      getAgentsByIds: (...args: unknown[]) => mockGetAgentsByIds(...args),
+      getAllAgentsForWorkspace: (...args: unknown[]) => mockGetAllAgentsForWorkspace(...args),
+    },
+    member: {
+      getMemberByUserAndWorkspace: (...args: unknown[]) => mockGetMemberByUserAndWorkspace(...args),
+    },
+    conversation: {
+      getConversation: (...args: unknown[]) => mockGetConversation(...args),
+      getConversationsByIds: (...args: unknown[]) => mockGetConversationsByIds(...args),
+    },
+    user: {
+      getUser: (...args: unknown[]) => mockGetUser(...args),
+    },
+    emailAccount: {
+      getEmailAccountsByAgents: (...args: unknown[]) => mockGetAllEmailAccountsForWorkspace(...args),
+      getAllEmailAccountsForWorkspace: (...args: unknown[]) => mockGetAllEmailAccountsForWorkspace(...args),
+    },
+    workspaceFileRequest: {
+      getPendingByWorkspace: (...args: unknown[]) => mockGetPendingFileRequests(...args),
+      markDispatched: (...args: unknown[]) => mockMarkFileRequestsDispatched(...args),
+      expireStale: (...args: unknown[]) => mockExpireStaleFileRequests(...args),
+    },
+    meetingSession: {
+      listScheduledMeetings: (...args: unknown[]) => mockListScheduledMeetings(...args),
+      claimMeetingSessions: (...args: unknown[]) => mockClaimMeetingSessions(...args),
+    },
+    agentLink: {
+      getColleaguesForAgents: (...args: unknown[]) => mockGetAllColleaguesForWorkspace(...args),
+      getAllColleaguesForWorkspace: (...args: unknown[]) => mockGetAllColleaguesForWorkspace(...args),
+    },
+    workspace: {
+      getWorkspaceDefaultLocale: (...args: unknown[]) => mockGetWorkspaceDefaultLocale(...args),
+    },
+  },
   };
 });
 
@@ -95,9 +96,22 @@ vi.mock("@/lib/middleware/auth", () => ({
   }),
 }));
 
-vi.mock("@/lib/middleware/helpers", async () =>
-  await vi.importActual<typeof import("@/lib/middleware/helpers")>("@/lib/middleware/helpers")
-);
+vi.mock("@/lib/middleware/helpers", () => {
+  const { NextResponse } = require("next/server");
+  return {
+    writeJSON: (data: unknown, status = 200) => NextResponse.json(data, { status }),
+    writeError: (message: string, status: number) => NextResponse.json({ error: message }, { status }),
+    formatTimestamp: (d: Date | string | null) => d instanceof Date ? d.toISOString() : d || "",
+    parseBody: async (req: Request, schema: { parse: (d: unknown) => unknown }) => {
+      try {
+        const data = await req.json();
+        return [schema.parse(data), null];
+      } catch {
+        return [null, NextResponse.json({ error: "invalid request body" }, { status: 400 })];
+      }
+    },
+  };
+});
 
 vi.mock("@/lib/services/task", () => ({
   TaskService: class {

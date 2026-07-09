@@ -8,6 +8,7 @@ import {
   silentTaskLabel,
   formatTraceRelativeTime,
 } from "./traces-labels";
+import { relativeTime } from "@/lib/datetime";
 
 const isKhmer = (s: string) => /[ក-៿]/.test(s);
 
@@ -48,9 +49,9 @@ describe("traces labels", () => {
   });
 
   it("formats relative time in Khmer", () => {
-    expect(formatTraceRelativeTime(new Date().toISOString())).toBe(
-      TRACES_LABELS.relativeTime.justNow,
-    );
+    const now = new Date().toISOString();
+    expect(formatTraceRelativeTime(now)).toBe(relativeTime(now));
+    expect(formatTraceRelativeTime(now)).toBe("ទើបតែឥឡូវ");
     const tenMinAgo = new Date(Date.now() - 10 * 60000).toISOString();
     expect(formatTraceRelativeTime(tenMinAgo)).toBe("10 នាទីមុន");
     const threeHrAgo = new Date(Date.now() - 3 * 3600000).toISOString();

@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
+import * as sharedMock from "@/test/shared-mock";
 
 const mockGetAgent = vi.fn();
 const mockListByWorkspace = vi.fn();
@@ -18,26 +19,26 @@ vi.mock("@opennextjs/cloudflare", () => ({
 
 vi.mock("@/lib/db", () => ({ getDb: vi.fn(() => ({})) }));
 
-vi.mock("@phneakngar/shared", async () => {
-  const actual = await vi.importActual<typeof import("@phneakngar/shared")>("@phneakngar/shared");
+vi.mock("@phneakngar/shared", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@phneakngar/shared")>();
   return {
     ...actual,
     queries: {
-      agent: {
-        getAgent: (...a: unknown[]) => mockGetAgent(...a),
-        getAllAgentsForWorkspace: (...a: unknown[]) => mockGetAllAgentsForWorkspace(...a),
-      },
-      agentAccess: {
-        getAllAgentAccessForWorkspace: (...a: unknown[]) => mockGetAllAgentAccessForWorkspace(...a),
-      },
-      agentLink: {
-        listByWorkspace: (...a: unknown[]) => mockListByWorkspace(...a),
-        create: (...a: unknown[]) => mockCreate(...a),
-        upsertByPair: (...a: unknown[]) => mockUpsertByPair(...a),
-        getByPair: (...a: unknown[]) => mockGetByPair(...a),
-        update: (...a: unknown[]) => mockUpdate(...a),
-      },
+    agent: {
+      getAgent: (...a: unknown[]) => mockGetAgent(...a),
+      getAllAgentsForWorkspace: (...a: unknown[]) => mockGetAllAgentsForWorkspace(...a),
     },
+    agentAccess: {
+      getAllAgentAccessForWorkspace: (...a: unknown[]) => mockGetAllAgentAccessForWorkspace(...a),
+    },
+    agentLink: {
+      listByWorkspace: (...a: unknown[]) => mockListByWorkspace(...a),
+      create: (...a: unknown[]) => mockCreate(...a),
+      upsertByPair: (...a: unknown[]) => mockUpsertByPair(...a),
+      getByPair: (...a: unknown[]) => mockGetByPair(...a),
+      update: (...a: unknown[]) => mockUpdate(...a),
+    },
+  },
   };
 });
 

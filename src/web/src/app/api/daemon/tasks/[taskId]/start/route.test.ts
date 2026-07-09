@@ -20,8 +20,11 @@ vi.mock("@opennextjs/cloudflare", () => ({
 }));
 vi.mock("@/lib/db", () => ({ getDb: vi.fn(() => ({})) }));
 
-vi.mock("@phneakngar/shared", () => ({
-  createDb: vi.fn(() => ({})),
+vi.mock("@phneakngar/shared", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@phneakngar/shared")>();
+  return {
+    ...actual,
+    createDb: vi.fn(() => ({})),
   queries: {
     task: { getTask: (...args: any[]) => mockGetTask(...args) },
     runtime: {
@@ -29,7 +32,8 @@ vi.mock("@phneakngar/shared", () => ({
     },
     conversation: { getConversation: (...args: any[]) => mockGetConversation(...args) },
   },
-}));
+  };
+});
 vi.mock("@/lib/middleware/auth", () => ({
   withAuth: vi.fn((handler: any) => async (req: any, ctx?: any) => {
     const params = ctx?.params instanceof Promise ? await ctx.params : ctx?.params;
@@ -37,9 +41,7 @@ vi.mock("@/lib/middleware/auth", () => ({
   }),
 }));
 vi.mock("@/lib/middleware/helpers", async () => {
-  return await vi.importActual<typeof import("@/lib/middleware/helpers")>(
-    "@/lib/middleware/helpers"
-  );
+  return await import("@/lib/middleware/helpers");
 });
 vi.mock("@/lib/broadcast", () => ({
   broadcastToUser: vi.fn().mockReturnValue(Promise.resolve()),

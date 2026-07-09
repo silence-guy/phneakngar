@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
+import * as sharedMock from "@/test/shared-mock";
 
 const mockGetConversation = vi.fn();
 const mockUpdateConversationTitle = vi.fn();
@@ -14,31 +15,35 @@ vi.mock("@opennextjs/cloudflare", () => ({
 }));
 vi.mock("@/lib/db", () => ({ getDb: vi.fn(() => ({})) }));
 
-vi.mock("@phneakngar/shared", async () => {
-  const actual = await vi.importActual("@phneakngar/shared");
+const { log } = vi.hoisted(() => {
   const noop = () => {};
-  const log = { debug: noop, info: noop, warn: noop, error: noop, child: () => log };
+  const log: any = { debug: noop, info: noop, warn: noop, error: noop };
+  log.child = () => log;
+  return { log };
+});
+vi.mock("@phneakngar/shared", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@phneakngar/shared")>();
   return {
     ...actual,
     createDb: vi.fn(() => ({})),
-    createLogger: () => log,
-    TASK_TYPES: {
-      USER_DM_MESSAGE: "user_dm_message",
-      EMAIL_NOTIFICATION: "email_notification",
-      CALENDAR_EVENT: "calendar_event",
+  createLogger: () => log,
+  TASK_TYPES: {
+    USER_DM_MESSAGE: "user_dm_message",
+    EMAIL_NOTIFICATION: "email_notification",
+    CALENDAR_EVENT: "calendar_event",
+  },
+  buildEmailMapKey: (agentId: string, threadId: string) => `email:${agentId}:${threadId}`,
+  queries: {
+    conversation: {
+      getConversation: (...args: any[]) => mockGetConversation(...args),
+      updateConversationTitle: (...args: any[]) => mockUpdateConversationTitle(...args),
     },
-    buildEmailMapKey: (agentId: string, threadId: string) => `email:${agentId}:${threadId}`,
-    queries: {
-      conversation: {
-        getConversation: (...args: any[]) => mockGetConversation(...args),
-        updateConversationTitle: (...args: any[]) => mockUpdateConversationTitle(...args),
-      },
-      message: {
-        listMessages: (...args: any[]) => mockListMessages(...args),
-        createMessage: (...args: any[]) => mockCreateMessage(...args),
-        updateMessageTaskId: vi.fn().mockResolvedValue(undefined),
-      },
+    message: {
+      listMessages: (...args: any[]) => mockListMessages(...args),
+      createMessage: (...args: any[]) => mockCreateMessage(...args),
+      updateMessageTaskId: vi.fn().mockResolvedValue(undefined),
     },
+  },
   };
 });
 vi.mock("@/lib/middleware/auth", () => ({

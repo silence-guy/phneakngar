@@ -6,16 +6,20 @@ const mockGetLatestTokenForUser = vi.fn();
 vi.mock("@opennextjs/cloudflare", () => ({
   getCloudflareContext: vi.fn(() => Promise.resolve({ env: { DB: {} } })),
 }));
-vi.mock("@phneakngar/shared", () => ({
-  queries: {
+vi.mock("@phneakngar/shared", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@phneakngar/shared")>();
+  return {
+    ...actual,
+    queries: {
     machineToken: {
       getLatestTokenForUser: (...args: any[]) => mockGetLatestTokenForUser(...args),
     },
   },
-}));
+  };
+});
 vi.mock("@/lib/db", () => ({ getDb: vi.fn(() => ({})) }));
 vi.mock("@/lib/middleware/helpers", async () =>
-  await vi.importActual<typeof import("@/lib/middleware/helpers")>("@/lib/middleware/helpers")
+  await import("@/lib/middleware/helpers")
 );
 vi.mock("@/lib/middleware/auth", () => ({
   withAuth: (handler: any) => (req: any) => handler(req, { env: {}, userId: "u1", email: "test@test.com" }),

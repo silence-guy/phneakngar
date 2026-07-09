@@ -2,13 +2,21 @@ import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 import { join } from "path";
 import { homedir } from "os";
 
-vi.mock("fs", () => ({
+const { mocks } = vi.hoisted(() => {
+  const mocks = {
   readFileSync: vi.fn(),
   writeFileSync: vi.fn(),
   mkdirSync: vi.fn(),
+  };
+  return { mocks };
+});
+
+vi.mock("fs", () => ({
+  readFileSync: mocks.readFileSync,
+  writeFileSync: mocks.writeFileSync,
+  mkdirSync: mocks.mkdirSync,
 }));
 
-import { readFileSync, writeFileSync, mkdirSync } from "fs";
 import {
   configDir,
   configPath,
@@ -18,12 +26,10 @@ import {
   saveCLIConfigForProfile,
 } from "./config.js";
 
-const mockedReadFileSync = vi.mocked(readFileSync);
-const mockedWriteFileSync = vi.mocked(writeFileSync);
-const mockedMkdirSync = vi.mocked(mkdirSync);
-
 beforeEach(() => {
-  vi.clearAllMocks();
+  mocks.readFileSync.mockClear();
+  mocks.writeFileSync.mockClear();
+  mocks.mkdirSync.mockClear();
 });
 
 afterEach(() => {
@@ -61,7 +67,7 @@ describe("configPath", () => {
 
 describe("loadCLIConfig", () => {
   it("returns empty object when file doesn't exist", () => {
-    mockedReadFileSync.mockImplementation(() => {
+    mocks.readFileSync.mockImplementation(() => {
       throw new Error("ENOENT");
     });
     expect(loadCLIConfig()).toEqual({});
@@ -69,7 +75,7 @@ describe("loadCLIConfig", () => {
 
   it("returns parsed JSON when file exists", () => {
     const cfg = { server_url: "http://example.com", watched_workspaces: [] };
-    mockedReadFileSync.mockReturnValue(JSON.stringify(cfg));
+    mocks.readFileSync.mockReturnValue(JSON.stringify(cfg));
     expect(loadCLIConfig()).toEqual(cfg);
   });
 });
@@ -81,7 +87,7 @@ describe("loadCLIConfigForProfile", () => {
       watched_workspaces: [{ id: "w1", name: "Workspace 1", token: "ws-token" }],
     };
     const cfg = { profiles: { staging: profileCfg } };
-    mockedReadFileSync.mockReturnValue(JSON.stringify(cfg));
+    mocks.readFileSync.mockReturnValue(JSON.stringify(cfg));
 
     expect(loadCLIConfigForProfile("staging")).toEqual(profileCfg);
   });
@@ -92,7 +98,7 @@ describe("loadCLIConfigForProfile", () => {
       watched_workspaces: [],
     };
     const cfg = { default_profile: "prod", profiles: { prod: profileCfg } };
-    mockedReadFileSync.mockReturnValue(JSON.stringify(cfg));
+    mocks.readFileSync.mockReturnValue(JSON.stringify(cfg));
 
     expect(loadCLIConfigForProfile()).toEqual(profileCfg);
   });
@@ -102,7 +108,7 @@ describe("loadCLIConfigForProfile", () => {
       server_url: "http://root.example.com",
       watched_workspaces: [{ id: "w2", name: "Root WS", token: "ws-token" }],
     };
-    mockedReadFileSync.mockReturnValue(JSON.stringify(cfg));
+    mocks.readFileSync.mockReturnValue(JSON.stringify(cfg));
 
     expect(loadCLIConfigForProfile()).toEqual({
       server_url: "http://root.example.com",
@@ -111,7 +117,7 @@ describe("loadCLIConfigForProfile", () => {
   });
 
   it("returns empty defaults when no config exists", () => {
-    mockedReadFileSync.mockImplementation(() => {
+    mocks.readFileSync.mockImplementation(() => {
       throw new Error("ENOENT");
     });
 
@@ -126,7 +132,7 @@ describe("loadCLIConfigForProfile", () => {
       server_url: "http://example.com",
       watched_workspaces: [{ id: null, name: null, token: "t1" }],
     };
-    mockedReadFileSync.mockReturnValue(JSON.stringify(cfg));
+    mocks.readFileSync.mockReturnValue(JSON.stringify(cfg));
 
     const result = loadCLIConfigForProfile();
     expect(result.watched_workspaces[0]).toMatchObject({ status: "deleted" });
@@ -138,7 +144,7 @@ describe("loadCLIConfigForProfile", () => {
       watched_workspaces: [{ id: null, name: null, token: "al_same", status: "registered" }],
       machine_token: "al_same",
     };
-    mockedReadFileSync.mockReturnValue(JSON.stringify(cfg));
+    mocks.readFileSync.mockReturnValue(JSON.stringify(cfg));
 
     const result = loadCLIConfigForProfile();
     expect(result.watched_workspaces).toHaveLength(1);
@@ -150,7 +156,7 @@ describe("loadCLIConfigForProfile", () => {
       server_url: "http://example.com",
       watched_workspaces: [{ id: "w1", name: "WS1", token: "t1" }],
     };
-    mockedReadFileSync.mockReturnValue(JSON.stringify(cfg));
+    mocks.readFileSync.mockReturnValue(JSON.stringify(cfg));
 
     const result = loadCLIConfigForProfile();
     expect(result.watched_workspaces[0].status).toBe("active");
@@ -162,11 +168,11 @@ describe("saveCLIConfig", () => {
     const cfg = { server_url: "http://example.com", watched_workspaces: [] };
     saveCLIConfig(cfg);
 
-    expect(mockedMkdirSync).toHaveBeenCalledWith(
+    expect(mocks.mkdirSync).toHaveBeenCalledWith(
       join(homedir(), ".phneakngar"),
       { recursive: true, mode: 0o700 },
     );
-    expect(mockedWriteFileSync).toHaveBeenCalledWith(
+    expect(mocks.writeFileSync).toHaveBeenCalledWith(
       join(homedir(), ".phneakngar", "config.json"),
       JSON.stringify(cfg, null, 2),
       { mode: 0o600 },
@@ -179,11 +185,11 @@ describe("saveCLIConfig", () => {
     const cfg = { server_url: "http://localhost:3000", watched_workspaces: [] };
     saveCLIConfig(cfg);
 
-    expect(mockedMkdirSync).toHaveBeenCalledWith(
+    expect(mocks.mkdirSync).toHaveBeenCalledWith(
       "/tmp/my-project/.phneakngar",
       { recursive: true, mode: 0o700 },
     );
-    expect(mockedWriteFileSync).toHaveBeenCalledWith(
+    expect(mocks.writeFileSync).toHaveBeenCalledWith(
       join("/tmp/my-project/.phneakngar", "config.json"),
       JSON.stringify(cfg, null, 2),
       { mode: 0o600 },
@@ -194,7 +200,7 @@ describe("saveCLIConfig", () => {
 describe("saveCLIConfigForProfile", () => {
   it("updates specific profile", () => {
     const existing = { profiles: {} };
-    mockedReadFileSync.mockReturnValue(JSON.stringify(existing));
+    mocks.readFileSync.mockReturnValue(JSON.stringify(existing));
 
     const profileCfg = {
       server_url: "http://new.example.com",
@@ -203,13 +209,13 @@ describe("saveCLIConfigForProfile", () => {
     saveCLIConfigForProfile("staging", profileCfg);
 
     const written = JSON.parse(
-      mockedWriteFileSync.mock.calls[0][1] as string,
+      mocks.writeFileSync.mock.calls[0][1] as string,
     );
     expect(written.profiles.staging).toEqual(profileCfg);
   });
 
   it("updates root-level fields when no profile specified", () => {
-    mockedReadFileSync.mockReturnValue(JSON.stringify({}));
+    mocks.readFileSync.mockReturnValue(JSON.stringify({}));
 
     const profileCfg = {
       server_url: "http://root.example.com",
@@ -218,14 +224,14 @@ describe("saveCLIConfigForProfile", () => {
     saveCLIConfigForProfile(undefined, profileCfg);
 
     const written = JSON.parse(
-      mockedWriteFileSync.mock.calls[0][1] as string,
+      mocks.writeFileSync.mock.calls[0][1] as string,
     );
     expect(written.server_url).toBe("http://root.example.com");
     expect(written.watched_workspaces).toEqual([{ id: "w1", name: "WS", token: "ws-token" }]);
   });
 
   it("preserves multiple watched_workspaces when saving", () => {
-    mockedReadFileSync.mockReturnValue(JSON.stringify({}));
+    mocks.readFileSync.mockReturnValue(JSON.stringify({}));
 
     const profileCfg = {
       server_url: "http://example.com",
@@ -238,7 +244,7 @@ describe("saveCLIConfigForProfile", () => {
     saveCLIConfigForProfile(undefined, profileCfg);
 
     const written = JSON.parse(
-      mockedWriteFileSync.mock.calls[0][1] as string,
+      mocks.writeFileSync.mock.calls[0][1] as string,
     );
     expect(written.watched_workspaces).toHaveLength(3);
     expect(written.watched_workspaces[0].id).toBe("w1");
@@ -246,7 +252,7 @@ describe("saveCLIConfigForProfile", () => {
   });
 
   it("removes legacy machine_token from config on save", () => {
-    mockedReadFileSync.mockReturnValue(JSON.stringify({ machine_token: "al_old", server_url: "" }));
+    mocks.readFileSync.mockReturnValue(JSON.stringify({ machine_token: "al_old", server_url: "" }));
 
     saveCLIConfigForProfile(undefined, {
       server_url: "http://example.com",
@@ -254,7 +260,7 @@ describe("saveCLIConfigForProfile", () => {
     });
 
     const written = JSON.parse(
-      mockedWriteFileSync.mock.calls[0][1] as string,
+      mocks.writeFileSync.mock.calls[0][1] as string,
     );
     expect(written.machine_token).toBeUndefined();
   });
@@ -269,7 +275,7 @@ describe("loadCLIConfigForProfile — multiple workspaces", () => {
         { id: "w2", name: "WS2", token: "t2" },
       ],
     };
-    mockedReadFileSync.mockReturnValue(JSON.stringify(cfg));
+    mocks.readFileSync.mockReturnValue(JSON.stringify(cfg));
 
     const result = loadCLIConfigForProfile();
     expect(result.watched_workspaces).toHaveLength(2);
@@ -290,7 +296,7 @@ describe("loadCLIConfigForProfile — multiple workspaces", () => {
         },
       },
     };
-    mockedReadFileSync.mockReturnValue(JSON.stringify(cfg));
+    mocks.readFileSync.mockReturnValue(JSON.stringify(cfg));
 
     const result = loadCLIConfigForProfile("prod");
     expect(result.watched_workspaces).toHaveLength(3);

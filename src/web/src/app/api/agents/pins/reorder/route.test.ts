@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
+import * as sharedMock from "@/test/shared-mock";
 
 vi.mock("@opennextjs/cloudflare", () => ({
   getCloudflareContext: vi.fn(async () => ({ env: { DB: {} } })),
@@ -8,16 +9,16 @@ vi.mock("@/lib/db", () => ({ getDb: vi.fn(() => ({})) }));
 
 const mockListPins = vi.fn();
 const mockReorderPins = vi.fn();
-vi.mock("@phneakngar/shared", async () => {
-  const actual = await vi.importActual("@phneakngar/shared");
+vi.mock("@phneakngar/shared", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@phneakngar/shared")>();
   return {
     ...actual,
     queries: {
-      agentPin: {
-        listPins: (...a: unknown[]) => mockListPins(...a),
-        reorderPins: (...a: unknown[]) => mockReorderPins(...a),
-      },
+    agentPin: {
+      listPins: (...a: unknown[]) => mockListPins(...a),
+      reorderPins: (...a: unknown[]) => mockReorderPins(...a),
     },
+  },
   };
 });
 vi.mock("@/lib/middleware/auth", () => ({

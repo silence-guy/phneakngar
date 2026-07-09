@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
-import { MeetingStatus } from "@phneakngar/shared";
+import * as sharedMock from "@/test/shared-mock";
+import { MeetingStatus } from "@/test/shared-mock";
 
 vi.mock("@opennextjs/cloudflare", () => ({
   getCloudflareContext: vi.fn(() => ({ env: { DB: {} } })),
@@ -10,17 +11,17 @@ vi.mock("@/lib/db", () => ({ getDb: vi.fn(() => ({})) }));
 const mockGet = vi.fn();
 const mockUpdate = vi.fn();
 const mockGetAgent = vi.fn();
-vi.mock("@phneakngar/shared", async () => {
-  const actual = await vi.importActual<typeof import("@phneakngar/shared")>("@phneakngar/shared");
+vi.mock("@phneakngar/shared", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@phneakngar/shared")>();
   return {
     ...actual,
     queries: {
-      meetingSession: {
-        getMeetingSession: (...a: unknown[]) => mockGet(...a),
-        updateMeetingSession: (...a: unknown[]) => mockUpdate(...a),
-      },
-      agent: { getAgent: (...a: unknown[]) => mockGetAgent(...a) },
+    meetingSession: {
+      getMeetingSession: (...a: unknown[]) => mockGet(...a),
+      updateMeetingSession: (...a: unknown[]) => mockUpdate(...a),
     },
+    agent: { getAgent: (...a: unknown[]) => mockGetAgent(...a) },
+  },
   };
 });
 vi.mock("@/lib/middleware/auth", () => ({

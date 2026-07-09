@@ -28,8 +28,11 @@ vi.mock("@opennextjs/cloudflare", () => ({
 
 vi.mock("@/lib/db", () => ({ getDb: vi.fn(() => ({})) }));
 
-vi.mock("@phneakngar/shared", () => ({
-  CreateIssueCommentBodySchema: { parse: vi.fn((data: any) => data) },
+vi.mock("@phneakngar/shared", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@phneakngar/shared")>();
+  return {
+    ...actual,
+    CreateIssueCommentBodySchema: { parse: vi.fn((data: any) => data) },
   TASK_TYPES: { ISSUE_EVENT: "issue_event" },
   isTerminalIssueStatus: (...args: unknown[]) => mockIsTerminalIssueStatus(...args),
   queries: {
@@ -52,7 +55,8 @@ vi.mock("@phneakngar/shared", () => ({
       getAgent: (...a: unknown[]) => mockGetAgent(...a),
     },
   },
-}));
+  };
+});
 
 vi.mock("@/lib/middleware/auth", () => ({
   withAuth: vi.fn((handler: any) => async (req: any, ctx?: any) => {

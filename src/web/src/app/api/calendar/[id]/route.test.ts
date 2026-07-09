@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
+import * as sharedMock from "@/test/shared-mock";
 
 const mockDelete = vi.fn();
 const mockUpdate = vi.fn();
@@ -13,22 +14,22 @@ vi.mock("@opennextjs/cloudflare", () => ({
 
 vi.mock("@/lib/db", () => ({ getDb: vi.fn(() => ({})) }));
 
-vi.mock("@phneakngar/shared", async () => {
-  const actual = await vi.importActual<typeof import("@phneakngar/shared")>("@phneakngar/shared");
+vi.mock("@phneakngar/shared", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@phneakngar/shared")>();
   return {
     ...actual,
     createDb: vi.fn(() => ({})),
-    queries: {
-      calendarEvent: {
-        getCalendarEvent: (...a: unknown[]) => mockGet(...a),
-        deleteCalendarEvent: (...a: unknown[]) => mockDelete(...a),
-        updateCalendarEvent: (...a: unknown[]) => mockUpdate(...a),
-        createCalendarEvent: (...a: unknown[]) => mockCreate(...a),
-      },
-      agent: {
-        getAgent: (...a: unknown[]) => mockGetAgent(...a),
-      },
+  queries: {
+    calendarEvent: {
+      getCalendarEvent: (...a: unknown[]) => mockGet(...a),
+      deleteCalendarEvent: (...a: unknown[]) => mockDelete(...a),
+      updateCalendarEvent: (...a: unknown[]) => mockUpdate(...a),
+      createCalendarEvent: (...a: unknown[]) => mockCreate(...a),
     },
+    agent: {
+      getAgent: (...a: unknown[]) => mockGetAgent(...a),
+    },
+  },
   };
 });
 

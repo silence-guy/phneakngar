@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
+import * as sharedMock from "@/test/shared-mock";
 
 const mockSweepStaleState = vi.fn();
 const mockPromoteDue = vi.fn(async () => 0);
@@ -22,15 +23,15 @@ vi.mock("@/lib/db", () => ({
   getDb: vi.fn(() => ({})),
 }));
 
-vi.mock("@phneakngar/shared", async () => {
-  const real = await vi.importActual<typeof import("@phneakngar/shared")>("@phneakngar/shared");
+vi.mock("@phneakngar/shared", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@phneakngar/shared")>();
   return {
-    ...real,
+    ...actual,
     queries: {
-      machine: {
-        getMachineByDaemon: (...args: unknown[]) => mockGetMachineByDaemon(...args),
-      },
+    machine: {
+      getMachineByDaemon: (...args: unknown[]) => mockGetMachineByDaemon(...args),
     },
+  },
   };
 });
 
@@ -40,9 +41,20 @@ vi.mock("@/lib/middleware/auth", () => ({
   }),
 }));
 
-vi.mock("@/lib/middleware/helpers", async () =>
-  await vi.importActual<typeof import("@/lib/middleware/helpers")>("@/lib/middleware/helpers")
-);
+vi.mock("@/lib/middleware/helpers", () => ({
+  writeJSON: (data: unknown, status = 200) => { const { NextResponse } = require("next/server"); return NextResponse.json(data, { status }); },
+  writeError: (message: string, status: number) => { const { NextResponse } = require("next/server"); return NextResponse.json({ error: message }, { status }); },
+  formatTimestamp: (date: Date | string | null) => date ? new Date(date as string).toISOString().replace(/\.\d{3}Z$/, "Z") : "",
+  formatTimestampNullable: (date: Date | string | null) => date ? new Date(date as string).toISOString().replace(/\.\d{3}Z$/, "Z") : null,
+  parseBody: async (req: Request, schema: { parse: (d: unknown) => unknown }) => {
+    try {
+      const data = await req.json();
+      return [schema.parse(data), null];
+    } catch {
+      return [null, { status: 400, error: "invalid request body" }];
+    }
+  },
+}));
 
 vi.mock("@/lib/services/sweep", () => ({
   sweepStaleState: (...args: unknown[]) => mockSweepStaleState(...args),
@@ -87,18 +99,26 @@ describe("POST /api/daemon/sweep", () => {
       })),
     }));
     vi.doMock("@/lib/db", () => ({ getDb: vi.fn(() => ({})) }));
-    vi.doMock("@phneakngar/shared", async () => {
-      const real = await vi.importActual<typeof import("@phneakngar/shared")>("@phneakngar/shared");
-      return { ...real };
-    });
+    vi.doMock("@phneakngar/shared", () => ({ ...(sharedMock as unknown as Record<string, unknown>) }));
     vi.doMock("@/lib/middleware/auth", () => ({
       withAuth: vi.fn((handler: any) => async (req: any) => {
         return handler(req, { env: {}, userId: "u1", email: "u@t.com" });
       }),
     }));
-    vi.doMock("@/lib/middleware/helpers", async () =>
-      await vi.importActual<typeof import("@/lib/middleware/helpers")>("@/lib/middleware/helpers")
-    );
+    vi.doMock("@/lib/middleware/helpers", () => ({
+      writeJSON: (data: unknown, status = 200) => { const { NextResponse } = require("next/server"); return NextResponse.json(data, { status }); },
+      writeError: (message: string, status: number) => { const { NextResponse } = require("next/server"); return NextResponse.json({ error: message }, { status }); },
+      formatTimestamp: (date: Date | string | null) => date ? new Date(date as string).toISOString().replace(/\.\d{3}Z$/, "Z") : "",
+      formatTimestampNullable: (date: Date | string | null) => date ? new Date(date as string).toISOString().replace(/\.\d{3}Z$/, "Z") : null,
+      parseBody: async (req: Request, schema: { parse: (d: unknown) => unknown }) => {
+        try {
+          const data = await req.json();
+          return [schema.parse(data), null];
+        } catch {
+          return [null, { status: 400, error: "invalid request body" }];
+        }
+      },
+    }));
     vi.doMock("@/lib/services/sweep", () => ({ sweepStaleState: vi.fn() }));
     vi.doMock("@/lib/services/calendar", () => ({ promoteDueCalendarEventsForWorkspace: vi.fn() }));
     vi.doMock("@/lib/logger", () => ({ log: { warn: vi.fn(), info: vi.fn(), error: vi.fn(), debug: vi.fn() } }));

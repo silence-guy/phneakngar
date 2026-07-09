@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
+import * as sharedMock from "@/test/shared-mock";
 
 vi.mock("@opennextjs/cloudflare", () => ({
   getCloudflareContext: vi.fn(() => ({ env: { DB: {} } })),
@@ -8,15 +9,15 @@ vi.mock("@/lib/db", () => ({ getDb: vi.fn(() => ({})) }));
 
 const mockListActive = vi.fn();
 const mockGetAllAgents = vi.fn();
-vi.mock("@phneakngar/shared", async () => {
-  const actual = await vi.importActual("@phneakngar/shared");
+vi.mock("@phneakngar/shared", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@phneakngar/shared")>();
   return {
     ...actual,
     queries: {
-      task: { listActiveTasksByWorkspace: (...a: unknown[]) => mockListActive(...a) },
-      agent: { getAllAgentsForWorkspace: (...a: unknown[]) => mockGetAllAgents(...a) },
-      agentAccess: { getAllAgentAccessForWorkspace: vi.fn().mockResolvedValue([]) },
-    },
+    task: { listActiveTasksByWorkspace: (...a: unknown[]) => mockListActive(...a) },
+    agent: { getAllAgentsForWorkspace: (...a: unknown[]) => mockGetAllAgents(...a) },
+    agentAccess: { getAllAgentAccessForWorkspace: vi.fn().mockResolvedValue([]) },
+  },
   };
 });
 vi.mock("@/lib/middleware/auth", () => ({

@@ -2,8 +2,11 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 vi.mock("@/lib/db", () => ({ getDb: vi.fn(() => ({})) }));
 
-vi.mock("@phneakngar/shared", () => ({
-  TASK_TYPES: {
+vi.mock("@phneakngar/shared", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@phneakngar/shared")>();
+  return {
+    ...actual,
+    TASK_TYPES: {
     USER_DM_MESSAGE: "user_dm_message",
     EMAIL_NOTIFICATION: "email_notification",
     CALENDAR_EVENT: "calendar_event",
@@ -59,7 +62,8 @@ vi.mock("@phneakngar/shared", () => ({
       findLatestAssistantMessageId: vi.fn().mockResolvedValue(null),
     },
   },
-}));
+  };
+});
 
 vi.mock("@/lib/logger", () => ({
   log: { warn: vi.fn(), info: vi.fn(), error: vi.fn() },

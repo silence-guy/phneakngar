@@ -5,7 +5,7 @@ const mockGetAllAgentsForWorkspace = vi.fn();
 const mockGetTaskStatsByWorkspace = vi.fn();
 
 vi.mock("@phneakngar/shared", async () => {
-  const real = await vi.importActual<typeof import("@phneakngar/shared")>("@phneakngar/shared");
+  const real = await import("@phneakngar/shared");
   return {
     ...real,
     OFFLINE_THRESHOLD_MS: 20_000,

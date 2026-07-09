@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
+import * as sharedMock from "@/test/shared-mock";
 
 const mockEmailWorkerFetch = vi.fn().mockResolvedValue(new Response("ok"));
 vi.mock("@opennextjs/cloudflare", () => ({
@@ -14,17 +15,17 @@ const mockGetAgent = vi.fn();
 const mockGetAccounts = vi.fn();
 const mockCreateAccount = vi.fn();
 
-vi.mock("@phneakngar/shared", async () => {
-  const actual = await vi.importActual("@phneakngar/shared");
+vi.mock("@phneakngar/shared", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@phneakngar/shared")>();
   return {
     ...actual,
     queries: {
-      agent: { getAgent: (...a: unknown[]) => mockGetAgent(...a) },
-      emailAccount: {
-        getEmailAccountsByAgent: (...a: unknown[]) => mockGetAccounts(...a),
-        createEmailAccount: (...a: unknown[]) => mockCreateAccount(...a),
-      },
+    agent: { getAgent: (...a: unknown[]) => mockGetAgent(...a) },
+    emailAccount: {
+      getEmailAccountsByAgent: (...a: unknown[]) => mockGetAccounts(...a),
+      createEmailAccount: (...a: unknown[]) => mockCreateAccount(...a),
     },
+  },
   };
 });
 

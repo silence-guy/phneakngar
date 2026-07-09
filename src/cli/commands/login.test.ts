@@ -60,17 +60,16 @@ describe("phneakngar login", () => {
   });
 
   afterEach(() => {
-    vi.useRealTimers();
     consoleSpy.mockRestore();
     consoleErrSpy.mockRestore();
     mockExit.mockRestore();
     mockKill.mockRestore();
-    vi.unstubAllGlobals();
+    vi.useRealTimers();
   });
 
   function mockFetchSequence(responses: { url: string; status: number; body: unknown }[]) {
     const queue = [...responses];
-    vi.stubGlobal("fetch", vi.fn(async (url: string | URL | Request, _init?: RequestInit) => {
+    globalThis.fetch = vi.fn(async (url: string | URL | Request, _init?: RequestInit) => {
       const urlStr = typeof url === "string" ? url : url instanceof URL ? url.toString() : url.url;
       const idx = queue.findIndex((r) => urlStr.includes(r.url));
       if (idx >= 0) {
@@ -84,7 +83,7 @@ describe("phneakngar login", () => {
         };
       }
       return { ok: false, status: 404, text: async (): Promise<string> => "not found", json: async () => ({ error: "not_found" }) };
-    }));
+    });
   }
 
   function deviceCodeResponse(overrides: Partial<Record<string, unknown>> = {}) {
@@ -119,8 +118,12 @@ describe("phneakngar login", () => {
   async function runWithTimers(promise: Promise<unknown>) {
     let settled = false;
     const result = promise.finally(() => { settled = true; });
-    while (!settled) {
-      await vi.advanceTimersByTimeAsync(10000);
+    // Fake timers: advance in small steps so poll/sleep loops can progress.
+    for (let i = 0; i < 500 && !settled; i++) {
+      await vi.advanceTimersByTimeAsync(100);
+    }
+    if (!settled) {
+      throw new Error("runWithTimers: promise did not settle after advancing timers");
     }
     return result;
   }
@@ -317,7 +320,7 @@ describe("phneakngar login", () => {
       });
 
       let callCount = 0;
-      vi.stubGlobal("fetch", vi.fn(async (url: string | URL | Request) => {
+      globalThis.fetch = vi.fn(async (url: string | URL | Request) => {
         const urlStr = typeof url === "string" ? url : url instanceof URL ? url.toString() : url.url;
         callCount++;
         if (urlStr.includes("/api/workspaces")) {
@@ -327,7 +330,7 @@ describe("phneakngar login", () => {
           throw new Error("network error");
         }
         return { ok: false, status: 404, text: async () => "not found", json: async () => ({}) };
-      }));
+      });
 
       const cmd = loginCommand();
       await runWithTimers(cmd.parseAsync(["node", "login", "--server", "http://localhost:3000"]));

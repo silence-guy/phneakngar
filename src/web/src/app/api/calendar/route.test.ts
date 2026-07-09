@@ -11,24 +11,24 @@ vi.mock("@opennextjs/cloudflare", () => ({
 
 vi.mock("@/lib/db", () => ({ getDb: vi.fn(() => ({})) }));
 
-vi.mock("@phneakngar/shared", async () => {
-  const actual = await vi.importActual<typeof import("@phneakngar/shared")>("@phneakngar/shared");
+vi.mock("@phneakngar/shared", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@phneakngar/shared")>();
   return {
     ...actual,
     createDb: vi.fn(() => ({})),
-    queries: {
-      agent: {
-        getAgent: (...a: unknown[]) => mockGetAgent(...a),
-        listAgents: vi.fn().mockResolvedValue([]),
-      },
-      calendarEvent: {
-        listCalendarEvents: (...a: unknown[]) => mockList(...a),
-        createCalendarEvent: (...a: unknown[]) => mockCreate(...a),
-      },
-      meetingSession: {
-        listMeetingsWithSchedule: vi.fn().mockResolvedValue([]),
-      },
+  queries: {
+    agent: {
+      getAgent: (...a: unknown[]) => mockGetAgent(...a),
+      listAgents: vi.fn().mockResolvedValue([]),
     },
+    calendarEvent: {
+      listCalendarEvents: (...a: unknown[]) => mockList(...a),
+      createCalendarEvent: (...a: unknown[]) => mockCreate(...a),
+    },
+    meetingSession: {
+      listMeetingsWithSchedule: vi.fn().mockResolvedValue([]),
+    },
+  },
   };
 });
 

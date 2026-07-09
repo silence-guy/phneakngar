@@ -45,14 +45,14 @@ import {
 } from "../daemon/pidfile.js";
 import { daemonCommand } from "./daemon.js";
 
-const startDaemonMock = vi.mocked(startDaemon);
-const readDaemonPidMock = vi.mocked(readDaemonPid);
-const isProcessAliveMock = vi.mocked(isProcessAlive);
-const removePidFileIfMatchesMock = vi.mocked(removePidFileIfMatches);
-const spawnMock = vi.mocked(spawn);
-const openSyncMock = vi.mocked(openSync);
-const closeSyncMock = vi.mocked(closeSync);
-const mkdirMock = vi.mocked(mkdirSync);
+const startDaemonMock = startDaemon as unknown as ReturnType<typeof vi.fn>;
+const readDaemonPidMock = readDaemonPid as unknown as ReturnType<typeof vi.fn>;
+const isProcessAliveMock = isProcessAlive as unknown as ReturnType<typeof vi.fn>;
+const removePidFileIfMatchesMock = removePidFileIfMatches as unknown as ReturnType<typeof vi.fn>;
+const spawnMock = spawn as unknown as ReturnType<typeof vi.fn>;
+const openSyncMock = openSync as unknown as ReturnType<typeof vi.fn>;
+const closeSyncMock = closeSync as unknown as ReturnType<typeof vi.fn>;
+const mkdirMock = mkdirSync as unknown as ReturnType<typeof vi.fn>;
 
 interface ChildLike extends EventEmitter {
   pid: number;
@@ -143,12 +143,10 @@ describe("daemon stop", () => {
 
   beforeEach(() => {
     resetAll();
-    vi.useFakeTimers();
   });
 
   afterEach(() => {
     killSpy?.mockRestore();
-    vi.useRealTimers();
   });
 
   it("prints 'not running' and does not signal when no pidfile", async () => {
@@ -168,7 +166,7 @@ describe("daemon stop", () => {
     });
 
     const promise = runCLI(["stop"]);
-    await vi.advanceTimersByTimeAsync(500);
+    await new Promise(resolve => setTimeout(resolve, 500));
     const { out } = await promise;
 
     expect(killSpy).toHaveBeenCalledWith(777, "SIGTERM");
@@ -188,7 +186,7 @@ describe("daemon stop", () => {
     });
 
     const promise = runCLI(["stop"]);
-    await vi.advanceTimersByTimeAsync(1500);
+    await new Promise(resolve => setTimeout(resolve, 1500));
     const { out, err } = await promise;
 
     expect(killSpy).toHaveBeenCalledWith(888, "SIGTERM");
@@ -243,6 +241,11 @@ describe("daemon start (background)", () => {
     vi.useRealTimers();
   });
 
+  async function settleStart(promise: Promise<unknown>, ms = 2500) {
+    await vi.advanceTimersByTimeAsync(ms);
+    return promise;
+  }
+
   it("spawns detached with log fds and reconstructed args", async () => {
     // Initial pre-check: no daemon running. After spawn: pidfile has pid 55555.
     let calls = 0;
@@ -250,8 +253,7 @@ describe("daemon start (background)", () => {
     isProcessAliveMock.mockImplementation((p: number) => p === 55555);
 
     const promise = runCLI(["start"]);
-    await vi.advanceTimersByTimeAsync(250);
-    const { out } = await promise;
+    const { out } = await settleStart(promise) as { out: string[]; err: string[] };
 
     expect(startDaemonMock).not.toHaveBeenCalled();
     expect(spawnMock).toHaveBeenCalledTimes(1);
@@ -280,8 +282,7 @@ describe("daemon start (background)", () => {
     isProcessAliveMock.mockImplementation((p: number) => p === 101);
 
     const promise = runCLI(["start", "--server", "http://x.test"]);
-    await vi.advanceTimersByTimeAsync(250);
-    await promise;
+    await settleStart(promise);
 
     const args = spawnMock.mock.calls[0][1] as string[];
     const serverIdx = args.indexOf("--server");
@@ -295,8 +296,7 @@ describe("daemon start (background)", () => {
     isProcessAliveMock.mockImplementation((p: number) => p === 202);
 
     const promise = runCLI(["start"], ["--profile", "staging"]);
-    await vi.advanceTimersByTimeAsync(250);
-    await promise;
+    await settleStart(promise);
 
     const args = spawnMock.mock.calls[0][1] as string[];
     const profileIdx = args.indexOf("--profile");
@@ -310,8 +310,7 @@ describe("daemon start (background)", () => {
     isProcessAliveMock.mockImplementation((p: number) => p === 303);
 
     const promise = runCLI(["start"], ["--server", "http://root.test"]);
-    await vi.advanceTimersByTimeAsync(250);
-    await promise;
+    await settleStart(promise);
 
     const args = spawnMock.mock.calls[0][1] as string[];
     const serverIdx = args.indexOf("--server");
@@ -324,8 +323,7 @@ describe("daemon start (background)", () => {
     isProcessAliveMock.mockReturnValue(false);
 
     const promise = runCLI(["start"]);
-    await vi.advanceTimersByTimeAsync(2500);
-    const { err } = await promise;
+    const { err } = await settleStart(promise, 2500) as { out: string[]; err: string[] };
 
     expect(err.join("\n")).toContain("did not write a pidfile");
     expect(err.join("\n")).toContain("/tmp/phneakngar/daemon/logs/2026-04-17.log");

@@ -2,10 +2,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { mkdirSync, writeFileSync, rmSync } from "fs";
 import { join } from "path";
 
-const { getJSONMock, postJSONMock } = vi.hoisted(() => ({
-  getJSONMock: vi.fn(),
-  postJSONMock: vi.fn(),
-}));
+const getJSONMock = vi.fn();
+const postJSONMock = vi.fn();
 
 vi.mock("../lib/client.js", () => ({
   APIClient: class {
@@ -43,8 +41,8 @@ import { workspaceCommand } from "./workspace";
 import { resolveClientOptsPartial } from "../lib/resolve-client.js";
 import { loadCLIConfigForProfile } from "../lib/config.js";
 
-const mockedResolvePartial = vi.mocked(resolveClientOptsPartial);
-const mockedLoadConfig = vi.mocked(loadCLIConfigForProfile);
+const mockedResolvePartial = resolveClientOptsPartial as unknown as ReturnType<typeof vi.fn>;
+const mockedLoadConfig = loadCLIConfigForProfile as unknown as ReturnType<typeof vi.fn>;
 
 const TMP_DIR = "/tmp/phneakngar-workspace-test";
 
@@ -437,7 +435,6 @@ describe("workspace init — self-resolve (no workspaceId)", () => {
   });
 
   it("polls for runtimes and errors if none appear", async () => {
-    vi.useFakeTimers();
     const jsonPath = writeJson("valid.json", {
       members: [{ role: "leader", instructions: "x" }],
     });
@@ -449,14 +446,19 @@ describe("workspace init — self-resolve (no workspaceId)", () => {
 
     postJSONMock.mockResolvedValueOnce({}); // POST /api/machine-tokens/bind-workspace
 
-    const promise = runInit(["--json-file", jsonPath]).catch((e) => e);
-    for (let i = 0; i < 20; i++) {
-      await vi.advanceTimersByTimeAsync(1100);
+    vi.useFakeTimers();
+    try {
+      const promise = runInit(["--json-file", jsonPath]).catch((e) => e);
+      // 15 attempts × 1000ms sleep
+      for (let i = 0; i < 16; i++) {
+        await vi.advanceTimersByTimeAsync(1000);
+      }
+      const err = await promise;
+      expect(err).toBeInstanceOf(Error);
+      expect((err as Error).message).toBe("process.exit(1)");
+      expect(consoleErrSpy).toHaveBeenCalledWith(expect.stringContaining("No daemon registered after waiting"));
+    } finally {
+      vi.useRealTimers();
     }
-    const err = await promise;
-    expect(err).toBeInstanceOf(Error);
-    expect((err as Error).message).toBe("process.exit(1)");
-    expect(consoleErrSpy).toHaveBeenCalledWith(expect.stringContaining("No daemon registered after waiting"));
-    vi.useRealTimers();
   });
 });

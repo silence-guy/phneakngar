@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
+import * as sharedMock from "@/test/shared-mock";
 
 const mockGetAgent = vi.fn();
 const mockGetAgentByHandle = vi.fn();
@@ -41,37 +42,37 @@ vi.mock("@/lib/cache", () => ({
   },
 }));
 
-vi.mock("@phneakngar/shared", async () => {
-  const actual = await vi.importActual("@phneakngar/shared");
+vi.mock("@phneakngar/shared", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@phneakngar/shared")>();
   return {
     ...actual,
     createDb: vi.fn(() => ({})),
-    queries: {
-      email: {
-        createEmail: (...args: unknown[]) => mockCreateEmail(...args),
-      },
-      agent: {
-        getAgent: (...args: unknown[]) => mockGetAgent(...args),
-        getAgentByHandle: (...args: unknown[]) => mockGetAgentByHandle(...args),
-      },
-      whitelist: {
-        isWhitelisted: (...args: unknown[]) => mockIsWhitelisted(...args),
-      },
-      emailAccount: {
-        getEmailAccountsByAgent: (...args: unknown[]) => mockGetEmailAccountsByAgent(...args),
-        getEmailAccountScoped: (...args: unknown[]) => mockGetEmailAccountScoped(...args),
-        getAllEmailAccountsForWorkspace: (...args: unknown[]) => mockGetEmailAccountsByAgent(...args),
-      },
-      conversation: {
-        getConversation: (...args: unknown[]) => mockGetConversation(...args),
-      },
-      conversationMap: {
-        createMapping: (...args: unknown[]) => mockCreateMapping(...args),
-      },
-      message: {
-        createMessage: (...args: unknown[]) => mockCreateMessage(...args),
-      },
+  queries: {
+    email: {
+      createEmail: (...args: unknown[]) => mockCreateEmail(...args),
     },
+    agent: {
+      getAgent: (...args: unknown[]) => mockGetAgent(...args),
+      getAgentByHandle: (...args: unknown[]) => mockGetAgentByHandle(...args),
+    },
+    whitelist: {
+      isWhitelisted: (...args: unknown[]) => mockIsWhitelisted(...args),
+    },
+    emailAccount: {
+      getEmailAccountsByAgent: (...args: unknown[]) => mockGetEmailAccountsByAgent(...args),
+      getEmailAccountScoped: (...args: unknown[]) => mockGetEmailAccountScoped(...args),
+      getAllEmailAccountsForWorkspace: (...args: unknown[]) => mockGetEmailAccountsByAgent(...args),
+    },
+    conversation: {
+      getConversation: (...args: unknown[]) => mockGetConversation(...args),
+    },
+    conversationMap: {
+      createMapping: (...args: unknown[]) => mockCreateMapping(...args),
+    },
+    message: {
+      createMessage: (...args: unknown[]) => mockCreateMessage(...args),
+    },
+  },
   };
 });
 
@@ -86,15 +87,20 @@ vi.mock("@/lib/middleware/workspace", () => ({
   withWorkspaceMember: vi.fn(async () => ({ workspaceId: "ws1" })),
 }));
 
-vi.mock("@/lib/middleware/helpers", async () => {
-  const { NextResponse } = require("next/server");
-  const actual = await vi.importActual("@/lib/middleware/helpers");
-  return {
-    ...actual,
-    writeJSON: (data: unknown, status = 200) => NextResponse.json(data, { status }),
-    writeError: (message: string, status: number) => NextResponse.json({ error: message }, { status }),
-  };
-});
+vi.mock("@/lib/middleware/helpers", () => ({
+  writeJSON: (data: unknown, status = 200) => { const { NextResponse } = require("next/server"); return NextResponse.json(data, { status }); },
+  writeError: (message: string, status: number) => { const { NextResponse } = require("next/server"); return NextResponse.json({ error: message }, { status }); },
+  formatTimestamp: (date: Date | string | null) => date ? new Date(date as string).toISOString().replace(/\.\d{3}Z$/, "Z") : "",
+  formatTimestampNullable: (date: Date | string | null) => date ? new Date(date as string).toISOString().replace(/\.\d{3}Z$/, "Z") : null,
+  parseBody: async (req: Request, schema: { parse: (d: unknown) => unknown }) => {
+    try {
+      const data = await req.json();
+      return [schema.parse(data), null];
+    } catch {
+      return [null, { status: 400, error: "invalid request body" }];
+    }
+  },
+}));
 
 vi.mock("@/lib/api/responses", () => ({
   emailToResponse: (e: any) => e,

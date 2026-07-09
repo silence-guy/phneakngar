@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const mockFetch = vi.fn();
-vi.stubGlobal("fetch", mockFetch);
+globalThis.fetch = mockFetch;
 
 import { GET } from "./route";
 

@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
+import * as sharedMock from "@/test/shared-mock";
 
 let mockAuthCtx: Record<string, unknown> = { userId: "u1", email: "u@t.com" };
 
@@ -16,17 +17,17 @@ const mockDeleteWorkspace = vi.fn();
 
 vi.mock("@/lib/db", () => ({ getDb: vi.fn(() => ({})) }));
 
-vi.mock("@phneakngar/shared", async () => {
-  const real = await vi.importActual<typeof import("@phneakngar/shared")>("@phneakngar/shared");
+vi.mock("@phneakngar/shared", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@phneakngar/shared")>();
   return {
-    ...real,
+    ...actual,
     queries: {
-      workspace: {
-        getWorkspace: (...args: unknown[]) => mockGetWorkspace(...args),
-        updateWorkspace: (...args: unknown[]) => mockUpdateWorkspace(...args),
-        deleteWorkspace: (...args: unknown[]) => mockDeleteWorkspace(...args),
-      },
+    workspace: {
+      getWorkspace: (...args: unknown[]) => mockGetWorkspace(...args),
+      updateWorkspace: (...args: unknown[]) => mockUpdateWorkspace(...args),
+      deleteWorkspace: (...args: unknown[]) => mockDeleteWorkspace(...args),
     },
+  },
   };
 });
 
@@ -38,7 +39,7 @@ vi.mock("@/lib/middleware/auth", () => ({
 }));
 
 vi.mock("@/lib/middleware/helpers", async () =>
-  await vi.importActual<typeof import("@/lib/middleware/helpers")>("@/lib/middleware/helpers")
+  await import("@/lib/middleware/helpers")
 );
 
 vi.mock("@/lib/middleware/workspace", () => ({
@@ -46,7 +47,7 @@ vi.mock("@/lib/middleware/workspace", () => ({
 }));
 
 vi.mock("@/lib/api/responses", async () =>
-  await vi.importActual<typeof import("@/lib/api/responses")>("@/lib/api/responses")
+  await import("@/lib/api/responses")
 );
 
 import { GET, PATCH, DELETE } from "./route";

@@ -214,9 +214,26 @@ vi.mock("url", () => ({
   fileURLToPath: vi.fn(() => "/fake/daemon.ts"),
 }));
 
-vi.mock("path", async () => {
-  const actual = await vi.importActual("path");
-  return actual;
+// Provide minimal path mock for Bun compatibility
+vi.mock("path", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("path")>();
+  const mocked = {
+    ...actual,
+    join: (...args: string[]) => args.join("/"),
+    resolve: (...args: string[]) => args.join("/"),
+    basename: (p: string) => p.split("/").pop() ?? "",
+    dirname: (p: string) => p.split("/").slice(0, -1).join("/") || "/",
+    extname: (p: string) => {
+      const base = p.split("/").pop() ?? "";
+      const idx = base.lastIndexOf(".");
+      return idx === -1 ? "" : base.slice(idx);
+    },
+    isAbsolute: (p: string) => p.startsWith("/"),
+    relative: (from: string, to: string) => to.replace(from, ""),
+    sep: "/",
+    delimiter: ":",
+  };
+  return { ...mocked, default: mocked };
 });
 
 // Capture signal handlers and prevent actual process.exit.

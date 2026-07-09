@@ -38,7 +38,7 @@ describe("phneakngar update", () => {
     consoleErrSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     consoleWarnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
     mockExit = vi.spyOn(process, "exit").mockImplementation(() => undefined as never);
-    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("no daemon")));
+    globalThis.fetch = vi.fn().mockRejectedValue(new Error("no daemon"));
   });
 
   afterEach(() => {
@@ -46,7 +46,6 @@ describe("phneakngar update", () => {
     consoleErrSpy.mockRestore();
     consoleWarnSpy.mockRestore();
     mockExit.mockRestore();
-    vi.unstubAllGlobals();
   });
 
   it("shows 'already up to date' when on latest version", async () => {

@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
+import * as sharedMock from "@/test/shared-mock";
 
 vi.mock("@opennextjs/cloudflare", () => ({
   getCloudflareContext: vi.fn(() => ({ env: { DB: {} } })),
@@ -16,29 +17,29 @@ const m = {
   getAgentRuntimeForWorkspace: vi.fn(),
 };
 
-vi.mock("@phneakngar/shared", async () => {
-  const actual = await vi.importActual("@phneakngar/shared");
+vi.mock("@phneakngar/shared", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@phneakngar/shared")>();
   return {
     ...actual,
     queries: {
-      conversation: {
-        getConversation: (...a: unknown[]) => m.getConversation(...a),
-        updateConversationTitle: (...a: unknown[]) => m.updateConversationTitle(...a),
-      },
-      message: {
-        createMessage: (...a: unknown[]) => m.createMessage(...a),
-      },
-      inbox: {
-        updateUnreadLatestMessage: (...a: unknown[]) => m.updateUnreadLatestMessage(...a),
-      },
-      task: {
-        getTask: (...a: unknown[]) => m.getTask(...a),
-        updateTaskVisibleOutcomeStatus: (...a: unknown[]) => m.updateTaskVisibleOutcomeStatus(...a),
-      },
-      runtime: {
-        getAgentRuntimeForWorkspace: (...a: unknown[]) => m.getAgentRuntimeForWorkspace(...a),
-      },
+    conversation: {
+      getConversation: (...a: unknown[]) => m.getConversation(...a),
+      updateConversationTitle: (...a: unknown[]) => m.updateConversationTitle(...a),
     },
+    message: {
+      createMessage: (...a: unknown[]) => m.createMessage(...a),
+    },
+    inbox: {
+      updateUnreadLatestMessage: (...a: unknown[]) => m.updateUnreadLatestMessage(...a),
+    },
+    task: {
+      getTask: (...a: unknown[]) => m.getTask(...a),
+      updateTaskVisibleOutcomeStatus: (...a: unknown[]) => m.updateTaskVisibleOutcomeStatus(...a),
+    },
+    runtime: {
+      getAgentRuntimeForWorkspace: (...a: unknown[]) => m.getAgentRuntimeForWorkspace(...a),
+    },
+  },
   };
 });
 

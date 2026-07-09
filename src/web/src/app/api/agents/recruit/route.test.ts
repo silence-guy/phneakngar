@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
+import * as sharedMock from "@/test/shared-mock";
 
 vi.mock("@opennextjs/cloudflare", () => ({
   getCloudflareContext: vi.fn(() => ({ env: { DB: {}, EMAIL_BUCKET: { put: vi.fn() }, WORKER_SELF_REFERENCE: { fetch: vi.fn() }, EMAIL_NOTIFY_SECRET: "notify-secret" } })),
@@ -22,20 +23,20 @@ const mockCreateAgent = vi.fn();
 const mockLinkCreate = vi.fn();
 const mockAddWhitelist = vi.fn();
 
-vi.mock("@phneakngar/shared", async () => {
-  const actual = await vi.importActual("@phneakngar/shared");
+vi.mock("@phneakngar/shared", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@phneakngar/shared")>();
   return {
     ...actual,
     queries: {
-      agent: {
-        getAgent: (...a: unknown[]) => mockGetAgent(...a),
-        getAllHandlesForWorkspace: (...a: unknown[]) => mockGetAllHandles(...a),
-        createAgent: (...a: unknown[]) => mockCreateAgent(...a),
-      },
-      runtime: { getAgentRuntimeForWorkspace: (...a: unknown[]) => mockGetRuntimeForWs(...a) },
-      agentLink: { create: (...a: unknown[]) => mockLinkCreate(...a) },
-      whitelist: { addWhitelist: (...a: unknown[]) => mockAddWhitelist(...a) },
+    agent: {
+      getAgent: (...a: unknown[]) => mockGetAgent(...a),
+      getAllHandlesForWorkspace: (...a: unknown[]) => mockGetAllHandles(...a),
+      createAgent: (...a: unknown[]) => mockCreateAgent(...a),
     },
+    runtime: { getAgentRuntimeForWorkspace: (...a: unknown[]) => mockGetRuntimeForWs(...a) },
+    agentLink: { create: (...a: unknown[]) => mockLinkCreate(...a) },
+    whitelist: { addWhitelist: (...a: unknown[]) => mockAddWhitelist(...a) },
+  },
   };
 });
 
