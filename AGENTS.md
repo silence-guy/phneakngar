@@ -1,6 +1,14 @@
 # ភ្នាក់ងារ
 ភ្នាក់ងារ's main purpose is to make the cli agent always on, and give it a email address.
 
+## Cieee Workspace Access
+
+- When Cieee is used for this repository, open the actual checkout at `/Users/privexus/Project/ភ្នាក់ងារ`.
+- The expected local machine identity is `privexus@Privexuss-MacBook-Pro.local`.
+- Treat this path as the canonical `ភ្នាក់ងារ` project. Do not substitute the separate `/Users/privexus/Project/Privexus` repository.
+- After `open_workspace` succeeds, reuse its returned `workspaceId` for all subsequent Cieee calls in this project. Reopen only when the workspace is rejected, the user explicitly asks, or a different folder or worktree is required.
+- Always load and follow this `AGENTS.md` and any nested project instructions before reading or modifying files.
+
 ## Navigation
 - `plans/`: place your dev plans (gitignored, local only)
 - `src/shared`: shared types, schema, queries, validators
