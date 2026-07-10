@@ -27,6 +27,41 @@ export async function createMessage(
   return rows[0]!;
 }
 
+export async function createMessageIfAbsent(
+  db: Database,
+  data: {
+    id: string;
+    conversationId: string;
+    role: string;
+    content: string;
+    taskId?: string | null;
+    attachmentIds?: string | null;
+    metadata?: string | null;
+  },
+): Promise<{ message: typeof message.$inferSelect; created: boolean }> {
+  const rows = await db
+    .insert(message)
+    .values({
+      id: data.id,
+      conversationId: data.conversationId,
+      role: data.role,
+      content: data.content,
+      taskId: data.taskId ?? null,
+      attachmentIds: data.attachmentIds ?? null,
+      metadata: data.metadata ?? null,
+    })
+    .onConflictDoNothing({ target: message.id })
+    .returning();
+  if (rows[0]) return { message: rows[0], created: true };
+
+  const existing = await db
+    .select()
+    .from(message)
+    .where(and(eq(message.id, data.id), eq(message.conversationId, data.conversationId)));
+  if (!existing[0]) throw new Error("message idempotency conflict could not be resolved");
+  return { message: existing[0], created: false };
+}
+
 const DEFAULT_MESSAGE_LIMIT = 20;
 
 export async function getNewestMessageId(

@@ -503,6 +503,7 @@ export const emails = sqliteTable(
     isWhitelisted: integer("is_whitelisted", { mode: "boolean" }).notNull().default(false),
     forwarded: integer("forwarded", { mode: "boolean" }).notNull().default(false),
     messageId: text("message_id").notNull().default(""),
+    deliveryKey: text("delivery_key"),
     inReplyTo: text("in_reply_to").notNull().default(""),
     references: text("references").notNull().default(""),
     htmlBody: text("html_body").notNull().default(""),
@@ -520,6 +521,7 @@ export const emails = sqliteTable(
     index("idx_emails_to_direction").on(t.toEmail, t.direction),
     index("idx_emails_from_direction").on(t.fromEmail, t.direction),
     index("idx_emails_message_id").on(t.messageId),
+    unique("emails_workspace_delivery_key").on(t.workspaceId, t.deliveryKey),
     index("idx_emails_created_at").on(t.createdAt),
   ]
 );
@@ -663,6 +665,7 @@ export const machineToken = sqliteTable(
     workspaceId: text("workspace_id")
       .references(() => workspace.id, { onDelete: "cascade" }),
     token: text("token").unique().notNull(),
+    tokenHash: text("token_hash").unique(),
     name: text("name").notNull().default(""),
     status: text("status").notNull().default("active"),
     hostname: text("hostname"),

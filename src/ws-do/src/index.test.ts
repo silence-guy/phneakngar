@@ -10,12 +10,15 @@ import handler from "./index"
 
 describe("ws-do router", () => {
   let doMock: ReturnType<typeof createMockDONamespace>
-  let env: { WS_DO: DurableObjectNamespace }
+  let env: { WS_DO: DurableObjectNamespace; WS_SERVICE_SECRET: string }
 
   beforeEach(() => {
     vi.clearAllMocks()
     doMock = createMockDONamespace()
-    env = { WS_DO: doMock.namespace } as unknown as { WS_DO: DurableObjectNamespace }
+    env = {
+      WS_DO: doMock.namespace,
+      WS_SERVICE_SECRET: "ws-service-secret",
+    } as unknown as { WS_DO: DurableObjectNamespace; WS_SERVICE_SECRET: string }
   })
 
   describe("broadcast route", () => {
@@ -23,6 +26,7 @@ describe("ws-do router", () => {
       doMock.stubFetch.mockResolvedValue(new Response("ok"))
       const req = new Request("http://localhost/broadcast/user/user-123", {
         method: "POST",
+        headers: { "X-Phneakngar-WS-Service-Secret": "ws-service-secret" },
         body: JSON.stringify({ type: "runtime.status", daemonId: "d1", workspaceId: "w1", status: "online" }),
       })
 
@@ -35,6 +39,18 @@ describe("ws-do router", () => {
       expect(stubReq.url).toBe("http://internal/broadcast")
       expect(stubReq.method).toBe("POST")
       expect(res.status).toBe(200)
+    })
+
+    it("rejects broadcast calls without the configured service secret", async () => {
+      const req = new Request("https://ws.example.com/broadcast/user/user-123", {
+        method: "POST",
+        body: "{}",
+      })
+
+      const res = await handler.fetch(req, env as any)
+
+      expect(res.status).toBe(401)
+      expect(doMock.stubFetch).not.toHaveBeenCalled()
     })
   })
 

@@ -1,6 +1,7 @@
-import { eq, and, desc, isNull } from "drizzle-orm";
+import { eq, and, desc, isNull, or } from "drizzle-orm";
 import { machineToken, user } from "../schema";
 import type { Database } from "../index";
+import { hashSecret } from "../../utils/secrets";
 
 export async function createMachineToken(
   db: Database,
@@ -18,6 +19,7 @@ export async function createMachineToken(
       userId: data.userId,
       workspaceId: data.workspaceId ?? null,
       token: data.token,
+      tokenHash: hashSecret(data.token),
       name: data.name,
       status: data.status ?? "active",
     })
@@ -26,22 +28,37 @@ export async function createMachineToken(
 }
 
 export async function getMachineTokenByToken(db: Database, token: string) {
+  const tokenHash = hashSecret(token);
   const rows = await db
     .select({
       id: machineToken.id,
       userId: machineToken.userId,
       workspaceId: machineToken.workspaceId,
-      token: machineToken.token,
+      tokenHash: machineToken.tokenHash,
       name: machineToken.name,
       status: machineToken.status,
+      hostname: machineToken.hostname,
       lastUsedAt: machineToken.lastUsedAt,
       createdAt: machineToken.createdAt,
       userEmail: user.email,
     })
     .from(machineToken)
     .innerJoin(user, eq(user.id, machineToken.userId))
-    .where(eq(machineToken.token, token));
-  return rows[0] ?? null;
+    .where(or(eq(machineToken.tokenHash, tokenHash), eq(machineToken.token, token)));
+  const found = rows[0] ?? null;
+  if (!found) return null;
+
+  if (!found.tokenHash) {
+    await db
+      .update(machineToken)
+      .set({
+        tokenHash,
+        ...(found.status === "active" ? { token: `redacted:${found.id}` } : {}),
+      })
+      .where(eq(machineToken.id, found.id));
+  }
+
+  return { ...found, tokenHash };
 }
 
 export async function getPendingMachineToken(
@@ -73,7 +90,7 @@ export async function activateMachineToken(
 ) {
   await db
     .update(machineToken)
-    .set({ status: "active", hostname })
+    .set({ status: "active", hostname, token: `redacted:${id}` })
     .where(eq(machineToken.id, id));
 }
 
@@ -81,9 +98,9 @@ export async function getLatestTokenForUser(db: Database, userId: string) {
   const rows = await db
     .select({
       id: machineToken.id,
-      token: machineToken.token,
       status: machineToken.status,
       workspaceId: machineToken.workspaceId,
+      token: machineToken.token,
       hostname: machineToken.hostname,
       lastUsedAt: machineToken.lastUsedAt,
     })

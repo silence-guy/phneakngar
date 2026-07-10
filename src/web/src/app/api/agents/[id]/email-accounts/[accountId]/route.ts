@@ -1,10 +1,11 @@
-import { queries, UpdateEmailAccountSchema, DEV_EMAIL_WORKER_URL } from "@phneakngar/shared"
+import { queries, UpdateEmailAccountSchema } from "@phneakngar/shared"
 import { getDb } from "@/lib/db"
 import { encrypt } from "@phneakngar/shared/crypto"
 import { withAuth } from "@/lib/middleware/auth"
 import { withWorkspaceMember } from "@/lib/middleware/workspace"
 import { writeJSON, writeError, parseBody, formatTimestamp, formatTimestampNullable } from "@/lib/middleware/helpers"
 import { invalidate, cacheKeys } from "@/lib/cache"
+import { fetchEmailWorker } from "@/lib/email-worker"
 
 type AgentEmailAccountRow = Awaited<ReturnType<typeof queries.emailAccount.getEmailAccountsByAgent>>[number]
 
@@ -30,12 +31,14 @@ function accountToResponse(a: AgentEmailAccountRow) {
   }
 }
 
-async function callEmailWorker(cfEnv: Env, path: string, method = "POST") {
-  try {
-    await cfEnv.EMAIL_WORKER.fetch(`http://internal${path}`, { method })
-  } catch {
-    await fetch(`${DEV_EMAIL_WORKER_URL}${path}`, { method }).catch(() => {})
-  }
+async function callEmailWorker(
+  cfEnv: Env,
+  path: string,
+  workspaceId: string,
+  method = "POST",
+) {
+  const separator = path.includes("?") ? "&" : "?"
+  await fetchEmailWorker(cfEnv, `${path}${separator}workspaceId=${workspaceId}`, { method }).catch(() => {})
 }
 
 export const PATCH = withAuth(async (req, ctx) => {
@@ -84,8 +87,8 @@ export const PATCH = withAuth(async (req, ctx) => {
 
   const hasCredentialChange = body.imapUsername || body.imapPassword || body.smtpUsername || body.smtpPassword || body.imapHost || body.smtpHost
   if (hasCredentialChange) {
-    await callEmailWorker(cfEnv, `/imap/stop?accountId=${accountId}`)
-    await callEmailWorker(cfEnv, `/imap/start?accountId=${accountId}`)
+    await callEmailWorker(cfEnv, `/imap/stop?accountId=${accountId}`, ws.workspaceId)
+    await callEmailWorker(cfEnv, `/imap/start?accountId=${accountId}`, ws.workspaceId)
   }
 
   return writeJSON(accountToResponse(updated))
@@ -108,7 +111,7 @@ export const DELETE = withAuth(async (req, ctx) => {
   const existing = await queries.emailAccount.getEmailAccountScoped(db, accountId, agentId, ws.workspaceId)
   if (!existing) return writeError("not found", 404)
 
-  await callEmailWorker(cfEnv, `/imap/stop?accountId=${accountId}`)
+  await callEmailWorker(cfEnv, `/imap/stop?accountId=${accountId}`, ws.workspaceId)
 
   const deleted = await queries.emailAccount.deleteEmailAccount(db, accountId, ws.workspaceId)
   if (!deleted) return writeError("delete failed", 500)

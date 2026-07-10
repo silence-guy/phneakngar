@@ -5,12 +5,14 @@
   "exports": {
     ".": "./src/index.ts",
     "./crypto": "./src/utils/crypto.ts",
+    "./secrets": "./src/utils/secrets.ts",
     "./browser": "./src/browser/index.ts"
   },
   "scripts": {
     "knip": "knip",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src test --config ../../eslint.workers.config.mjs"
   },
   "dependencies": {
     "drizzle-orm": "^0.45.2",

@@ -89,7 +89,7 @@ describe("getMeetingSession", () => {
 describe("getMeetingSessionById", () => {
   it("returns null when meeting not found", async () => {
     const mockDb = createMockDb([])
-    const result = await meetingQueries.getMeetingSessionById(mockDb, "ms_missing")
+    const result = await meetingQueries.getMeetingSessionById(mockDb, "ms_missing", "ws_1")
     expect(result).toBeNull()
   })
 })

@@ -1,15 +1,15 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { execSync } from "child_process";
+import { execFileSync } from "child_process";
 
 vi.mock("child_process", () => ({
-  execSync: vi.fn(),
+  execFileSync: vi.fn(),
 }));
 
 vi.mock("./platform.js", () => ({
   isWindows: false,
 }));
 
-const mockedExecSync = vi.mocked(execSync);
+const mockedExecFileSync = vi.mocked(execFileSync);
 
 describe("resolveLoginShellEnv", () => {
   const originalEnv = process.env;
@@ -24,18 +24,19 @@ describe("resolveLoginShellEnv", () => {
     process.env = originalEnv;
   });
 
-  it("calls shell with -ilc flag to source .zshrc", async () => {
-    mockedExecSync.mockReturnValue("PATH=/usr/bin:/new/path\nHOME=/Users/test\n");
+  it("calls the configured shell without command-string interpolation", async () => {
+    mockedExecFileSync.mockReturnValue("PATH=/usr/bin:/new/path\nHOME=/Users/test\n");
     const { resolveLoginShellEnv } = await import("./shell-env.js");
     resolveLoginShellEnv();
-    expect(mockedExecSync).toHaveBeenCalledWith(
-      "/bin/zsh -ilc 'env'",
+    expect(mockedExecFileSync).toHaveBeenCalledWith(
+      "/bin/zsh",
+      ["-ilc", "env"],
       expect.objectContaining({ encoding: "utf-8", timeout: 5000 }),
     );
   });
 
-  it("uses interactive flag so .zshrc PATH additions are picked up", async () => {
-    mockedExecSync.mockReturnValue(
+  it("uses interactive mode so shell PATH additions are picked up", async () => {
+    mockedExecFileSync.mockReturnValue(
       "HOME=/Users/test\nPATH=/usr/bin:/Users/test/.opencode/bin\nSHELL=/bin/zsh\n",
     );
     const { resolveLoginShellEnv } = await import("./shell-env.js");
@@ -43,8 +44,8 @@ describe("resolveLoginShellEnv", () => {
     expect(env.PATH).toContain("/Users/test/.opencode/bin");
   });
 
-  it("falls back to process.env when shell command fails", async () => {
-    mockedExecSync.mockImplementation(() => {
+  it("falls back to process.env when shell execution fails", async () => {
+    mockedExecFileSync.mockImplementation(() => {
       throw new Error("command failed");
     });
     const { resolveLoginShellEnv } = await import("./shell-env.js");
@@ -53,14 +54,14 @@ describe("resolveLoginShellEnv", () => {
   });
 
   it("falls back to process.env when output has no PATH", async () => {
-    mockedExecSync.mockReturnValue("HOME=/Users/test\nUSER=test\n");
+    mockedExecFileSync.mockReturnValue("HOME=/Users/test\nUSER=test\n");
     const { resolveLoginShellEnv } = await import("./shell-env.js");
     const env = resolveLoginShellEnv();
     expect(env.PATH).toBe("/usr/bin");
   });
 
   it("parses multiline env output correctly", async () => {
-    mockedExecSync.mockReturnValue(
+    mockedExecFileSync.mockReturnValue(
       "HOME=/Users/gener\nPATH=/opt/homebrew/bin:/usr/bin\nSHELL=/bin/zsh\nLANG=en_US.UTF-8\n",
     );
     const { resolveLoginShellEnv } = await import("./shell-env.js");
@@ -72,22 +73,24 @@ describe("resolveLoginShellEnv", () => {
 
   it("uses default /bin/zsh when SHELL is not set", async () => {
     delete process.env.SHELL;
-    mockedExecSync.mockReturnValue("PATH=/usr/bin\n");
+    mockedExecFileSync.mockReturnValue("PATH=/usr/bin\n");
     const { resolveLoginShellEnv } = await import("./shell-env.js");
     resolveLoginShellEnv();
-    expect(mockedExecSync).toHaveBeenCalledWith(
-      "/bin/zsh -ilc 'env'",
+    expect(mockedExecFileSync).toHaveBeenCalledWith(
+      "/bin/zsh",
+      ["-ilc", "env"],
       expect.anything(),
     );
   });
 
-  it("respects custom SHELL env var", async () => {
+  it("passes a custom SHELL value as an executable path, not a command", async () => {
     process.env.SHELL = "/bin/bash";
-    mockedExecSync.mockReturnValue("PATH=/usr/bin\n");
+    mockedExecFileSync.mockReturnValue("PATH=/usr/bin\n");
     const { resolveLoginShellEnv } = await import("./shell-env.js");
     resolveLoginShellEnv();
-    expect(mockedExecSync).toHaveBeenCalledWith(
-      "/bin/bash -ilc 'env'",
+    expect(mockedExecFileSync).toHaveBeenCalledWith(
+      "/bin/bash",
+      ["-ilc", "env"],
       expect.anything(),
     );
   });
@@ -97,10 +100,10 @@ describe("resolveLoginShellEnv (windows)", () => {
   it("returns process.env copy on Windows", async () => {
     vi.resetModules();
     vi.doMock("./platform.js", () => ({ isWindows: true }));
-    mockedExecSync.mockClear();
+    mockedExecFileSync.mockClear();
     const { resolveLoginShellEnv } = await import("./shell-env.js");
     const env = resolveLoginShellEnv();
     expect(env.PATH).toBe(process.env.PATH);
-    expect(mockedExecSync).not.toHaveBeenCalled();
+    expect(mockedExecFileSync).not.toHaveBeenCalled();
   });
 });

@@ -1,18 +1,22 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare"
 import type { WsMessage, DaemonPushMessage } from "@phneakngar/shared"
-import { DEV_WS_DO_URL, createLogger } from "@phneakngar/shared"
+import { DEV_WS_DO_URL, WS_SERVICE_SECRET_HEADER, createLogger } from "@phneakngar/shared"
 
 const log = createLogger({ service: "broadcast" })
 
 async function doSend(url: string, body: string, label: Record<string, string>): Promise<{ sent: number }> {
   let wsDoUrl: string | undefined
+  let wsServiceSecret = process.env.WS_SERVICE_SECRET
   try {
     const { env } = getCloudflareContext()
     const wsEnv = env as Env
     wsDoUrl = (wsEnv as unknown as Record<string, unknown>).DEV_WS_DO_URL as string | undefined
+    wsServiceSecret = wsEnv.WS_SERVICE_SECRET || wsServiceSecret
+    if (!wsServiceSecret) throw new Error("WS_SERVICE_SECRET is not configured")
 
     const res = await wsEnv.WS_DO_WORKER.fetch(`http://internal${url}`, {
       method: "POST",
+      headers: { [WS_SERVICE_SECRET_HEADER]: wsServiceSecret },
       body,
     })
     if (res.ok) {
@@ -29,9 +33,13 @@ async function doSend(url: string, body: string, label: Record<string, string>):
   }
 
   const fallbackUrl = wsDoUrl || DEV_WS_DO_URL
+  if (!wsServiceSecret) throw new Error("WS_SERVICE_SECRET is not configured")
   const res = await fetch(`${fallbackUrl}${url}`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      [WS_SERVICE_SECRET_HEADER]: wsServiceSecret,
+    },
     body,
   })
   if (!res.ok) {

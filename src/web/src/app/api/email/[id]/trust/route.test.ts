@@ -33,9 +33,17 @@ vi.mock("@phneakngar/shared", async (importOriginal) => {
     conversation: {
       getConversation: (...args: unknown[]) => mockGetConversation(...args),
       createConversation: (...args: unknown[]) => mockCreateConversation(...args),
+      createConversationIfAbsent: async (...args: unknown[]) => ({
+        conversation: await mockCreateConversation(...args),
+        created: true,
+      }),
     },
       message: {
         createMessage: (...args: unknown[]) => mockCreateMessage(...args),
+        createMessageIfAbsent: async (...args: unknown[]) => ({
+          message: await mockCreateMessage(...args),
+          created: true,
+        }),
         updateMessageTaskId: vi.fn().mockResolvedValue(undefined),
       },
       conversationMap: {
@@ -119,7 +127,8 @@ describe("POST /api/email/[id]/trust", () => {
     vi.clearAllMocks();
     mockCreateMessage.mockResolvedValue({ id: "m1", conversationId: "c1", role: "event", content: "", taskId: null, createdAt: "2026-01-01T00:00:00Z" });
     mockFindByKey.mockResolvedValue(null);
-    mockCreateMapping.mockResolvedValue(undefined);
+    mockCreateMapping.mockImplementation((_db: unknown, opts: { conversationId: string }) => Promise.resolve(opts.conversationId));
+    mockGetTask.mockResolvedValue(null);
   });
 
   it("TC1: trusts an untrust email — 200, conversation created, task enqueued", async () => {

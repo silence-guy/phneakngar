@@ -1,16 +1,26 @@
 import { nanoid } from "nanoid"
 import PostalMime from "postal-mime"
-import { createDb, queries, parseEmailHandle, toPhneakngarAddress, DEV_WEB_URL, createLogger, buildMimeMessage, extractAttachmentMeta, isEmailDraftAttachmentKeyForScope, EMAIL_NOTIFY_SECRET_HEADER } from "@phneakngar/shared"
+import { createDb, queries, parseEmailHandle, toPhneakngarAddress, createLogger, buildMimeMessage, extractAttachmentMeta, isEmailDraftAttachmentKeyForScope, EMAIL_NOTIFY_SECRET_HEADER } from "@phneakngar/shared"
 import { decrypt } from "@phneakngar/shared/crypto"
+import { safeEqualSecret } from "@phneakngar/shared/secrets"
 import { WorkerMailer, type AuthType } from "worker-mailer"
 import { EmailMessage } from "cloudflare:email"
 
 const SMTP_AUTH_TYPES: AuthType[] = ["plain", "login", "cram-md5"]
+const MAX_INBOUND_EMAIL_BYTES = 25 * 1024 * 1024
+const MAX_ATTACHMENT_COUNT = 10
+const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024
+const MAX_TOTAL_ATTACHMENT_BYTES = 20 * 1024 * 1024
 import type { EmailEnv } from "./types"
 
 export { ImapPollerDO } from "./imap-poller-do"
 
 const log = createLogger({ service: "email" })
+
+async function sha256Hex(buffer: ArrayBuffer): Promise<string> {
+  const digest = await crypto.subtle.digest("SHA-256", buffer)
+  return [...new Uint8Array(digest)].map(byte => byte.toString(16).padStart(2, "0")).join("")
+}
 
 function arrayBufferToBase64(buffer: ArrayBuffer): string {
   const bytes = new Uint8Array(buffer)
@@ -31,19 +41,21 @@ async function notifyWeb(env: EmailEnv, payload: Record<string, unknown>, traceI
 
   const init: RequestInit = { method: "POST", headers, body }
 
-  try {
+  if (env.WEB_SERVICE) {
     const res = await env.WEB_SERVICE.fetch("http://internal/api/email/notify", init)
     if (!res.ok) {
       const errBody = await res.text().catch(() => "")
       throw new Error(`WEB_SERVICE responded ${res.status}: ${errBody}`)
     }
-  } catch (serviceErr) {
-    try {
-      const fallback = await fetch(`${DEV_WEB_URL}/api/email/notify`, init)
-      if (!fallback.ok) throw new Error(`fallback responded ${fallback.status}`)
-    } catch {
-      throw serviceErr instanceof Error ? serviceErr : new Error(String(serviceErr))
-    }
+    return
+  }
+
+  const webOrigin = env.WEB_ORIGIN?.trim()
+  if (!webOrigin) throw new Error("WEB_ORIGIN is not configured")
+  const response = await fetch(new URL("/api/email/notify", webOrigin), init)
+  if (!response.ok) {
+    const errBody = await response.text().catch(() => "")
+    throw new Error(`web notify responded ${response.status}: ${errBody}`)
   }
 }
 
@@ -53,6 +65,13 @@ export default {
 
     if (url.pathname === "/health" && request.method === "GET") {
       return Response.json({ status: "ok" })
+    }
+
+    if (!env.EMAIL_NOTIFY_SECRET) {
+      return Response.json({ error: "internal authentication is not configured" }, { status: 503 })
+    }
+    if (!safeEqualSecret(request.headers.get(EMAIL_NOTIFY_SECRET_HEADER), env.EMAIL_NOTIFY_SECRET)) {
+      return Response.json({ error: "unauthorized" }, { status: 401 })
     }
 
     if (url.pathname.startsWith("/imap/")) {
@@ -136,27 +155,44 @@ export default {
 
     const htmlBody = body.htmlBody ?? ""
     const attachmentKeys = body.attachmentKeys ?? []
+    if (attachmentKeys.length > MAX_ATTACHMENT_COUNT) {
+      return Response.json({ error: `at most ${MAX_ATTACHMENT_COUNT} attachments are allowed` }, { status: 413 })
+    }
     for (const attachment of attachmentKeys) {
       if (!isEmailDraftAttachmentKeyForScope(attachment.key, body.workspaceId)) {
         return Response.json({ error: "invalid attachment key" }, { status: 400 })
       }
     }
 
-    // Fetch attachment content from R2 in parallel
-    const attachments = (await Promise.all(
-      attachmentKeys.map(async (att) => {
-        const obj = await env.EMAIL_BUCKET.get(att.key)
-        if (!obj) return null
-        const raw = await obj.arrayBuffer()
-        return {
-          disposition: "attachment" as const,
-          filename: att.filename,
-          type: att.contentType,
-          raw,
-          base64: arrayBufferToBase64(raw),
-        }
+    // Read sequentially so the aggregate byte limit is deterministic and Worker
+    // memory does not spike from multiple simultaneous ArrayBuffer allocations.
+    let totalAttachmentBytes = 0
+    const attachments: Array<{
+      disposition: "attachment"
+      filename: string
+      type: string
+      raw: ArrayBuffer
+      base64: string
+    }> = []
+    for (const att of attachmentKeys) {
+      const obj = await env.EMAIL_BUCKET.get(att.key)
+      if (!obj) continue
+      if (obj.size > MAX_ATTACHMENT_BYTES) {
+        return Response.json({ error: "attachment is too large" }, { status: 413 })
+      }
+      totalAttachmentBytes += obj.size
+      if (totalAttachmentBytes > MAX_TOTAL_ATTACHMENT_BYTES) {
+        return Response.json({ error: "attachments are too large in total" }, { status: 413 })
+      }
+      const raw = await obj.arrayBuffer()
+      attachments.push({
+        disposition: "attachment",
+        filename: att.filename,
+        type: att.contentType,
+        raw,
+        base64: arrayBufferToBase64(raw),
       })
-    )).filter((a): a is NonNullable<typeof a> => a !== null)
+    }
 
     // Generate the outbound Message-ID ONCE, before sending. This same id is placed
     // on the wire, returned to the caller (for conversation-map registration), and
@@ -251,40 +287,45 @@ export default {
       return Response.json({ error: "accountId query parameter required" }, { status: 400 })
     }
 
+    const workspaceId = url.searchParams.get("workspaceId")
+    if (!workspaceId) {
+      return Response.json({ error: "workspaceId query parameter required" }, { status: 400 })
+    }
+
     const doId = env.IMAP_POLLER.idFromName(accountId)
     const stub = env.IMAP_POLLER.get(doId)
 
     const action = url.pathname.replace("/imap/", "")
+    const internalUrl = `http://internal/${action}?workspaceId=${encodeURIComponent(workspaceId)}`
 
     if (action === "start" && request.method === "POST") {
-      return stub.fetch(new Request("http://internal/start", {
+      return stub.fetch(new Request(internalUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ accountId }),
+        body: JSON.stringify({ accountId, workspaceId }),
       }))
     }
 
     if (action === "stop" && request.method === "POST") {
-      return stub.fetch(new Request("http://internal/stop", { method: "POST" }))
+      return stub.fetch(new Request(internalUrl, { method: "POST" }))
     }
 
     if (action === "sync" && request.method === "POST") {
-      return stub.fetch(new Request("http://internal/sync", { method: "POST" }))
+      return stub.fetch(new Request(internalUrl, { method: "POST" }))
     }
 
     if (action === "status" && request.method === "GET") {
-      return stub.fetch(new Request("http://internal/status", { method: "GET" }))
+      return stub.fetch(new Request(internalUrl, { method: "GET" }))
     }
 
     if (action === "test" && request.method === "POST") {
-      const workspaceId = url.searchParams.get("workspaceId") ?? undefined
       return this.handleTestConnection(accountId, env, workspaceId)
     }
 
     return Response.json({ error: "not found" }, { status: 404 })
   },
 
-  async handleTestConnection(accountId: string, env: EmailEnv, workspaceId?: string): Promise<Response> {
+  async handleTestConnection(accountId: string, env: EmailEnv, workspaceId: string): Promise<Response> {
     const db = createDb(env.DB)
     const account = await queries.emailAccount.getEmailAccountById(db, accountId, workspaceId)
     if (!account) {
@@ -339,6 +380,11 @@ export default {
   },
 
   async email(message: ForwardableEmailMessage, env: EmailEnv): Promise<void> {
+    if (message.rawSize > MAX_INBOUND_EMAIL_BYTES) {
+      message.setReject("Message exceeds the maximum accepted size")
+      return
+    }
+
     const traceId = nanoid(12)
     const emailLog = log.child({ traceId, from: message.from, to: message.to })
 
@@ -357,8 +403,9 @@ export default {
     const whitelisted = await queries.whitelist.isWhitelisted(db, agent.id, agent.workspaceId, message.from)
 
     const rawBytes = await new Response(message.raw).arrayBuffer()
-    const r2Id = nanoid()
-    const r2Key = `emails/${r2Id}/raw`
+    const rawDigest = await sha256Hex(rawBytes)
+    const deliveryKey = `cf:${agent.id}:${rawDigest}`
+    const r2Key = `emails/inbound/${agent.workspaceId}/${agent.id}/${rawDigest}/raw`
     await env.EMAIL_BUCKET.put(r2Key, rawBytes, {
       httpMetadata: { contentType: "message/rfc822" },
     })
@@ -371,7 +418,7 @@ export default {
     const inReplyTo = message.headers.get("in-reply-to") ?? ""
     const references = message.headers.get("references") ?? ""
 
-    const threadingFields = { messageId, inReplyTo, references }
+    const threadingFields = { messageId, deliveryKey, inReplyTo, references }
     const attachmentsField = attachmentsMeta.length > 0 ? { attachments: JSON.stringify(attachmentsMeta) } : {}
 
     if (whitelisted) {

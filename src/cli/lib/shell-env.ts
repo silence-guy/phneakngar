@@ -1,4 +1,4 @@
-import { execSync } from "child_process";
+import { execFileSync } from "child_process";
 import { isWindows } from "./platform.js";
 
 const PASSTHROUGH_VARS = ["PHNEAKNGAR_PROJECT_ROOT", "PHNEAKNGAR_SERVER_URL", "PHNEAKNGAR_CMD_PREFIX", "PHNEAKNGAR_HEALTH_PORT"];
@@ -10,7 +10,7 @@ export function resolveLoginShellEnv(): NodeJS.ProcessEnv {
 
   const shell = process.env.SHELL || "/bin/zsh";
   try {
-    const output = execSync(`${shell} -ilc 'env'`, {
+    const output = execFileSync(shell, ["-ilc", "env"], {
       encoding: "utf-8",
       timeout: 5000,
       stdio: ["ignore", "pipe", "ignore"],

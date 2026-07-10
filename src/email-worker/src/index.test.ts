@@ -15,6 +15,7 @@ vi.mock("./lib/imap-client", () => ({
 
 // Mock worker-mailer
 const mockWorkerMailerSend = vi.fn().mockResolvedValue(undefined)
+const mockSafeEqualSecret = vi.fn().mockReturnValue(true)
 vi.mock("worker-mailer", () => ({
   WorkerMailer: { send: (...args: any[]) => mockWorkerMailerSend(...args) },
 }))
@@ -23,6 +24,7 @@ vi.mock("worker-mailer", () => ({
 vi.mock("@phneakngar/shared/crypto", () => ({
   encrypt: (val: string) => `encrypted:${val}`,
   decrypt: (val: string) => `decrypted:${val}`,
+  safeEqualSecret: (...args: unknown[]) => mockSafeEqualSecret(...args),
 }))
 
 // Mock nanoid to return predictable IDs
@@ -176,7 +178,7 @@ describe("R2 storage", () => {
 
     expect(put).toHaveBeenCalledOnce()
     const [key, _body, opts] = put.mock.calls[0]
-    expect(key).toBe("emails/mock-id-2/raw")
+    expect(key).toMatch(/^emails\/inbound\/ws-1\/agent-1\/[a-f0-9]{64}\/raw$/)
     expect(opts).toEqual({ httpMetadata: { contentType: "message/rfc822" } })
   })
 
@@ -207,7 +209,8 @@ describe("whitelisted path", () => {
     const body = JSON.parse(init.body)
     expect(body.agentId).toBe("agent-1")
     expect(body.workspaceId).toBe("ws-1")
-    expect(body.r2Key).toBe("emails/mock-id-2/raw")
+    expect(body.r2Key).toMatch(/^emails\/inbound\/ws-1\/agent-1\/[a-f0-9]{64}\/raw$/)
+    expect(body.deliveryKey).toMatch(/^cf:agent-1:[a-f0-9]{64}$/)
     expect(body.from).toBe("owner@example.com")
     expect(body.subject).toBe("Hello")
     expect(body.isWhitelisted).toBe(true)
@@ -1008,7 +1011,7 @@ describe("IMAP management routes", () => {
   it("POST /imap/start forwards to DO with accountId", async () => {
     const { env, doFetch, mockIdFromName } = imapEnv()
     const res = await handler.fetch(
-      new Request("http://localhost/imap/start?accountId=acc-1", { method: "POST" }),
+      new Request("http://localhost/imap/start?accountId=acc-1&workspaceId=ws-1", { method: "POST" }),
       env,
     )
     expect(res.status).toBe(200)
@@ -1017,13 +1020,13 @@ describe("IMAP management routes", () => {
     const [req] = doFetch.mock.calls[0] as [Request]
     expect(new URL(req.url).pathname).toBe("/start")
     const body = await req.json()
-    expect(body).toEqual({ accountId: "acc-1" })
+    expect(body).toEqual({ accountId: "acc-1", workspaceId: "ws-1" })
   })
 
   it("POST /imap/stop forwards to DO", async () => {
     const { env, doFetch } = imapEnv()
     const res = await handler.fetch(
-      new Request("http://localhost/imap/stop?accountId=acc-1", { method: "POST" }),
+      new Request("http://localhost/imap/stop?accountId=acc-1&workspaceId=ws-1", { method: "POST" }),
       env,
     )
     expect(res.status).toBe(200)
@@ -1034,7 +1037,7 @@ describe("IMAP management routes", () => {
   it("POST /imap/sync forwards to DO", async () => {
     const { env, doFetch } = imapEnv()
     const res = await handler.fetch(
-      new Request("http://localhost/imap/sync?accountId=acc-1", { method: "POST" }),
+      new Request("http://localhost/imap/sync?accountId=acc-1&workspaceId=ws-1", { method: "POST" }),
       env,
     )
     expect(res.status).toBe(200)
@@ -1045,7 +1048,7 @@ describe("IMAP management routes", () => {
   it("GET /imap/status forwards to DO", async () => {
     const { env, doFetch } = imapEnv()
     const res = await handler.fetch(
-      new Request("http://localhost/imap/status?accountId=acc-1", { method: "GET" }),
+      new Request("http://localhost/imap/status?accountId=acc-1&workspaceId=ws-1", { method: "GET" }),
       env,
     )
     expect(res.status).toBe(200)

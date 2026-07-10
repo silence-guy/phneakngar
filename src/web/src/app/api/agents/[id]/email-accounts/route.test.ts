@@ -5,7 +5,7 @@ import * as sharedMock from "@/test/shared-mock";
 const mockEmailWorkerFetch = vi.fn().mockResolvedValue(new Response("ok"));
 vi.mock("@opennextjs/cloudflare", () => ({
   getCloudflareContext: vi.fn(() => ({
-    env: { DB: {}, ENCRYPTION_KEY: "test-key", EMAIL_WORKER: { fetch: mockEmailWorkerFetch } },
+    env: { DB: {}, ENCRYPTION_KEY: "test-key", EMAIL_NOTIFY_SECRET: "notify-secret", EMAIL_WORKER: { fetch: mockEmailWorkerFetch } },
   })),
 }));
 vi.mock("@/lib/db", () => ({ getDb: vi.fn(() => ({})) }));
@@ -32,7 +32,7 @@ vi.mock("@phneakngar/shared", async (importOriginal) => {
 vi.mock("@/lib/middleware/auth", () => ({
   withAuth: vi.fn((handler: any) => async (req: any, ctx?: any) => {
     const params = ctx?.params instanceof Promise ? await ctx.params : ctx?.params;
-    return handler(req, { env: { DB: {}, ENCRYPTION_KEY: "test-key", EMAIL_WORKER: { fetch: mockEmailWorkerFetch } }, userId: "u1", email: "u@t.com", params });
+    return handler(req, { env: { DB: {}, ENCRYPTION_KEY: "test-key", EMAIL_NOTIFY_SECRET: "notify-secret", EMAIL_WORKER: { fetch: mockEmailWorkerFetch } }, userId: "u1", email: "u@t.com", params });
   }),
 }));
 vi.mock("@/lib/middleware/workspace", () => ({

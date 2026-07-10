@@ -19,7 +19,7 @@ export const GET = withAuth(async (_req, ctx) => {
   const taskAccess = await withDaemonTaskAccess(db, ctx, taskId);
   if (taskAccess instanceof Response) return taskAccess;
 
-  const status = await withD1Retry(() => queries.task.getTaskStatus(db, taskId, ctx.workspaceId));
+  const status = await withD1Retry(() => queries.task.getTaskStatus(db, taskId, taskAccess.workspaceId));
   if (!status) {
     return writeError("task not found", 404);
   }

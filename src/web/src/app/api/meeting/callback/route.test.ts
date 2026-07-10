@@ -85,7 +85,7 @@ describe("POST /api/meeting/callback", () => {
       participants: ["alice@test.com"],
     });
     mockUpdateMeetingSession.mockResolvedValue({
-      id: "ms1", status: "completed", transcriptR2Key: "meetings/ms1/transcript",
+      id: "ms1", status: "completed", transcriptR2Key: "meetings/w1/ms1/transcript",
     });
     mockGetAgent.mockResolvedValue({ id: "a1", emailHandle: "jarvis", workspaceId: "w1" });
     mockGetEmailByMessageId.mockResolvedValue(null);
@@ -101,17 +101,17 @@ describe("POST /api/meeting/callback", () => {
 
     // Should store raw transcript
     expect(mockBucketPut).toHaveBeenCalledWith(
-      "meetings/ms1/transcript",
+      "meetings/w1/ms1/transcript",
       "[00:01] Alice: Hello",
       { httpMetadata: { contentType: "text/plain" } },
     );
 
-    // Should store MIME email at emails/{nanoid}/raw
+    // Should store the generated MIME email at a deterministic workspace key.
     const mimeCall = mockBucketPut.mock.calls.find(
       (c: unknown[]) => (c[0] as string).startsWith("emails/")
     );
     expect(mimeCall).toBeDefined();
-    expect(mimeCall![0]).toBe("emails/test-nanoid-123/raw");
+    expect(mimeCall![0]).toBe("emails/meetings/w1/ms1/summary/raw");
     const mimeContent = mimeCall![1] as string;
     expect(mimeContent).toContain("From: no-reply@phneakngar.ai");
     expect(mimeContent).toContain("To: jarvis@phneakngar.ai");
@@ -129,7 +129,8 @@ describe("POST /api/meeting/callback", () => {
     const notifyBody = JSON.parse(
       notifyInit.body as string
     );
-    expect(notifyBody.r2Key).toBe("emails/test-nanoid-123/raw");
+    expect(notifyBody.r2Key).toBe("emails/meetings/w1/ms1/summary/raw");
+    expect(notifyBody.deliveryKey).toBe("meeting:w1:ms1");
     expect(notifyBody.from).toBe("no-reply@phneakngar.ai");
     expect(notifyBody.to).toBe("jarvis@phneakngar.ai");
     expect(notifyBody.subject).toContain("Meeting completed: Weekly");
@@ -155,7 +156,20 @@ describe("POST /api/meeting/callback", () => {
     expect(mockSelfRefFetch).not.toHaveBeenCalled();
     // Only one put: the raw transcript, no MIME email
     expect(mockBucketPut).toHaveBeenCalledTimes(1);
-    expect(mockBucketPut.mock.calls[0][0]).toBe("meetings/ms2/transcript");
+    expect(mockBucketPut.mock.calls[0][0]).toBe("meetings/w1/ms2/transcript");
+  });
+
+  it("rejects oversized transcripts before writing storage", async () => {
+    const res = await POST(postReq({
+      meetingId: "ms-large",
+      workspaceId: "w1",
+      status: "completed",
+      transcript: "x".repeat(5 * 1024 * 1024 + 1),
+    }));
+
+    expect(res.status).toBe(413);
+    expect(mockGetMeetingSession).not.toHaveBeenCalled();
+    expect(mockBucketPut).not.toHaveBeenCalled();
   });
 
   it("skips email notify on failed meeting", async () => {

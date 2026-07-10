@@ -36,6 +36,47 @@ export async function createMeetingSession(
   return rows[0]!;
 }
 
+export async function createMeetingSessionIfAbsent(
+  db: Database,
+  data: {
+    id: string;
+    agentId: string;
+    workspaceId: string;
+    title?: string;
+    meetingUrl: string;
+    status?: string;
+    fromEmail?: string | null;
+    isWhitelisted?: boolean;
+    participants?: string[];
+    scheduledAt?: string | null;
+  },
+): Promise<{ meeting: typeof meetingSession.$inferSelect; created: boolean }> {
+  const now = new Date().toISOString();
+  const rows = await db
+    .insert(meetingSession)
+    .values({
+      id: data.id,
+      agentId: data.agentId,
+      workspaceId: data.workspaceId,
+      title: data.title ?? "",
+      meetingUrl: data.meetingUrl,
+      status: data.status ?? "scheduled",
+      fromEmail: data.fromEmail ?? null,
+      isWhitelisted: data.isWhitelisted ?? true,
+      participants: data.participants ?? [],
+      scheduledAt: data.scheduledAt ?? null,
+      createdAt: now,
+      updatedAt: now,
+    })
+    .onConflictDoNothing({ target: meetingSession.id })
+    .returning();
+  if (rows[0]) return { meeting: rows[0], created: true };
+
+  const existing = await getMeetingSession(db, data.id, data.workspaceId);
+  if (!existing) throw new Error("meeting idempotency conflict could not be resolved");
+  return { meeting: existing, created: false };
+}
+
 export async function getMeetingSession(
   db: Database,
   id: string,
@@ -50,11 +91,14 @@ export async function getMeetingSession(
   return rows[0] ?? null;
 }
 
-export async function getMeetingSessionById(db: Database, id: string) {
+export async function getMeetingSessionById(db: Database, id: string, workspaceId: string) {
   const rows = await db
     .select()
     .from(meetingSession)
-    .where(eq(meetingSession.id, id));
+    .where(and(
+      eq(meetingSession.id, id),
+      eq(meetingSession.workspaceId, workspaceId),
+    ));
   return rows[0] ?? null;
 }
 

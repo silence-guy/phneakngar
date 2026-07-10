@@ -334,14 +334,14 @@ describe("WebSocketDurableObject", () => {
       expect(ws.close).toHaveBeenCalledWith(1008, "Invalid JSON")
     })
 
-    it("ignores binary messages", async () => {
+    it("rejects unsupported binary messages", async () => {
       const { durable } = createDO()
 
       const ws = createMockWebSocket()
 
       await durable.webSocketMessage(ws as any, new ArrayBuffer(4))
 
-      expect(ws.close).not.toHaveBeenCalled()
+      expect(ws.close).toHaveBeenCalledWith(1003, "Binary messages are not supported")
       expect(ws.send).not.toHaveBeenCalled()
     })
   })

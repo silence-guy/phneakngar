@@ -1,10 +1,11 @@
-import { queries, CreateEmailAccountSchema, DEV_EMAIL_WORKER_URL } from "@phneakngar/shared"
+import { queries, CreateEmailAccountSchema } from "@phneakngar/shared"
 import { getDb } from "@/lib/db"
 import { encrypt } from "@phneakngar/shared/crypto"
 import { withAuth } from "@/lib/middleware/auth"
 import { withWorkspaceMember } from "@/lib/middleware/workspace"
 import { writeJSON, writeError, parseBody, formatTimestamp, formatTimestampNullable } from "@/lib/middleware/helpers"
 import { invalidate, cacheKeys } from "@/lib/cache"
+import { fetchEmailWorker } from "@/lib/email-worker"
 
 type AgentEmailAccountRow = Awaited<ReturnType<typeof queries.emailAccount.getEmailAccountsByAgent>>[number]
 
@@ -83,15 +84,11 @@ export const POST = withAuth(async (req, ctx) => {
     pollIntervalSeconds: body.pollIntervalSeconds,
   })
 
-  try {
-    await cfEnv.EMAIL_WORKER.fetch(`http://internal/imap/start?accountId=${account.id}`, {
-      method: "POST",
-    })
-  } catch {
-    await fetch(`${DEV_EMAIL_WORKER_URL}/imap/start?accountId=${account.id}`, {
-      method: "POST",
-    }).catch(() => {})
-  }
+  await fetchEmailWorker(
+    cfEnv,
+    `/imap/start?accountId=${account.id}&workspaceId=${ws.workspaceId}`,
+    { method: "POST" },
+  ).catch(() => {})
 
   await invalidate(cacheKeys.allEmailAccounts(ws.workspaceId));
   await invalidate(cacheKeys.overviewEmailAccounts(ws.workspaceId));

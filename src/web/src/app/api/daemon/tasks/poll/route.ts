@@ -23,6 +23,15 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
   const daemonAuth = await withDaemonMachine(db, ctx, body.daemon_id);
   if (daemonAuth instanceof Response) return daemonAuth;
 
+  const minimumCliVersion = ctx.env.MIN_CLI_VERSION?.trim();
+  if (minimumCliVersion && (!body.cli_version || !semverGte(body.cli_version, minimumCliVersion))) {
+    return writeJSON({
+      tasks: [],
+      pending_update: { version: minimumCliVersion },
+      update_required: true,
+    });
+  }
+
   // 1. Resolve runtime IDs from daemon_id + workspaceId (cached 10min)
   const runtimeIds = await cached(
     cacheKeys.runtimeIds(ctx.workspaceId, body.daemon_id),

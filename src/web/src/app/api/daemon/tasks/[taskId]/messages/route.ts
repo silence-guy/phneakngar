@@ -25,7 +25,7 @@ export const GET = withAuth(async (_req, ctx) => {
   const taskAccess = await withDaemonTaskAccess(db, ctx, taskId);
   if (taskAccess instanceof Response) return taskAccess;
 
-  const messages = await withD1Retry(() => queries.taskMessage.listTaskMessages(db, taskId, ctx.workspaceId));
+  const messages = await withD1Retry(() => queries.taskMessage.listTaskMessages(db, taskId, taskAccess.workspaceId));
   return writeJSON(messages.map(taskMessageToResponse));
 });
 

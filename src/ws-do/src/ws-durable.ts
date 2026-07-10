@@ -2,6 +2,13 @@ import { DurableObject } from "cloudflare:workers"
 import { createDb, queries, createLogger } from "@phneakngar/shared"
 
 const log = createLogger({ service: "ws-do" })
+const MAX_WS_MESSAGE_BYTES = 256 * 1024
+const MAX_CONNECTIONS_PER_OBJECT = 256
+const MAX_UNAUTHENTICATED_CONNECTIONS = 32
+
+function utf8ByteLength(value: string): number {
+  return new TextEncoder().encode(value).byteLength
+}
 
 type ConnectionState =
   | { type: "user"; userId: string; authenticated: boolean }
@@ -12,7 +19,14 @@ export class WebSocketDurableObject extends DurableObject<Env> {
     const url = new URL(request.url)
 
     if (url.pathname === "/broadcast" && request.method === "POST") {
+      const declaredLength = Number(request.headers.get("Content-Length") ?? "0")
+      if (Number.isFinite(declaredLength) && declaredLength > MAX_WS_MESSAGE_BYTES) {
+        return new Response("Payload too large", { status: 413 })
+      }
       const body = await request.text()
+      if (utf8ByteLength(body) > MAX_WS_MESSAGE_BYTES) {
+        return new Response("Payload too large", { status: 413 })
+      }
       const sent = this.broadcast(body)
       return new Response(JSON.stringify({ sent }), {
         headers: { "Content-Type": "application/json" },
@@ -39,6 +53,18 @@ export class WebSocketDurableObject extends DurableObject<Env> {
       return new Response("userId or daemonId required", { status: 400 })
     }
 
+    const existingSockets = this.ctx.getWebSockets()
+    if (existingSockets.length >= MAX_CONNECTIONS_PER_OBJECT) {
+      return new Response("Connection capacity reached", { status: 503 })
+    }
+    const unauthenticatedCount = existingSockets.reduce((count, socket) => {
+      const state = socket.deserializeAttachment() as ConnectionState | undefined
+      return count + (state?.authenticated ? 0 : 1)
+    }, 0)
+    if (unauthenticatedCount >= MAX_UNAUTHENTICATED_CONNECTIONS) {
+      return new Response("Authentication capacity reached", { status: 429 })
+    }
+
     const pair = new WebSocketPair()
     const [client, server] = Object.values(pair)
 
@@ -57,7 +83,14 @@ export class WebSocketDurableObject extends DurableObject<Env> {
   }
 
   async webSocketMessage(ws: WebSocket, message: string | ArrayBuffer): Promise<void> {
-    if (typeof message !== "string") return
+    if (typeof message !== "string") {
+      ws.close(1003, "Binary messages are not supported")
+      return
+    }
+    if (utf8ByteLength(message) > MAX_WS_MESSAGE_BYTES) {
+      ws.close(1009, "Message too large")
+      return
+    }
 
     let parsed: unknown
     try { parsed = JSON.parse(message) } catch { ws.close(1008, "Invalid JSON"); return }

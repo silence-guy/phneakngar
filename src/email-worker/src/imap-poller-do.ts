@@ -1,7 +1,7 @@
 import { DurableObject } from "cloudflare:workers"
 import PostalMime from "postal-mime"
 import { nanoid } from "nanoid"
-import { createDb, queries, createLogger, parseIcs, extractAttachmentMeta, DEV_WEB_URL, EMAIL_NOTIFY_SECRET_HEADER } from "@phneakngar/shared"
+import { createDb, queries, createLogger, parseIcs, extractAttachmentMeta, EMAIL_NOTIFY_SECRET_HEADER } from "@phneakngar/shared"
 import type { MeetingInfo } from "@phneakngar/shared"
 import { decrypt } from "@phneakngar/shared/crypto"
 import { ImapClient, ImapAuthError } from "./lib/imap-client"
@@ -14,43 +14,79 @@ const DEFAULT_POLL_MS = 60_000
 const MAX_EMAILS_PER_POLL = 50
 const FIRST_SYNC_DAYS = 7
 const POLL_TIMEOUT_MS = 25_000
+const MAX_INBOUND_EMAIL_BYTES = 25 * 1024 * 1024
 
 export class ImapPollerDO extends DurableObject<EmailEnv> {
   private accountId: string | null = null
+  private workspaceId: string | null = null
   private _db: ReturnType<typeof createDb> | null = null
 
   private get db() {
     return (this._db ??= createDb(this.env.DB))
   }
 
+  private async loadScope(): Promise<{ accountId: string; workspaceId: string } | null> {
+    const accountId = this.accountId ?? await this.ctx.storage.get<string>("accountId")
+    const workspaceId = this.workspaceId ?? await this.ctx.storage.get<string>("workspaceId")
+    if (!accountId || !workspaceId) return null
+    this.accountId = accountId
+    this.workspaceId = workspaceId
+    return { accountId, workspaceId }
+  }
+
+  private async requireScope(request: Request): Promise<{ accountId: string; workspaceId: string } | Response> {
+    const scope = await this.loadScope()
+    const requestedWorkspaceId = new URL(request.url).searchParams.get("workspaceId")
+    if (!scope || (requestedWorkspaceId && scope.workspaceId !== requestedWorkspaceId)) {
+      return Response.json({ error: "email account not found" }, { status: 404 })
+    }
+    return scope
+  }
+
   async fetch(request: Request): Promise<Response> {
     const url = new URL(request.url)
 
     if (url.pathname === "/start" && request.method === "POST") {
-      const body = await request.json<{ accountId: string }>()
+      const body = await request.json<{ accountId?: string; workspaceId?: string }>()
+      if (!body.accountId || !body.workspaceId) {
+        return Response.json({ error: "accountId and workspaceId are required" }, { status: 400 })
+      }
+      const account = await queries.emailAccount.getEmailAccountById(this.db, body.accountId, body.workspaceId)
+      if (!account) return Response.json({ error: "email account not found" }, { status: 404 })
+
       this.accountId = body.accountId
+      this.workspaceId = body.workspaceId
       await this.ctx.storage.put("accountId", body.accountId)
+      await this.ctx.storage.put("workspaceId", body.workspaceId)
       await this.ctx.storage.put("backoffMs", 0)
       await this.ctx.storage.setAlarm(Date.now() + 1000)
       return Response.json({ ok: true })
     }
 
     if (url.pathname === "/stop" && request.method === "POST") {
+      const scope = await this.requireScope(request)
+      if (scope instanceof Response) return scope
       await this.ctx.storage.deleteAlarm()
       await this.ctx.storage.deleteAll()
+      this.accountId = null
+      this.workspaceId = null
       return Response.json({ ok: true })
     }
 
     if (url.pathname === "/sync" && request.method === "POST") {
+      const scope = await this.requireScope(request)
+      if (scope instanceof Response) return scope
       await this.pollImap()
       return Response.json({ ok: true })
     }
 
     if (url.pathname === "/status" && request.method === "GET") {
-      const accountId = await this.ctx.storage.get<string>("accountId")
-      if (!accountId) return Response.json({ status: "stopped" })
+      const loadedScope = await this.loadScope()
+      if (!loadedScope) return Response.json({ status: "stopped" })
+      const scope = await this.requireScope(request)
+      if (scope instanceof Response) return scope
       const db = this.db
-      const account = await queries.emailAccount.getEmailAccountById(db, accountId)
+      const account = await queries.emailAccount.getEmailAccountById(db, scope.accountId, scope.workspaceId)
       if (!account) return Response.json({ status: "not_found" })
       return Response.json({
         status: account.status,
@@ -63,13 +99,13 @@ export class ImapPollerDO extends DurableObject<EmailEnv> {
   }
 
   async alarm(): Promise<void> {
-    const accountId = this.accountId ?? await this.ctx.storage.get<string>("accountId")
-    if (!accountId) return
+    const scope = await this.loadScope()
+    if (!scope) return
 
     let pollIntervalMs = DEFAULT_POLL_MS
     try {
       const db = this.db
-      const account = await queries.emailAccount.getEmailAccountById(db, accountId)
+      const account = await queries.emailAccount.getEmailAccountById(db, scope.accountId, scope.workspaceId)
       if (!account) {
         await this.ctx.storage.deleteAlarm()
         await this.ctx.storage.deleteAll()
@@ -98,11 +134,12 @@ export class ImapPollerDO extends DurableObject<EmailEnv> {
   }
 
   private async pollImap(): Promise<void> {
-    const accountId = this.accountId ?? await this.ctx.storage.get<string>("accountId")
-    if (!accountId) return
+    const scope = await this.loadScope()
+    if (!scope) return
 
+    const { accountId, workspaceId } = scope
     const db = this.db
-    const account = await queries.emailAccount.getEmailAccountById(db, accountId)
+    const account = await queries.emailAccount.getEmailAccountById(db, accountId, workspaceId)
     if (!account) {
       await this.ctx.storage.deleteAlarm()
       await this.ctx.storage.deleteAll()
@@ -177,11 +214,22 @@ export class ImapPollerDO extends DurableObject<EmailEnv> {
           maxUid = Math.max(maxUid, uid)
           continue
         }
+        if (new TextEncoder().encode(rawEmail).byteLength > MAX_INBOUND_EMAIL_BYTES) {
+          maxUid = Math.max(maxUid, uid)
+          await queries.emailAccount.updateEmailAccount(db, accountId, account.workspaceId, {
+            lastSyncedAt: new Date().toISOString(),
+            lastSyncedUid: String(maxUid),
+            status: "active",
+            errorMessage: `Skipped oversized message UID ${uid}`,
+          })
+          log.warn("skipped oversized IMAP message", { accountId, uid })
+          continue
+        }
 
         const parsed = await PostalMime.parse(rawEmail)
 
-        const r2Id = nanoid()
-        const r2Key = `emails/${r2Id}/raw`
+        const deliveryKey = `imap:${accountId}:${uid}`
+        const r2Key = `emails/imap/${workspaceId}/${accountId}/${uid}/raw`
         await this.env.EMAIL_BUCKET.put(r2Key, rawEmail, {
           httpMetadata: { contentType: "message/rfc822" },
         })
@@ -216,6 +264,7 @@ export class ImapPollerDO extends DurableObject<EmailEnv> {
           subject: parsed.subject || "",
           isWhitelisted,
           messageId: parsed.messageId || "",
+          deliveryKey,
           inReplyTo: parsed.inReplyTo || "",
           references: parsed.references || "",
           meetingInfo,
@@ -223,6 +272,12 @@ export class ImapPollerDO extends DurableObject<EmailEnv> {
         })
 
         maxUid = Math.max(maxUid, uid)
+        await queries.emailAccount.updateEmailAccount(db, accountId, account.workspaceId, {
+          lastSyncedAt: new Date().toISOString(),
+          lastSyncedUid: String(maxUid),
+          status: "active",
+          errorMessage: "",
+        })
       }
 
       await queries.emailAccount.updateEmailAccount(db, accountId, account.workspaceId, {
@@ -289,16 +344,15 @@ export class ImapPollerDO extends DurableObject<EmailEnv> {
 
     const init: RequestInit = { method: "POST", headers, body }
 
-    try {
+    if (this.env.WEB_SERVICE) {
       const res = await this.env.WEB_SERVICE.fetch("http://internal/api/email/notify", init)
       if (!res.ok) throw new Error(`WEB_SERVICE responded ${res.status}`)
-    } catch (serviceErr) {
-      try {
-        const fallback = await fetch(`${DEV_WEB_URL}/api/email/notify`, init)
-        if (!fallback.ok) throw new Error(`fallback responded ${fallback.status}`)
-      } catch {
-        throw serviceErr instanceof Error ? serviceErr : new Error(String(serviceErr))
-      }
+      return
     }
+
+    const webOrigin = this.env.WEB_ORIGIN?.trim()
+    if (!webOrigin) throw new Error("WEB_ORIGIN is not configured")
+    const response = await fetch(new URL("/api/email/notify", webOrigin), init)
+    if (!response.ok) throw new Error(`web notify responded ${response.status}`)
   }
 }

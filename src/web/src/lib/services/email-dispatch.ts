@@ -36,7 +36,7 @@ export async function dispatchEmailToAgent(
   email: EmailRow,
   agent: AgentRow,
   opts: DispatchOpts = {},
-): Promise<{ conversationId: string; taskId: string }> {
+): Promise<{ conversationId: string; taskId: string; created: boolean }> {
   const ownerId = agent.ownerId!
   const threadId = extractThreadId(email.references, email.inReplyTo, email.messageId)
   const mapKey = threadId ? buildEmailMapKey(agent.id, threadId) : null
@@ -66,7 +66,8 @@ export async function dispatchEmailToAgent(
         if (parentConv) inheritedChannel = parentConv.channel
       }
     }
-    const conv = await queries.conversation.createConversation(db, {
+    const conversationResult = await queries.conversation.createConversationIfAbsent(db, {
+      id: `email-conversation-${email.id}`,
       workspaceId: agent.workspaceId,
       agentId: agent.id,
       userId: ownerId,
@@ -74,14 +75,24 @@ export async function dispatchEmailToAgent(
       type: TASK_TYPES.EMAIL_NOTIFICATION,
       ...(inheritedChannel && inheritedChannel !== "default" ? { channel: inheritedChannel } : {}),
     })
-    conversationId = conv.id
+    conversationId = conversationResult.conversation.id
 
     if (mapKey) {
-      await queries.conversationMap.createMapping(db, {
+      conversationId = await queries.conversationMap.createMapping(db, {
         key: mapKey,
         workspaceId: email.workspaceId,
         conversationId,
       })
+      if (conversationId !== conversationResult.conversation.id) {
+        const mappedConversation = await queries.conversation.getConversation(db, conversationId, email.workspaceId)
+        if (mappedConversation) {
+          conversationType = mappedConversation.type
+          if (mappedConversation.type === TASK_TYPES.USER_DM_MESSAGE && mappedConversation.userId) {
+            const u = await queries.user.getUser(db, mappedConversation.userId)
+            if (u) dmUser = { name: u.name, email: u.email }
+          }
+        }
+      }
     }
   }
 
@@ -90,14 +101,16 @@ export async function dispatchEmailToAgent(
     ? { targetConversationId: opts.senderConversationId, targetAgentId: opts.senderAgentId }
     : {}
   const emailMetadata = JSON.stringify({ emailId: email.id, subject: email.subject, from: email.fromEmail, to: email.toEmail, direction: "inbound" as const, ...crossLink })
-  const msg = await queries.message.createMessage(db, {
+  const messageResult = await queries.message.createMessageIfAbsent(db, {
+    id: `email-message-${email.id}`,
     conversationId,
     role: "event",
     content: prompt,
     metadata: emailMetadata,
   })
+  const msg = messageResult.message
 
-  if (conversationType === TASK_TYPES.USER_DM_MESSAGE) {
+  if (messageResult.created && conversationType === TASK_TYPES.USER_DM_MESSAGE) {
     broadcastToUser(ownerId, {
       type: "conversation.message",
       conversationId,
@@ -121,10 +134,19 @@ export async function dispatchEmailToAgent(
   context.emailId = email.id
   const traceId = opts.traceId || ("tr_" + nanoid())
   const parentTaskId = opts.traceId ? (opts.sourceTaskId || null) : null
-  const task = await taskService.enqueueTask(agent.id, conversationId, agent.workspaceId, prompt, TASK_TYPES.EMAIL_NOTIFICATION, { contextKey: conversationId, context, traceId, parentTaskId })
+  const taskId = `email-task-${email.id}`
+  const existingTask = await queries.task.getTask(db, taskId, agent.workspaceId)
+  const task = await taskService.enqueueTask(agent.id, conversationId, agent.workspaceId, prompt, TASK_TYPES.EMAIL_NOTIFICATION, {
+    contextKey: conversationId,
+    context,
+    traceId,
+    parentTaskId,
+    idempotencyId: taskId,
+  })
+  const taskCreated = !existingTask
   queries.message.updateMessageTaskId(db, msg.id, task.id).catch(() => {})
 
-  if (conversationType === TASK_TYPES.USER_DM_MESSAGE) {
+  if (taskCreated && conversationType === TASK_TYPES.USER_DM_MESSAGE) {
     broadcastToUser(ownerId, {
       type: "task.created",
       conversationId,
@@ -132,5 +154,9 @@ export async function dispatchEmailToAgent(
     }).catch(() => {})
   }
 
-  return { conversationId, taskId: task.id }
+  return {
+    conversationId,
+    taskId: task.id,
+    created: messageResult.created || taskCreated,
+  }
 }

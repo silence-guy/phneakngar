@@ -29,6 +29,7 @@ export class TaskService {
       parentTaskId?: string | null;
       localeOverride?: string | null;
       retryOfTaskId?: string | null;
+      idempotencyId?: string;
     },
   ) {
     const agent = await agentQueries.getAgent(this.db, agentId, workspaceId);
@@ -46,7 +47,7 @@ export class TaskService {
       }
     }
 
-    const task = await taskQueries.createTask(this.db, {
+    const taskData = {
       agentId,
       runtimeId: agent.runtimeId,
       workspaceId,
@@ -60,7 +61,13 @@ export class TaskService {
       parentTaskId: opts?.parentTaskId ?? null,
       localeOverride: opts?.localeOverride ?? null,
       retryOfTaskId: opts?.retryOfTaskId ?? null,
-    });
+    };
+    const task = opts?.idempotencyId
+      ? (await taskQueries.createTaskIfAbsent(this.db, {
+          id: opts.idempotencyId,
+          ...taskData,
+        })).task
+      : await taskQueries.createTask(this.db, taskData);
     invalidate(cacheKeys.activeTaskCounts(workspaceId)).catch(() => {});
     // Push task to daemon via WS (best-effort). Awaited to ensure task state
     // settles (dispatched on success, reverted to queued on failure) before

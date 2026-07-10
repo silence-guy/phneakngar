@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { queries, DEV_EMAIL_WORKER_URL, DEV_WEB_URL, SendEmailRequestSchema, parseEmailHandle, toPhneakngarAddress, buildMimeMessage, extractThreadId, buildEmailMapKey, isEmailDraftAttachmentKeyForScope, EMAIL_NOTIFY_SECRET_HEADER } from "@phneakngar/shared";
+import { queries, DEV_WEB_URL, SendEmailRequestSchema, parseEmailHandle, toPhneakngarAddress, buildMimeMessage, extractThreadId, buildEmailMapKey, isEmailDraftAttachmentKeyForScope, EMAIL_NOTIFY_SECRET_HEADER } from "@phneakngar/shared";
 import { nanoid } from "nanoid";
 import { getDb } from "@/lib/db"
 import { withAuth } from "@/lib/middleware/auth";
@@ -8,6 +8,7 @@ import { writeJSON, writeError, parseBody } from "@/lib/middleware/helpers";
 import { emailToResponse } from "@/lib/api/responses";
 import { broadcastToUser } from "@/lib/broadcast";
 import { cached, invalidate, cacheKeys } from "@/lib/cache";
+import { fetchEmailWorker } from "@/lib/email-worker";
 
 async function broadcastEmailSentEvent(
   db: Parameters<typeof queries.message.createMessage>[0],
@@ -158,6 +159,7 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
         isWhitelisted,
         forwarded: false,
         messageId,
+        deliveryKey: `internal:${recipientAgent.id}:${messageId}`,
         inReplyTo: body.inReplyTo ?? "",
         references: body.references ?? "",
         isInternal: true,
@@ -241,21 +243,11 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
       : undefined,
   });
 
-  let emailRes: Response;
-  try {
-    emailRes = await cfEnv.EMAIL_WORKER.fetch("http://internal/send/agent", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: emailPayload,
-    });
-  } catch {
-    // Service binding not connected — fall back to direct URL (local dev)
-    emailRes = await fetch(`${DEV_EMAIL_WORKER_URL}/send/agent`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: emailPayload,
-    });
-  }
+  const emailRes = await fetchEmailWorker(cfEnv, "/send/agent", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: emailPayload,
+  });
 
   if (!emailRes.ok) {
     const errBody = await emailRes.text();

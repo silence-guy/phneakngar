@@ -44,6 +44,52 @@ export async function createTask(
   return rows[0]!;
 }
 
+export async function createTaskIfAbsent(
+  db: Database,
+  data: {
+    id: string;
+    agentId: string;
+    runtimeId: string;
+    workspaceId: string;
+    conversationId: string;
+    prompt: string;
+    type?: string;
+    contextKey?: string | null;
+    priority?: number;
+    context?: Record<string, unknown>;
+    traceId?: string | null;
+    parentTaskId?: string | null;
+    localeOverride?: string | null;
+    retryOfTaskId?: string | null;
+  },
+): Promise<{ task: typeof agentTaskQueue.$inferSelect; created: boolean }> {
+  const rows = await db
+    .insert(agentTaskQueue)
+    .values({
+      id: data.id,
+      agentId: data.agentId,
+      runtimeId: data.runtimeId,
+      workspaceId: data.workspaceId,
+      conversationId: data.conversationId,
+      prompt: data.prompt,
+      type: data.type ?? TASK_TYPES.USER_DM_MESSAGE,
+      contextKey: data.contextKey ?? null,
+      priority: data.priority ?? 0,
+      context: data.context ?? undefined,
+      traceId: data.traceId ?? null,
+      parentTaskId: data.parentTaskId ?? null,
+      localeOverride: data.localeOverride ?? null,
+      retryOfTaskId: data.retryOfTaskId ?? null,
+    })
+    .onConflictDoNothing({ target: agentTaskQueue.id })
+    .returning();
+  if (rows[0]) return { task: rows[0], created: true };
+
+  const existing = await getTask(db, data.id, data.workspaceId);
+  if (!existing) throw new Error("task idempotency conflict could not be resolved");
+  return { task: existing, created: false };
+}
+
 export async function countTasksByTrace(db: Database, traceId: string, workspaceId: string) {
   const rows = await db
     .select({ value: count() })
@@ -65,23 +111,25 @@ export async function getLatestTaskForConversation(db: Database, conversationId:
   return rows[0] ?? null;
 }
 
-export async function getTask(db: Database, id: string, workspaceId?: string) {
-  const conditions = [eq(agentTaskQueue.id, id)];
-  if (workspaceId) conditions.push(eq(agentTaskQueue.workspaceId, workspaceId));
+export async function getTask(db: Database, id: string, workspaceId: string) {
   const rows = await db
     .select()
     .from(agentTaskQueue)
-    .where(and(...conditions));
+    .where(and(
+      eq(agentTaskQueue.id, id),
+      eq(agentTaskQueue.workspaceId, workspaceId),
+    ));
   return rows[0] ?? null;
 }
 
-export async function getTaskStatus(db: Database, id: string, workspaceId?: string) {
-  const conditions = [eq(agentTaskQueue.id, id)];
-  if (workspaceId) conditions.push(eq(agentTaskQueue.workspaceId, workspaceId));
+export async function getTaskStatus(db: Database, id: string, workspaceId: string) {
   const rows = await db
     .select({ status: agentTaskQueue.status })
     .from(agentTaskQueue)
-    .where(and(...conditions));
+    .where(and(
+      eq(agentTaskQueue.id, id),
+      eq(agentTaskQueue.workspaceId, workspaceId),
+    ));
   return rows[0]?.status ?? null;
 }
 

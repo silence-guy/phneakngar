@@ -1,4 +1,4 @@
-import { eq, and, desc, ne, lt, sql, count as drizzleCount, inArray, isNull, isNotNull } from "drizzle-orm";
+import { eq, and, desc, ne, lt, sql, inArray, isNull, isNotNull } from "drizzle-orm";
 import { conversation, message } from "../schema";
 import type { Database } from "../index";
 import { TASK_TYPES, type TaskType } from "../../constants";
@@ -31,6 +31,38 @@ export async function createConversation(
     })
     .returning();
   return rows[0]!;
+}
+
+export async function createConversationIfAbsent(
+  db: Database,
+  data: {
+    id: string;
+    workspaceId: string;
+    agentId: string;
+    userId: string;
+    title: string;
+    type?: TaskType;
+    channel?: string;
+  },
+): Promise<{ conversation: typeof conversation.$inferSelect; created: boolean }> {
+  const rows = await db
+    .insert(conversation)
+    .values({
+      id: data.id,
+      workspaceId: data.workspaceId,
+      agentId: data.agentId,
+      userId: data.userId,
+      title: data.title,
+      type: data.type ?? TASK_TYPES.USER_DM_MESSAGE,
+      channel: data.channel ?? "default",
+    })
+    .onConflictDoNothing({ target: conversation.id })
+    .returning();
+  if (rows[0]) return { conversation: rows[0], created: true };
+
+  const existing = await getConversation(db, data.id, data.workspaceId);
+  if (!existing) throw new Error("conversation idempotency conflict could not be resolved");
+  return { conversation: existing, created: false };
 }
 
 export async function getConversation(db: Database, id: string, workspaceId: string) {

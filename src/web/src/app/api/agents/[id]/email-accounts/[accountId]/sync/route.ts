@@ -1,8 +1,9 @@
-import { queries, DEV_EMAIL_WORKER_URL } from "@phneakngar/shared"
+import { queries } from "@phneakngar/shared"
 import { getDb } from "@/lib/db"
 import { withAuth } from "@/lib/middleware/auth"
 import { withWorkspaceMember } from "@/lib/middleware/workspace"
 import { writeJSON, writeError } from "@/lib/middleware/helpers"
+import { fetchEmailWorker } from "@/lib/email-worker"
 
 export const POST = withAuth(async (req, ctx) => {
   const ws = await withWorkspaceMember(req, ctx)
@@ -21,15 +22,11 @@ export const POST = withAuth(async (req, ctx) => {
   const existing = await queries.emailAccount.getEmailAccountScoped(db, accountId, agentId, ws.workspaceId)
   if (!existing) return writeError("not found", 404)
 
-  try {
-    await cfEnv.EMAIL_WORKER.fetch(`http://internal/imap/sync?accountId=${accountId}`, {
-      method: "POST",
-    })
-  } catch {
-    await fetch(`${DEV_EMAIL_WORKER_URL}/imap/sync?accountId=${accountId}`, {
-      method: "POST",
-    }).catch(() => {})
-  }
+  await fetchEmailWorker(
+    cfEnv,
+    `/imap/sync?accountId=${accountId}&workspaceId=${ws.workspaceId}`,
+    { method: "POST" },
+  ).catch(() => {})
 
   return writeJSON({ ok: true })
 })

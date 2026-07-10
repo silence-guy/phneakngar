@@ -26,6 +26,7 @@ const mockGetAllColleaguesForWorkspace = vi.fn();
 const mockGetWorkspaceDefaultLocale = vi.fn().mockResolvedValue(null);
 const mockInvalidate = vi.fn().mockResolvedValue(undefined);
 const mockKvPut = vi.fn().mockResolvedValue(undefined);
+const mockRouteEnv: Record<string, unknown> = {};
 
 vi.mock("@opennextjs/cloudflare", () => ({
   getCloudflareContext: vi.fn(() => ({ env: { DB: {}, CACHE_KV: { put: (...args: unknown[]) => mockKvPut(...args), get: vi.fn().mockResolvedValue(null), delete: vi.fn().mockResolvedValue(undefined) } }, ctx: { waitUntil: vi.fn() } })),
@@ -92,7 +93,7 @@ vi.mock("@phneakngar/shared", async (importOriginal) => {
 vi.mock("@/lib/middleware/auth", () => ({
   withAuth: vi.fn((handler: any) => async (req: any, ctx?: any) => {
     const params = ctx?.params instanceof Promise ? await ctx.params : ctx?.params;
-    return handler(req, { env: {}, userId: "u1", email: "u@t.com", authType: "machine" as const, workspaceId: "w1", params });
+    return handler(req, { env: mockRouteEnv, userId: "u1", email: "u@t.com", authType: "machine" as const, workspaceId: "w1", params });
   }),
 }));
 
@@ -182,6 +183,7 @@ function postReq(body: unknown) {
 describe("POST /api/daemon/tasks/poll", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    for (const key of Object.keys(mockRouteEnv)) delete mockRouteEnv[key];
     mockGetMachineByDaemon.mockResolvedValue(null);
     mockGetPendingFileRequests.mockResolvedValue([]);
     mockExpireStaleFileRequests.mockResolvedValue(undefined);
@@ -190,6 +192,33 @@ describe("POST /api/daemon/tasks/poll", () => {
     mockGetAllEmailAccountsForWorkspace.mockResolvedValue([]);
     mockGetAllColleaguesForWorkspace.mockResolvedValue([]);
     mockGetConversationsByIds.mockResolvedValue([]);
+  });
+
+  it("withholds tasks and requests an update below MIN_CLI_VERSION", async () => {
+    mockRouteEnv.MIN_CLI_VERSION = "1.2.0";
+
+    const res = await POST(postReq({ daemon_id: "d1", cli_version: "1.1.9" }));
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body).toEqual({
+      tasks: [],
+      pending_update: { version: "1.2.0" },
+      update_required: true,
+    });
+    expect(mockGetRuntimeIdsByDaemon).not.toHaveBeenCalled();
+    expect(mockClaimTasksForRuntimes).not.toHaveBeenCalled();
+  });
+
+  it("withholds tasks when an old client omits its version", async () => {
+    mockRouteEnv.MIN_CLI_VERSION = "1.2.0";
+
+    const res = await POST(postReq({ daemon_id: "d1" }));
+    const body = await res.json();
+
+    expect(body.pending_update).toEqual({ version: "1.2.0" });
+    expect(body.update_required).toBe(true);
+    expect(mockClaimTasksForRuntimes).not.toHaveBeenCalled();
   });
 
   it("returns evicted: true when daemon has no runtimes", async () => {

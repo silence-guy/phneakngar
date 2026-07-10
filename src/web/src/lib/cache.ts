@@ -1,3 +1,5 @@
+import { hashSecret } from "@phneakngar/shared/secrets";
+
 const log = {
   warn(msg: string, ctx: Record<string, unknown>) {
     console.log(JSON.stringify({ level: "warn", service: "cache", msg, ...ctx, ts: new Date().toISOString() }));
@@ -155,8 +157,8 @@ export function invalidateInboxCounts(userId: string, workspaceId: string): Prom
 }
 
 export const cacheKeys = {
-  machineToken: (token: string) => `mt:${token.slice(0, 20)}`,
-  machineTokenLastUsed: (token: string) => `mt_lu:${token.slice(0, 20)}`,
+  machineToken: (token: string) => `mt:${hashSecret(token)}`,
+  machineTokenLastUsed: (token: string) => `mt_lu:${hashSecret(token)}`,
   member: (workspaceId: string, userId: string) => `mem:${workspaceId}:${userId}`,
   workspaceDefaultLocale: (workspaceId: string) => `ws_locale:${workspaceId}`,
   runtimeIds: (workspaceId: string, daemonId: string) => `rt:${workspaceId}:${daemonId}`,

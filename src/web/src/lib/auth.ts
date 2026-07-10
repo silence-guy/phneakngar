@@ -1,7 +1,8 @@
 import { betterAuth } from "better-auth"
 import { emailOTP, deviceAuthorization, bearer } from "better-auth/plugins"
-import { createLogger, DEV_EMAIL_WORKER_URL, resolveMode } from "@phneakngar/shared"
+import { createLogger, resolveMode } from "@phneakngar/shared"
 import { getOtpSubject, renderOtpEmail } from "./email-templates"
+import { fetchEmailWorker } from "./email-worker"
 
 const log = createLogger({ service: "auth" })
 
@@ -140,17 +141,11 @@ export function createAuth(env: Env) {
                   subject: getOtpSubject(type),
                   html: renderOtpEmail(otp, type),
                 })
-                const fetchOpts = {
+                const res = await fetchEmailWorker(env, "/send/otp", {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
                   body: otpPayload,
-                }
-                let res: Response
-                try {
-                  res = await env.EMAIL_WORKER.fetch("http://internal/send/otp", fetchOpts)
-                } catch {
-                  res = await fetch(`${DEV_EMAIL_WORKER_URL}/send/otp`, fetchOpts)
-                }
+                })
                 if (!res.ok) {
                   const errBody = await res.text()
                   throw new Error(`EMAIL_WORKER /send/otp failed: ${res.status} ${errBody}`)

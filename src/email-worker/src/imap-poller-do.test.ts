@@ -115,7 +115,7 @@ const ACCOUNT = {
 }
 
 function createMockCtx() {
-  const storage = new Map<string, any>()
+  const storage = new Map<string, any>([["workspaceId", "ws_test1"]])
   let alarm: number | null = null
   const ctx = {
     storage: {
@@ -393,10 +393,11 @@ describe("fetch() routing", () => {
     const { durable, ctx } = createDO()
     const res = await durable.fetch(new Request("http://internal/start", {
       method: "POST",
-      body: JSON.stringify({ accountId: "aea_test1" }),
+      body: JSON.stringify({ accountId: "aea_test1", workspaceId: "ws_test1" }),
     }))
     expect(res.status).toBe(200)
     expect(await ctx.storage.get("accountId")).toBe("aea_test1")
+    expect(await ctx.storage.get("workspaceId")).toBe("ws_test1")
     expect(ctx.storage.setAlarm).toHaveBeenCalled()
   })
 

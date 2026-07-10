@@ -8,6 +8,8 @@ function createSelectMock(rows: any[]) {
   chain.where = vi.fn(() => Promise.resolve(rows));
   chain.innerJoin = vi.fn(() => chain);
   chain.insert = vi.fn(() => chain);
+  chain.update = vi.fn(() => chain);
+  chain.set = vi.fn(() => chain);
   chain.values = vi.fn(() => chain);
   chain.returning = vi.fn(() => Promise.resolve(rows));
   chain.orderBy = vi.fn(() => chain);
@@ -30,7 +32,11 @@ describe("createMachineToken", () => {
     const t = { id: "mt_1" };
     const mockDb = createSelectMock([t]);
     const result = await mt.createMachineToken(mockDb, { userId: "u", token: "tok", name: "T" });
-    expect(mockDb.values).toHaveBeenCalledWith(expect.objectContaining({ status: "active", workspaceId: null }));
+    expect(mockDb.values).toHaveBeenCalledWith(expect.objectContaining({
+      status: "active",
+      workspaceId: null,
+      tokenHash: expect.stringMatching(/^[a-f0-9]{64}$/),
+    }));
     expect(result).toEqual(t);
   });
   it("uses custom status", async () => {
@@ -42,11 +48,19 @@ describe("createMachineToken", () => {
 
 describe("getMachineTokenByToken", () => {
   it("returns null when not found", async () => { expect(await mt.getMachineTokenByToken(createSelectMock([]), "x")).toBeNull(); });
-  it("returns token with join", async () => {
-    const t = { id: "mt_1" };
+  it("lazily hashes and redacts a legacy active token", async () => {
+    const t = { id: "mt_1", status: "active", tokenHash: null };
     const mockDb = createSelectMock([t]);
-    expect(await mt.getMachineTokenByToken(mockDb, "tok")).toEqual(t);
+    const result = await mt.getMachineTokenByToken(mockDb, "tok");
+    expect(result).toEqual({
+      ...t,
+      tokenHash: expect.stringMatching(/^[a-f0-9]{64}$/),
+    });
     expect(mockDb.innerJoin).toHaveBeenCalled();
+    expect(mockDb.set).toHaveBeenCalledWith({
+      tokenHash: expect.stringMatching(/^[a-f0-9]{64}$/),
+      token: "redacted:mt_1",
+    });
   });
 });
 

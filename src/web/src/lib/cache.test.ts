@@ -226,8 +226,13 @@ describe("cache", () => {
       expect(cacheKeys.allEmailAccounts("ws1")).toBe("ea:ws1");
       expect(cacheKeys.allHandles("ws1")).toBe("handles:ws1");
       expect(cacheKeys.heartbeat("ws1", "d1")).toBe("hb:ws1:d1");
-      expect(cacheKeys.machineToken("al_1234567890abcdefghij_rest")).toBe("mt:al_1234567890abcdefg");
-      expect(cacheKeys.machineTokenLastUsed("al_1234567890abcdefghij_rest")).toBe("mt_lu:al_1234567890abcdefg");
+      const rawToken = "al_1234567890abcdefghij_rest";
+      const tokenKey = cacheKeys.machineToken(rawToken);
+      const lastUsedKey = cacheKeys.machineTokenLastUsed(rawToken);
+      expect(tokenKey).toMatch(/^mt:[a-f0-9]{64}$/);
+      expect(lastUsedKey).toMatch(/^mt_lu:[a-f0-9]{64}$/);
+      expect(tokenKey).not.toContain(rawToken.slice(0, 20));
+      expect(lastUsedKey).not.toContain(rawToken.slice(0, 20));
       expect(cacheKeys.runtimeIds("ws1", "d1")).toBe("rt:ws1:d1");
     });
 

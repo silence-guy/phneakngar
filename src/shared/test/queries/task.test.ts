@@ -116,7 +116,7 @@ describe("getTask", () => {
     chain.select = vi.fn(() => chain);
     chain.from = vi.fn(() => chain);
     chain.where = vi.fn(() => Promise.resolve([]));
-    const result = await taskQueries.getTask(chain, "task_missing");
+    const result = await taskQueries.getTask(chain, "task_missing", "ws_1");
     expect(result).toBeNull();
   });
 
@@ -126,7 +126,7 @@ describe("getTask", () => {
     chain.select = vi.fn(() => chain);
     chain.from = vi.fn(() => chain);
     chain.where = vi.fn(() => Promise.resolve([task]));
-    const result = await taskQueries.getTask(chain, "task_1");
+    const result = await taskQueries.getTask(chain, "task_1", "ws_1");
     expect(result).toEqual(task);
   });
 });
@@ -137,7 +137,7 @@ describe("getTaskStatus", () => {
     chain.select = vi.fn(() => chain);
     chain.from = vi.fn(() => chain);
     chain.where = vi.fn(() => Promise.resolve([]));
-    const result = await taskQueries.getTaskStatus(chain, "task_missing");
+    const result = await taskQueries.getTaskStatus(chain, "task_missing", "ws_1");
     expect(result).toBeNull();
   });
 
@@ -146,7 +146,7 @@ describe("getTaskStatus", () => {
     chain.select = vi.fn(() => chain);
     chain.from = vi.fn(() => chain);
     chain.where = vi.fn(() => Promise.resolve([{ status: "completed" }]));
-    const result = await taskQueries.getTaskStatus(chain, "task_1");
+    const result = await taskQueries.getTaskStatus(chain, "task_1", "ws_1");
     expect(result).toBe("completed");
   });
 });

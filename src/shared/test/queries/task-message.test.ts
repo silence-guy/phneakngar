@@ -46,7 +46,7 @@ describe("task-message query module exports", () => {
 });
 
 describe("listTaskMessages", () => {
-  it("accepts (db, taskId, workspaceId?)", () => {
+  it("requires (db, taskId, workspaceId)", () => {
     expect(taskMessageQueries.listTaskMessages.length).toBe(3);
   });
 });
@@ -99,7 +99,7 @@ describe("listTaskErrorMessages", () => {
 });
 
 describe("listTaskMessagesSince", () => {
-  it("accepts (db, taskId, afterSeq, workspaceId?)", () => {
+  it("requires (db, taskId, afterSeq, workspaceId)", () => {
     expect(taskMessageQueries.listTaskMessagesSince.length).toBe(4);
   });
 });

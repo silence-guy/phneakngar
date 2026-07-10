@@ -1,8 +1,14 @@
-import { createLogger } from "@phneakngar/shared"
+import { createLogger, WS_SERVICE_SECRET_HEADER } from "@phneakngar/shared"
+import { safeEqualSecret } from "@phneakngar/shared/secrets"
 
 export { WebSocketDurableObject } from "./ws-durable"
 
 const log = createLogger({ service: "ws-do" })
+
+function isLocalWebSocketUpgrade(request: Request, url: URL): boolean {
+  if (request.headers.get("Upgrade")?.toLowerCase() !== "websocket") return false
+  return url.hostname === "localhost" || url.hostname === "127.0.0.1" || url.hostname === "[::1]"
+}
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -10,6 +16,15 @@ export default {
 
     if (url.pathname === "/health" && request.method === "GET") {
       return Response.json({ status: "ok" })
+    }
+
+    if (!isLocalWebSocketUpgrade(request, url)) {
+      if (!env.WS_SERVICE_SECRET) {
+        return Response.json({ error: "internal authentication is not configured" }, { status: 503 })
+      }
+      if (!safeEqualSecret(request.headers.get(WS_SERVICE_SECRET_HEADER), env.WS_SERVICE_SECRET)) {
+        return Response.json({ error: "unauthorized" }, { status: 401 })
+      }
     }
 
     const traceId = request.headers.get("X-Trace-Id") ?? undefined

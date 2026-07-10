@@ -1,16 +1,15 @@
-import { getCloudflareContext } from "@opennextjs/cloudflare"
-import { queries, DEV_EMAIL_WORKER_URL } from "@phneakngar/shared"
+import { queries } from "@phneakngar/shared"
 import { getDb } from "@/lib/db"
 import { withAuth } from "@/lib/middleware/auth"
 import { withWorkspaceMember } from "@/lib/middleware/workspace"
 import { writeJSON, writeError } from "@/lib/middleware/helpers"
+import { fetchEmailWorker } from "@/lib/email-worker"
 
 export const POST = withAuth(async (req, ctx) => {
   const ws = await withWorkspaceMember(req, ctx)
   if (ws instanceof Response) return ws
 
-  const { env } = getCloudflareContext()
-  const cfEnv = env as Env
+  const cfEnv = ctx.env
   const db = getDb(cfEnv.DB)
 
   const agentId = ctx.params?.id
@@ -23,16 +22,11 @@ export const POST = withAuth(async (req, ctx) => {
   const existing = await queries.emailAccount.getEmailAccountScoped(db, accountId, agentId, ws.workspaceId)
   if (!existing) return writeError("not found", 404)
 
-  let testRes: Response
-  try {
-    testRes = await cfEnv.EMAIL_WORKER.fetch(`http://internal/imap/test?accountId=${accountId}&workspaceId=${ws.workspaceId}`, {
-      method: "POST",
-    })
-  } catch {
-    testRes = await fetch(`${DEV_EMAIL_WORKER_URL}/imap/test?accountId=${accountId}&workspaceId=${ws.workspaceId}`, {
-      method: "POST",
-    })
-  }
+  const testRes = await fetchEmailWorker(
+    cfEnv,
+    `/imap/test?accountId=${accountId}&workspaceId=${ws.workspaceId}`,
+    { method: "POST" },
+  )
 
   const result = await testRes.json()
   return writeJSON(result, testRes.status)

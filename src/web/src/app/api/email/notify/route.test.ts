@@ -11,6 +11,7 @@ const mockCreateMeetingSession = vi.fn();
 const mockFindByKey = vi.fn();
 const mockCreateMapping = vi.fn();
 const mockEnqueueTask = vi.fn();
+const mockGetTask = vi.fn();
 const mockGetUser = vi.fn();
 const mockGetCloudflareContext = vi.hoisted(() => vi.fn(() => ({
   env: { DB: {}, EMAIL_NOTIFY_SECRET: "notify-secret" },
@@ -32,17 +33,33 @@ vi.mock("@phneakngar/shared", async (importOriginal) => {
     },
     email: {
       createEmail: (...args: unknown[]) => mockCreateEmail(...args),
+      createEmailIfAbsent: async (...args: unknown[]) => ({
+        email: await mockCreateEmail(...args),
+        created: true,
+      }),
     },
     conversation: {
       getConversation: (...args: unknown[]) => mockGetConversation(...args),
       createConversation: (...args: unknown[]) => mockCreateConversation(...args),
+      createConversationIfAbsent: async (...args: unknown[]) => ({
+        conversation: await mockCreateConversation(...args),
+        created: true,
+      }),
     },
     message: {
       createMessage: (...args: unknown[]) => mockCreateMessage(...args),
+      createMessageIfAbsent: async (...args: unknown[]) => ({
+        message: await mockCreateMessage(...args),
+        created: true,
+      }),
       updateMessageTaskId: vi.fn().mockResolvedValue(undefined),
     },
     meetingSession: {
       createMeetingSession: (...args: unknown[]) => mockCreateMeetingSession(...args),
+      createMeetingSessionIfAbsent: async (...args: unknown[]) => ({
+        meeting: await mockCreateMeetingSession(...args),
+        created: true,
+      }),
     },
     conversationMap: {
       findByKey: (...args: unknown[]) => mockFindByKey(...args),
@@ -50,6 +67,9 @@ vi.mock("@phneakngar/shared", async (importOriginal) => {
     },
     user: {
       getUser: (...args: unknown[]) => mockGetUser(...args),
+    },
+    task: {
+      getTask: (...args: unknown[]) => mockGetTask(...args),
     },
   },
   };
@@ -128,7 +148,8 @@ describe("POST /api/email/notify", () => {
     }));
     mockCreateMessage.mockResolvedValue({ id: "m1", conversationId: "c1", role: "event", content: "", taskId: null, createdAt: "2026-01-01T00:00:00Z" });
     mockFindByKey.mockResolvedValue(null);
-    mockCreateMapping.mockResolvedValue(undefined);
+    mockCreateMapping.mockImplementation((_db: unknown, opts: { conversationId: string }) => Promise.resolve(opts.conversationId));
+    mockGetTask.mockResolvedValue(null);
   });
 
   it("rejects requests without the notify secret header", async () => {

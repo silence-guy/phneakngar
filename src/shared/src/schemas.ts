@@ -672,6 +672,7 @@ export const EmailNotifyRequestSchema = z.object({
   isWhitelisted: z.boolean(),
   forwarded: z.boolean().optional().default(false),
   messageId: z.string().optional().default(""),
+  deliveryKey: z.string().min(1).max(255).optional(),
   inReplyTo: z.string().optional().default(""),
   references: z.string().optional().default(""),
   meetingInfo: MeetingInfoSchema.nullable().optional(),

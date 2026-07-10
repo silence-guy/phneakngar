@@ -117,3 +117,4 @@ export const DEV_WS_DO_URL = process.env.DEV_WS_DO_URL || "http://localhost:8789
 export const DEV_EMAIL_WORKER_URL = process.env.DEV_EMAIL_WORKER_URL || "http://localhost:8787";
 
 export const EMAIL_NOTIFY_SECRET_HEADER = "X-Phneakngar-Email-Notify-Secret";
+export const WS_SERVICE_SECRET_HEADER = "X-Phneakngar-WS-Service-Secret";

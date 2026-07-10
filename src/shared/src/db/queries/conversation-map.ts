@@ -24,7 +24,7 @@ export async function findByKey(
 export async function createMapping(
   db: Database,
   opts: { key: string; workspaceId: string; conversationId: string },
-): Promise<void> {
+): Promise<string> {
   await db
     .insert(conversationMap)
     .values({
@@ -35,4 +35,10 @@ export async function createMapping(
       createdAt: new Date().toISOString(),
     })
     .onConflictDoNothing();
+
+  const effectiveConversationId = await findByKey(db, opts.key, opts.workspaceId);
+  if (!effectiveConversationId) {
+    throw new Error("conversation mapping conflict could not be resolved");
+  }
+  return effectiveConversationId;
 }

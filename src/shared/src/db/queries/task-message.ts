@@ -31,35 +31,27 @@ export async function createTaskMessage(
   return rows[0]!;
 }
 
-export async function listTaskMessages(db: Database, taskId: string, workspaceId?: string) {
-  if (workspaceId) {
-    return db
-      .select({
-        id: taskMessage.id,
-        taskId: taskMessage.taskId,
-        seq: taskMessage.seq,
-        type: taskMessage.type,
-        tool: taskMessage.tool,
-        content: taskMessage.content,
-        callId: taskMessage.callId,
-        input: taskMessage.input,
-        output: taskMessage.output,
-        createdAt: taskMessage.createdAt,
-      })
-      .from(taskMessage)
-      .innerJoin(agentTaskQueue, eq(taskMessage.taskId, agentTaskQueue.id))
-      // Exclude tool-result/tool-use/thinking from the READ side only: the UI
-      // doesn't render them. They ARE still written (see daemon messages route)
-      // and retained for future data analysis — do NOT take this filter as a
-      // sign the rows are dead and stop persisting them.
-      .where(and(eq(taskMessage.taskId, taskId), eq(agentTaskQueue.workspaceId, workspaceId), notInArray(taskMessage.type, ["tool-result", "tool-use", "thinking"])))
-      .orderBy(asc(taskMessage.seq));
-  }
+export async function listTaskMessages(db: Database, taskId: string, workspaceId: string) {
   return db
-    .select()
+    .select({
+      id: taskMessage.id,
+      taskId: taskMessage.taskId,
+      seq: taskMessage.seq,
+      type: taskMessage.type,
+      tool: taskMessage.tool,
+      content: taskMessage.content,
+      callId: taskMessage.callId,
+      input: taskMessage.input,
+      output: taskMessage.output,
+      createdAt: taskMessage.createdAt,
+    })
     .from(taskMessage)
-    // Read-side UI exclusion only; rows are still stored for analysis (see above).
-    .where(and(eq(taskMessage.taskId, taskId), notInArray(taskMessage.type, ["tool-result", "tool-use", "thinking"])))
+    .innerJoin(agentTaskQueue, eq(taskMessage.taskId, agentTaskQueue.id))
+    // Exclude tool-result/tool-use/thinking from the READ side only: the UI
+    // doesn't render them. They ARE still written (see daemon messages route)
+    // and retained for future data analysis — do NOT take this filter as a
+    // sign the rows are dead and stop persisting them.
+    .where(and(eq(taskMessage.taskId, taskId), eq(agentTaskQueue.workspaceId, workspaceId), notInArray(taskMessage.type, ["tool-result", "tool-use", "thinking"])))
     .orderBy(asc(taskMessage.seq));
 }
 
@@ -102,34 +94,25 @@ export async function listTaskMessagesSince(
   db: Database,
   taskId: string,
   afterSeq: number,
-  workspaceId?: string,
+  workspaceId: string,
 ) {
-  if (workspaceId) {
-    return db
-      .select({
-        id: taskMessage.id,
-        taskId: taskMessage.taskId,
-        seq: taskMessage.seq,
-        type: taskMessage.type,
-        tool: taskMessage.tool,
-        content: taskMessage.content,
-        callId: taskMessage.callId,
-        input: taskMessage.input,
-        output: taskMessage.output,
-        createdAt: taskMessage.createdAt,
-      })
-      .from(taskMessage)
-      .innerJoin(agentTaskQueue, eq(taskMessage.taskId, agentTaskQueue.id))
-      // Read-side UI exclusion only; rows are still stored for analysis (see listTaskMessages).
-      .where(and(eq(taskMessage.taskId, taskId), eq(agentTaskQueue.workspaceId, workspaceId), gt(taskMessage.seq, afterSeq), notInArray(taskMessage.type, ["tool-result", "tool-use", "thinking"])))
-      .orderBy(asc(taskMessage.seq));
-  }
-
   return db
-    .select()
+    .select({
+      id: taskMessage.id,
+      taskId: taskMessage.taskId,
+      seq: taskMessage.seq,
+      type: taskMessage.type,
+      tool: taskMessage.tool,
+      content: taskMessage.content,
+      callId: taskMessage.callId,
+      input: taskMessage.input,
+      output: taskMessage.output,
+      createdAt: taskMessage.createdAt,
+    })
     .from(taskMessage)
+    .innerJoin(agentTaskQueue, eq(taskMessage.taskId, agentTaskQueue.id))
     // Read-side UI exclusion only; rows are still stored for analysis (see listTaskMessages).
-    .where(and(eq(taskMessage.taskId, taskId), gt(taskMessage.seq, afterSeq), notInArray(taskMessage.type, ["tool-result", "tool-use", "thinking"])))
+    .where(and(eq(taskMessage.taskId, taskId), eq(agentTaskQueue.workspaceId, workspaceId), gt(taskMessage.seq, afterSeq), notInArray(taskMessage.type, ["tool-result", "tool-use", "thinking"])))
     .orderBy(asc(taskMessage.seq));
 }
 

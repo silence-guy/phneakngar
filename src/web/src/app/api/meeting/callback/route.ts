@@ -1,10 +1,16 @@
 import { NextRequest } from "next/server"
-import { nanoid } from "nanoid"
 import { queries, MeetingStatus, DEV_WEB_URL, buildMimeMessage, toPhneakngarAddress, EMAIL_NOTIFY_SECRET_HEADER } from "@phneakngar/shared"
 import { withAuth } from "@/lib/middleware/auth"
 import { writeJSON, writeError } from "@/lib/middleware/helpers"
 import { getDb } from "@/lib/db"
 import { log } from "@/lib/logger"
+
+const MAX_TRANSCRIPT_BYTES = 5 * 1024 * 1024
+const MAX_ERROR_BYTES = 16 * 1024
+
+function utf8Size(value: string | undefined): number {
+  return value ? new TextEncoder().encode(value).byteLength : 0
+}
 
 export const POST = withAuth(async (req: NextRequest, ctx) => {
   const cfEnv = ctx.env
@@ -34,6 +40,12 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
   if (body.workspaceId !== ctx.workspaceId) {
     return writeError("workspace mismatch", 403)
   }
+  if (utf8Size(body.transcript) > MAX_TRANSCRIPT_BYTES) {
+    return writeError("transcript is too large", 413)
+  }
+  if (utf8Size(body.error) > MAX_ERROR_BYTES) {
+    return writeError("error detail is too large", 413)
+  }
 
   const meeting = await queries.meetingSession.getMeetingSession(
     db,
@@ -44,7 +56,7 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
 
   let transcriptR2Key: string | undefined
   if (body.transcript) {
-    transcriptR2Key = `meetings/${body.meetingId}/transcript`
+    transcriptR2Key = `meetings/${body.workspaceId}/${body.meetingId}/transcript`
     await cfEnv.EMAIL_BUCKET.put(transcriptR2Key, body.transcript, {
       httpMetadata: { contentType: "text/plain" },
     })
@@ -94,7 +106,7 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
           bodyType: "text/plain",
         })
 
-        const emailR2Key = `emails/${nanoid()}/raw`
+        const emailR2Key = `emails/meetings/${body.workspaceId}/${body.meetingId}/summary/raw`
         await cfEnv.EMAIL_BUCKET.put(emailR2Key, rawMime, {
           httpMetadata: { contentType: "message/rfc822" },
         })
@@ -109,6 +121,7 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
           isWhitelisted: true,
           forwarded: false,
           messageId,
+          deliveryKey: `meeting:${body.workspaceId}:${body.meetingId}`,
           inReplyTo: "",
           references: "",
         })
