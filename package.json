@@ -6,7 +6,7 @@
     "node": ">=20.19.0"
   },
   "scripts": {
-    "build": "turbo run build",
+    "build": "turbo run build --filter=@phneakngar/shared --filter=@phneakngar/web --filter=@phneakngar/cli --filter=@phneakngar/email-worker --filter=@phneakngar/ws-do",
     "test": "turbo run test",
     "predev": "node scripts/prepare-dev-vars.mjs",
     "dev": "turbo run dev --filter=@phneakngar/web --filter=@phneakngar/email-worker --filter=@phneakngar/ws-do --filter=@phneakngar/shared",
