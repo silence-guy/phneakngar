@@ -12,17 +12,26 @@ concurrency:
 jobs:
   publish:
     name: Publish @phneakngar/cli to npm
+    if: "${{ startsWith(github.event.head_commit.message, 'release: v') }}"
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
+      contents: read
       id-token: write
     steps:
       - uses: actions/checkout@v7
 
-      - name: Detect version
+      - name: Validate release version
         id: version
+        env:
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
         run: |
           VERSION=$(node -p "require('./src/cli/package.json').version")
+          RELEASE_VERSION=$(printf '%s' "$COMMIT_MSG" | sed -nE 's/^release: v([0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?).*/\1/p')
+          if [ -z "$RELEASE_VERSION" ] || [ "$VERSION" != "$RELEASE_VERSION" ]; then
+            echo "CLI version $VERSION does not match release commit version ${RELEASE_VERSION:-missing}" >&2
+            exit 1
+          fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Check if version already published
@@ -40,6 +49,8 @@ jobs:
 
       - uses: oven-sh/setup-bun@v2
         if: steps.check.outputs.skip == 'false'
+        with:
+          bun-version: 1.3.14
 
       - uses: actions/setup-node@v6
         if: steps.check.outputs.skip == 'false'
@@ -51,7 +62,7 @@ jobs:
       - name: Upgrade npm for Trusted Publishers
         if: steps.check.outputs.skip == 'false'
         run: |
-          npm install -g --prefix="$RUNNER_TEMP/npm-new" npm@latest
+          npm install -g --prefix="$RUNNER_TEMP/npm-new" npm@12.0.0
           echo "$RUNNER_TEMP/npm-new/bin" >> "$GITHUB_PATH"
 
       - run: pnpm install --frozen-lockfile

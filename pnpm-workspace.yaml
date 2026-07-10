@@ -7,3 +7,12 @@ packages:
   - "src/app"
   - "src/desktop"
   - "tests/utils"
+
+onlyBuiltDependencies:
+  - better-sqlite3
+  - esbuild
+  - msw
+  - sharp
+  - simple-git-hooks
+  - unrs-resolver
+  - workerd

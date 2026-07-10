@@ -13,8 +13,11 @@ BETTER_AUTH_URL=http://localhost:3000
 # Encryption key for IMAP/SMTP credentials (generate with: openssl rand -base64 32)
 ENCRYPTION_KEY=
 
-# Shared secret required by internal email workers when posting /api/email/notify
+# Shared secret for authenticated web/email Worker communication in both directions.
 EMAIL_NOTIFY_SECRET=
+
+# Shared secret for authenticated web/WebSocket Worker communication.
+WS_SERVICE_SECRET=
 
 # GitHub OAuth App (https://github.com/settings/developers)
 GITHUB_CLIENT_ID=

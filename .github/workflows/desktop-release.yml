@@ -1,13 +1,43 @@
 name: Desktop Release
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - "src/desktop/.deploy-version"
+  workflow_run:
+    workflows: ["Auto-Tag & Release"]
+    types: [completed]
+  workflow_dispatch:
 
 jobs:
+  prepare:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      should_build: ${{ steps.changed.outputs.should_build }}
+      source_sha: ${{ steps.source.outputs.sha }}
+    steps:
+      - name: Resolve source commit
+        id: source
+        run: echo "sha=${{ github.event.workflow_run.head_sha || github.sha }}" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ steps.source.outputs.sha }}
+          fetch-depth: 2
+      - name: Check desktop release marker
+        id: changed
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "should_build=true" >> "$GITHUB_OUTPUT"
+          elif git diff-tree --no-commit-id --name-only -r "${{ steps.source.outputs.sha }}" | grep -qx 'src/desktop/.deploy-version'; then
+            echo "should_build=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "should_build=false" >> "$GITHUB_OUTPUT"
+          fi
+
   build:
+    needs: prepare
+    if: needs.prepare.outputs.should_build == 'true'
     permissions:
       contents: write
     strategy:
@@ -27,6 +57,8 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.prepare.outputs.source_sha }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
@@ -73,12 +105,14 @@ jobs:
           args: --target ${{ matrix.target }}
 
   update-release-notes:
-    needs: build
+    needs: [prepare, build]
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.prepare.outputs.source_sha }}
 
       - name: Read version
         id: version

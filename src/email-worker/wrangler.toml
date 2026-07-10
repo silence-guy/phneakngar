@@ -31,10 +31,6 @@ database_name = "phneakngar-app"
 binding = "EMAIL_BUCKET"
 bucket_name = "phneakngar-emails"
 
-[[services]]
-binding = "WEB_SERVICE"
-service = "phneakngar-web"
-
 [[send_email]]
 name = "SEND_EMAIL"
 

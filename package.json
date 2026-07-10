@@ -2,10 +2,13 @@
   "name": "phneakngar",
   "private": true,
   "packageManager": "pnpm@10.33.0",
+  "engines": {
+    "node": ">=20.19.0"
+  },
   "scripts": {
     "build": "turbo run build",
     "test": "turbo run test",
-    "predev": "[ -f src/web/.dev.vars ] || (cp src/web/.dev.vars.example src/web/.dev.vars && sed -i '' \"s|^BETTER_AUTH_SECRET=$|BETTER_AUTH_SECRET=$(openssl rand -base64 32)|\" src/web/.dev.vars && sed -i '' \"s|^ENCRYPTION_KEY=$|ENCRYPTION_KEY=$(openssl rand -base64 32)|\" src/web/.dev.vars && echo '✓ Generated src/web/.dev.vars (fill in OAuth keys if needed)'); [ -f src/email-worker/.dev.vars ] || (cp src/email-worker/.dev.vars.example src/email-worker/.dev.vars && KEY=$(grep '^ENCRYPTION_KEY=' src/web/.dev.vars | cut -d= -f2-) && sed -i '' \"s|^ENCRYPTION_KEY=$|ENCRYPTION_KEY=$KEY|\" src/email-worker/.dev.vars && echo '✓ Generated src/email-worker/.dev.vars (synced ENCRYPTION_KEY from web)')",
+    "predev": "node scripts/prepare-dev-vars.mjs",
     "dev": "turbo run dev --filter=@phneakngar/web --filter=@phneakngar/email-worker --filter=@phneakngar/ws-do --filter=@phneakngar/shared",
     "clean": "rm -rf node_modules src/*/node_modules src/*/dist src/*/.turbo .turbo src/web/.next src/web/.open-next src/*/.wrangler .phneakngar",
     "clean:builds": "rm -rf src/*/dist src/web/.next src/web/.open-next .turbo src/*/.turbo",
@@ -41,21 +44,12 @@
   },
   "devDependencies": {
     "@vitest/coverage-v8": "^4.1.9",
+    "eslint": "^10.3.0",
     "simple-git-hooks": "^2.13.1",
     "turbo": "^2.9.18",
     "typescript": "^6.0.3",
+    "typescript-eslint": "^8.61.1",
     "vitest": "^4.1.9",
     "wrangler": "^4.103.0"
-  },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "better-sqlite3",
-      "esbuild",
-      "msw",
-      "sharp",
-      "simple-git-hooks",
-      "unrs-resolver",
-      "workerd"
-    ]
   }
 }

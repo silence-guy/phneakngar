@@ -6,8 +6,33 @@ on:
     paths:
       - "src/desktop/.deploy-version-mobile"
 
+permissions:
+  contents: read
+
 jobs:
+  prepare:
+    if: "${{ startsWith(github.event.head_commit.message, 'release: v') }}"
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Validate mobile release version
+        id: version
+        env:
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
+        run: |
+          MARKER_VERSION=$(tr -d '\n' < src/desktop/.deploy-version-mobile)
+          PACKAGE_VERSION=$(node -p "require('./src/desktop/package.json').version")
+          RELEASE_VERSION=$(printf '%s' "$COMMIT_MSG" | sed -nE 's/^release: v([0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?).*/\1/p')
+          if [ -z "$RELEASE_VERSION" ] || [ "$MARKER_VERSION" != "$RELEASE_VERSION" ] || [ "$PACKAGE_VERSION" != "$RELEASE_VERSION" ]; then
+            echo "Mobile marker/package version does not match the release commit" >&2
+            exit 1
+          fi
+          echo "version=$RELEASE_VERSION" >> "$GITHUB_OUTPUT"
+
   ios:
+    needs: prepare
     runs-on: macos-latest
     timeout-minutes: 45
     steps:
@@ -48,6 +73,7 @@ jobs:
             --apiIssuer ${{ secrets.APP_STORE_API_ISSUER }}
 
   android:
+    needs: prepare
     runs-on: ubuntu-22.04
     timeout-minutes: 45
     steps:

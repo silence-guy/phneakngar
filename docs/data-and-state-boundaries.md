@@ -42,6 +42,37 @@ Not acceptable:
 - Runtime online/offline truth kept only in a web server variable.
 - Email delivery status kept only in memory.
 
+## Delivery and Retry Idempotency
+
+Every operation that can be retried by Cloudflare, a Durable Object alarm, email infrastructure, WebSocket reconnect logic, or the CLI must remain correct when delivered more than once.
+
+Repository conventions:
+
+- Inbound email uses a deterministic delivery key with a workspace-scoped D1 unique constraint.
+- Cloudflare Email Routing derives the key from the agent and raw-message digest.
+- IMAP delivery derives the key from the account and UID and advances the durable cursor after each successful notification.
+- Email-triggered conversations, messages, tasks, and meetings use deterministic IDs and conflict-safe inserts.
+- R2 keys for retryable inbound email and meeting artifacts are deterministic and include the owning workspace or account scope.
+- Machine-token lookup uses a one-way digest; active plaintext token values are redacted after activation or lazy migration.
+- WebSocket connection state may be lost and reconstructed, but authorization and queued task truth remain in D1 or Durable Object storage.
+
+Do not implement duplicate suppression only with a module-level `Set`, a process-local cache, or an acknowledgement that can be lost before durable state is updated.
+
+## R2 Ownership Rule
+
+Before reading, replacing, or deleting an R2 object, first resolve a D1 row using the complete workspace/user/agent scope and verify that the stored R2 key belongs to that row. Draft attachment keys must pass the repository's scoped key validators before the Worker reads them.
+
+New R2 key formats should include enough stable ownership context to support audits and deterministic retries without exposing credentials or personal data in the key.
+
+## Cross-Service Authentication
+
+- Web and Email Workers share `EMAIL_NOTIFY_SECRET` and authenticate requests in both directions.
+- Web and WebSocket Workers share `WS_SERVICE_SECRET`.
+- Secret comparisons use constant-time digest comparison where appropriate.
+- Internal Worker routes fail closed when a required secret is absent.
+- Health endpoints may remain unauthenticated but must not expose configuration names, credentials, or sensitive state.
+- Raw machine tokens and secret prefixes must not appear in KV keys, logs, traces, errors, or API responses after activation.
+
 ## Raw SQL Exceptions
 
 Use Drizzle ORM operators by default. Raw SQL is acceptable only when Drizzle has no equivalent or the query genuinely depends on SQLite-specific behavior.

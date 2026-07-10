@@ -10,5 +10,10 @@
 # Must match ENCRYPTION_KEY in web/.dev.vars — predev script syncs this automatically.
 ENCRYPTION_KEY=
 
-# Shared secret for posting to web /api/email/notify (must match web EMAIL_NOTIFY_SECRET)
+# Shared secret for both web-to-email commands and email-to-web notifications.
+# Must match EMAIL_NOTIFY_SECRET in web/.dev.vars.
 EMAIL_NOTIFY_SECRET=
+
+# Public or local web origin used for authenticated /api/email/notify callbacks.
+# Production example: https://app.example.com
+WEB_ORIGIN=http://localhost:3000

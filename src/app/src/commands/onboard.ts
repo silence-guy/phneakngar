@@ -139,15 +139,16 @@ export function onboardCommand(): Command {
       // 12. Copy email & open browser on Enter
       const signInURL = `${baseURL}/sign-in`;
       if (email) {
-        try {
-          execSync(`printf '%s' ${JSON.stringify(email)} | pbcopy`, { stdio: "ignore" });
-          console.log(`   Email copied to clipboard.\n`);
-        } catch {
-          try {
-            execSync(`printf '%s' ${JSON.stringify(email)} | xclip -selection clipboard`, { stdio: "ignore" });
-            console.log(`   Email copied to clipboard.\n`);
-          } catch {}
-        }
+        const clipboardInput = Buffer.from(email, "utf8");
+        const pbcopy = spawnSync("pbcopy", [], {
+          input: clipboardInput,
+          stdio: ["pipe", "ignore", "ignore"],
+        });
+        const copied = pbcopy.status === 0 || spawnSync("xclip", ["-selection", "clipboard"], {
+          input: clipboardInput,
+          stdio: ["pipe", "ignore", "ignore"],
+        }).status === 0;
+        if (copied) console.log(`   Email copied to clipboard.\n`);
       }
 
       const rl = createInterface({ input: process.stdin, output: process.stdout });

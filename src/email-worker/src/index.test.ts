@@ -20,10 +20,12 @@ vi.mock("worker-mailer", () => ({
   WorkerMailer: { send: (...args: any[]) => mockWorkerMailerSend(...args) },
 }))
 
-// Mock @phneakngar/shared/crypto (separate subpath export, not in barrel)
+// Mock separate shared subpath exports.
 vi.mock("@phneakngar/shared/crypto", () => ({
   encrypt: (val: string) => `encrypted:${val}`,
   decrypt: (val: string) => `decrypted:${val}`,
+}))
+vi.mock("@phneakngar/shared/secrets", () => ({
   safeEqualSecret: (...args: unknown[]) => mockSafeEqualSecret(...args),
 }))
 

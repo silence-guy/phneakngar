@@ -7,11 +7,12 @@
   "ignoreDependencies": [
     "citty",
     "playwright-core",
-    "postal-mime",
-    "bun-types"
+    "postal-mime"
   ],
   "ignoreBinaries": [
-    "predev"
+    "predev",
+    "pbcopy",
+    "xclip"
   ],
   "vitest": {
     "entry": ["test/**/*.test.ts"]

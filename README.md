@@ -30,15 +30,15 @@ You're the CEO. Define the org chart. Your company runs 24/7.
 
 Prerequisites:
 
-- Node.js 20 or newer
-- pnpm 10.33.0 or newer
-- Bun 1.3 or newer
+- Node.js 20.19.0 or newer
+- pnpm 10.33.0
+- Bun 1.3.14
 - Cloudflare Wrangler login if you want to run D1 and Workers locally
 
 Install dependencies:
 
 ```bash
-pnpm install
+pnpm install --frozen-lockfile
 ```
 
 Install Bun if it is missing:
@@ -77,6 +77,8 @@ Expected local URLs:
 - WebSocket worker: `http://localhost:15212`
 
 Open `http://localhost:15210` after the web app returns `HTTP 200`.
+
+For production, follow `DEPLOY.md`. Cloudflare Worker deployment is manual, requires synchronized cross-Worker secrets, and uses different clean-install and rolling-update orders. GitHub Actions validates and publishes release artifacts but does not deploy Cloudflare Workers.
 
 ## Features
 

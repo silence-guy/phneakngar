@@ -26,7 +26,8 @@
     "bundle": "bun run scripts/bundle.ts",
     "knip": "knip",
     "lint": "eslint src/",
-    "test": "vitest run"
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "citty": "^0.2.2",

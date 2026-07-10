@@ -1,0 +1,9 @@
+# =============================================================================
+# WebSocket Worker Local Development Secrets
+# =============================================================================
+# Copy this file to .dev.vars and fill in the same value configured for the web Worker.
+# NEVER commit .dev.vars.
+# =============================================================================
+
+# Shared secret for authenticated web/WebSocket Worker communication.
+WS_SERVICE_SECRET=

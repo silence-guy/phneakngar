@@ -49,9 +49,9 @@ git push origin main
 This triggers:
 - **CI** — typecheck, lint, tests, coverage (uploaded to Codecov)
 - **Auto-Tag & Release** — CI detects the `release: vX.Y.Z` commit message, creates the git tag, and creates a GitHub Release with generated changelog (`auto-tag-release.yml`)
-- **@phneakngar/cli** → auto-published to npm via `publish-cli.yml` (watches `src/cli/package.json`)
-- **@phneakngar/app** → auto-published to npm via `publish-app.yml` (watches `src/app/package.json`)
-- **CF Workers** → deploy **manually** with `pnpm deploy:ws-do` → `pnpm deploy:email` → `pnpm deploy:web` (CI does not auto-deploy Workers)
+- **@phneakngar/cli** → published through `publish-cli.yml` only for a validated `release: vX.Y.Z` commit whose package version matches
+- **@phneakngar/app** → published through `publish-app.yml` only for a validated `release: vX.Y.Z` commit whose package version matches
+- **CF Workers** → deploy **manually**; use `ws-do` → `email` → `web` for a clean install, but derive rolling order from protocol compatibility as documented in `DEPLOY.md` (CI does not auto-deploy Workers)
 
 ## Plan-driven Development
 - You must make a markdown plan at `plans/` before you implement any my request, otherwise I will reject your implementation.

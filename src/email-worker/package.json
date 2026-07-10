@@ -7,7 +7,8 @@
     "deploy": "wrangler deploy",
     "knip": "knip",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src --config ../../eslint.workers.config.mjs"
   },
   "dependencies": {
     "@phneakngar/shared": "workspace:*",

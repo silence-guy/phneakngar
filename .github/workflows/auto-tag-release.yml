@@ -31,26 +31,44 @@ jobs:
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           echo "Detected tag: $TAG"
 
-      - name: Check if tag already exists
-        id: check
+      - name: Check tag consistency
+        id: check_tag
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
         run: |
-          if git tag -l "${{ steps.version.outputs.tag }}" | grep -q .; then
-            echo "Tag ${{ steps.version.outputs.tag }} already exists, skipping."
+          if git rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then
+            TAG_COMMIT=$(git rev-list -n 1 "$TAG")
+            if [ "$TAG_COMMIT" != "$GITHUB_SHA" ]; then
+              echo "Tag $TAG already points to $TAG_COMMIT, not release commit $GITHUB_SHA" >&2
+              exit 1
+            fi
             echo "exists=true" >> "$GITHUB_OUTPUT"
           else
             echo "exists=false" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Create and push tag
-        if: steps.check.outputs.exists == 'false'
+        if: steps.check_tag.outputs.exists == 'false'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git tag "${{ steps.version.outputs.tag }}"
           git push origin "${{ steps.version.outputs.tag }}"
 
+      - name: Check if GitHub Release exists
+        id: check_release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Generate changelog with git-cliff
-        if: steps.check.outputs.exists == 'false'
+        if: steps.check_release.outputs.exists == 'false'
         id: changelog
         uses: orhun/git-cliff-action@v4
         with:
@@ -59,14 +77,14 @@ jobs:
           OUTPUT: CHANGELOG.md
 
       - name: Get previous tag
-        if: steps.check.outputs.exists == 'false'
+        if: steps.check_release.outputs.exists == 'false'
         id: prev_tag
         run: |
           PREV=$(git tag --sort=-version:refname | grep -v "^${{ steps.version.outputs.tag }}$" | head -1)
           echo "tag=${PREV:-}" >> "$GITHUB_OUTPUT"
 
       - name: Create GitHub Release
-        if: steps.check.outputs.exists == 'false'
+        if: steps.check_release.outputs.exists == 'false'
         id: release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -93,13 +111,17 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Notify Discord
-        if: steps.check.outputs.exists == 'false'
+        if: steps.check_release.outputs.exists == 'false'
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_URL }}
           VERSION: ${{ steps.version.outputs.tag }}
           BODY: ${{ steps.release.outputs.body }}
           RELEASE_URL: ${{ steps.release.outputs.url }}
         run: |
+          if [ -z "$DISCORD_WEBHOOK" ]; then
+            echo "DISCORD_WEBHOOK_URL is not configured; skipping notification."
+            exit 0
+          fi
           PAYLOAD=$(python3 -c "
           import json, os
           version = os.environ['VERSION']

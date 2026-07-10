@@ -1,49 +1,104 @@
-# Migrations
+# D1 Migrations
 
-D1 migrations live in `src/web/migrations`. The shared schema lives in `src/shared/src/db/schema.ts`.
+Application D1 migrations live in `src/web/migrations`. The authoritative Drizzle schema lives in `src/shared/src/db/schema.ts`.
 
-## When To Add A Migration
+## When a Migration Is Required
 
-Add a migration whenever a change modifies durable D1 shape or query assumptions:
+Add a migration whenever a change modifies durable D1 shape or a query's durable assumptions:
 
-- New table, column, index, or unique constraint.
-- Changed default value.
-- Backfill needed for existing rows.
-- Query performance depends on a new index.
-- Data cleanup is required before new code can safely run.
+- New table, column, index, unique constraint, or foreign key.
+- Changed default or nullability.
+- Backfill or normalization of existing data.
+- Query performance that depends on a new index.
+- Idempotency or ownership behavior enforced by storage.
+- Cleanup required before new code can safely read or write the data.
 
-Do not add a migration for TypeScript-only validators, UI-only changes, local IndexedDB cache shape, or R2 object naming changes unless D1 rows also change.
+A TypeScript-only validator, UI-only state, local IndexedDB cache, or R2 key-format change does not require a D1 migration unless stored D1 rows also change.
 
-## Naming
+## Naming and Immutability
 
-Use the existing numbered style:
+Use a new, never-before-used filename:
 
 ```text
-0044_short_description.sql
+0047_short_behavior_description.sql
 ```
 
-Keep descriptions short and behavior-focused.
+Wrangler records the complete filename as the deployment identifier. Historical migrations contain some duplicate numeric prefixes, but every complete filename is unique and the clean local migration chain succeeds. Do not rename an applied file, reuse an existing filename, or attempt to repair the prefixes retroactively.
 
-## Migration Checklist
+Choose the next available numeric prefix for new work and keep the description concise and behavior focused.
+
+## Safety Rules
+
+- Prefer additive, forward-safe migrations.
+- State whether a migration is additive, backfill-only, destructive, or compatibility sensitive.
+- Add indexes and uniqueness constraints required by authorization or idempotency.
+- Make foreign-key deletion behavior explicit and verify that it matches product ownership.
+- Store timestamps in the repository's established ISO string format unless a reviewed migration changes the convention.
+- Never reset, delete, or rewrite a remote production D1 database during deployment.
+- Never edit an already-applied production migration.
+- Repair a failed or incomplete production change with a reviewed forward migration.
+- Export or back up production data before destructive or large backfill operations.
+
+## Change Checklist
 
 - Update `src/shared/src/db/schema.ts`.
-- Add a matching SQL migration in `src/web/migrations`.
+- Add the matching SQL migration in `src/web/migrations`.
+- Ensure shared queries use Drizzle predicates and include workspace ownership in the database query.
 - Add or update query tests under `src/shared/test`.
-- If the migration changes runtime behavior, add a route/worker test at the owning package.
-- Mention whether the migration is additive, backfill-only, or potentially breaking.
+- Add a route, Worker, or integration test at the owning runtime when behavior changes.
+- Verify unique constraints under duplicate delivery or concurrent execution.
+- Verify the full chain against an empty local database.
+- Review the remote pending migration list before production apply.
+- Document rollback as a forward repair, not destructive reversal.
 
-## D1 Commands
+## Local Validation
 
-Local migration apply:
-
-```bash
-pnpm --filter @phneakngar/web exec wrangler d1 migrations apply phneakngar-app --local
-```
-
-Remote migration apply:
+Reset only local Wrangler state and apply the full chain:
 
 ```bash
-pnpm --filter @phneakngar/web exec wrangler d1 migrations apply phneakngar-app --remote
+pnpm db:reset
 ```
 
-Remote migration commands must be run deliberately. Do not hide them inside unrelated scripts.
+Apply pending local migrations without deleting local state:
+
+```bash
+pnpm db:migrate
+```
+
+Inspect the local migration state when troubleshooting:
+
+```bash
+pnpm --filter @phneakngar/web exec wrangler d1 migrations list phneakngar-app --local
+```
+
+The production-readiness audit validated the complete chain from an empty local D1 database, including:
+
+- `0045_email_delivery_idempotency.sql`, which adds a nullable workspace-scoped unique delivery key for retry-safe inbound email.
+- `0046_machine_token_hash.sql`, which adds the token digest index used for lazy migration away from active plaintext machine tokens.
+
+## Production Procedure
+
+List pending remote migrations first:
+
+```bash
+pnpm --filter @phneakngar/web exec wrangler d1 migrations list phneakngar-app --remote
+```
+
+Apply them deliberately from one operator session:
+
+```bash
+pnpm db:migrate:remote
+```
+
+`pnpm deploy:web` also invokes `pnpm db:migrate:remote` before the OpenNext deployment. Do not run both concurrently. Record the applied migration list and verify `https://<production-origin>/api/health` after deployment.
+
+## Failure Recovery
+
+If a remote migration fails:
+
+1. Stop deployments and retain the exact Wrangler output.
+2. Determine whether D1 applied any statement before the failure.
+3. Do not rename or rerun a modified migration file.
+4. Create a new forward migration that tolerates the observed partial state.
+5. Test the repair against a copy or representative local state.
+6. Apply the repair once, then validate affected queries and health checks.
