@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "devspace": {
+      "type": "http",
+      "url": "https://stable-mcp.cieee.xyz/mcp"
+    }
+  }
+}
