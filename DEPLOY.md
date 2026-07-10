@@ -155,9 +155,18 @@ wrangler secret put GITHUB_CLIENT_SECRET
 wrangler secret put GOOGLE_CLIENT_ID
 wrangler secret put GOOGLE_CLIENT_SECRET
 
-# Email worker
+# Email worker (same values as web for shared secrets)
 cd src/email-worker
 wrangler secret put ENCRYPTION_KEY
+wrangler secret put EMAIL_NOTIFY_SECRET
+```
+
+Also set production `BETTER_AUTH_URL` to the public web origin (required for OAuth/session callbacks):
+
+```bash
+# e.g. https://app.example.com
+wrangler secret put BETTER_AUTH_URL --config src/web/wrangler.toml
+# or set as a [vars] / Dashboard env for phneakngar-web
 ```
 
 ## Custom Domain (Optional)

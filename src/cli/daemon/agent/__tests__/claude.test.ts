@@ -4,8 +4,11 @@ import { Readable } from "stream";
 import type { AgentMessage } from "../../types.js";
 
 let currentMockProc: ReturnType<typeof createMockProc> | null = null;
-let mockSpawn: ReturnType<typeof vi.fn>;
-let mockKillProcessTree: ReturnType<typeof vi.fn>;
+const mockKillProcessTree = vi.fn().mockResolvedValue(undefined);
+const mockSpawn = vi.fn(() => {
+  currentMockProc = createMockProc();
+  return currentMockProc.proc;
+});
 
 function createMockProc() {
   const stdinWrites: string[] = [];
@@ -26,13 +29,6 @@ function createMockProc() {
   });
   return { proc, stdout, stderr, stdinWrites };
 }
-
-// Initialize mocks at module level for bun test
-mockSpawn = vi.fn(() => {
-  currentMockProc = createMockProc();
-  return currentMockProc.proc;
-});
-mockKillProcessTree = vi.fn().mockResolvedValue(undefined);
 
 vi.mock("child_process", () => ({
   spawn: mockSpawn,

@@ -9,3 +9,6 @@
 # Encryption key for IMAP/SMTP credentials (generate with: openssl rand -base64 32)
 # Must match ENCRYPTION_KEY in web/.dev.vars — predev script syncs this automatically.
 ENCRYPTION_KEY=
+
+# Shared secret for posting to web /api/email/notify (must match web EMAIL_NOTIFY_SECRET)
+EMAIL_NOTIFY_SECRET=

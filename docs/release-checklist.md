@@ -42,4 +42,11 @@ Review the generated `release: vX.Y.Z` commit, then push `main`.
 git push origin main
 ```
 
-CI handles tagging, GitHub release generation, npm publication, and Worker redeploys.
+CI handles tagging, GitHub release generation, and npm publication for CLI/app.
+Cloudflare Workers are **not** auto-deployed — after push, run manually:
+
+```bash
+pnpm deploy:ws-do
+pnpm deploy:email
+pnpm deploy:web
+```

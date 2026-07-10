@@ -5,7 +5,7 @@ import type { AgentMessage } from "../../types.js";
 
 let currentMockProc: ReturnType<typeof createMockProc> | null = null;
 let lastSpawnOpts: Record<string, unknown> | null = null;
-let mockKillProcessTree: ReturnType<typeof vi.fn>;
+const mockKillProcessTree = vi.fn().mockResolvedValue(undefined);
 
 function createMockProc() {
   const stdinWrites: string[] = [];
@@ -27,8 +27,6 @@ function createMockProc() {
   });
   return { proc, stdout, stderr, stdinWrites, stdinEnd };
 }
-
-mockKillProcessTree = vi.fn().mockResolvedValue(undefined);
 
 vi.mock("child_process", () => ({
   spawn: vi.fn((_cmd: string, _args: string[], opts: Record<string, unknown>) => {
