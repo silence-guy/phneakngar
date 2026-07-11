@@ -123,7 +123,12 @@ async function pollAndActivate(opts: {
       } else if (errBody.error === "authorization_pending") {
         // Keep polling
       } else if (errBody.error === "expired_token") {
-        console.error("Error: device code expired. Please run login again.");
+        console.error("Error: device code expired before you approved it.");
+        console.error("");
+        console.error("Do this, then try again:");
+        console.error(`  1. Sign in at ${serverUrl}/sign-in (browser OTP)`);
+        console.error(`  2. Run: ${cmdPrefix()} login`);
+        console.error("  3. Click Approve on the device page within 15 minutes");
         process.exit(1);
       } else if (errBody.error === "access_denied") {
         console.error("Error: authorization was denied.");
@@ -139,7 +144,8 @@ async function pollAndActivate(opts: {
   }
 
   if (!tokenResp) {
-    console.error("Error: device code expired (timed out). Please run login again.");
+    console.error("Error: device code expired (timed out waiting for approval).");
+    console.error(`Sign in at ${serverUrl}/sign-in first, then run: ${cmdPrefix()} login`);
     process.exit(1);
   }
 
@@ -182,7 +188,13 @@ async function pollAndActivate(opts: {
   try {
     const mtResp = await client.postJSON<{ token: string }>(`/api/machine-tokens?workspace_id=${workspaceId}`);
     machineToken = mtResp.token;
-  } catch {
+  } catch (err) {
+    console.error(
+      `Error: failed to create machine token: ${err instanceof Error ? err.message : err}`,
+    );
+    console.error(
+      `Create a machine token in the dashboard and run: ${cmdPrefix()} register --token al_...`,
+    );
     process.exit(1);
   }
 
@@ -266,6 +278,8 @@ export function loginCommand(): Command {
     .option("--server <url>", "Server URL")
     .option("--profile <name>", "Profile name")
     .option("--force", "Re-authenticate even if already logged in")
+    // zsh may pass "# opens /device" as args when INTERACTIVE_COMMENTS is off
+    .allowExcessArguments(true)
     .action(async (opts, command) => {
       const profile: string | undefined =
         opts.profile || command.parent?.opts().profile;
@@ -283,12 +297,18 @@ export function loginCommand(): Command {
           if (existing.workspaceName) parts[0] += ` (workspace: ${existing.workspaceName})`;
           parts[0] += ".";
           console.log(parts[0]);
+          console.log(`Run \`${cmdPrefix()} status\` or \`${cmdPrefix()} doctor\` to verify.`);
           return;
         }
       }
 
       // Step 1: Request device code
       console.log("Requesting device code...");
+      console.log("");
+      console.log("  Prerequisites:");
+      console.log(`  • Be signed in at ${serverUrl}/sign-in (OTP email) first`);
+      console.log("  • Then approve this machine on the device page");
+      console.log("");
       let deviceResp: DeviceCodeResponse;
       try {
         const res = await fetch(`${serverUrl}/api/auth/device/code`, {
@@ -311,11 +331,13 @@ export function loginCommand(): Command {
 
       // Step 2: Display verification URL and code
       const verificationUrl = deviceResp.verification_uri_complete || deviceResp.verification_uri;
-      console.log();
-      console.log(`  Open this URL in your browser:`);
+      const expiresMin = Math.max(1, Math.round((deviceResp.expires_in || 900) / 60));
+      console.log(`  Open this URL in your browser (expires in ~${expiresMin} min):`);
       console.log(`  ${verificationUrl}`);
       console.log();
       console.log(`  Enter code: ${deviceResp.user_code}`);
+      console.log();
+      console.log("  If the page asks you to sign in, finish OTP, then click Approve.");
       console.log();
 
       // Non-TTY (AI agent context): fork a background poller and exit immediately
@@ -336,7 +358,7 @@ export function loginCommand(): Command {
         });
         child.unref();
 
-        console.log("  Polling for authorization in the background (timeout: 5min).");
+        console.log(`  Polling for authorization in the background (timeout: ~${expiresMin} min).`);
         console.log(`  Once approved, run \`${cmdPrefix()} status\` to verify.`);
         return;
       }

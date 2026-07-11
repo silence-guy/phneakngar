@@ -16,6 +16,21 @@ vi.mock("../daemon/config.js", () => ({
   pidFilePath: vi.fn(() => "/tmp/fake.pid"),
 }));
 
+vi.mock("../lib/config.js", () => ({
+  loadCLIConfigForProfile: vi.fn(() => ({
+    server_url: "https://example.com",
+    watched_workspaces: [
+      { id: "ws1", name: "Test", token: "al_test", status: "active" },
+    ],
+  })),
+}));
+
+vi.mock("../lib/env.js", () => ({
+  cmdPrefix: () => "phneakngar",
+  getServerUrl: () => "https://example.com",
+  isDev: () => false,
+}));
+
 vi.mock("fs", () => ({
   openSync: vi.fn(() => 99),
   closeSync: vi.fn(),
@@ -338,5 +353,18 @@ describe("daemon start (background)", () => {
 
     expect(spawnMock).not.toHaveBeenCalled();
     expect(err.join("\n")).toContain("Daemon already running (pid=333)");
+  });
+
+  it("refuses to start when not registered", async () => {
+    const { loadCLIConfigForProfile } = await import("../lib/config.js");
+    (loadCLIConfigForProfile as unknown as ReturnType<typeof vi.fn>).mockReturnValueOnce({
+      server_url: "https://example.com",
+      watched_workspaces: [],
+    });
+
+    const { err } = await runCLI(["start"]);
+
+    expect(spawnMock).not.toHaveBeenCalled();
+    expect(err.join("\n")).toContain("not registered");
   });
 });

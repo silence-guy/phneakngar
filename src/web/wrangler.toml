@@ -2,6 +2,7 @@ name = "phneakngar-web"
 main = "custom-worker.ts"
 compatibility_date = "2026-04-09"
 compatibility_flags = ["nodejs_compat"]
+account_id = "2d5298c70ba99a7bec4e919c21b5d8ce"
 # Disable esbuild keep_names — otherwise __name(...) wrappers leak into
 # stringified inline scripts (ThemeScript, next-themes) and throw
 # "__name is not defined" at runtime in the browser.

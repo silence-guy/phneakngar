@@ -99,11 +99,13 @@ export function initCommand(): Command {
         }
 
         console.log("\nNext steps:\n");
-        console.log(`  1. ${cmdPrefix()} login`);
-        console.log(`     # or: ${cmdPrefix()} register --token al_xxxxxxxx`);
-        console.log(`  2. ${cmdPrefix()} doctor`);
-        console.log(`  3. ${cmdPrefix()} daemon start`);
-        console.log(`  4. ${cmdPrefix()} daemon status\n`);
+        console.log(`  1. Sign in at the dashboard (browser OTP)`);
+        console.log(`  2. ${cmdPrefix()} login`);
+        console.log(`     (or: ${cmdPrefix()} register --token al_xxxxxxxx)`);
+        console.log(`  3. ${cmdPrefix()} doctor`);
+        console.log(`  4. ${cmdPrefix()} daemon start`);
+        console.log(`  5. ${cmdPrefix()} daemon status\n`);
+        console.log("  Tip: run commands one at a time (do not paste shell comments).\n");
       } catch (err) {
         console.error(`Error: ${err instanceof Error ? err.message : err}`);
         process.exit(1);

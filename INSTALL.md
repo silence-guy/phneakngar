@@ -93,22 +93,40 @@ node /path/to/node_modules/@phneakngar/cli/dist/index.js doctor
 
 ### Initialize, diagnose, register, start
 
+Run **one command at a time** (do not paste comments like `# opens /device` into zsh).
+
 ```bash
 phneakngar init
 phneakngar doctor
-
-# Browser login (recommended)
-phneakngar login
-
-# Or machine token from the dashboard (starts with al_):
-# phneakngar register --token al_xxxxxxxxxxxxxxxxxxxxxxxx
-
-phneakngar daemon start
-phneakngar status
-phneakngar doctor
 ```
 
-Expected healthy doctor result after login + daemon start: no `FAIL` lines; **Server** and **Daemon health** should be `PASS`.
+**1. Sign in on the web first** (required for device login):
+
+Open https://phneakngar-web.thatsilenceguy.workers.dev/sign-in  
+Enter your email → complete the OTP from `no-reply@cieee.xyz`.
+
+**2. Link this machine (pick one):**
+
+```bash
+# A) Browser device login (recommended)
+phneakngar login
+# → browser opens /device — click Approve while still signed in
+
+# B) Machine token from the dashboard
+phneakngar register --token al_xxxxxxxxxxxxxxxxxxxxxxxx
+```
+
+**3. Start the daemon only after registration succeeds:**
+
+```bash
+phneakngar status          # should say Registered
+phneakngar daemon start
+phneakngar doctor          # no FAIL lines
+```
+
+If login says **device code expired**: you must approve within the code TTL (now 15 minutes). Sign in on the web first, then run `phneakngar login` again and Approve promptly.
+
+Expected healthy doctor: **Registration**, **Daemon**, **Server**, and **Daemon health** are PASS.
 
 ---
 

@@ -11,6 +11,8 @@ import {
 } from "../daemon/pidfile.js";
 import { resolveLoginShellEnv } from "../lib/shell-env.js";
 import { isWindows } from "../lib/platform.js";
+import { loadCLIConfigForProfile } from "../lib/config.js";
+import { cmdPrefix } from "../lib/env.js";
 
 const PID_POLL_INTERVAL_MS = 200;
 const PID_POLL_TIMEOUT_MS = 2000;
@@ -147,6 +149,18 @@ export function daemonCommand(): Command {
       const parentOpts = command.parent?.parent?.opts() || {};
       const profile: string | undefined = parentOpts.profile;
       const serverUrl: string | undefined = opts.server || parentOpts.server;
+
+      const cfg = loadCLIConfigForProfile(profile);
+      const registered = cfg.watched_workspaces?.some(
+        (w) => w.token && w.status !== "deleted",
+      );
+      if (!registered) {
+        console.error("Error: this machine is not registered yet.");
+        console.error(`Run: ${cmdPrefix()} login`);
+        console.error(`  or: ${cmdPrefix()} register --token al_...`);
+        console.error("Then start the daemon again.");
+        process.exit(1);
+      }
 
       if (opts.foreground) {
         await startDaemon(profile, serverUrl);

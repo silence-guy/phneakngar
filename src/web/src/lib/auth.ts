@@ -136,7 +136,8 @@ export function createAuth(env: Env) {
     },
     plugins: isProd
       ? [
-          deviceAuthorization({ verificationUri: "/device", validateClient, expiresIn: "5m", schema: {} }),
+          // 15m gives time to complete web OTP sign-in, then approve the device.
+          deviceAuthorization({ verificationUri: "/device", validateClient, expiresIn: "15m", schema: {} }),
           bearer(),
           emailOTP({
             async sendVerificationOTP({ email, otp, type }) {
@@ -165,7 +166,7 @@ export function createAuth(env: Env) {
           }),
         ]
       : [
-          deviceAuthorization({ verificationUri: "/device", validateClient, expiresIn: "5m", schema: {} }),
+          deviceAuthorization({ verificationUri: "/device", validateClient, expiresIn: "15m", schema: {} }),
           bearer(),
         ],
   })
