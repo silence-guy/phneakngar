@@ -99,10 +99,10 @@ describe("GET /api/machine-tokens/status", () => {
     expect(body.status).toBe("active");
     expect(body.workspace_id).toBe("sp_ws1");
     expect(body.hostname).toBe("MacBook.local");
-    expect(body.daemon_online).toBe(false);
+    expect(body.chhlat_online).toBe(false);
   });
 
-  it("returns daemon_online true when lastUsedAt is recent", async () => {
+  it("returns chhlat_online true when lastUsedAt is recent", async () => {
     mockGetLatestTokenForUser.mockResolvedValue({
       id: "mt_1", status: "registered", workspaceId: null, hostname: "MacBook.local",
       lastUsedAt: new Date(Date.now() - 30_000).toISOString(),
@@ -113,10 +113,10 @@ describe("GET /api/machine-tokens/status", () => {
     const body = await res.json();
 
     expect(res.status).toBe(200);
-    expect(body.daemon_online).toBe(true);
+    expect(body.chhlat_online).toBe(true);
   });
 
-  it("returns daemon_online false when lastUsedAt is stale", async () => {
+  it("returns chhlat_online false when lastUsedAt is stale", async () => {
     mockGetLatestTokenForUser.mockResolvedValue({
       id: "mt_1", status: "registered", workspaceId: null, hostname: "MacBook.local",
       lastUsedAt: new Date(Date.now() - 300_000).toISOString(),
@@ -127,7 +127,7 @@ describe("GET /api/machine-tokens/status", () => {
     const body = await res.json();
 
     expect(res.status).toBe(200);
-    expect(body.daemon_online).toBe(false);
+    expect(body.chhlat_online).toBe(false);
   });
 
   it("returns active status with workspace_id and hostname", async () => {
@@ -144,7 +144,7 @@ describe("GET /api/machine-tokens/status", () => {
     expect(body.status).toBe("active");
     expect(body.workspace_id).toBe("sp_ws1");
     expect(body.hostname).toBe("MacBook.local");
-    expect(body.daemon_online).toBe(true);
+    expect(body.chhlat_online).toBe(true);
   });
 
   it("returns pending status with token value", async () => {
@@ -160,7 +160,7 @@ describe("GET /api/machine-tokens/status", () => {
     expect(res.status).toBe(200);
     expect(body.status).toBe("pending");
     expect(body.token).toBe("al_secret_pending");
-    expect(body.daemon_online).toBe(false);
+    expect(body.chhlat_online).toBe(false);
   });
 
 });

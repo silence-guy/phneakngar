@@ -5,7 +5,7 @@ import { withAuth } from "@/lib/middleware/auth";
 import { withWorkspaceMember } from "@/lib/middleware/workspace";
 import { writeJSON, writeError } from "@/lib/middleware/helpers";
 import { fetchLatestCliVersion } from "@/lib/npm";
-import { broadcastToDaemon, broadcastToUser } from "@/lib/broadcast";
+import { broadcastToChhlat, broadcastToUser } from "@/lib/broadcast";
 
 export const POST = withAuth(async (req: NextRequest, ctx) => {
   const ws = await withWorkspaceMember(req, ctx);
@@ -27,9 +27,9 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
   const result = await fetchLatestCliVersion();
   if (!result) return writeError("failed to fetch latest CLI version from npm", 502);
 
-  await queries.machine.setPendingUpdateVersion(db, runtime.daemonId, ws.workspaceId, result.version);
+  await queries.machine.setPendingUpdateVersion(db, runtime.chhlatId, ws.workspaceId, result.version);
 
-  broadcastToDaemon(runtime.daemonId, { type: "daemon.update", version: result.version }).catch(() => {});
+  broadcastToChhlat(runtime.chhlatId, { type: "chhlat.update", version: result.version }).catch(() => {});
 
   return writeJSON({ pending_update_version: result.version });
 });
@@ -51,11 +51,11 @@ export const DELETE = withAuth(async (req: NextRequest, ctx) => {
   );
   if (!runtime) return writeError("runtime not found", 404);
 
-  await queries.machine.clearPendingUpdateVersion(db, runtime.daemonId, ws.workspaceId);
+  await queries.machine.clearPendingUpdateVersion(db, runtime.chhlatId, ws.workspaceId);
 
   broadcastToUser(ctx.userId, {
     type: "runtime.status",
-    daemonId: runtime.daemonId,
+    chhlatId: runtime.chhlatId,
     workspaceId: ws.workspaceId,
     status: "online",
   }).catch(() => {});

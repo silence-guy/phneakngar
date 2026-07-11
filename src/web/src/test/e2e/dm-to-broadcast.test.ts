@@ -1,5 +1,5 @@
 /**
- * Cross-service E2E: User DM → Task → Daemon poll+start+complete → broadcast HTTP endpoint
+ * Cross-service E2E: User DM → Task → Chhlat poll+start+complete → broadcast HTTP endpoint
  * Verifies the full message-to-broadcast flow via server-side assertions only.
  * Refs: #190
  */
@@ -61,14 +61,14 @@ describe("cross-service: DM → task lifecycle → WS broadcast", () => {
     taskId = msgData.task!.id
   })
 
-  it("daemon polls and claims the task", async () => {
+  it("chhlat polls and claims the task", async () => {
     const pollRes = await tokenRequest(
-      `/api/daemon/tasks/poll`,
+      `/api/chhlat/tasks/poll`,
       seed.machineToken,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ daemon_id: seed.daemonId, max_tasks: 5 }),
+        body: JSON.stringify({ chhlat_id: seed.chhlatId, max_tasks: 5 }),
       },
     )
     expect(pollRes.status).toBe(200)
@@ -79,9 +79,9 @@ describe("cross-service: DM → task lifecycle → WS broadcast", () => {
     expect(claimed!.status).toBe("dispatched")
   })
 
-  it("daemon starts the task", async () => {
+  it("chhlat starts the task", async () => {
     const startRes = await tokenRequest(
-      `/api/daemon/tasks/${taskId}/start`,
+      `/api/chhlat/tasks/${taskId}/start`,
       seed.machineToken,
       { method: "POST" },
     )
@@ -90,9 +90,9 @@ describe("cross-service: DM → task lifecycle → WS broadcast", () => {
     expect(startData.status).toBe("running")
   })
 
-  it("daemon completes the task", async () => {
+  it("chhlat completes the task", async () => {
     const completeRes = await tokenRequest(
-      `/api/daemon/tasks/${taskId}/complete`,
+      `/api/chhlat/tasks/${taskId}/complete`,
       seed.machineToken,
       {
         method: "POST",

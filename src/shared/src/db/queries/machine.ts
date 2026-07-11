@@ -5,7 +5,7 @@ import type { Database } from "../index";
 export async function upsertMachine(
   db: Database,
   data: {
-    daemonId: string;
+    chhlatId: string;
     workspaceId: string;
     deviceInfo: string;
     lastSeenAt?: string | null;
@@ -17,7 +17,7 @@ export async function upsertMachine(
   const rows = await db
     .insert(machine)
     .values({
-      daemonId: data.daemonId,
+      chhlatId: data.chhlatId,
       workspaceId: data.workspaceId,
       deviceInfo: data.deviceInfo,
       lastSeenAt,
@@ -26,7 +26,7 @@ export async function upsertMachine(
       ownerId: data.ownerId,
     })
     .onConflictDoUpdate({
-      target: [machine.workspaceId, machine.daemonId],
+      target: [machine.workspaceId, machine.chhlatId],
       set: {
         deviceInfo: data.deviceInfo,
         lastSeenAt,
@@ -40,7 +40,7 @@ export async function upsertMachine(
 
 export async function updateMachineLastSeen(
   db: Database,
-  daemonId: string,
+  chhlatId: string,
   workspaceId: string
 ) {
   const now = new Date().toISOString();
@@ -48,13 +48,13 @@ export async function updateMachineLastSeen(
     .update(machine)
     .set({ lastSeenAt: now, updatedAt: now })
     .where(
-      and(eq(machine.daemonId, daemonId), eq(machine.workspaceId, workspaceId))
+      and(eq(machine.chhlatId, chhlatId), eq(machine.workspaceId, workspaceId))
     );
 }
 
 export async function setMachineLastSeenNull(
   db: Database,
-  daemonId: string,
+  chhlatId: string,
   workspaceId: string
 ) {
   const now = new Date().toISOString();
@@ -62,20 +62,20 @@ export async function setMachineLastSeenNull(
     .update(machine)
     .set({ lastSeenAt: null, updatedAt: now })
     .where(
-      and(eq(machine.daemonId, daemonId), eq(machine.workspaceId, workspaceId))
+      and(eq(machine.chhlatId, chhlatId), eq(machine.workspaceId, workspaceId))
     );
 }
 
-export async function getMachineByDaemon(
+export async function getMachineByChhlat(
   db: Database,
-  daemonId: string,
+  chhlatId: string,
   workspaceId: string
 ) {
   const rows = await db
     .select()
     .from(machine)
     .where(
-      and(eq(machine.daemonId, daemonId), eq(machine.workspaceId, workspaceId))
+      and(eq(machine.chhlatId, chhlatId), eq(machine.workspaceId, workspaceId))
     );
   return rows[0] ?? null;
 }
@@ -95,19 +95,19 @@ export async function listMachinesForWorkspace(
 
 export async function deleteMachine(
   db: Database,
-  daemonId: string,
+  chhlatId: string,
   workspaceId: string
 ) {
   await db
     .delete(machine)
     .where(
-      and(eq(machine.daemonId, daemonId), eq(machine.workspaceId, workspaceId))
+      and(eq(machine.chhlatId, chhlatId), eq(machine.workspaceId, workspaceId))
     );
 }
 
 export async function setPendingUpdateVersion(
   db: Database,
-  daemonId: string,
+  chhlatId: string,
   workspaceId: string,
   version: string
 ) {
@@ -116,13 +116,13 @@ export async function setPendingUpdateVersion(
     .update(machine)
     .set({ pendingUpdateVersion: version, updatedAt: now })
     .where(
-      and(eq(machine.daemonId, daemonId), eq(machine.workspaceId, workspaceId))
+      and(eq(machine.chhlatId, chhlatId), eq(machine.workspaceId, workspaceId))
     );
 }
 
 export async function clearPendingUpdateVersion(
   db: Database,
-  daemonId: string,
+  chhlatId: string,
   workspaceId: string
 ) {
   const now = new Date().toISOString();
@@ -130,13 +130,13 @@ export async function clearPendingUpdateVersion(
     .update(machine)
     .set({ pendingUpdateVersion: null, updatedAt: now })
     .where(
-      and(eq(machine.daemonId, daemonId), eq(machine.workspaceId, workspaceId))
+      and(eq(machine.chhlatId, chhlatId), eq(machine.workspaceId, workspaceId))
     );
 }
 
 export async function setPendingRescan(
   db: Database,
-  daemonId: string,
+  chhlatId: string,
   workspaceId: string,
 ) {
   const now = new Date().toISOString();
@@ -144,13 +144,13 @@ export async function setPendingRescan(
     .update(machine)
     .set({ pendingRescan: true, updatedAt: now })
     .where(
-      and(eq(machine.daemonId, daemonId), eq(machine.workspaceId, workspaceId)),
+      and(eq(machine.chhlatId, chhlatId), eq(machine.workspaceId, workspaceId)),
     );
 }
 
 export async function clearPendingRescan(
   db: Database,
-  daemonId: string,
+  chhlatId: string,
   workspaceId: string,
 ) {
   const now = new Date().toISOString();
@@ -158,6 +158,6 @@ export async function clearPendingRescan(
     .update(machine)
     .set({ pendingRescan: false, updatedAt: now })
     .where(
-      and(eq(machine.daemonId, daemonId), eq(machine.workspaceId, workspaceId)),
+      and(eq(machine.chhlatId, chhlatId), eq(machine.workspaceId, workspaceId)),
     );
 }

@@ -39,10 +39,10 @@ export const POST = withEnv(async (req: NextRequest, ctx) => {
     return writeJSON({ error: "token has no workspace_id — create workspace first" }, 422);
   }
 
-  const daemonId = hostname;
+  const chhlatId = hostname;
 
   await queries.machine.upsertMachine(db, {
-    daemonId,
+    chhlatId,
     workspaceId,
     deviceInfo: hostname,
     lastSeenAt: null,
@@ -53,7 +53,7 @@ export const POST = withEnv(async (req: NextRequest, ctx) => {
   for (const rt of runtimes) {
     const result = await queries.runtime.upsertAgentRuntime(db, {
       workspaceId,
-      daemonId,
+      chhlatId,
       runtimeMode: "local",
       provider: rt.type,
       deviceInfo: hostname,
@@ -66,25 +66,25 @@ export const POST = withEnv(async (req: NextRequest, ctx) => {
 
   await Promise.all([
     invalidate(cacheKeys.machineToken(token)),
-    invalidate(cacheKeys.runtimeIds(workspaceId, daemonId)),
+    invalidate(cacheKeys.runtimeIds(workspaceId, chhlatId)),
     invalidate(cacheKeys.allRuntimes(workspaceId)),
   ]);
 
   broadcastToUser(mt.userId, {
     type: "runtime.registered",
-    daemonId,
+    chhlatId,
     hostname,
     workspaceId,
   }).catch((err) => {
     log.warn("broadcast after activation failed", {
       userId: mt.userId,
-      daemonId,
+      chhlatId,
       err: err instanceof Error ? err.message : String(err),
     });
   });
 
   return writeJSON({
-    daemon_id: daemonId,
+    chhlat_id: chhlatId,
     workspace_id: workspaceId,
     runtimes: results.map(runtimeToResponse),
   });

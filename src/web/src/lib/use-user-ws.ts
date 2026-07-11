@@ -99,7 +99,7 @@ export function useUserWs(onMessage: (msg: WsMessage) => void, options?: { onRec
       try {
         const msg = JSON.parse(e.data)
         if (msg.type === "auth.ok") {
-          ws.send(JSON.stringify({ type: "check_daemon_status" }))
+          ws.send(JSON.stringify({ type: "check_chhlat_status" }))
           return
         }
         onMessageRef.current(msg as WsMessage)

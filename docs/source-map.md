@@ -8,9 +8,9 @@ This repository is a pnpm/Turbo monorepo for `ភ្នាក់ងារ`. Use 
 | --- | --- | --- |
 | `src/shared` | `@phneakngar/shared` | Shared types, Zod schemas, constants, D1 schema, Drizzle query modules, email helpers, mode/runtime helpers. |
 | `src/web` | `@phneakngar/web` | Next.js app on Cloudflare Workers, public site, app UI, API routes, D1 migrations, e2e tests. |
-| `src/cli` | `@phneakngar/cli` | CLI commands, daemon, local execution environment, provider/runtime orchestration. |
+| `src/cli` | `@phneakngar/cli` | CLI commands, chhlat, local execution environment, provider/runtime orchestration. |
 | `src/email-worker` | `@phneakngar/email-worker` | Inbound email Worker, IMAP poller Durable Object, email notification forwarding. |
-| `src/ws-do` | `@phneakngar/ws-do` | WebSocket Durable Object for daemon/user runtime channels. |
+| `src/ws-do` | `@phneakngar/ws-do` | WebSocket Durable Object for chhlat/user runtime channels. |
 | `src/app` | `@phneakngar/app` | Self-hosted app installer/wrapper, service management, local migrations. |
 | `src/desktop` | `@phneakngar/desktop` | Tauri desktop wrapper and generated native project files. |
 | `tests/utils` | `@phneakngar/test-utils` | Shared test helpers. |
@@ -25,7 +25,7 @@ This repository is a pnpm/Turbo monorepo for `ភ្នាក់ងារ`. Use 
 - Shared query modules: `src/shared/src/db/queries/*.ts`
 - Shared query exports: `src/shared/src/db/queries-index.ts`
 - CLI binary entry: `src/cli/src/index.ts`
-- CLI daemon: `src/cli/daemon/**`
+- CLI chhlat runtime: `src/cli/chhlat/**` (internal module path)
 - Email Worker entry: `src/email-worker/src/index.ts`
 - IMAP poller Durable Object: `src/email-worker/src/imap-poller-do.ts`
 - WebSocket Worker entry: `src/ws-do/src/index.ts`
@@ -37,9 +37,9 @@ This repository is a pnpm/Turbo monorepo for `ភ្នាក់ងារ`. Use 
 
 - Web-only UI/API change: update `src/web`, add or update route/component tests, then run `pnpm --filter @phneakngar/web test`.
 - Shared schema/query change: update `src/shared/src/db/schema.ts`, a migration in `src/web/migrations`, query tests under `src/shared/test`, then run shared tests.
-- CLI/daemon change: update `src/cli`, add focused daemon/command tests, then run `pnpm --filter @phneakngar/cli test`.
+- CLI/chhlat change: update `src/cli`, add focused chhlat/command tests, then run `pnpm --filter @phneakngar/cli test`.
 - Email behavior change: update `src/email-worker` and any notifying web route, then run email-worker tests plus affected web route tests.
-- Runtime/WebSocket change: update `src/ws-do`, daemon client code in `src/cli`, and status UI or API routes as needed.
+- Runtime/WebSocket change: update `src/ws-do`, chhlat client code in `src/cli`, and status UI or API routes as needed.
 
 ## Naming
 

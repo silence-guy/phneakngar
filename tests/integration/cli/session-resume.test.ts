@@ -7,13 +7,13 @@ import {
   sqlRun,
   sqlQuery,
 } from "@phneakngar/test-utils"
-import { DaemonClient } from "../../../src/cli/daemon/client"
+import { ChhlatClient } from "../../../src/cli/chhlat/client"
 
 const APP_URL = process.env.APP_URL ?? "http://localhost:3000"
-const client = new DaemonClient(APP_URL)
+const client = new ChhlatClient(APP_URL)
 
 let seed: TestSeed
-const daemonId = `daemon_sess_${randomUUID().slice(0, 8)}`
+const chhlatId = `chhlat_sess_${randomUUID().slice(0, 8)}`
 let runtimeId: string
 
 beforeAll(async () => {
@@ -21,7 +21,7 @@ beforeAll(async () => {
 
   const reg = await client.register(seed.machineToken, {
     workspace_id: seed.workspaceId,
-    daemon_id: daemonId,
+    chhlat_id: chhlatId,
     device_name: "session-test-machine",
     cli_version: "0.1.0-integ",
     runtimes: [{ provider: "claude", runtime_mode: "local", version: "4.0" }],
@@ -47,7 +47,7 @@ describe("session resume via context_key", () => {
     sqlRun(`INSERT INTO conversation (id, workspace_id, agent_id, user_id, title, created_at) VALUES (?, ?, ?, ?, ?, ?)`, firstConversationId, seed.workspaceId, seed.agentId, seed.userId, 'session resume test', now)
     sqlRun(`INSERT INTO agent_task_queue (id, agent_id, runtime_id, workspace_id, conversation_id, prompt, status, type, context_key, priority, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)`, firstTaskId, seed.agentId, runtimeId, seed.workspaceId, firstConversationId, 'First message', 'queued', 'user_dm_message', contextKey, now)
 
-    const result = await client.poll(seed.machineToken, daemonId, 1, "0.1.0-integ")
+    const result = await client.poll(seed.machineToken, chhlatId, 1, "0.1.0-integ")
     expect(result.tasks).toHaveLength(1)
     expect(result.tasks[0].id).toBe(firstTaskId)
     expect(result.tasks[0].context_key).toBe(contextKey)
@@ -67,7 +67,7 @@ describe("session resume via context_key", () => {
 
     sqlRun(`INSERT INTO agent_task_queue (id, agent_id, runtime_id, workspace_id, conversation_id, prompt, status, type, context_key, priority, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)`, secondTaskId, seed.agentId, runtimeId, seed.workspaceId, firstConversationId, 'Second message same context', 'queued', 'user_dm_message', contextKey, now)
 
-    const result = await client.poll(seed.machineToken, daemonId, 1, "0.1.0-integ")
+    const result = await client.poll(seed.machineToken, chhlatId, 1, "0.1.0-integ")
     expect(result.tasks).toHaveLength(1)
     expect(result.tasks[0].id).toBe(secondTaskId)
     expect(result.tasks[0].context_key).toBe(contextKey)
@@ -88,7 +88,7 @@ describe("session resume via context_key", () => {
     sqlRun(`INSERT INTO conversation (id, workspace_id, agent_id, user_id, title, created_at) VALUES (?, ?, ?, ?, ?, ?)`, thirdConversationId, seed.workspaceId, seed.agentId, seed.userId, 'different context', now)
     sqlRun(`INSERT INTO agent_task_queue (id, agent_id, runtime_id, workspace_id, conversation_id, prompt, status, type, context_key, priority, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)`, thirdTaskId, seed.agentId, runtimeId, seed.workspaceId, thirdConversationId, 'Different context message', 'queued', 'user_dm_message', differentContextKey, now)
 
-    const result = await client.poll(seed.machineToken, daemonId, 1, "0.1.0-integ")
+    const result = await client.poll(seed.machineToken, chhlatId, 1, "0.1.0-integ")
     expect(result.tasks).toHaveLength(1)
     expect(result.tasks[0].id).toBe(thirdTaskId)
     expect(result.tasks[0].context_key).toBe(differentContextKey)
@@ -125,8 +125,8 @@ describe("session resume via context_key", () => {
     try {
       sqlRun(`DELETE FROM agent_task_queue WHERE id IN (?, ?, ?)`, firstTaskId, secondTaskId, thirdTaskId)
       sqlRun(`DELETE FROM conversation WHERE id IN (?, ?)`, firstConversationId, thirdConversationId)
-      sqlRun(`DELETE FROM agent_runtime WHERE daemon_id = ?`, daemonId)
-      sqlRun(`DELETE FROM machine WHERE daemon_id = ?`, daemonId)
+      sqlRun(`DELETE FROM agent_runtime WHERE chhlat_id = ?`, chhlatId)
+      sqlRun(`DELETE FROM machine WHERE chhlat_id = ?`, chhlatId)
     } catch { /* ignore */ }
   })
 })

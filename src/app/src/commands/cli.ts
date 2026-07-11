@@ -29,36 +29,36 @@ export function registerCommand(): Command {
     });
 }
 
-export function daemonCommand(): Command {
-  const daemon = new Command("daemon")
-    .description("Manage the local ភ្នាក់ងារ daemon")
+export function chhlatCommand(): Command {
+  const chhlat = new Command("chhlat")
+    .description("Manage the local ភ្នាក់ងារ chhlat (always-on agent)")
     .enablePositionalOptions();
 
-  daemon
+  chhlat
     .command("start")
-    .description("Start the daemon")
+    .description("Start chhlat")
     .allowUnknownOption()
     .passThroughOptions()
     .argument("[args...]")
     .action((args) => {
-      runCli(["daemon", "start", ...args]);
+      runCli(["chhlat", "start", ...args]);
     });
 
-  daemon
+  chhlat
     .command("stop")
-    .description("Stop the daemon")
+    .description("Stop chhlat")
     .action(() => {
-      runCli(["daemon", "stop"]);
+      runCli(["chhlat", "stop"]);
     });
 
-  daemon
+  chhlat
     .command("status")
-    .description("Check daemon status")
+    .description("Check chhlat status")
     .action(() => {
-      runCli(["daemon", "status"]);
+      runCli(["chhlat", "status"]);
     });
 
-  return daemon;
+  return chhlat;
 }
 
 export function cliPassthroughCommand(): Command {

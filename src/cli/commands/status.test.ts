@@ -23,7 +23,7 @@ describe("formatStatusReport", () => {
     const lines = formatStatusReport();
     expect(lines.some((l) => l.includes("Not registered"))).toBe(true);
     expect(lines.some((l) => l.startsWith("CLI version:"))).toBe(true);
-    expect(lines.some((l) => l.startsWith("Daemon:"))).toBe(true);
+    expect(lines.some((l) => l.startsWith("Chhlat:"))).toBe(true);
     expect(lines.some((l) => l.startsWith("AI runtimes:"))).toBe(true);
   });
 

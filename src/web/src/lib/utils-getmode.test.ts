@@ -10,8 +10,8 @@ vi.mock("@phneakngar/shared/mode", async (importOriginal) => {
     ...actual,
     resolveMode: (...args: any[]) => mockResolveMode(...args),
     cliCommand: vi.fn(() => "npx @phneakngar/cli"),
-    daemonCommand: vi.fn(() => "npx @phneakngar/cli daemon start"),
-    updateCommand: vi.fn(() => "npx @phneakngar/cli@latest daemon stop"),
+    chhlatCommand: vi.fn(() => "npx @phneakngar/cli chhlat start"),
+    updateCommand: vi.fn(() => "npx @phneakngar/cli@latest chhlat stop"),
     isTauri: (...args: any[]) => mockIsTauri(...args),
     isMobile: (...args: any[]) => mockIsMobile(...args),
   };

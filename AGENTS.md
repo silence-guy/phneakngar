@@ -15,7 +15,7 @@
 - `src/shared/src/db/schema.ts`: D1 schema
 - `src/shared/src/db/queries/`: shared Drizzle query modules
 - `src/web`: Next.js app on Cloudflare Workers (D1 + R2)
-- `src/cli`: CLI + daemon
+- `src/cli`: CLI + chhlat
 - `src/email-worker`: inbound email Cloudflare Worker
 - `src/ws-do`: WebSocket Durable Object worker
 - `docs/source-map.md`: current package map and entry points

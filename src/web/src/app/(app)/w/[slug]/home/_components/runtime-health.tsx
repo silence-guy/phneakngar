@@ -30,7 +30,7 @@ export function RuntimeHealth({ runtimes, agents }: RuntimeHealthProps) {
   const { slug } = useWorkspace();
   const machineMap = new Map<string, { runtimes: AgentRuntime[]; deviceInfo: string }>();
   for (const rt of runtimes) {
-    const key = rt.daemon_id ?? rt.id;
+    const key = rt.chhlat_id ?? rt.id;
     if (!machineMap.has(key)) {
       machineMap.set(key, { runtimes: [], deviceInfo: rt.device_info ?? "" });
     }
@@ -67,7 +67,7 @@ export function RuntimeHealth({ runtimes, agents }: RuntimeHealthProps) {
         <CardTitle>Machines</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        {machines.map(([daemonId, machine]) => {
+        {machines.map(([chhlatId, machine]) => {
           const isOnline = machine.runtimes.some((r) => r.status === "online");
           const lastSeen = machine.runtimes
             .map((r) => r.last_seen_at)
@@ -83,7 +83,7 @@ export function RuntimeHealth({ runtimes, agents }: RuntimeHealthProps) {
           const updateVersion = machine.runtimes.find((r) => r.pending_update_version)?.pending_update_version;
 
           return (
-            <div key={daemonId} className="flex items-start gap-3 text-xs">
+            <div key={chhlatId} className="flex items-start gap-3 text-xs">
               <Tooltip>
                 <TooltipTrigger render={
                   <span
@@ -95,7 +95,7 @@ export function RuntimeHealth({ runtimes, agents }: RuntimeHealthProps) {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <span className="font-medium truncate">
-                    {machine.deviceInfo || daemonId.slice(0, 12)}
+                    {machine.deviceInfo || chhlatId.slice(0, 12)}
                   </span>
                   {hasPendingUpdate && (
                     <Tooltip>

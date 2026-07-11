@@ -66,7 +66,7 @@ vi.mock("@/lib/logger", () => ({
 const mockBroadcastToUser = vi.fn(() => Promise.resolve());
 
 vi.mock("@/lib/broadcast", () => ({
-  broadcastToDaemon: vi.fn(() => Promise.resolve({ sent: 1 })),
+  broadcastToChhlat: vi.fn(() => Promise.resolve({ sent: 1 })),
   broadcastToUser: (...args: any[]) => mockBroadcastToUser(...args),
 }));
 
@@ -90,7 +90,7 @@ describe("POST /api/runtimes/[runtimeId]/update", () => {
   it("returns 200 with pending_update_version", async () => {
     mockGetAgentRuntimeForWorkspace.mockResolvedValue({
       id: "rt1",
-      daemonId: "d1",
+      chhlatId: "d1",
     });
     mockFetch.mockResolvedValue({
       ok: true,
@@ -131,7 +131,7 @@ describe("POST /api/runtimes/[runtimeId]/update", () => {
   it("returns 502 when npm registry is unreachable", async () => {
     mockGetAgentRuntimeForWorkspace.mockResolvedValue({
       id: "rt1",
-      daemonId: "d1",
+      chhlatId: "d1",
     });
     mockFetch.mockResolvedValue({ ok: false });
 
@@ -162,7 +162,7 @@ describe("DELETE /api/runtimes/[runtimeId]/update", () => {
   it("returns 204 when cancelling update and broadcasts runtime.status", async () => {
     mockGetAgentRuntimeForWorkspace.mockResolvedValue({
       id: "rt1",
-      daemonId: "d1",
+      chhlatId: "d1",
     });
     mockClearPendingUpdateVersion.mockResolvedValue(undefined);
 
@@ -172,7 +172,7 @@ describe("DELETE /api/runtimes/[runtimeId]/update", () => {
     expect(mockClearPendingUpdateVersion).toHaveBeenCalledWith({}, "d1", "w1");
     expect(mockBroadcastToUser).toHaveBeenCalledWith("u1", {
       type: "runtime.status",
-      daemonId: "d1",
+      chhlatId: "d1",
       workspaceId: "w1",
       status: "online",
     });
@@ -193,7 +193,7 @@ describe("DELETE /api/runtimes/[runtimeId]/update", () => {
   it("returns 204 even when broadcast fails", async () => {
     mockGetAgentRuntimeForWorkspace.mockResolvedValue({
       id: "rt1",
-      daemonId: "d1",
+      chhlatId: "d1",
     });
     mockClearPendingUpdateVersion.mockResolvedValue(undefined);
     mockBroadcastToUser.mockRejectedValue(new Error("WS unavailable"));

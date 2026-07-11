@@ -96,7 +96,7 @@ describe("runtimeToResponse", () => {
     const res = runtimeToResponse({
       id: "rt1",
       workspaceId: "w1",
-      daemonId: null,
+      chhlatId: null,
       runtimeMode: "docker",
       provider: "local",
       deviceInfo: "mac",
@@ -107,11 +107,11 @@ describe("runtimeToResponse", () => {
     expect(res.metadata).toEqual({});
   });
 
-  it("returns null when daemon_id is null", () => {
+  it("returns null when chhlat_id is null", () => {
     const res = runtimeToResponse({
       id: "rt1",
       workspaceId: "w1",
-      daemonId: null,
+      chhlatId: null,
       runtimeMode: "docker",
       provider: "local",
       deviceInfo: "mac",
@@ -119,10 +119,10 @@ describe("runtimeToResponse", () => {
       machineLastSeenAt: null,
       ...baseFields(),
     });
-    expect(res.daemon_id).toBeNull();
+    expect(res.chhlat_id).toBeNull();
   });
 
-  it("returns null when daemon_id is undefined", () => {
+  it("returns null when chhlat_id is undefined", () => {
     const res = runtimeToResponse({
       id: "rt1",
       workspaceId: "w1",
@@ -133,14 +133,14 @@ describe("runtimeToResponse", () => {
       machineLastSeenAt: null,
       ...baseFields(),
     });
-    expect(res.daemon_id).toBeNull();
+    expect(res.chhlat_id).toBeNull();
   });
 
   it("computes status online from recent machineLastSeenAt", () => {
     const res = runtimeToResponse({
       id: "rt1",
       workspaceId: "w1",
-      daemonId: "d1",
+      chhlatId: "d1",
       runtimeMode: "docker",
       provider: "local",
       deviceInfo: "mac",
@@ -155,7 +155,7 @@ describe("runtimeToResponse", () => {
     const res = runtimeToResponse({
       id: "rt1",
       workspaceId: "w1",
-      daemonId: "d1",
+      chhlatId: "d1",
       runtimeMode: "docker",
       provider: "local",
       deviceInfo: "mac",
@@ -171,7 +171,7 @@ describe("runtimeToResponse", () => {
     const res = runtimeToResponse({
       id: "rt1",
       workspaceId: "w1",
-      daemonId: "d1",
+      chhlatId: "d1",
       runtimeMode: "docker",
       provider: "local",
       deviceInfo: "mac",
@@ -418,12 +418,12 @@ describe("MachineTokenResponse shape", () => {
 describe("AgentRuntimeResponse shape", () => {
   it("has expected keys", () => {
     const res = runtimeToResponse({
-      id: "rt1", workspaceId: "w1", daemonId: "d1", runtimeMode: "docker",
+      id: "rt1", workspaceId: "w1", chhlatId: "d1", runtimeMode: "docker",
       provider: "local", deviceInfo: "mac", metadata: { foo: 1 },
       machineLastSeenAt: new Date().toISOString(), ...baseFields(),
     });
     expect(Object.keys(res).sort()).toEqual([
-      "created_at", "daemon_id", "device_info", "id", "last_seen_at",
+      "chhlat_id", "created_at", "device_info", "id", "last_seen_at",
       "metadata", "pending_rescan", "pending_update_version", "provider", "runtime_mode", "status",
       "updated_at", "workspace_id",
     ]);
@@ -460,7 +460,7 @@ describe("all response mappers strip milliseconds from timestamps", () => {
 
   it("runtimeToResponse strips milliseconds", () => {
     const res = runtimeToResponse({
-      id: "rt1", workspaceId: "w1", daemonId: "d1", runtimeMode: "docker",
+      id: "rt1", workspaceId: "w1", chhlatId: "d1", runtimeMode: "docker",
       provider: "local", deviceInfo: "mac", metadata: {},
       machineLastSeenAt: ts, ...baseFields(),
     });

@@ -17,19 +17,19 @@ vi.mock("./utils", async () => {
       }
       return "npx @phneakngar/cli";
     },
-    daemonStartCmd: () => {
+    chhlatStartCmd: () => {
       let base: string;
       if (process.env.NODE_ENV === "development") base = "pnpm dev:cli";
       else if (mockHostname && ["localhost", "127.0.0.1"].includes(mockHostname)) base = "npx @phneakngar/app cli";
       else base = "npx @phneakngar/cli";
-      const cmd = `${base} daemon start`;
+      const cmd = `${base} chhlat start`;
       if (process.env.NODE_ENV === "development") return `${cmd} --foreground`;
       return cmd;
     },
   };
 });
 
-import { isLocalMode, cliCmd, daemonStartCmd } from "./utils";
+import { isLocalMode, cliCmd, chhlatStartCmd } from "./utils";
 
 beforeEach(() => {
   mockHostname = undefined;
@@ -68,16 +68,16 @@ describe("cliCmd", () => {
   });
 });
 
-describe("daemonStartCmd", () => {
+describe("chhlatStartCmd", () => {
   it("no --foreground in production cloud", () => {
     mockHostname = "phneakngar.ai";
-    expect(daemonStartCmd()).toBe("npx @phneakngar/cli daemon start");
-    expect(daemonStartCmd()).not.toContain("--foreground");
+    expect(chhlatStartCmd()).toBe("npx @phneakngar/cli chhlat start");
+    expect(chhlatStartCmd()).not.toContain("--foreground");
   });
 
   it("no --foreground in app mode (localhost, production build)", () => {
     mockHostname = "localhost";
-    expect(daemonStartCmd()).toBe("npx @phneakngar/app cli daemon start");
-    expect(daemonStartCmd()).not.toContain("--foreground");
+    expect(chhlatStartCmd()).toBe("npx @phneakngar/app cli chhlat start");
+    expect(chhlatStartCmd()).not.toContain("--foreground");
   });
 });

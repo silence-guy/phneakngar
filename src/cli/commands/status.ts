@@ -3,8 +3,8 @@ import { loadCLIConfigForProfile } from "../lib/config.js";
 import { cmdPrefix, getServerUrl } from "../lib/env.js";
 import { detectRuntimes } from "../lib/runtimes.js";
 import { getCurrentVersion } from "../lib/version.js";
-import { isProcessAlive, readDaemonPid } from "../daemon/pidfile.js";
-import { pidFilePath } from "../daemon/config.js";
+import { isProcessAlive, readChhlatPid } from "../chhlat/pidfile.js";
+import { pidFilePath } from "../chhlat/config.js";
 
 export function formatStatusReport(profile?: string): string[] {
   const lines: string[] = [];
@@ -25,13 +25,13 @@ export function formatStatusReport(profile?: string): string[] {
     lines.push(`Workspace: ${ws.name || "unknown"} (${ws.id || "no-id"})`);
   }
 
-  const pid = readDaemonPid(profile);
+  const pid = readChhlatPid(profile);
   if (pid == null) {
-    lines.push("Daemon: not running");
+    lines.push("Chhlat: not running");
   } else if (!isProcessAlive(pid)) {
-    lines.push(`Daemon: not running (stale pidfile at ${pidFilePath(profile)})`);
+    lines.push(`Chhlat: not running (stale pidfile at ${pidFilePath(profile)})`);
   } else {
-    lines.push(`Daemon: running (pid=${pid})`);
+    lines.push(`Chhlat: running (pid=${pid})`);
   }
 
   const runtimes = detectRuntimes();
@@ -48,7 +48,7 @@ export function formatStatusReport(profile?: string): string[] {
 
 export function statusCommand(): Command {
   const cmd = new Command("status")
-    .description("Show registration, daemon, and runtime status")
+    .description("Show registration, chhlat, and runtime status")
     .action((_opts, command) => {
       const profile: string | undefined = command.parent?.opts().profile;
       for (const line of formatStatusReport(profile)) {

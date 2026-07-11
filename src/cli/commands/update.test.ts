@@ -38,7 +38,7 @@ describe("phneakngar update", () => {
     consoleErrSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     consoleWarnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
     mockExit = vi.spyOn(process, "exit").mockImplementation(() => undefined as never);
-    globalThis.fetch = vi.fn().mockRejectedValue(new Error("no daemon"));
+    globalThis.fetch = vi.fn().mockRejectedValue(new Error("no chhlat"));
   });
 
   afterEach(() => {
@@ -81,7 +81,7 @@ describe("phneakngar update", () => {
     expect(mockExit).toHaveBeenCalledWith(1);
   });
 
-  it("warns when daemon health endpoint is reachable", async () => {
+  it("warns when chhlat health endpoint is reachable", async () => {
     mockGetCurrentVersion.mockReturnValue("0.5.0");
     mockFetchLatestVersion.mockResolvedValue("1.0.0");
     mockRunNpmUpdate.mockResolvedValue({ success: true, output: "" });
@@ -90,6 +90,6 @@ describe("phneakngar update", () => {
     const cmd = updateCommand();
     await cmd.parseAsync(["node", "update"]);
 
-    expect(consoleWarnSpy).toHaveBeenCalledWith(expect.stringContaining("daemon is running"));
+    expect(consoleWarnSpy).toHaveBeenCalledWith(expect.stringContaining("chhlat is running"));
   });
 });

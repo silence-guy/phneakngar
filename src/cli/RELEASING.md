@@ -75,7 +75,7 @@ npm install --global @phneakngar/cli
 phneakngar init
 phneakngar doctor
 phneakngar login
-phneakngar daemon start
+phneakngar chhlat start
 ```
 
 Full client docs: [INSTALL.md](../../INSTALL.md).

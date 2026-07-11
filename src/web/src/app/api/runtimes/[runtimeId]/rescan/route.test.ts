@@ -61,7 +61,7 @@ vi.mock("@/lib/logger", () => ({
 }));
 
 vi.mock("@/lib/broadcast", () => ({
-  broadcastToDaemon: vi.fn(() => Promise.resolve({ sent: 1 })),
+  broadcastToChhlat: vi.fn(() => Promise.resolve({ sent: 1 })),
 }));
 
 import { POST } from "./route";
@@ -80,7 +80,7 @@ describe("POST /api/runtimes/[runtimeId]/rescan", () => {
   it("returns 200 with pending_rescan: true", async () => {
     mockGetAgentRuntimeForWorkspace.mockResolvedValue({
       id: "rt1",
-      daemonId: "d1",
+      chhlatId: "d1",
     });
     mockSetPendingRescan.mockResolvedValue(undefined);
 

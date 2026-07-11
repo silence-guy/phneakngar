@@ -9,7 +9,7 @@ const agent = (name: string, email_handle: string | null = null): Agent => ({
   name,
   description: "",
   instructions: "",
-  runtime_mode: "daemon",
+  runtime_mode: "chhlat",
   runtime_config: {},
   status: "active",
   max_concurrent_tasks: 1,

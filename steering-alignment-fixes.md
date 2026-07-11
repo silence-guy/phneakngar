@@ -31,7 +31,7 @@ This is a follow-up to the initial steering implementation. All changes are with
   - Extend `internal_progress` variant: add `source?: string`, `itemType?: string`, `payloadBytes?: number` fields (currently only has `detail?: string`)
   - Extend `turn_end` variant: add optional `sessionId?: string` field (needed for recovery features)
   - Add `NotFoundError` to any error class types if referenced in errorDiagnostics
-  - **Files:** `src/cli/daemon/types.ts`
+  - **Files:** `src/cli/chhlat/types.ts`
   - **Acceptance criteria:** ParsedEvent type supports enriched internal_progress and turn_end fields.
 
 ### Critical: Steering Gate
@@ -46,7 +46,7 @@ This is a follow-up to the initial steering implementation. All changes are with
   - `markTurnStarted()`: also sets `steeringGateActive = false` (gate open at turn start)
   - `markTurnCompleted()`: also sets `steeringGateActive = false`
   - Reference: `agent-backends/src/runtime/turnState.ts` lines 16-62
-  - **Files:** `src/cli/daemon/steering/turnState.ts`
+  - **Files:** `src/cli/chhlat/steering/turnState.ts`
   - **Acceptance criteria:** `canSteerBusy` returns false during tool boundaries, thinking blocks, and compaction. Returns true at safe points (after tool_output, text). Existing `isInTurn` behavior unchanged.
 
 ### Critical: Replace ApmStateMachine with Reference-Aligned Version
@@ -85,7 +85,7 @@ The current `apmStateMachine.ts` has a fundamentally different state shape (4 fi
     - `reduceApmStartupTimeoutTermination(state, { hasRuntimeProgressEvent })` → startup timeout check
   - **Keep `reduceApmGatedEnqueue()`** — this is phneakngar-specific (reference doesn't need it because messages are held in notificationState inbox, not in APM state). Adapt to new state shape.
   - Reference: `agent-backends/src/runtime/apmStateMachine.ts` (full file, 327 lines)
-  - **Files:** `src/cli/daemon/steering/apmStateMachine.ts`
+  - **Files:** `src/cli/chhlat/steering/apmStateMachine.ts`
   - **Acceptance criteria:** All reducer functions implemented with reference-matching logic. Phase tracking works. Stalled recovery returns `shouldTerminate` correctly. Event history capped at 12.
 
 - [x] **1.3 Rewire session-runner for new ApmStateMachine + turnState gate**
@@ -105,7 +105,7 @@ The current `apmStateMachine.ts` has a fundamentally different state shape (4 fi
     - `compaction_finished` → `turnState.markProgress()`
   - **Add stalled recovery timer:** `setInterval` (30s) checks `reduceApmStalledRecoveryTermination()` with `progressState.ageMs()` and `progressState.isStale`. If `shouldTerminate`, kill agent process.
   - **Add startup timeout check:** On first progress timer tick, check `reduceApmStartupTimeoutTermination()`. If no progress events received, kill agent.
-  - **Files:** `src/cli/daemon/session-runner.ts`
+  - **Files:** `src/cli/chhlat/session-runner.ts`
   - **Acceptance criteria:** All reducer calls updated to new API. turnState gate transitions wired. Stalled recovery and startup timeout active. No old-API calls remain.
 
 ### Critical: Notification State
@@ -121,13 +121,13 @@ The current `apmStateMachine.ts` has a fundamentally different state shape (4 fi
   - Normalize identity: prefix seq with `"s:"`, message_id/id with `"m:"` to prevent collisions between numeric and string IDs
   - Validate `seq` as finite positive number (not just string)
   - Reference: `agent-backends/src/runtime/notificationState.ts` lines 47-134
-  - **Files:** `src/cli/daemon/steering/notificationState.ts`
+  - **Files:** `src/cli/chhlat/steering/notificationState.ts`
   - **Acceptance criteria:** Bursts of notifications batched via debounce timer. Session boundary resets contribution tracking. Encode failures cached. Identity normalization prevents collisions.
 
 - [x] **2.2 Update session-runner to use new NotificationState API**
   - Update mailbox watcher callback to pass `sessionId` to `isDuplicateNotice()` and `markSent()`
   - Use `schedule()` for debounced delivery instead of immediate
-  - **Files:** `src/cli/daemon/session-runner.ts`
+  - **Files:** `src/cli/chhlat/session-runner.ts`
   - **Acceptance criteria:** Mailbox watcher uses session-scoped dedup and debounced delivery.
 
 ### High: Event Mapping Gaps
@@ -137,7 +137,7 @@ The current `apmStateMachine.ts` has a fundamentally different state shape (4 fi
   - Uses the enriched `internal_progress` ParsedEvent variant (from TODO 0.1)
   - These currently fall through to the `default` case (logged as debug)
   - Reference: `agent-backends/src/drivers/claudeEventNormalizer.ts` lines 67-74
-  - **Files:** `src/cli/daemon/agent/claude.ts`
+  - **Files:** `src/cli/chhlat/agent/claude.ts`
   - **Depends on:** 0.1
   - **Acceptance criteria:** Claude `system.status` and `system.stream_event` emit `internal_progress` ParsedEvents with source and itemType.
 
@@ -146,7 +146,7 @@ The current `apmStateMachine.ts` has a fundamentally different state shape (4 fi
   - Add `cost` and `duration_ms` from `event.cost` and `event.duration_ms` if present
   - `turn_end` event should carry `sessionId` when available (needed by recovery features in 1.2)
   - Reference: `agent-backends/src/drivers/claudeEventNormalizer.ts` lines 110-132
-  - **Files:** `src/cli/daemon/agent/claude.ts`
+  - **Files:** `src/cli/chhlat/agent/claude.ts`
   - **Depends on:** 0.1
   - **Acceptance criteria:** Telemetry ParsedEvent includes cache/cost/timing fields. turn_end carries sessionId.
 
@@ -162,13 +162,13 @@ The current `apmStateMachine.ts` has a fundamentally different state shape (4 fi
     - `contextCompaction` → `{ kind: "compaction_finished" }`
     - `agentMessage` text extraction — verify completeness (already partially implemented)
   - Reference: `agent-backends/src/drivers/codexEventNormalizer.ts` lines 89-125
-  - **Files:** `src/cli/daemon/agent/codex.ts`
+  - **Files:** `src/cli/chhlat/agent/codex.ts`
   - **Acceptance criteria:** Codex MCP, web search, collaboration, reasoning, and compaction events all appear as correct ParsedEvents.
 
 - [x] **3.4 Codex: map `item/agentMessage/delta` as text, not internal_progress**
   - Currently mapped as `{ kind: "internal_progress", detail: delta }` — should be `{ kind: "text", text: delta }` to match agent-backends behavior
   - Reference: `agent-backends/src/drivers/codexEventNormalizer.ts` — delta events emit `text`
-  - **Files:** `src/cli/daemon/agent/codex.ts` (line ~170)
+  - **Files:** `src/cli/chhlat/agent/codex.ts` (line ~170)
   - **Acceptance criteria:** Agent message streaming deltas are `text` events, not `internal_progress`.
 
 ### Moderate: Error Diagnostics
@@ -183,13 +183,13 @@ The current `apmStateMachine.ts` has a fundamentally different state shape (4 fi
   - Add `NotFoundError` to `ErrorClass` type
   - **Remove bare numeric patterns** from `RATE_LIMIT_PATTERNS` (`/429/i`), `AUTH_PATTERNS` (`/401/`, `/403/`), and `SERVER_PATTERNS` (`/5\d{2}/`) — these are now handled by HTTP status extraction and would cause double-matching
   - Reference: `agent-backends/src/runtime/errorDiagnostics.ts` lines 68-100
-  - **Files:** `src/cli/daemon/steering/errorDiagnostics.ts`, `src/cli/daemon/session-runner.ts`
+  - **Files:** `src/cli/chhlat/steering/errorDiagnostics.ts`, `src/cli/chhlat/session-runner.ts`
   - **Acceptance criteria:** HTTP status correctly extracted and classified. Explicit Error tokens detected first. No double-matching from bare numeric patterns. `NotFoundError` class added. Callers updated.
 
 - [x] **4.2 Expand auth patterns to match agent-backends coverage**
   - Add 15+ additional auth patterns from agent-backends: token revocation, refresh failures, logout states, credential not found, API key missing, etc.
   - Reference: `agent-backends/src/runtime/errorDiagnostics.ts` lines 41-62 (23+ patterns)
-  - **Files:** `src/cli/daemon/steering/errorDiagnostics.ts`
+  - **Files:** `src/cli/chhlat/steering/errorDiagnostics.ts`
   - **Acceptance criteria:** All 23+ auth patterns from agent-backends are covered. Token revocation and refresh failures correctly classified as `AuthError`.
 
 ### Moderate: Progress State
@@ -199,7 +199,7 @@ The current `apmStateMachine.ts` has a fundamentally different state shape (4 fi
   - Refactor `shouldMarkStale(thresholdMs, now)` to use `ageMs()` internally for consistency
   - Used by stalled recovery logic (TODO 1.2/1.3)
   - Reference: `agent-backends/src/runtime/progressState.ts` lines 31-33
-  - **Files:** `src/cli/daemon/steering/progressState.ts`
+  - **Files:** `src/cli/chhlat/steering/progressState.ts`
   - **Acceptance criteria:** `ageMs()` returns correct elapsed time. `shouldMarkStale` delegates to `ageMs()`.
 
 > **Note:** Phase tracking, event history, `compaction_interrupted`, stalled recovery, and startup timeout are all included in TODO 1.2 (ApmStateMachine rewrite). They are not separate TODOs.
@@ -210,7 +210,7 @@ The current `apmStateMachine.ts` has a fundamentally different state shape (4 fi
   - Test `canSteerBusy`: false during tool boundary, true after markProgress, false during thinking
   - Test `markToolBoundary()` → `markProgress()` cycle
   - Test `adoptTurnId()`, `reset()`
-  - **Files:** `src/cli/daemon/steering/__tests__/turnState.test.ts`
+  - **Files:** `src/cli/chhlat/steering/__tests__/turnState.test.ts`
   - **Acceptance criteria:** All gate transitions tested. `canSteerBusy` correct at each state.
 
 - [x] **6.2 Rewrite apmStateMachine tests for new API**
@@ -220,7 +220,7 @@ The current `apmStateMachine.ts` has a fundamentally different state shape (4 fi
   - Test `reduceApmStartupTimeoutTermination()`: no progress → terminate; has progress → no terminate
   - Test `canFlush()` uses `canSteerBusy` (not `isInTurn`)
   - Test `recentEvents` capped at 12
-  - **Files:** `src/cli/daemon/steering/__tests__/apmStateMachine.test.ts`
+  - **Files:** `src/cli/chhlat/steering/__tests__/apmStateMachine.test.ts`
   - **Acceptance criteria:** All reducers tested including new ones. Phase transitions verified. Recovery/timeout logic covered.
 
 - [x] **6.3 New notificationState tests for session-scoped dedup + debounce**
@@ -228,20 +228,20 @@ The current `apmStateMachine.ts` has a fundamentally different state shape (4 fi
   - Test debounce timer behavior
   - Test encode failure caching
   - Test identity normalization (`s:` / `m:` prefixes)
-  - **Files:** `src/cli/daemon/steering/__tests__/notificationState.test.ts` (new file)
+  - **Files:** `src/cli/chhlat/steering/__tests__/notificationState.test.ts` (new file)
   - **Acceptance criteria:** All new NotificationState features tested.
 
 - [x] **6.4 Update parseLine tests for new event mappings**
   - Claude: test `system.status` → `internal_progress`, enriched telemetry
   - Codex: test `mcpToolCall`, `webSearch`, `reasoning`, `agentMessage` delta as `text`
-  - **Files:** `src/cli/daemon/agent/__tests__/claude.parseLine.test.ts`, `src/cli/daemon/agent/__tests__/codex.parseLine.test.ts`
+  - **Files:** `src/cli/chhlat/agent/__tests__/claude.parseLine.test.ts`, `src/cli/chhlat/agent/__tests__/codex.parseLine.test.ts`
   - **Acceptance criteria:** All new event mappings have test coverage.
 
 - [x] **6.5 Update error diagnostics tests**
   - Test HTTP status extraction from various message formats
   - Test `NotFoundError` classification for 404
   - Test expanded auth patterns (token revocation, refresh failures)
-  - **Files:** `src/cli/daemon/steering/__tests__/errorDiagnostics.test.ts`
+  - **Files:** `src/cli/chhlat/steering/__tests__/errorDiagnostics.test.ts`
   - **Acceptance criteria:** All new error classes and patterns tested.
 
 ---
@@ -306,14 +306,14 @@ The current `apmStateMachine.ts` has a fundamentally different state shape (4 fi
 ## Modified Files Summary
 
 ```
-src/cli/daemon/steering/turnState.ts           ← add gate (canSteerBusy, markToolBoundary, markProgress)
-src/cli/daemon/steering/apmStateMachine.ts      ← wire canSteerBusy, add stalled recovery, phase tracking
-src/cli/daemon/steering/notificationState.ts    ← session dedup, debounce, encode failure tracking
-src/cli/daemon/steering/progressState.ts        ← add ageMs()
-src/cli/daemon/steering/errorDiagnostics.ts     ← HTTP extraction, expanded auth patterns, NotFoundError
-src/cli/daemon/agent/claude.ts                  ← internal_progress mapping, enriched telemetry
-src/cli/daemon/agent/codex.ts                   ← MCP/reasoning/webSearch mappings, delta as text
-src/cli/daemon/session-runner.ts                ← wire gate transitions, stalled recovery timer, new notification API
-src/cli/daemon/steering/__tests__/*.test.ts     ← updated tests
-src/cli/daemon/agent/__tests__/*.test.ts        ← updated tests
+src/cli/chhlat/steering/turnState.ts           ← add gate (canSteerBusy, markToolBoundary, markProgress)
+src/cli/chhlat/steering/apmStateMachine.ts      ← wire canSteerBusy, add stalled recovery, phase tracking
+src/cli/chhlat/steering/notificationState.ts    ← session dedup, debounce, encode failure tracking
+src/cli/chhlat/steering/progressState.ts        ← add ageMs()
+src/cli/chhlat/steering/errorDiagnostics.ts     ← HTTP extraction, expanded auth patterns, NotFoundError
+src/cli/chhlat/agent/claude.ts                  ← internal_progress mapping, enriched telemetry
+src/cli/chhlat/agent/codex.ts                   ← MCP/reasoning/webSearch mappings, delta as text
+src/cli/chhlat/session-runner.ts                ← wire gate transitions, stalled recovery timer, new notification API
+src/cli/chhlat/steering/__tests__/*.test.ts     ← updated tests
+src/cli/chhlat/agent/__tests__/*.test.ts        ← updated tests
 ```

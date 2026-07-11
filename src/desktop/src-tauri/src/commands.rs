@@ -15,7 +15,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 
 
 #[derive(Serialize)]
-pub struct DaemonStatusResult {
+pub struct ChhlatStatusResult {
     pub running: bool,
     pub pid: Option<u32>,
     pub version: Option<String>,
@@ -135,7 +135,7 @@ fn to_command_result(output: CliOutput) -> CommandResult {
 static SPLASH_CLOSED: AtomicBool = AtomicBool::new(false);
 
 #[cfg(desktop)]
-static SPLASH_DAEMON_READY: AtomicBool = AtomicBool::new(false);
+static SPLASH_CHHLAT_READY: AtomicBool = AtomicBool::new(false);
 
 #[cfg(desktop)]
 static SPLASH_FRONTEND_READY: AtomicBool = AtomicBool::new(false);
@@ -229,10 +229,10 @@ fn fade_out_and_close_splash(handle: &AppHandle) {
 
 #[cfg(desktop)]
 fn try_close_splashscreen(handle: &AppHandle) {
-    let daemon = SPLASH_DAEMON_READY.load(Ordering::SeqCst);
+    let chhlat_ready = SPLASH_CHHLAT_READY.load(Ordering::SeqCst);
     let frontend = SPLASH_FRONTEND_READY.load(Ordering::SeqCst);
     let min = SPLASH_MIN_ELAPSED.load(Ordering::SeqCst);
-    if daemon && frontend && min {
+    if chhlat_ready && frontend && min {
         do_close_splashscreen(handle);
     }
 }
@@ -244,8 +244,8 @@ pub fn mark_splash_min_elapsed(handle: &AppHandle) {
 }
 
 #[cfg(desktop)]
-pub fn mark_daemon_ready(handle: &AppHandle) {
-    SPLASH_DAEMON_READY.store(true, Ordering::SeqCst);
+pub fn mark_chhlat_ready(handle: &AppHandle) {
+    SPLASH_CHHLAT_READY.store(true, Ordering::SeqCst);
     try_close_splashscreen(handle);
 }
 
@@ -318,23 +318,23 @@ pub async fn register_cli(app: AppHandle, token: String) -> Result<CommandResult
 
 #[cfg(desktop)]
 #[tauri::command]
-pub async fn daemon_start(app: AppHandle) -> Result<CommandResult, String> {
-    let output = run_cli(&app, &["daemon", "start"]).await?;
+pub async fn chhlat_start(app: AppHandle) -> Result<CommandResult, String> {
+    let output = run_cli(&app, &["chhlat", "start"]).await?;
     Ok(to_command_result(output))
 }
 
 #[cfg(desktop)]
 #[tauri::command]
-pub async fn daemon_stop(app: AppHandle) -> Result<CommandResult, String> {
-    let output = run_cli(&app, &["daemon", "stop"]).await?;
+pub async fn chhlat_stop(app: AppHandle) -> Result<CommandResult, String> {
+    let output = run_cli(&app, &["chhlat", "stop"]).await?;
     Ok(to_command_result(output))
 }
 
 #[cfg(desktop)]
 #[tauri::command]
-pub async fn daemon_status(app: AppHandle) -> Result<DaemonStatusResult, String> {
-    let output = run_cli(&app, &["daemon", "status"]).await?;
-    Ok(parse_daemon_status(&output.stdout))
+pub async fn chhlat_status(app: AppHandle) -> Result<ChhlatStatusResult, String> {
+    let output = run_cli(&app, &["chhlat", "status"]).await?;
+    Ok(parse_chhlat_status(&output.stdout))
 }
 
 #[cfg(desktop)]
@@ -350,14 +350,14 @@ pub async fn cli_update(app: AppHandle) -> Result<CommandResult, String> {
     let mut stop_cmd = app.shell().command("npx");
     stop_cmd = stop_cmd.env("PATH", resolve_path());
     let _ = stop_cmd
-        .args(["--yes", "@phneakngar/cli", "daemon", "stop"])
+        .args(["--yes", "@phneakngar/cli", "chhlat", "stop"])
         .output()
         .await;
 
     let mut start_cmd = app.shell().command("npx");
     start_cmd = start_cmd.env("PATH", resolve_path());
     let start_output = start_cmd
-        .args(["--yes", "@phneakngar/cli@latest", "daemon", "start"])
+        .args(["--yes", "@phneakngar/cli@latest", "chhlat", "start"])
         .output()
         .await
         .map_err(|e| e.to_string())?;
@@ -365,7 +365,7 @@ pub async fn cli_update(app: AppHandle) -> Result<CommandResult, String> {
     Ok(CommandResult {
         success: start_output.status.success(),
         message: if start_output.status.success() {
-            "CLI updated and daemon restarted".to_string()
+            "CLI updated and chhlat restarted".to_string()
         } else {
             String::from_utf8_lossy(&start_output.stderr).to_string()
         },
@@ -476,14 +476,14 @@ pub fn set_window_theme(window: tauri::WebviewWindow, dark: bool) {
 
 #[cfg(desktop)]
 #[tauri::command]
-pub fn is_daemon_online() -> bool {
-    DAEMON_ONLINE.load(Ordering::Relaxed)
+pub fn is_chhlat_online() -> bool {
+    CHHLAT_ONLINE.load(Ordering::Relaxed)
 }
 
-// --- Daemon state ---
+// --- Chhlat state ---
 
 #[cfg(desktop)]
-pub static DAEMON_ONLINE: AtomicBool = AtomicBool::new(false);
+pub static CHHLAT_ONLINE: AtomicBool = AtomicBool::new(false);
 
 
 #[cfg(desktop)]
@@ -493,7 +493,7 @@ static QUIT_BEHAVIOR: std::sync::Mutex<Option<QuitBehavior>> = std::sync::Mutex:
 #[derive(Clone, Copy, PartialEq)]
 enum QuitBehavior {
     KeepRunning,
-    StopDaemon,
+    StopChhlat,
 }
 
 #[cfg(desktop)]
@@ -503,7 +503,7 @@ fn load_quit_behavior(handle: &AppHandle) -> Option<QuitBehavior> {
     let val: serde_json::Value = serde_json::from_str(&content).ok()?;
     match val["quit_behavior"].as_str()? {
         "keep_running" => Some(QuitBehavior::KeepRunning),
-        "stop_daemon" => Some(QuitBehavior::StopDaemon),
+        "stop_chhlat" => Some(QuitBehavior::StopChhlat),
         _ => None,
     }
 }
@@ -514,7 +514,7 @@ fn save_quit_behavior(handle: &AppHandle, behavior: QuitBehavior) {
         let _ = std::fs::create_dir_all(&dir);
         let val = match behavior {
             QuitBehavior::KeepRunning => "keep_running",
-            QuitBehavior::StopDaemon => "stop_daemon",
+            QuitBehavior::StopChhlat => "stop_chhlat",
         };
         let json = format!(r#"{{"quit_behavior":"{}"}}"#, val);
         let _ = std::fs::write(dir.join("quit-behavior.json"), json);
@@ -555,8 +555,8 @@ pub fn setup_tray(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     let show = MenuItemBuilder::with_id("show", "Show").build(app)?;
     let version = MenuItemBuilder::with_id("version", format!("Version {}", app.package_info().version)).enabled(false).build(app)?;
     let update_item = MenuItemBuilder::with_id("update", "Check for Updates").build(app)?;
-    let stop_on_quit_checked = get_quit_behavior(app.handle()) == Some(QuitBehavior::StopDaemon);
-    let stop_on_quit = CheckMenuItemBuilder::with_id("stop_on_quit", "Stop daemon on quit")
+    let stop_on_quit_checked = get_quit_behavior(app.handle()) == Some(QuitBehavior::StopChhlat);
+    let stop_on_quit = CheckMenuItemBuilder::with_id("stop_on_quit", "Stop chhlat on quit")
         .checked(stop_on_quit_checked)
         .build(app)?;
     let quit = MenuItemBuilder::with_id("quit", "Quit").build(app)?;
@@ -593,13 +593,13 @@ pub fn setup_tray(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
                 });
             }
             "stop_on_quit" => {
-                let current = get_quit_behavior(app) == Some(QuitBehavior::StopDaemon);
-                let new_behavior = if current { QuitBehavior::KeepRunning } else { QuitBehavior::StopDaemon };
+                let current = get_quit_behavior(app) == Some(QuitBehavior::StopChhlat);
+                let new_behavior = if current { QuitBehavior::KeepRunning } else { QuitBehavior::StopChhlat };
                 save_quit_behavior(app, new_behavior);
             }
             "quit" => {
                 let handle = app.clone();
-                quit_with_daemon_prompt(&handle);
+                quit_with_chhlat_prompt(&handle);
             }
             _ => {}
         })
@@ -622,21 +622,21 @@ pub fn setup_tray(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
         loop {
             std::thread::sleep(std::time::Duration::from_secs(15));
             let h = handle.clone();
-            let online = tauri::async_runtime::block_on(check_daemon_online(&h));
-            DAEMON_ONLINE.store(online, Ordering::Relaxed);
+            let online = tauri::async_runtime::block_on(check_chhlat_online(&h));
+            CHHLAT_ONLINE.store(online, Ordering::Relaxed);
 
             if !online {
-                // Try to restart daemon
+                // Try to restart chhlat
                 let h2 = handle.clone();
                 let started = tauri::async_runtime::block_on(async {
-                    match run_cli(&h2, &["daemon", "start"]).await {
+                    match run_cli(&h2, &["chhlat", "start"]).await {
                         Ok(output) if output.success => true,
                         Ok(output) => {
                             if restart_attempts == 0 {
                                 let msg = if output.stderr.trim().is_empty() {
-                                    "Daemon stopped unexpectedly. Failed to restart.".to_string()
+                                    "Chhlat stopped unexpectedly. Failed to restart.".to_string()
                                 } else {
-                                    format!("Daemon stopped unexpectedly: {}", output.stderr.trim())
+                                    format!("Chhlat stopped unexpectedly: {}", output.stderr.trim())
                                 };
                                 let _ = h2.notification()
                                     .builder()
@@ -651,7 +651,7 @@ pub fn setup_tray(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
                                 let _ = h2.notification()
                                     .builder()
                                     .title("ភ្នាក់ងារ")
-                                    .body(&format!("Could not restart daemon: {}", e))
+                                    .body(&format!("Could not restart chhlat: {}", e))
                                     .show();
                             }
                             false
@@ -660,7 +660,7 @@ pub fn setup_tray(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
                 });
                 if started {
                     restart_attempts = 0;
-                    DAEMON_ONLINE.store(true, Ordering::Relaxed);
+                    CHHLAT_ONLINE.store(true, Ordering::Relaxed);
                 } else {
                     restart_attempts += 1;
                 }
@@ -668,7 +668,7 @@ pub fn setup_tray(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
                 restart_attempts = 0;
             }
 
-            let icon_bytes: &[u8] = if DAEMON_ONLINE.load(Ordering::Relaxed) {
+            let icon_bytes: &[u8] = if CHHLAT_ONLINE.load(Ordering::Relaxed) {
                 include_bytes!("../icons/tray-online.png")
             } else {
                 include_bytes!("../icons/tray-offline.png")
@@ -683,22 +683,22 @@ pub fn setup_tray(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-// --- Quit with daemon prompt ---
+// --- Quit with chhlat prompt ---
 
 #[cfg(desktop)]
-pub fn quit_with_daemon_prompt(handle: &AppHandle) {
+pub fn quit_with_chhlat_prompt(handle: &AppHandle) {
     use tauri_plugin_dialog::{DialogExt, MessageDialogButtons};
 
-    if !DAEMON_ONLINE.load(Ordering::Relaxed) {
+    if !CHHLAT_ONLINE.load(Ordering::Relaxed) {
         handle.exit(0);
         return;
     }
 
-    let will_stop = get_quit_behavior(handle) == Some(QuitBehavior::StopDaemon);
+    let will_stop = get_quit_behavior(handle) == Some(QuitBehavior::StopChhlat);
     let msg = if will_stop {
-        "The daemon will be stopped after quitting.\n\nYou can change this in the tray menu → \"Stop daemon on quit\"."
+        "Chhlat will be stopped after quitting.\n\nYou can change this in the tray menu → \"Stop chhlat on quit\"."
     } else {
-        "The daemon will keep running in the background.\n\nYou can change this in the tray menu → \"Stop daemon on quit\"."
+        "Chhlat will keep running in the background.\n\nYou can change this in the tray menu → \"Stop chhlat on quit\"."
     };
 
     let h = handle.clone();
@@ -710,7 +710,7 @@ pub fn quit_with_daemon_prompt(handle: &AppHandle) {
             if !confirmed { return; }
             if will_stop {
                 tauri::async_runtime::spawn(async move {
-                    let _ = run_cli(&h, &["daemon", "stop"]).await;
+                    let _ = run_cli(&h, &["chhlat", "stop"]).await;
                     h.exit(0);
                 });
             } else {
@@ -876,35 +876,35 @@ pub fn auto_check_updates(handle: AppHandle) {
     });
 }
 
-// --- Daemon helpers ---
+// --- Chhlat helpers ---
 
 #[cfg(desktop)]
-async fn check_daemon_online(handle: &AppHandle) -> bool {
-    match run_cli(handle, &["daemon", "status"]).await {
-        Ok(output) => parse_daemon_status(&output.stdout).running,
+async fn check_chhlat_online(handle: &AppHandle) -> bool {
+    match run_cli(handle, &["chhlat", "status"]).await {
+        Ok(output) => parse_chhlat_status(&output.stdout).running,
         Err(_) => false,
     }
 }
 
 #[cfg(desktop)]
-pub fn auto_start_daemon(handle: AppHandle) {
+pub fn auto_start_chhlat(handle: AppHandle) {
     tauri::async_runtime::spawn(async move {
-        if check_daemon_online(&handle).await {
-            DAEMON_ONLINE.store(true, Ordering::Relaxed);
-            mark_daemon_ready(&handle);
+        if check_chhlat_online(&handle).await {
+            CHHLAT_ONLINE.store(true, Ordering::Relaxed);
+            mark_chhlat_ready(&handle);
             return;
         }
 
-        match run_cli(&handle, &["daemon", "start"]).await {
+        match run_cli(&handle, &["chhlat", "start"]).await {
             Ok(output) if output.success => {
-                DAEMON_ONLINE.store(true, Ordering::Relaxed);
-                mark_daemon_ready(&handle);
+                CHHLAT_ONLINE.store(true, Ordering::Relaxed);
+                mark_chhlat_ready(&handle);
             }
             Ok(output) => {
                 let msg = if output.stderr.trim().is_empty() {
-                    "Failed to start daemon.".to_string()
+                    "Failed to start chhlat.".to_string()
                 } else {
-                    format!("Failed to start daemon: {}", output.stderr.trim())
+                    format!("Failed to start chhlat: {}", output.stderr.trim())
                 };
                 fatal_exit(&handle, &msg);
             }
@@ -916,9 +916,9 @@ pub fn auto_start_daemon(handle: AppHandle) {
 }
 
 
-pub fn parse_daemon_status(stdout: &str) -> DaemonStatusResult {
+pub fn parse_chhlat_status(stdout: &str) -> ChhlatStatusResult {
     if let Ok(json) = serde_json::from_str::<serde_json::Value>(stdout) {
-        return DaemonStatusResult {
+        return ChhlatStatusResult {
             running: json["running"].as_bool().unwrap_or(false),
             pid: json["pid"].as_u64().map(|p| p as u32),
             version: json["version"].as_str().map(|s| s.to_string()),
@@ -935,7 +935,7 @@ pub fn parse_daemon_status(stdout: &str) -> DaemonStatusResult {
         None
     };
 
-    DaemonStatusResult {
+    ChhlatStatusResult {
         running,
         pid,
         version: None,
@@ -949,7 +949,7 @@ mod tests {
     #[test]
     fn parse_status_json_running() {
         let input = r#"{"running":true,"pid":12345,"version":"0.1.0"}"#;
-        let result = parse_daemon_status(input);
+        let result = parse_chhlat_status(input);
         assert!(result.running);
         assert_eq!(result.pid, Some(12345));
         assert_eq!(result.version.as_deref(), Some("0.1.0"));
@@ -958,7 +958,7 @@ mod tests {
     #[test]
     fn parse_status_json_not_running() {
         let input = r#"{"running":false,"pid":null,"version":null}"#;
-        let result = parse_daemon_status(input);
+        let result = parse_chhlat_status(input);
         assert!(!result.running);
         assert_eq!(result.pid, None);
         assert_eq!(result.version, None);
@@ -966,8 +966,8 @@ mod tests {
 
     #[test]
     fn parse_status_text_running() {
-        let input = "Daemon running (pid=54321)";
-        let result = parse_daemon_status(input);
+        let input = "Chhlat running (pid=54321)";
+        let result = parse_chhlat_status(input);
         assert!(result.running);
         assert_eq!(result.pid, Some(54321));
         assert_eq!(result.version, None);
@@ -975,15 +975,15 @@ mod tests {
 
     #[test]
     fn parse_status_text_not_running() {
-        let input = "Daemon not running.";
-        let result = parse_daemon_status(input);
+        let input = "Chhlat not running.";
+        let result = parse_chhlat_status(input);
         assert!(!result.running);
         assert_eq!(result.pid, None);
     }
 
     #[test]
     fn parse_status_empty_string() {
-        let result = parse_daemon_status("");
+        let result = parse_chhlat_status("");
         assert!(!result.running);
         assert_eq!(result.pid, None);
         assert_eq!(result.version, None);
@@ -1007,28 +1007,28 @@ mod tests {
     }
 
     #[test]
-    fn cli_config_daemon_start_args() {
+    fn cli_config_chhlat_start_args() {
         let cfg = cli_config();
         let mut args: Vec<&str> = cfg.base_args.to_vec();
-        args.extend_from_slice(&["daemon", "start"]);
+        args.extend_from_slice(&["chhlat", "start"]);
 
         if cfg!(debug_assertions) {
-            assert_eq!(args, vec!["dev:cli", "daemon", "start"]);
+            assert_eq!(args, vec!["dev:cli", "chhlat", "start"]);
         } else {
-            assert_eq!(args, vec!["@phneakngar/cli", "daemon", "start"]);
+            assert_eq!(args, vec!["@phneakngar/cli", "chhlat", "start"]);
         }
     }
 
     #[test]
-    fn cli_config_daemon_status_args() {
+    fn cli_config_chhlat_status_args() {
         let cfg = cli_config();
         let mut args: Vec<&str> = cfg.base_args.to_vec();
-        args.extend_from_slice(&["daemon", "status"]);
+        args.extend_from_slice(&["chhlat", "status"]);
 
         if cfg!(debug_assertions) {
-            assert_eq!(args, vec!["dev:cli", "daemon", "status"]);
+            assert_eq!(args, vec!["dev:cli", "chhlat", "status"]);
         } else {
-            assert_eq!(args, vec!["@phneakngar/cli", "daemon", "status"]);
+            assert_eq!(args, vec!["@phneakngar/cli", "chhlat", "status"]);
         }
     }
 

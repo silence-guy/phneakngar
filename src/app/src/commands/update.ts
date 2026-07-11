@@ -16,8 +16,8 @@ function cliEntry(): string {
   return join(__dirname, "cli", "index.js");
 }
 
-function runDaemon(args: string[], quiet = false): { ok: boolean; output: string } {
-  const result = spawnSync("node", [cliEntry(), "daemon", ...args], {
+function runChhlat(args: string[], quiet = false): { ok: boolean; output: string } {
+  const result = spawnSync("node", [cliEntry(), "chhlat", ...args], {
     stdio: quiet ? ["pipe", "pipe", "pipe"] : "inherit",
     env: buildCliEnv(),
   });
@@ -25,8 +25,8 @@ function runDaemon(args: string[], quiet = false): { ok: boolean; output: string
   return { ok: result.status === 0, output };
 }
 
-function isDaemonRunning(): boolean {
-  const { output } = runDaemon(["status"], true);
+function isChhlatRunning(): boolean {
+  const { output } = runChhlat(["status"], true);
   return output.includes("running (pid=");
 }
 
@@ -36,11 +36,11 @@ export function updateCommand(): Command {
     .action(() => {
       console.log("Updating ភ្នាក់ងារ...\n");
 
-      // Stop daemon if running (so it doesn't hold the health port)
-      const daemonWasRunning = isDaemonRunning();
-      if (daemonWasRunning) {
-        console.log("Stopping daemon...");
-        runDaemon(["stop"]);
+      // Stop chhlat if running (so it doesn't hold the health port)
+      const chhlatWasRunning = isChhlatRunning();
+      if (chhlatWasRunning) {
+        console.log("Stopping chhlat...");
+        runChhlat(["stop"]);
       }
 
       const servicesWereRunning = isRunning();
@@ -64,9 +64,9 @@ export function updateCommand(): Command {
         startServices(DEFAULT_PORTS);
       }
 
-      if (daemonWasRunning) {
-        console.log("Restarting daemon...");
-        runDaemon(["start"]);
+      if (chhlatWasRunning) {
+        console.log("Restarting chhlat...");
+        runChhlat(["start"]);
       }
 
       console.log("\n✓ Update complete.");

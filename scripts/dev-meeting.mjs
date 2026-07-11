@@ -46,4 +46,4 @@ d1(`INSERT INTO meeting_session (id, agent_id, workspace_id, title, meeting_url,
 console.log(`✓ Meeting created: ${meetingId}`);
 console.log(`  URL:    ${meetingUrl}`);
 console.log(`  Agent:  ${agentId}`);
-console.log(`  Status: scheduled (daemon will claim on next poll)`);
+console.log(`  Status: scheduled (chhlat will claim on next poll)`);

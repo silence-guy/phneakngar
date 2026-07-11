@@ -22,15 +22,15 @@ function req(path: string, opts?: RequestInit) {
 }
 
 describe("meeting claim via poll", () => {
-  // Use a separate daemon for the claim test to avoid 30s misc-throttle
-  const claimDaemonId = `daemon_claim_${randomUUID().slice(0, 8)}`
+  // Use a separate chhlat for the claim test to avoid 30s misc-throttle
+  const claimChhlatId = `chhlat_claim_${randomUUID().slice(0, 8)}`
 
   beforeAll(async () => {
-    const res = await req("/api/daemon/register", {
+    const res = await req("/api/chhlat/register", {
       method: "POST",
       body: JSON.stringify({
         workspace_id: seed.workspaceId,
-        daemon_id: claimDaemonId,
+        chhlat_id: claimChhlatId,
         device_name: "claim-test-machine",
         cli_version: "0.0.1",
         runtimes: [
@@ -43,15 +43,15 @@ describe("meeting claim via poll", () => {
 
   afterAll(() => {
     try {
-      sqlRun(`DELETE FROM agent_runtime WHERE daemon_id = ?`, claimDaemonId)
-      sqlRun(`DELETE FROM machine WHERE daemon_id = ?`, claimDaemonId)
+      sqlRun(`DELETE FROM agent_runtime WHERE chhlat_id = ?`, claimChhlatId)
+      sqlRun(`DELETE FROM machine WHERE chhlat_id = ?`, claimChhlatId)
     } catch { /* ignore */ }
   })
 
   it("poll returns no meetings when none are scheduled", async () => {
-    const res = await req("/api/daemon/tasks/poll", {
+    const res = await req("/api/chhlat/tasks/poll", {
       method: "POST",
-      body: JSON.stringify({ daemon_id: seed.daemonId }),
+      body: JSON.stringify({ chhlat_id: seed.chhlatId }),
     })
     expect(res.status).toBe(200)
     const data = await res.json() as { meetings?: unknown[] }
@@ -63,9 +63,9 @@ describe("meeting claim via poll", () => {
     sqlRun(`INSERT INTO meeting_session (id, agent_id, workspace_id, title, meeting_url, status, is_whitelisted, participants, scheduled_at, created_at, updated_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, 'ms_claim_test', seed.agentId, seed.workspaceId, 'Claim Test', 'https://meet.google.com/abc-defg-hij', 'scheduled', 1, '[]', pastTime, pastTime, pastTime)
 
-    const res = await req("/api/daemon/tasks/poll", {
+    const res = await req("/api/chhlat/tasks/poll", {
       method: "POST",
-      body: JSON.stringify({ daemon_id: claimDaemonId }),
+      body: JSON.stringify({ chhlat_id: claimChhlatId }),
     })
     expect(res.status).toBe(200)
     const data = await res.json() as { meetings?: { id: string; meeting_url: string; agent_name: string }[] }
@@ -77,9 +77,9 @@ describe("meeting claim via poll", () => {
   })
 
   it("does not re-claim already claimed meeting", async () => {
-    const res = await req("/api/daemon/tasks/poll", {
+    const res = await req("/api/chhlat/tasks/poll", {
       method: "POST",
-      body: JSON.stringify({ daemon_id: seed.daemonId }),
+      body: JSON.stringify({ chhlat_id: seed.chhlatId }),
     })
     expect(res.status).toBe(200)
     const data = await res.json() as { meetings?: unknown[] }
@@ -91,9 +91,9 @@ describe("meeting claim via poll", () => {
     sqlRun(`INSERT INTO meeting_session (id, agent_id, workspace_id, title, meeting_url, status, is_whitelisted, participants, scheduled_at, created_at, updated_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, 'ms_future_test', seed.agentId, seed.workspaceId, 'Future Test', 'https://meet.google.com/xyz-wxyz-abc', 'scheduled', 1, '[]', futureTime, futureTime, futureTime)
 
-    const res = await req("/api/daemon/tasks/poll", {
+    const res = await req("/api/chhlat/tasks/poll", {
       method: "POST",
-      body: JSON.stringify({ daemon_id: seed.daemonId }),
+      body: JSON.stringify({ chhlat_id: seed.chhlatId }),
     })
     expect(res.status).toBe(200)
     const data = await res.json() as { meetings?: unknown[] }

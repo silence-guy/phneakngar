@@ -105,20 +105,20 @@ export function onboardCommand(): Command {
         // Let CLI register handle token activation + config save
         const cliEntry = join(__dirname, "cli", "index.js");
         const cliEnv = buildCliEnv(ports.web);
-        console.log("Starting daemon...");
+        console.log("Starting chhlat...");
         try {
           spawnSync("node", [cliEntry, "register", "--token", token], {
             stdio: "inherit",
             env: cliEnv,
           });
-          spawnSync("node", [cliEntry, "daemon", "start"], {
+          spawnSync("node", [cliEntry, "chhlat", "start"], {
             stdio: "inherit",
             env: cliEnv,
           });
         } catch {
-          console.warn("  Warning: daemon auto-start failed. Start manually:");
+          console.warn("  Warning: chhlat auto-start failed. Start manually:");
           console.warn(`  npx @phneakngar/app cli register --token ${token}`);
-          console.warn(`  npx @phneakngar/app cli daemon start`);
+          console.warn(`  npx @phneakngar/app cli chhlat start`);
         }
       }
 

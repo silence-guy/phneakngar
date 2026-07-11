@@ -29,15 +29,20 @@ export default {
 
     const traceId = request.headers.get("X-Trace-Id") ?? undefined
 
-    const daemonBroadcast = url.pathname.match(/^\/broadcast\/daemon\/(.+)$/)
-    if (daemonBroadcast && request.method === "POST") {
-      const daemonId = daemonBroadcast[1]
-      const reqLog = log.child({ traceId, daemonId })
-      reqLog.debug("broadcasting to daemon")
-
-      const doId = env.WS_DO.idFromName("daemon:" + daemonId)
+    const chhlatBroadcast = url.pathname.match(/^\/broadcast\/chhlat\/(.+)$/)
+    if (chhlatBroadcast && request.method === "POST") {
+      const chhlatId = chhlatBroadcast[1]!
+      const reqLog = log.child({ traceId, chhlatId })
+      reqLog.debug("broadcasting to chhlat")
+      const doId = env.WS_DO.idFromName("chhlat:" + chhlatId)
       const stub = env.WS_DO.get(doId)
-      return stub.fetch(new Request("http://internal/broadcast", { method: "POST", body: request.body, duplex: "half" } as RequestInit))
+      return stub.fetch(
+        new Request("http://internal/broadcast", {
+          method: "POST",
+          body: request.body,
+          duplex: "half",
+        } as RequestInit),
+      )
     }
 
     const userBroadcast = url.pathname.match(/^\/broadcast\/user\/(.+)$/)
@@ -45,28 +50,31 @@ export default {
       const userId = userBroadcast[1]
       const reqLog = log.child({ traceId, userId })
       reqLog.debug("broadcasting to user")
-
       const doId = env.WS_DO.idFromName("user:" + userId)
       const stub = env.WS_DO.get(doId)
-      return stub.fetch(new Request("http://internal/broadcast", { method: "POST", body: request.body, duplex: "half" } as RequestInit))
+      return stub.fetch(
+        new Request("http://internal/broadcast", {
+          method: "POST",
+          body: request.body,
+          duplex: "half",
+        } as RequestInit),
+      )
     }
 
-    const daemonId = url.searchParams.get("daemonId")
-    if (daemonId) {
-      const reqLog = log.child({ traceId, daemonId })
-      reqLog.info("daemon websocket upgrade")
-
-      const doId = env.WS_DO.idFromName("daemon:" + daemonId)
+    const chhlatId = url.searchParams.get("chhlatId")
+    if (chhlatId) {
+      const reqLog = log.child({ traceId, chhlatId })
+      reqLog.info("chhlat websocket upgrade")
+      const doId = env.WS_DO.idFromName("chhlat:" + chhlatId)
       const stub = env.WS_DO.get(doId)
       return stub.fetch(request)
     }
 
     const userId = url.searchParams.get("userId")
-    if (!userId) return new Response("userId required", { status: 400 })
+    if (!userId) return new Response("userId or chhlatId required", { status: 400 })
 
     const reqLog = log.child({ traceId, userId })
     reqLog.info("websocket upgrade")
-
     const doId = env.WS_DO.idFromName("user:" + userId)
     const stub = env.WS_DO.get(doId)
     return stub.fetch(request)

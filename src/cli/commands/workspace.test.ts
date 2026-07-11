@@ -112,7 +112,7 @@ describe("workspace init", () => {
       ]),
     }));
     expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("Workspace initialized"));
-    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("alice@phneakngar.ai"));
+    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("alice@cieee.xyz"));
     expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("http://localhost:3000/w/test-ws"));
   });
 
@@ -144,7 +144,7 @@ describe("workspace init", () => {
     getJSONMock.mockResolvedValueOnce([]); // empty runtimes
 
     await expect(runInit(["--json-file", jsonPath])).rejects.toThrow("process.exit(1)");
-    expect(consoleErrSpy).toHaveBeenCalledWith(expect.stringContaining("No daemon registered"));
+    expect(consoleErrSpy).toHaveBeenCalledWith(expect.stringContaining("No chhlat registered"));
   });
 
   it("creates new workspace and re-fetches runtimes from it", async () => {
@@ -456,7 +456,7 @@ describe("workspace init — self-resolve (no workspaceId)", () => {
       const err = await promise;
       expect(err).toBeInstanceOf(Error);
       expect((err as Error).message).toBe("process.exit(1)");
-      expect(consoleErrSpy).toHaveBeenCalledWith(expect.stringContaining("No daemon registered after waiting"));
+      expect(consoleErrSpy).toHaveBeenCalledWith(expect.stringContaining("No chhlat registered after waiting"));
     } finally {
       vi.useRealTimers();
     }

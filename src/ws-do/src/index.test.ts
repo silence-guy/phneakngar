@@ -27,7 +27,7 @@ describe("ws-do router", () => {
       const req = new Request("http://localhost/broadcast/user/user-123", {
         method: "POST",
         headers: { "X-Phneakngar-WS-Service-Secret": "ws-service-secret" },
-        body: JSON.stringify({ type: "runtime.status", daemonId: "d1", workspaceId: "w1", status: "online" }),
+        body: JSON.stringify({ type: "runtime.status", chhlatId: "d1", workspaceId: "w1", status: "online" }),
       })
 
       const res = await handler.fetch(req, env as any)
@@ -76,7 +76,7 @@ describe("ws-do router", () => {
       const res = await handler.fetch(req, env as any)
 
       expect(res.status).toBe(400)
-      expect(await res.text()).toBe("userId required")
+      expect(await res.text()).toBe("userId or chhlatId required")
       expect(doMock.stubFetch).not.toHaveBeenCalled()
     })
   })

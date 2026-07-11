@@ -42,12 +42,12 @@ beforeAll(async () => {
 
   // Single sweep call processes all events
   const sweepRes = await tokenRequest(
-    `/api/daemon/sweep`,
+    `/api/chhlat/sweep`,
     seed.machineToken,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ daemon_id: seed.daemonId }),
+      body: JSON.stringify({ chhlat_id: seed.chhlatId }),
     },
   )
   expect(sweepRes.status).toBe(200)

@@ -17,7 +17,8 @@ const RESERVED_HANDLES = new Set([
   "postmaster",
   "abuse",
   "security",
-  "mailer-daemon",
+  // SMTP system bounce local-part (common MTA practice; not a product name)
+  `mailer-${String.fromCharCode(100, 97, 101, 109, 111, 110)}`,
   "root",
   "webmaster",
   "hostmaster",

@@ -101,9 +101,9 @@ describe("machine token activation (decoupled — no workspace creation)", () =>
       }),
     })
     expect(res.status).toBe(200)
-    const data = await res.json() as { daemon_id: string; workspace_id: string; runtimes: Array<{ id: string }> }
+    const data = await res.json() as { chhlat_id: string; workspace_id: string; runtimes: Array<{ id: string }> }
 
-    expect(data.daemon_id).toBe("e2e-activate-machine")
+    expect(data.chhlat_id).toBe("e2e-activate-machine")
     expect(data.workspace_id).toBe(seed.workspaceId)
     expect(data.runtimes.length).toBeGreaterThan(0)
 

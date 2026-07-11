@@ -42,7 +42,7 @@ vi.mock("@/lib/cache", () => ({
 }));
 
 vi.mock("@/lib/broadcast", () => ({
-  broadcastToDaemon: vi.fn().mockResolvedValue(undefined),
+  broadcastToChhlat: vi.fn().mockResolvedValue(undefined),
 }));
 
 import { POST } from "./route";

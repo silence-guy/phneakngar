@@ -103,7 +103,7 @@ describe("ws (dev direct to ws-do)", () => {
     const ack = await waitForMessage<{ type: string }>(ws, (m) => m.type === "auth.ok")
     expect(ack.type).toBe("auth.ok")
 
-    const payload = { type: "runtime.status", daemonId: "d1", workspaceId: "w1", status: "online" }
+    const payload = { type: "runtime.status", chhlatId: "d1", workspaceId: "w1", status: "online" }
     const recv = waitForMessage<typeof payload>(ws, (m) => m.type === "runtime.status")
 
     const broadcastRes = await fetch(`${WS_DO_HTTP}/broadcast/user/${userId}`, {

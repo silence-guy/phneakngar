@@ -14,13 +14,13 @@ export function ConnectMachineSteps({
   generatingToken,
   onGenerateToken,
   registered,
-  daemonOnline,
+  chhlatOnline,
 }: {
   generatedToken: string;
   generatingToken: boolean;
   onGenerateToken: () => void;
   registered: boolean;
-  daemonOnline: boolean;
+  chhlatOnline: boolean;
 }) {
   const hasTriggered = useRef(false);
   const mode = getAppMode();
@@ -28,7 +28,7 @@ export function ConnectMachineSteps({
   const [executing, setExecuting] = useState(false);
   const [cliPrefix, setCliPrefix] = useState<string | null>(null);
 
-  const connected = registered && daemonOnline;
+  const connected = registered && chhlatOnline;
 
   useEffect(() => {
     if (isDesktopApp && isTauri()) {

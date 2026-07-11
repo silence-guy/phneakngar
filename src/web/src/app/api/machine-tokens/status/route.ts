@@ -3,7 +3,7 @@ import { getDb } from "@/lib/db";
 import { withAuth } from "@/lib/middleware/auth";
 import { writeJSON } from "@/lib/middleware/helpers";
 
-const DAEMON_ONLINE_THRESHOLD_MS = 120_000;
+const CHHLAT_ONLINE_THRESHOLD_MS = 120_000;
 
 export const GET = withAuth(async (_req, ctx) => {
   const db = getDb(ctx.env.DB);
@@ -13,8 +13,8 @@ export const GET = withAuth(async (_req, ctx) => {
     return writeJSON({ status: null });
   }
 
-  const daemonOnline = token.lastUsedAt
-    ? Date.now() - new Date(token.lastUsedAt).getTime() < DAEMON_ONLINE_THRESHOLD_MS
+  const chhlatOnline = token.lastUsedAt
+    ? Date.now() - new Date(token.lastUsedAt).getTime() < CHHLAT_ONLINE_THRESHOLD_MS
     : false;
 
   return writeJSON({
@@ -22,6 +22,6 @@ export const GET = withAuth(async (_req, ctx) => {
     token: token.status === "pending" ? token.token : undefined,
     workspace_id: token.workspaceId || undefined,
     hostname: token.hostname || undefined,
-    daemon_online: daemonOnline,
+    chhlat_online: chhlatOnline,
   });
 });

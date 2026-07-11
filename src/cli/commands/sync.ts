@@ -116,7 +116,7 @@ export function syncCommand(): Command {
 
       try {
         const result = await client.postJSON<Record<string, unknown>>(
-          `/api/daemon/conversations/${encodeURIComponent(conversationId)}/messages`,
+          `/api/chhlat/conversations/${encodeURIComponent(conversationId)}/messages`,
           { content, task_id: process.env.PHNEAKNGAR_TASK_ID || undefined }
         );
         printJSON(result);

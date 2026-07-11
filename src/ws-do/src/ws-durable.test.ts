@@ -65,8 +65,8 @@ vi.mock("cloudflare:workers", () => ({
 const mockGetValidSession = vi.fn<(db: unknown, token: string) => Promise<string | null>>()
 const mockGetMachineTokenByToken = vi.fn()
 const mockGetLatestTokenForUser = vi.fn()
-const mockGetRuntimeIdsByDaemon = vi.fn()
-const mockGetMachineByDaemon = vi.fn()
+const mockGetRuntimeIdsByChhlat = vi.fn()
+const mockGetMachineByChhlat = vi.fn()
 const mockCreateDb = vi.fn().mockReturnValue({})
 
 vi.mock("@phneakngar/shared", () => {
@@ -86,8 +86,8 @@ vi.mock("@phneakngar/shared", () => {
         getMachineTokenByToken: (...a: any[]) => mockGetMachineTokenByToken(...a),
         getLatestTokenForUser: (...a: any[]) => mockGetLatestTokenForUser(...a),
       },
-      machine: { getMachineByDaemon: (...a: any[]) => mockGetMachineByDaemon(...a) },
-      runtime: { getRuntimeIdsByDaemon: (...a: any[]) => mockGetRuntimeIdsByDaemon(...a) },
+      machine: { getMachineByChhlat: (...a: any[]) => mockGetMachineByChhlat(...a) },
+      runtime: { getRuntimeIdsByChhlat: (...a: any[]) => mockGetRuntimeIdsByChhlat(...a) },
     },
   }
 })
@@ -115,7 +115,7 @@ function createDO() {
 describe("WebSocketDurableObject", () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockGetMachineByDaemon.mockResolvedValue({ ownerId: "u1" })
+    mockGetMachineByChhlat.mockResolvedValue({ ownerId: "u1" })
   })
 
   describe("fetch — WebSocket upgrade", () => {
@@ -153,9 +153,9 @@ describe("WebSocketDurableObject", () => {
       expect(serverWs.deserializeAttachment()).toEqual({ type: "user", userId: "u1", authenticated: false })
     })
 
-    it("attaches an unauthenticated daemon ConnectionState on daemon upgrade", async () => {
+    it("attaches an unauthenticated chhlat ConnectionState on chhlat upgrade", async () => {
       const { durable, ctx } = createDO()
-      const req = new Request("http://internal/?daemonId=my-daemon", {
+      const req = new Request("http://internal/?chhlatId=my-chhlat", {
         headers: { Upgrade: "websocket" },
       })
 
@@ -163,7 +163,7 @@ describe("WebSocketDurableObject", () => {
 
       const acceptCall = (ctx.acceptWebSocket as ReturnType<typeof vi.fn>).mock.calls[0]
       const serverWs = acceptCall[0]
-      expect(serverWs.deserializeAttachment()).toEqual({ type: "daemon", daemonId: "my-daemon", userId: "", authenticated: false })
+      expect(serverWs.deserializeAttachment()).toEqual({ type: "chhlat", chhlatId: "my-chhlat", userId: "", authenticated: false })
     })
   })
 
@@ -180,7 +180,7 @@ describe("WebSocketDurableObject", () => {
 
       const req = new Request("http://internal/broadcast", {
         method: "POST",
-        body: JSON.stringify({ type: "runtime.status", daemonId: "d1", workspaceId: "w1", status: "online" }),
+        body: JSON.stringify({ type: "runtime.status", chhlatId: "d1", workspaceId: "w1", status: "online" }),
       })
 
       const res = await durable.fetch(req)
@@ -188,7 +188,7 @@ describe("WebSocketDurableObject", () => {
       expect(res.status).toBe(200)
       expect(await res.json()).toEqual({ sent: 1 })
       expect(wsAuth.send).toHaveBeenCalledWith(
-        JSON.stringify({ type: "runtime.status", daemonId: "d1", workspaceId: "w1", status: "online" })
+        JSON.stringify({ type: "runtime.status", chhlatId: "d1", workspaceId: "w1", status: "online" })
       )
       expect(wsUnauth.send).not.toHaveBeenCalled()
     })
@@ -346,131 +346,131 @@ describe("WebSocketDurableObject", () => {
     })
   })
 
-  describe("webSocketMessage — daemon auth flow", () => {
-    it("rejects daemon with pending token (not yet activated)", async () => {
+  describe("webSocketMessage — chhlat auth flow", () => {
+    it("rejects chhlat with pending token (not yet activated)", async () => {
       const { durable } = createDO()
       mockGetMachineTokenByToken.mockResolvedValue({
         id: "mt_1", userId: "u1", status: "pending", workspaceId: null,
       })
 
       const ws = createMockWebSocket()
-      ws.serializeAttachment({ type: "daemon", daemonId: "my-daemon", userId: "", authenticated: false })
+      ws.serializeAttachment({ type: "chhlat", chhlatId: "my-chhlat", userId: "", authenticated: false })
 
       await durable.webSocketMessage(
         ws as any,
-        JSON.stringify({ type: "auth", machineToken: "al_pending123", daemonId: "my-daemon" }),
+        JSON.stringify({ type: "auth", machineToken: "al_pending123", chhlatId: "my-chhlat" }),
       )
 
       expect(ws.close).toHaveBeenCalledWith(1008, "Unauthorized")
-      expect(mockGetRuntimeIdsByDaemon).not.toHaveBeenCalled()
+      expect(mockGetRuntimeIdsByChhlat).not.toHaveBeenCalled()
     })
 
-    it("authenticates daemon with active token and runtimes", async () => {
+    it("authenticates chhlat with active token and runtimes", async () => {
       const { durable } = createDO()
       mockGetMachineTokenByToken.mockResolvedValue({
         id: "mt_1", userId: "u1", status: "active", workspaceId: "sp_ws1",
       })
-      mockGetRuntimeIdsByDaemon.mockResolvedValue(["rt_1"])
+      mockGetRuntimeIdsByChhlat.mockResolvedValue(["rt_1"])
 
       const ws = createMockWebSocket()
-      ws.serializeAttachment({ type: "daemon", daemonId: "my-daemon", userId: "", authenticated: false })
+      ws.serializeAttachment({ type: "chhlat", chhlatId: "my-chhlat", userId: "", authenticated: false })
 
       await durable.webSocketMessage(
         ws as any,
-        JSON.stringify({ type: "auth", machineToken: "al_active123", daemonId: "my-daemon" }),
+        JSON.stringify({ type: "auth", machineToken: "al_active123", chhlatId: "my-chhlat" }),
       )
 
       expect(ws.send).toHaveBeenCalledWith(JSON.stringify({ type: "auth.ok" }))
-      expect(mockGetMachineByDaemon).toHaveBeenCalledWith({}, "my-daemon", "sp_ws1")
-      expect(mockGetRuntimeIdsByDaemon).toHaveBeenCalledWith({}, "my-daemon", "sp_ws1")
-      expect(ws.deserializeAttachment()).toEqual({ type: "daemon", daemonId: "my-daemon", userId: "u1", authenticated: true })
+      expect(mockGetMachineByChhlat).toHaveBeenCalledWith({}, "my-chhlat", "sp_ws1")
+      expect(mockGetRuntimeIdsByChhlat).toHaveBeenCalledWith({}, "my-chhlat", "sp_ws1")
+      expect(ws.deserializeAttachment()).toEqual({ type: "chhlat", chhlatId: "my-chhlat", userId: "u1", authenticated: true })
     })
 
-    it("rejects daemon auth when the routed daemon id does not match the auth message", async () => {
+    it("rejects chhlat auth when the routed chhlat id does not match the auth message", async () => {
       const { durable } = createDO()
       mockGetMachineTokenByToken.mockResolvedValue({
         id: "mt_1", userId: "u1", status: "active", workspaceId: "sp_ws1",
       })
-      mockGetRuntimeIdsByDaemon.mockResolvedValue(["rt_1"])
+      mockGetRuntimeIdsByChhlat.mockResolvedValue(["rt_1"])
 
       const ws = createMockWebSocket()
-      ws.serializeAttachment({ type: "daemon", daemonId: "other-daemon", userId: "", authenticated: false })
+      ws.serializeAttachment({ type: "chhlat", chhlatId: "other-chhlat", userId: "", authenticated: false })
 
       await durable.webSocketMessage(
         ws as any,
-        JSON.stringify({ type: "auth", machineToken: "al_active123", daemonId: "my-daemon" }),
+        JSON.stringify({ type: "auth", machineToken: "al_active123", chhlatId: "my-chhlat" }),
       )
 
       expect(ws.close).toHaveBeenCalledWith(1008, "Unauthorized")
       expect(mockGetMachineTokenByToken).not.toHaveBeenCalled()
-      expect(mockGetMachineByDaemon).not.toHaveBeenCalled()
-      expect(mockGetRuntimeIdsByDaemon).not.toHaveBeenCalled()
+      expect(mockGetMachineByChhlat).not.toHaveBeenCalled()
+      expect(mockGetRuntimeIdsByChhlat).not.toHaveBeenCalled()
     })
 
-    it("rejects daemon token when the machine record belongs to another user", async () => {
+    it("rejects chhlat token when the machine record belongs to another user", async () => {
       const { durable } = createDO()
       mockGetMachineTokenByToken.mockResolvedValue({
         id: "mt_1", userId: "u1", status: "active", workspaceId: "sp_ws1",
       })
-      mockGetMachineByDaemon.mockResolvedValue({ ownerId: "other-user" })
+      mockGetMachineByChhlat.mockResolvedValue({ ownerId: "other-user" })
 
       const ws = createMockWebSocket()
-      ws.serializeAttachment({ type: "daemon", daemonId: "my-daemon", userId: "", authenticated: false })
+      ws.serializeAttachment({ type: "chhlat", chhlatId: "my-chhlat", userId: "", authenticated: false })
 
       await durable.webSocketMessage(
         ws as any,
-        JSON.stringify({ type: "auth", machineToken: "al_active123", daemonId: "my-daemon" }),
+        JSON.stringify({ type: "auth", machineToken: "al_active123", chhlatId: "my-chhlat" }),
       )
 
       expect(ws.close).toHaveBeenCalledWith(1008, "Unauthorized")
-      expect(mockGetMachineByDaemon).toHaveBeenCalledWith({}, "my-daemon", "sp_ws1")
-      expect(mockGetRuntimeIdsByDaemon).not.toHaveBeenCalled()
+      expect(mockGetMachineByChhlat).toHaveBeenCalledWith({}, "my-chhlat", "sp_ws1")
+      expect(mockGetRuntimeIdsByChhlat).not.toHaveBeenCalled()
       expect(ws.send).not.toHaveBeenCalled()
     })
 
-    it("rejects daemon with active token but no runtimes", async () => {
+    it("rejects chhlat with active token but no runtimes", async () => {
       const { durable } = createDO()
       mockGetMachineTokenByToken.mockResolvedValue({
         id: "mt_1", userId: "u1", status: "active", workspaceId: "sp_ws1",
       })
-      mockGetRuntimeIdsByDaemon.mockResolvedValue([])
+      mockGetRuntimeIdsByChhlat.mockResolvedValue([])
 
       const ws = createMockWebSocket()
-      ws.serializeAttachment({ type: "daemon", daemonId: "my-daemon", userId: "", authenticated: false })
+      ws.serializeAttachment({ type: "chhlat", chhlatId: "my-chhlat", userId: "", authenticated: false })
 
       await durable.webSocketMessage(
         ws as any,
-        JSON.stringify({ type: "auth", machineToken: "al_noruntimes", daemonId: "my-daemon" }),
+        JSON.stringify({ type: "auth", machineToken: "al_noruntimes", chhlatId: "my-chhlat" }),
       )
 
       expect(ws.close).toHaveBeenCalledWith(1008, "Unauthorized")
       expect(ws.send).not.toHaveBeenCalled()
     })
 
-    it("rejects daemon with unknown token", async () => {
+    it("rejects chhlat with unknown token", async () => {
       const { durable } = createDO()
       mockGetMachineTokenByToken.mockResolvedValue(null)
 
       const ws = createMockWebSocket()
-      ws.serializeAttachment({ type: "daemon", daemonId: "my-daemon", userId: "", authenticated: false })
+      ws.serializeAttachment({ type: "chhlat", chhlatId: "my-chhlat", userId: "", authenticated: false })
 
       await durable.webSocketMessage(
         ws as any,
-        JSON.stringify({ type: "auth", machineToken: "al_unknown", daemonId: "my-daemon" }),
+        JSON.stringify({ type: "auth", machineToken: "al_unknown", chhlatId: "my-chhlat" }),
       )
 
       expect(ws.close).toHaveBeenCalledWith(1008, "Unauthorized")
     })
 
-    it("rejects daemon with non-al_ prefixed token", async () => {
+    it("rejects chhlat with non-al_ prefixed token", async () => {
       const { durable } = createDO()
 
       const ws = createMockWebSocket()
-      ws.serializeAttachment({ type: "daemon", daemonId: "my-daemon", userId: "", authenticated: false })
+      ws.serializeAttachment({ type: "chhlat", chhlatId: "my-chhlat", userId: "", authenticated: false })
 
       await durable.webSocketMessage(
         ws as any,
-        JSON.stringify({ type: "auth", machineToken: "bad_prefix", daemonId: "my-daemon" }),
+        JSON.stringify({ type: "auth", machineToken: "bad_prefix", chhlatId: "my-chhlat" }),
       )
 
       expect(ws.close).toHaveBeenCalledWith(1008, "Unauthorized")
@@ -478,8 +478,8 @@ describe("WebSocketDurableObject", () => {
     })
   })
 
-  describe("webSocketMessage — check_daemon_status (cross-DO)", () => {
-    it("returns runtime.status online when daemon DO reports alive", async () => {
+  describe("webSocketMessage — check_chhlat_status (cross-DO)", () => {
+    it("returns runtime.status online when chhlat DO reports alive", async () => {
       const { durable, env } = createDO()
       mockGetLatestTokenForUser.mockResolvedValue({ hostname: "MyMachine.local" })
 
@@ -489,15 +489,15 @@ describe("WebSocketDurableObject", () => {
       const ws = createMockWebSocket()
       ws.serializeAttachment({ type: "user", userId: "user-42", authenticated: true })
 
-      await durable.webSocketMessage(ws as any, JSON.stringify({ type: "check_daemon_status" }))
+      await durable.webSocketMessage(ws as any, JSON.stringify({ type: "check_chhlat_status" }))
 
-      expect((env.WS_DO as any).idFromName).toHaveBeenCalledWith("daemon:MyMachine.local")
+      expect((env.WS_DO as any).idFromName).toHaveBeenCalledWith("chhlat:MyMachine.local")
       expect(ws.send).toHaveBeenCalledWith(
-        JSON.stringify({ type: "runtime.status", status: "online", daemonId: "MyMachine.local" }),
+        JSON.stringify({ type: "runtime.status", status: "online", chhlatId: "MyMachine.local" }),
       )
     })
 
-    it("does not respond when daemon DO reports not alive", async () => {
+    it("does not respond when chhlat DO reports not alive", async () => {
       const { durable, env } = createDO()
       mockGetLatestTokenForUser.mockResolvedValue({ hostname: "MyMachine.local" })
 
@@ -507,7 +507,7 @@ describe("WebSocketDurableObject", () => {
       const ws = createMockWebSocket()
       ws.serializeAttachment({ type: "user", userId: "user-42", authenticated: true })
 
-      await durable.webSocketMessage(ws as any, JSON.stringify({ type: "check_daemon_status" }))
+      await durable.webSocketMessage(ws as any, JSON.stringify({ type: "check_chhlat_status" }))
 
       expect(ws.send).not.toHaveBeenCalled()
     })
@@ -519,7 +519,7 @@ describe("WebSocketDurableObject", () => {
       const ws = createMockWebSocket()
       ws.serializeAttachment({ type: "user", userId: "user-42", authenticated: true })
 
-      await durable.webSocketMessage(ws as any, JSON.stringify({ type: "check_daemon_status" }))
+      await durable.webSocketMessage(ws as any, JSON.stringify({ type: "check_chhlat_status" }))
 
       expect(ws.send).not.toHaveBeenCalled()
     })

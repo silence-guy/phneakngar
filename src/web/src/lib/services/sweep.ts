@@ -23,10 +23,10 @@ export async function sweepStaleState(db: Database, workspaceId: string) {
   }
   if (!shouldRun) return;
 
-  // 1. Fail tasks stuck in "dispatched" for >20s (daemon crashed between claim and start)
+  // 1. Fail tasks stuck in "dispatched" for >20s (chhlat crashed between claim and start)
   const staleDispatched = await queries.task.failStaleDispatchedTasks(db, workspaceId);
 
-  // 1b. Fail kill_tasks stuck for >30s (daemon offline or crashed after claim)
+  // 1b. Fail kill_tasks stuck for >30s (chhlat offline or crashed after claim)
   await queries.task.failStaleKillTasks(db, workspaceId);
 
   // 2. Fail tasks stuck in "running" with no message activity for >1h

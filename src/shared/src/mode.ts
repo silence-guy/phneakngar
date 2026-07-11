@@ -82,8 +82,8 @@ export function cliCommand(mode: PhneakngarMode): string {
   }
 }
 
-export function daemonCommand(mode: PhneakngarMode): string {
-  const base = `${cliCommand(mode)} daemon start`;
+export function chhlatCommand(mode: PhneakngarMode): string {
+  const base = `${cliCommand(mode)} chhlat start`;
   return mode === "dev" ? `${base} --foreground` : base;
 }
 
@@ -96,7 +96,7 @@ export function updateCommand(mode: PhneakngarMode): string {
   if (mode === "app") {
     return `npx ${pkg} stop && npx ${pkg}@latest update && npx ${pkg} start`;
   }
-  return `npx ${pkg}@latest daemon stop && npx ${pkg}@latest daemon start`;
+  return `npx ${pkg}@latest chhlat stop && npx ${pkg}@latest chhlat start`;
 }
 
 export interface BaseUrlSignals {

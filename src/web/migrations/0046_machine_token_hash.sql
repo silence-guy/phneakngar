@@ -1,4 +1,4 @@
--- Store a one-way digest for daemon machine-token lookup.
+-- Store a one-way digest for machine-token lookup.
 -- Existing rows are migrated lazily on their next successful authentication.
 ALTER TABLE machine_token ADD COLUMN token_hash text;
 

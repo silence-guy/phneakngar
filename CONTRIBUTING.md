@@ -32,7 +32,7 @@ Use [docs/source-map.md](docs/source-map.md) as the current package map. Read [d
 | Package | Location | What it does |
 |---------|----------|-------------|
 | `@phneakngar/web` | `src/web` | Next.js dashboard, REST API, auth, database |
-| `@phneakngar/cli` | `src/cli` | Runtime daemon, task execution, agent orchestration |
+| `@phneakngar/cli` | `src/cli` | Runtime chhlat, task execution, agent orchestration |
 | `@phneakngar/shared` | `src/shared` | Types, constants, DB schema, validation |
 | `@phneakngar/email-worker` | `src/email-worker` | Inbound email parsing and storage |
 | `@phneakngar/ws-do` | `src/ws-do` | Real-time WebSocket channels |
@@ -111,7 +111,7 @@ Tests run on both Ubuntu and Windows in CI.
 |---------|-------------|
 | `pnpm dev` | Start all dev servers (except CLI) |
 | `pnpm dev:web` | Next.js on :3000 |
-| `pnpm dev:cli` | CLI daemon |
+| `pnpm dev:cli` | CLI chhlat |
 | `pnpm dev:email` | Email worker on :8787 |
 | `pnpm typecheck` | Typecheck all packages |
 | `pnpm lint` | Lint all packages |

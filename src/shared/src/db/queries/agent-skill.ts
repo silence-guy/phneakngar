@@ -12,22 +12,22 @@ export async function syncGlobalSkills(
   workspaceId: string,
   runtime: string,
   skills: SkillRow[],
-  daemonId?: string,
+  chhlatId?: string,
 ) {
   const now = new Date().toISOString();
   const rows = skills.map((s) => ({
     workspaceId,
     agentId: null,
-    daemonId: daemonId ?? null,
+    chhlatId: chhlatId ?? null,
     runtime,
     name: s.name,
     description: s.description,
     syncedAt: now,
   }));
 
-  const deleteCondition = daemonId
-    ? and(eq(agentSkill.workspaceId, workspaceId), eq(agentSkill.runtime, runtime), isNull(agentSkill.agentId), eq(agentSkill.daemonId, daemonId))
-    : and(eq(agentSkill.workspaceId, workspaceId), eq(agentSkill.runtime, runtime), isNull(agentSkill.agentId), isNull(agentSkill.daemonId));
+  const deleteCondition = chhlatId
+    ? and(eq(agentSkill.workspaceId, workspaceId), eq(agentSkill.runtime, runtime), isNull(agentSkill.agentId), eq(agentSkill.chhlatId, chhlatId))
+    : and(eq(agentSkill.workspaceId, workspaceId), eq(agentSkill.runtime, runtime), isNull(agentSkill.agentId), isNull(agentSkill.chhlatId));
 
   const BATCH_SIZE = 10;
   const statements: any[] = [
@@ -93,7 +93,7 @@ export async function getSkills(
       )
     );
 
-  // Deduplicate global skills by name (multiple daemons may sync the same skill)
+  // Deduplicate global skills by name (multiple chhlats may sync the same skill)
   const seen = new Set<string>();
   const deduped: typeof rows = [];
   for (const row of rows) {

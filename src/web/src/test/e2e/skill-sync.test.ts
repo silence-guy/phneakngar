@@ -9,14 +9,14 @@ afterAll(() => {
   cleanupTestData(seed)
 })
 
-describe("POST /api/daemon/skills/sync", () => {
+describe("POST /api/chhlat/skills/sync", () => {
   it("syncs global skills (scope=global)", async () => {
-    const res = await tokenRequest("/api/daemon/skills/sync", seed.machineToken, {
+    const res = await tokenRequest("/api/chhlat/skills/sync", seed.machineToken, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         scope: "global",
-        daemon_id: seed.daemonId,
+        chhlat_id: seed.chhlatId,
         runtime: "claude",
         skills: [
           { name: "test-skill-1", description: "Test skill one" },
@@ -37,12 +37,12 @@ describe("POST /api/daemon/skills/sync", () => {
   })
 
   it("syncs agent-scoped skills (scope=agent)", async () => {
-    const res = await tokenRequest("/api/daemon/skills/sync", seed.machineToken, {
+    const res = await tokenRequest("/api/chhlat/skills/sync", seed.machineToken, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         scope: "agent",
-        daemon_id: seed.daemonId,
+        chhlat_id: seed.chhlatId,
         runtime: "claude",
         agent_id: seed.agentId,
         skills: [
@@ -61,12 +61,12 @@ describe("POST /api/daemon/skills/sync", () => {
   })
 
   it("re-sync replaces old skills (idempotent)", async () => {
-    const res = await tokenRequest("/api/daemon/skills/sync", seed.machineToken, {
+    const res = await tokenRequest("/api/chhlat/skills/sync", seed.machineToken, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         scope: "global",
-        daemon_id: seed.daemonId,
+        chhlat_id: seed.chhlatId,
         runtime: "claude",
         skills: [
           { name: "updated-skill", description: "Replaced" },
@@ -83,12 +83,12 @@ describe("POST /api/daemon/skills/sync", () => {
   })
 
   it("returns 400 when agent scope missing agent_id", async () => {
-    const res = await tokenRequest("/api/daemon/skills/sync", seed.machineToken, {
+    const res = await tokenRequest("/api/chhlat/skills/sync", seed.machineToken, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         scope: "agent",
-        daemon_id: seed.daemonId,
+        chhlat_id: seed.chhlatId,
         runtime: "claude",
         skills: [{ name: "x", description: "" }],
       }),
@@ -97,12 +97,12 @@ describe("POST /api/daemon/skills/sync", () => {
   })
 
   it("FK constraint: agent-scoped sync with invalid agent_id fails", async () => {
-    const res = await tokenRequest("/api/daemon/skills/sync", seed.machineToken, {
+    const res = await tokenRequest("/api/chhlat/skills/sync", seed.machineToken, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         scope: "agent",
-        daemon_id: seed.daemonId,
+        chhlat_id: seed.chhlatId,
         runtime: "claude",
         agent_id: "ag_nonexistent_id_12345",
         skills: [{ name: "bad-skill", description: "" }],
@@ -114,22 +114,22 @@ describe("POST /api/daemon/skills/sync", () => {
 
 describe("GET /api/agents/[id]/skills", () => {
   it("returns combined global + agent skills", async () => {
-    await tokenRequest("/api/daemon/skills/sync", seed.machineToken, {
+    await tokenRequest("/api/chhlat/skills/sync", seed.machineToken, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         scope: "global",
-        daemon_id: seed.daemonId,
+        chhlat_id: seed.chhlatId,
         runtime: "claude",
         skills: [{ name: "global-one", description: "G" }],
       }),
     })
-    await tokenRequest("/api/daemon/skills/sync", seed.machineToken, {
+    await tokenRequest("/api/chhlat/skills/sync", seed.machineToken, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         scope: "agent",
-        daemon_id: seed.daemonId,
+        chhlat_id: seed.chhlatId,
         runtime: "claude",
         agent_id: seed.agentId,
         skills: [{ name: "agent-one", description: "A" }],

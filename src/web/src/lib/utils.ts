@@ -1,6 +1,6 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
-import { resolveMode, cliCommand, updateCommand, daemonCommand, isTauri, isMobile, type PhneakngarMode } from "@phneakngar/shared/mode"
+import { resolveMode, cliCommand, updateCommand, chhlatCommand, isTauri, isMobile, type PhneakngarMode } from "@phneakngar/shared/mode"
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -28,8 +28,8 @@ export function cliCmd(): string {
   return cliCommand(getMode())
 }
 
-export function daemonStartCmd(): string {
-  return daemonCommand(getMode())
+export function chhlatStartCmd(): string {
+  return chhlatCommand(getMode())
 }
 
 export function updateCmd(): string {

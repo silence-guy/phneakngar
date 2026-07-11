@@ -39,15 +39,15 @@ npm install --global @phneakngar/cli
 phneakngar init
 phneakngar doctor
 phneakngar login
-phneakngar daemon start
+phneakngar chhlat start
 phneakngar status
 ```
 
 | Command | Purpose |
 | --- | --- |
 | `phneakngar doctor` | Diagnose install readiness |
-| `phneakngar daemon start` / `stop` / `status` | Control the always-on agent daemon |
-| `phneakngar logs` | View daemon logs |
+| `phneakngar chhlat start` / `stop` / `status` | Control the always-on agent chhlat |
+| `phneakngar logs` | View chhlat logs |
 
 > If `@phneakngar/cli` is not yet on npm, install the operator-provided `.tgz` from `npm pack` (see INSTALL.md).
 

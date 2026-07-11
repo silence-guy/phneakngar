@@ -89,7 +89,7 @@ describe("runDoctor", () => {
     expect(result.exitCode).toBe(1);
     const names = result.checks.map((c: DoctorCheck) => c.name);
     expect(names).toContain("Registration");
-    expect(names).toContain("Daemon");
+    expect(names).toContain("Chhlat");
   });
 
   it("includes network checks when enabled", async () => {
@@ -102,6 +102,6 @@ describe("runDoctor", () => {
     const fetchImpl = vi.fn(async () => new Response("ok", { status: 200 }));
     const result = await runDoctor(undefined, { fetchImpl: fetchImpl as unknown as typeof fetch });
     expect(result.checks.some((c) => c.name === "Server")).toBe(true);
-    expect(result.checks.some((c) => c.name === "Daemon health")).toBe(true);
+    expect(result.checks.some((c) => c.name === "Chhlat health")).toBe(true);
   });
 });

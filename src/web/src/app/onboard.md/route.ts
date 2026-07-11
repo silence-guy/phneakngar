@@ -18,13 +18,13 @@ ${cliPrefix} login
 - Interactive terminal: attempts to open browser automatically
 - Verify success: \`${cliPrefix} status\`
 
-## 2. Start Daemon
+## 2. Start Chhlat
 
 \`\`\`bash
-${cliPrefix} daemon start
+${cliPrefix} chhlat start
 \`\`\`
 
-The daemon must be running before initializing a workspace (workspace init requires active runtimes).
+Chhlat must be running before initializing a workspace (workspace init requires active runtimes).
 
 ## 3. Reflect on Your User
 

@@ -8,7 +8,7 @@ import {
   TASK_TYPES,
   TaskStatus,
 } from "./constants";
-import { cliCommand, daemonCommand, updateCommand } from "./mode";
+import { cliCommand, chhlatCommand, updateCommand } from "./mode";
 import {
   AgentLanguageMode,
   Locale,
@@ -179,7 +179,7 @@ describe("locale foundation", () => {
 
     expect(cliCommand("production")).toBe("npx @phneakngar/cli");
     expect(cliCommand("dev")).toBe("pnpm dev:cli");
-    expect(daemonCommand("dev")).toBe("pnpm dev:cli daemon start --foreground");
+    expect(chhlatCommand("dev")).toBe("pnpm dev:cli chhlat start --foreground");
     expect(updateCommand("app")).toBe(
       "npx @phneakngar/app stop && npx @phneakngar/app@latest update && npx @phneakngar/app start",
     );

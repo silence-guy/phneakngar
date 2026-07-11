@@ -1,6 +1,6 @@
 // Co-located Khmer (KM) labels for the agent-detail pages.
 // Default locale is Khmer; these modules hold KM-only display strings.
-// Technical product tokens (Runtime, Model, IMAP, Google Meet, daemon, etc.)
+// Technical product tokens (Runtime, Model, IMAP, Google Meet, chhlat, etc.)
 // are kept in parentheses or left as-is per the localization policy.
 
 import { relativeTime, formatDuration } from "@/lib/datetime";
@@ -75,7 +75,7 @@ export const AGENT_PAGE_LABELS = {
   // Files page (files/page.tsx)
   files: {
     offlineTitle: "បរិស្ថានដំណើរការ (Runtime) របស់ភ្នាក់ងារក្រៅបណ្តាញ",
-    offlineHint: "ការមើលឯកសារតម្រូវឱ្យ daemon កំពុងដំណើរការ។",
+    offlineHint: "ការមើលឯកសារតម្រូវឱ្យ chhlat កំពុងដំណើរការ។",
     copyFullPath: "ចម្លងផ្លូវពេញ",
     emptyDirectory: "ថតទទេ",
     empty: "ទទេ",
@@ -83,7 +83,7 @@ export const AGENT_PAGE_LABELS = {
     binaryFile: "ឯកសារ binary — មិនអាចបង្ហាញបានទេ",
     raw: "ដើម",
     preview: "មើលជាមុន",
-    requestTimedOut: "សំណើផុតពេល — daemon អាចនឹងក្រៅបណ្តាញ",
+    requestTimedOut: "សំណើផុតពេល — chhlat អាចនឹងក្រៅបណ្តាញ",
     requestFileFailed: "មិនអាចស្នើសុំឯកសារបានទេ",
   },
 

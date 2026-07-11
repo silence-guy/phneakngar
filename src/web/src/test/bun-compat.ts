@@ -143,7 +143,7 @@ export const sharedMock = {
   cliCommand: "phneakngar",
   cliPackageName: "@phneakngar/cli",
   updateCommand: "phneakngar update",
-  daemonCommand: "phneakngar daemon",
+  chhlatCommand: "phneakngar chhlat",
   getBaseUrl: () => "http://localhost:3000",
   isTauri: () => false,
   isDesktop: () => false,

@@ -90,7 +90,7 @@ for (const req of required) {
   }
 }
 
-const banned = ["src/", "commands/", "daemon/", "node_modules/", ".phneakngar"];
+const banned = ["src/", "commands/", "chhlat/", "node_modules/", ".phneakngar"];
 for (const b of banned) {
   // allow dist only; fail if source trees are packed as top-level
   if (files.some((f) => f.startsWith(b))) {
@@ -135,7 +135,7 @@ if (!versionOut.includes(pkg.version) && !versionOut.includes("phneakngar versio
 console.log(versionOut.trim());
 
 const helpOut = runCapture(`"${binPath}" --help`, { cwd: installDir });
-for (const cmd of ["init", "doctor", "daemon", "logs", "status"]) {
+for (const cmd of ["init", "doctor", "chhlat", "logs", "status"]) {
   if (!helpOut.includes(cmd)) {
     console.error(`Help missing command: ${cmd}`);
     process.exit(1);
@@ -168,7 +168,7 @@ if (!initOut.includes("example.com")) {
   process.exit(1);
 }
 
-// After init, doctor should still FAIL on registration/daemon but config should PASS.
+// After init, doctor should still FAIL on registration/chhlat but config should PASS.
 const doctor2 = spawnSync(`"${binPath}" doctor --skip-network`, {
   cwd: installDir,
   shell: true,

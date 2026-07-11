@@ -139,7 +139,7 @@ describe("computeNextScheduledAt", () => {
     expect(out).toBe("2026-01-02T09:00:00.000Z");
   });
 
-  it("loop-advances past now when daemon downtime missed multiple occurrences", () => {
+  it("loop-advances past now when chhlat downtime missed multiple occurrences", () => {
     const out = calendarQueries.computeNextScheduledAt(
       "2026-01-01T09:00:00.000Z",
       "1day",

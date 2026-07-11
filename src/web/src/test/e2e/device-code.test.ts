@@ -267,7 +267,7 @@ describe("device-code-flow workspace reuse", () => {
     expect(activateRes.status).toBe(200)
     const activateBody = await activateRes.json() as Record<string, unknown>
     expect(activateBody.workspace_id).toBe(originalWorkspaceId)
-    expect(activateBody.daemon_id).toBe("e2e-test-host")
+    expect(activateBody.chhlat_id).toBe("e2e-test-host")
 
     // Verify user still has exactly 1 workspace (activate uses existing workspace from token)
     const wsAfterRes = await sessionRequest("/api/workspaces", wsCookie)

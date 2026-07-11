@@ -45,7 +45,7 @@ function StatCard({
 export function QuickStatsRow({ agents, runtimes, activeTaskCounts, overview }: QuickStatsProps) {
   const machineStatus = new Map<string, boolean>();
   for (const r of runtimes) {
-    const key = r.daemon_id ?? r.id;
+    const key = r.chhlat_id ?? r.id;
     machineStatus.set(key, machineStatus.get(key) || r.status === "online");
   }
   const totalMachines = machineStatus.size;

@@ -196,8 +196,8 @@ export const agentFormCopy = {
     [Locale.KM]: "បរិស្ថានដំណើរការ (Runtime)",
   },
   noRuntimes: {
-    [Locale.EN]: "No runtimes - start a daemon first",
-    [Locale.KM]: "មិនមាន Runtime ទេ - សូមចាប់ផ្តើម daemon ជាមុន",
+    [Locale.EN]: "No runtimes - start chhlat first",
+    [Locale.KM]: "មិនមាន Runtime ទេ - សូមចាប់ផ្តើម chhlat ជាមុន",
   },
   offline: {
     [Locale.EN]: "offline",

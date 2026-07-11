@@ -44,19 +44,19 @@ describe("regression: invalid task state transitions return 400", () => {
   async function getTaskToRunning(): Promise<string> {
     const taskId = await createAndEnqueueTask()
     // Poll to dispatch
-    await tokenRequest(`/api/daemon/tasks/poll`, seed.machineToken, {
+    await tokenRequest(`/api/chhlat/tasks/poll`, seed.machineToken, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ daemon_id: seed.daemonId, max_tasks: 10 }),
+      body: JSON.stringify({ chhlat_id: seed.chhlatId, max_tasks: 10 }),
     })
     // Start
-    await tokenRequest(`/api/daemon/tasks/${taskId}/start`, seed.machineToken, { method: "POST" })
+    await tokenRequest(`/api/chhlat/tasks/${taskId}/start`, seed.machineToken, { method: "POST" })
     return taskId
   }
 
   async function getTaskToCompleted(): Promise<string> {
     const taskId = await getTaskToRunning()
-    await tokenRequest(`/api/daemon/tasks/${taskId}/complete`, seed.machineToken, {
+    await tokenRequest(`/api/chhlat/tasks/${taskId}/complete`, seed.machineToken, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ output: "done", session_id: `sess_${randomUUID().slice(0, 8)}` }),
@@ -66,7 +66,7 @@ describe("regression: invalid task state transitions return 400", () => {
 
   async function getTaskToFailed(): Promise<string> {
     const taskId = await getTaskToRunning()
-    await tokenRequest(`/api/daemon/tasks/${taskId}/fail`, seed.machineToken, {
+    await tokenRequest(`/api/chhlat/tasks/${taskId}/fail`, seed.machineToken, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ error: "intentional" }),
@@ -79,7 +79,7 @@ describe("regression: invalid task state transitions return 400", () => {
     // Force queued status in case push dispatched it
     sqlRun(`UPDATE agent_task_queue SET status = ? WHERE id = ?`, 'queued', taskId)
 
-    const res = await tokenRequest(`/api/daemon/tasks/${taskId}/fail`, seed.machineToken, {
+    const res = await tokenRequest(`/api/chhlat/tasks/${taskId}/fail`, seed.machineToken, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ error: "should not work" }),
@@ -91,7 +91,7 @@ describe("regression: invalid task state transitions return 400", () => {
     const taskId = await createAndEnqueueTask()
     sqlRun(`UPDATE agent_task_queue SET status = ? WHERE id = ?`, 'queued', taskId)
 
-    const res = await tokenRequest(`/api/daemon/tasks/${taskId}/complete`, seed.machineToken, {
+    const res = await tokenRequest(`/api/chhlat/tasks/${taskId}/complete`, seed.machineToken, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ output: "nope", session_id: "sess_x" }),
@@ -102,7 +102,7 @@ describe("regression: invalid task state transitions return 400", () => {
   it("cannot complete an already-completed task", async () => {
     const taskId = await getTaskToCompleted()
 
-    const res = await tokenRequest(`/api/daemon/tasks/${taskId}/complete`, seed.machineToken, {
+    const res = await tokenRequest(`/api/chhlat/tasks/${taskId}/complete`, seed.machineToken, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ output: "again", session_id: "sess_y" }),
@@ -113,21 +113,21 @@ describe("regression: invalid task state transitions return 400", () => {
   it("cannot start a completed task", async () => {
     const taskId = await getTaskToCompleted()
 
-    const res = await tokenRequest(`/api/daemon/tasks/${taskId}/start`, seed.machineToken, { method: "POST" })
+    const res = await tokenRequest(`/api/chhlat/tasks/${taskId}/start`, seed.machineToken, { method: "POST" })
     expect(res.status).toBe(400)
   })
 
   it("cannot start a failed task", async () => {
     const taskId = await getTaskToFailed()
 
-    const res = await tokenRequest(`/api/daemon/tasks/${taskId}/start`, seed.machineToken, { method: "POST" })
+    const res = await tokenRequest(`/api/chhlat/tasks/${taskId}/start`, seed.machineToken, { method: "POST" })
     expect(res.status).toBe(400)
   })
 
   it("cannot fail an already-failed task", async () => {
     const taskId = await getTaskToFailed()
 
-    const res = await tokenRequest(`/api/daemon/tasks/${taskId}/fail`, seed.machineToken, {
+    const res = await tokenRequest(`/api/chhlat/tasks/${taskId}/fail`, seed.machineToken, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ error: "double fail" }),
@@ -138,7 +138,7 @@ describe("regression: invalid task state transitions return 400", () => {
   it("cannot fail an already-completed task", async () => {
     const taskId = await getTaskToCompleted()
 
-    const res = await tokenRequest(`/api/daemon/tasks/${taskId}/fail`, seed.machineToken, {
+    const res = await tokenRequest(`/api/chhlat/tasks/${taskId}/fail`, seed.machineToken, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ error: "too late" }),
@@ -180,10 +180,10 @@ describe("regression: valid task state transitions succeed", () => {
     const taskId = msgData.task!.id
 
     // Poll to claim
-    const pollRes = await tokenRequest(`/api/daemon/tasks/poll`, seed.machineToken, {
+    const pollRes = await tokenRequest(`/api/chhlat/tasks/poll`, seed.machineToken, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ daemon_id: seed.daemonId, max_tasks: 1 }),
+      body: JSON.stringify({ chhlat_id: seed.chhlatId, max_tasks: 1 }),
     })
     expect(pollRes.status).toBe(200)
     const pollData = await pollRes.json() as { tasks: Array<{ id: string; status: string }> }
@@ -191,10 +191,10 @@ describe("regression: valid task state transitions succeed", () => {
     expect(pollData.tasks[0].id).toBe(taskId)
     expect(pollData.tasks[0].status).toBe("dispatched")
 
-    const startRes = await tokenRequest(`/api/daemon/tasks/${taskId}/start`, seed.machineToken, { method: "POST" })
+    const startRes = await tokenRequest(`/api/chhlat/tasks/${taskId}/start`, seed.machineToken, { method: "POST" })
     expect(startRes.status).toBe(200)
 
-    const completeRes = await tokenRequest(`/api/daemon/tasks/${taskId}/complete`, seed.machineToken, {
+    const completeRes = await tokenRequest(`/api/chhlat/tasks/${taskId}/complete`, seed.machineToken, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ output: "success", session_id: `sess_${randomUUID().slice(0, 8)}` }),
@@ -227,20 +227,20 @@ describe("regression: valid task state transitions succeed", () => {
     const taskId = msgData.task!.id
 
     // Poll to claim
-    const pollRes = await tokenRequest(`/api/daemon/tasks/poll`, seed.machineToken, {
+    const pollRes = await tokenRequest(`/api/chhlat/tasks/poll`, seed.machineToken, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ daemon_id: seed.daemonId, max_tasks: 1 }),
+      body: JSON.stringify({ chhlat_id: seed.chhlatId, max_tasks: 1 }),
     })
     expect(pollRes.status).toBe(200)
     const pollData = await pollRes.json() as { tasks: Array<{ id: string }> }
     expect(pollData.tasks).toHaveLength(1)
     expect(pollData.tasks[0].id).toBe(taskId)
 
-    const startRes = await tokenRequest(`/api/daemon/tasks/${taskId}/start`, seed.machineToken, { method: "POST" })
+    const startRes = await tokenRequest(`/api/chhlat/tasks/${taskId}/start`, seed.machineToken, { method: "POST" })
     expect(startRes.status).toBe(200)
 
-    const failRes = await tokenRequest(`/api/daemon/tasks/${taskId}/fail`, seed.machineToken, {
+    const failRes = await tokenRequest(`/api/chhlat/tasks/${taskId}/fail`, seed.machineToken, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ error: "expected failure" }),

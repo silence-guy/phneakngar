@@ -6,7 +6,7 @@ export async function upsertAgentRuntime(
   db: Database,
   data: {
     workspaceId: string;
-    daemonId: string;
+    chhlatId: string;
     runtimeMode: string;
     provider: string;
     deviceInfo: string;
@@ -19,7 +19,7 @@ export async function upsertAgentRuntime(
     .insert(agentRuntime)
     .values({
       workspaceId: data.workspaceId,
-      daemonId: data.daemonId,
+      chhlatId: data.chhlatId,
       runtimeMode: data.runtimeMode,
       provider: data.provider,
       deviceInfo: data.deviceInfo,
@@ -28,7 +28,7 @@ export async function upsertAgentRuntime(
     .onConflictDoUpdate({
       target: [
         agentRuntime.workspaceId,
-        agentRuntime.daemonId,
+        agentRuntime.chhlatId,
         agentRuntime.provider,
       ],
       set: {
@@ -49,7 +49,7 @@ export async function listAgentRuntimes(db: Database, workspaceId: string, userI
     .select({
       id: agentRuntime.id,
       workspaceId: agentRuntime.workspaceId,
-      daemonId: agentRuntime.daemonId,
+      chhlatId: agentRuntime.chhlatId,
       runtimeMode: agentRuntime.runtimeMode,
       provider: agentRuntime.provider,
       deviceInfo: agentRuntime.deviceInfo,
@@ -65,7 +65,7 @@ export async function listAgentRuntimes(db: Database, workspaceId: string, userI
     .leftJoin(
       machine,
       and(
-        eq(machine.daemonId, agentRuntime.daemonId),
+        eq(machine.chhlatId, agentRuntime.chhlatId),
         eq(machine.workspaceId, agentRuntime.workspaceId)
       )
     )
@@ -89,14 +89,14 @@ export async function getAgentRuntimeForWorkspace(
 ) {
   const conditions = [eq(agentRuntime.id, id), eq(agentRuntime.workspaceId, workspaceId)];
   // Permit a NULL machine.ownerId (orphaned runtime / migration owner-backfill
-  // fallback) so legitimate daemons are not locked out; only reject a runtime
+  // fallback) so legitimate chhlats are not locked out; only reject a runtime
   // owned by a DIFFERENT user.
   if (userId) conditions.push(or(eq(machine.ownerId, userId), isNull(machine.ownerId))!);
   const rows = await db
     .select({
       id: agentRuntime.id,
       workspaceId: agentRuntime.workspaceId,
-      daemonId: agentRuntime.daemonId,
+      chhlatId: agentRuntime.chhlatId,
       runtimeMode: agentRuntime.runtimeMode,
       provider: agentRuntime.provider,
       deviceInfo: agentRuntime.deviceInfo,
@@ -111,7 +111,7 @@ export async function getAgentRuntimeForWorkspace(
     .leftJoin(
       machine,
       and(
-        eq(machine.daemonId, agentRuntime.daemonId),
+        eq(machine.chhlatId, agentRuntime.chhlatId),
         eq(machine.workspaceId, agentRuntime.workspaceId)
       )
     )
@@ -132,7 +132,7 @@ export async function getAgentRuntimesForWorkspace(
     .select({
       id: agentRuntime.id,
       workspaceId: agentRuntime.workspaceId,
-      daemonId: agentRuntime.daemonId,
+      chhlatId: agentRuntime.chhlatId,
       runtimeMode: agentRuntime.runtimeMode,
       provider: agentRuntime.provider,
       deviceInfo: agentRuntime.deviceInfo,
@@ -147,16 +147,16 @@ export async function getAgentRuntimesForWorkspace(
     .leftJoin(
       machine,
       and(
-        eq(machine.daemonId, agentRuntime.daemonId),
+        eq(machine.chhlatId, agentRuntime.chhlatId),
         eq(machine.workspaceId, agentRuntime.workspaceId)
       )
     )
     .where(and(...conditions));
 }
 
-export async function deleteRuntimesByDaemonId(
+export async function deleteRuntimesByChhlatId(
   db: Database,
-  daemonId: string,
+  chhlatId: string,
   workspaceId: string
 ) {
   const runtimes = await db
@@ -164,7 +164,7 @@ export async function deleteRuntimesByDaemonId(
     .from(agentRuntime)
     .where(
       and(
-        eq(agentRuntime.daemonId, daemonId),
+        eq(agentRuntime.chhlatId, chhlatId),
         eq(agentRuntime.workspaceId, workspaceId)
       )
     );
@@ -181,15 +181,15 @@ export async function deleteRuntimesByDaemonId(
     .delete(agentRuntime)
     .where(
       and(
-        eq(agentRuntime.daemonId, daemonId),
+        eq(agentRuntime.chhlatId, chhlatId),
         eq(agentRuntime.workspaceId, workspaceId)
       )
     );
 }
 
-export async function getRuntimeIdsByDaemon(
+export async function getRuntimeIdsByChhlat(
   db: Database,
-  daemonId: string,
+  chhlatId: string,
   workspaceId: string
 ) {
   const rows = await db
@@ -197,7 +197,7 @@ export async function getRuntimeIdsByDaemon(
     .from(agentRuntime)
     .where(
       and(
-        eq(agentRuntime.daemonId, daemonId),
+        eq(agentRuntime.chhlatId, chhlatId),
         eq(agentRuntime.workspaceId, workspaceId)
       )
     );

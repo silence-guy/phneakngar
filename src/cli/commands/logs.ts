@@ -1,9 +1,9 @@
 import { Command } from "commander";
 import { existsSync, readdirSync, readFileSync, statSync } from "fs";
 import { join } from "path";
-import { daemonLogDir, daemonLogFilePath } from "../daemon/config.js";
+import { chhlatLogDir, chhlatLogFilePath } from "../chhlat/config.js";
 
-export function listLogFiles(dir = daemonLogDir()): string[] {
+export function listLogFiles(dir = chhlatLogDir()): string[] {
   if (!existsSync(dir)) return [];
   return readdirSync(dir)
     .filter((name) => name.endsWith(".log"))
@@ -28,13 +28,13 @@ export function readLastLines(filePath: string, lineCount: number): string[] {
 
 export function logsCommand(): Command {
   return new Command("logs")
-    .description("Show daemon log path and recent log lines")
+    .description("Show chhlat log path and recent log lines")
     .option("--lines <n>", "Number of recent lines to print", "50")
     .option("--path-only", "Print only the current log file path")
     .option("--list", "List available log files")
     .action((opts) => {
-      const dir = daemonLogDir();
-      const current = daemonLogFilePath();
+      const dir = chhlatLogDir();
+      const current = chhlatLogFilePath();
 
       if (opts.pathOnly) {
         console.log(current);
@@ -55,8 +55,8 @@ export function logsCommand(): Command {
       console.log(`Current log:   ${current}`);
 
       if (!existsSync(current)) {
-        console.log("\nNo log file yet. Start the daemon to create logs:");
-        console.log("  phneakngar daemon start");
+        console.log("\nNo log file yet. Start chhlat to create logs:");
+        console.log("  phneakngar chhlat start");
         return;
       }
 

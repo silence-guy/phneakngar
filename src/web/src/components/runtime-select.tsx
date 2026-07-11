@@ -25,7 +25,7 @@ interface RuntimeSelectProps {
 function groupRuntimes(runtimes: Runtime[]) {
   const groups = new Map<string, { label: string; runtimes: Runtime[] }>();
   for (const rt of runtimes) {
-    const key = rt.daemon_id || rt.id;
+    const key = rt.chhlat_id || rt.id;
     if (!groups.has(key)) {
       groups.set(key, {
         label:

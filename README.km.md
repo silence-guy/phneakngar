@@ -22,7 +22,7 @@
 |---------|----------------|---------|
 | **Node.js** | `20` ឬថ្មីជាង | ដំណើរការ runtime សម្រាប់ web និង workers |
 | **pnpm** | `10.33.0` ឬថ្មីជាង | កម្មវិធីគ្រប់គ្រង package (package manager) |
-| **Bun** | `1.3` ឬថ្មីជាង | ត្រូវការសម្រាប់ CLI daemon |
+| **Bun** | `1.3` ឬថ្មីជាង | ត្រូវការសម្រាប់ CLI chhlat |
 | **Cloudflare Wrangler** | ចុងក្រោយ | សម្រាប់ដំណើរការ D1 (SQLite) និង Workers ក្នុងមូលដ្ឋាន |
 
 ### ពិនិត្យកំណែ Node.js
@@ -109,7 +109,7 @@ PHNEAKNGAR_PROJECT_ROOT="$PWD" pnpm dev:app
 pnpm dev
 ```
 
-ដើម្បីដំណើរការ CLI daemon ដាច់ដោយឡែក៖
+ដើម្បីដំណើរការ CLI chhlat ដាច់ដោយឡែក៖
 
 ```bash
 pnpm dev:cli

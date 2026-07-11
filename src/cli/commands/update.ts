@@ -21,17 +21,17 @@ export function updateCommand(): Command {
         return;
       }
 
-      // Check if daemon is running
+      // Check if chhlat is running
       const healthPort = Number(process.env.PHNEAKNGAR_HEALTH_PORT) || 19514;
       try {
         const res = await fetch(`http://127.0.0.1:${healthPort}/health`);
         if (res.ok) {
           console.warn(
-            "Warning: daemon is running on the old version. After update, restart with: phneakngar daemon restart",
+            "Warning: chhlat is running on the old version. After update, restart with: phneakngar chhlat stop && phneakngar chhlat start",
           );
         }
       } catch {
-        // daemon not running — fine
+        // chhlat not running — fine
       }
 
       console.log(`Updating to v${latest}...`);

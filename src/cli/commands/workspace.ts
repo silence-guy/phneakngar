@@ -125,7 +125,7 @@ export function workspaceCommand(): Command {
         }
 
         if (runtimes.length === 0) {
-          console.error(`Error: No daemon registered after waiting. Run '${cmdPrefix()} daemon start' first.`);
+          console.error(`Error: No chhlat registered after waiting. Run '${cmdPrefix()} chhlat start' first.`);
           process.exit(1);
         }
 
@@ -199,7 +199,7 @@ export function workspaceCommand(): Command {
       }
 
       if (runtimes.length === 0) {
-        console.error(`Error: No daemon registered. Run '${cmdPrefix()} daemon start' first.`);
+        console.error(`Error: No chhlat registered. Run '${cmdPrefix()} chhlat start' first.`);
         process.exit(1);
       }
 

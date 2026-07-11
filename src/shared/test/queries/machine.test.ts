@@ -20,7 +20,7 @@ describe("machine query module exports", () => {
   it("exports upsertMachine", () => { expect(typeof machineQueries.upsertMachine).toBe("function"); });
   it("exports updateMachineLastSeen", () => { expect(typeof machineQueries.updateMachineLastSeen).toBe("function"); });
   it("exports setMachineLastSeenNull", () => { expect(typeof machineQueries.setMachineLastSeenNull).toBe("function"); });
-  it("exports getMachineByDaemon", () => { expect(typeof machineQueries.getMachineByDaemon).toBe("function"); });
+  it("exports getMachineByChhlat", () => { expect(typeof machineQueries.getMachineByChhlat).toBe("function"); });
   it("exports listMachinesForWorkspace", () => { expect(typeof machineQueries.listMachinesForWorkspace).toBe("function"); });
   it("exports deleteMachine", () => { expect(typeof machineQueries.deleteMachine).toBe("function"); });
   it("exports setPendingUpdateVersion", () => { expect(typeof machineQueries.setPendingUpdateVersion).toBe("function"); });
@@ -33,27 +33,27 @@ describe("upsertMachine", () => {
   it("inserts and returns first row", async () => {
     const m = { id: "m_1" };
     const mockDb = createMockDb([m]);
-    const result = await machineQueries.upsertMachine(mockDb, { daemonId: "d_1", workspaceId: "ws_1", deviceInfo: "Mac" });
+    const result = await machineQueries.upsertMachine(mockDb, { chhlatId: "d_1", workspaceId: "ws_1", deviceInfo: "Mac" });
     expect(mockDb.insert).toHaveBeenCalled();
     expect(mockDb.onConflictDoUpdate).toHaveBeenCalled();
     expect(result).toEqual(m);
   });
   it("uses null lastSeenAt when explicitly null", async () => {
     const mockDb = createMockDb([{ id: "m_1" }]);
-    await machineQueries.upsertMachine(mockDb, { daemonId: "d_1", workspaceId: "ws_1", deviceInfo: "x", lastSeenAt: null });
+    await machineQueries.upsertMachine(mockDb, { chhlatId: "d_1", workspaceId: "ws_1", deviceInfo: "x", lastSeenAt: null });
     expect(mockDb.values).toHaveBeenCalledWith(expect.objectContaining({ lastSeenAt: null }));
   });
 });
 
-describe("getMachineByDaemon", () => {
+describe("getMachineByChhlat", () => {
   it("returns null when not found", async () => {
     const mockDb = createMockDb([]);
-    expect(await machineQueries.getMachineByDaemon(mockDb, "d_x", "ws_1")).toBeNull();
+    expect(await machineQueries.getMachineByChhlat(mockDb, "d_x", "ws_1")).toBeNull();
   });
   it("returns machine when found", async () => {
     const m = { id: "m_1" };
     const mockDb = createMockDb([m]);
-    expect(await machineQueries.getMachineByDaemon(mockDb, "d_1", "ws_1")).toEqual(m);
+    expect(await machineQueries.getMachineByChhlat(mockDb, "d_1", "ws_1")).toEqual(m);
   });
 });
 

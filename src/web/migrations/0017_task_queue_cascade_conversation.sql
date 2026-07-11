@@ -3,7 +3,7 @@
 --    to its conversations) no longer fails due to dangling task references.
 -- 2. workspace_id: ON DELETE CASCADE — same logic for workspace deletion.
 -- 3. runtime_id: ON DELETE CASCADE — matches existing app-level behavior
---    (deleteRuntimesByDaemonId already deletes associated tasks).
+--    (deleteRuntimesByChhlatId already deletes associated tasks).
 
 PRAGMA foreign_keys = OFF;
 

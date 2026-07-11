@@ -50,15 +50,15 @@ pub fn run() {
         builder = builder.invoke_handler(tauri::generate_handler![
             commands::get_cli_info,
             commands::register_cli,
-            commands::daemon_start,
-            commands::daemon_stop,
-            commands::daemon_status,
+            commands::chhlat_start,
+            commands::chhlat_stop,
+            commands::chhlat_status,
             commands::cli_update,
             commands::cli_check,
             commands::check_for_updates,
             commands::install_update,
             commands::set_window_theme,
-            commands::is_daemon_online,
+            commands::is_chhlat_online,
             commands::close_splashscreen,
         ]);
     }
@@ -68,7 +68,7 @@ pub fn run() {
     {
         builder = builder.setup(|app| {
             commands::setup_tray(app)?;
-            commands::auto_start_daemon(app.handle().clone());
+            commands::auto_start_chhlat(app.handle().clone());
             commands::auto_check_updates(app.handle().clone());
 
             // Create splash window with inline HTML (frontendDist is remote, so url won't work)
@@ -112,7 +112,7 @@ pub fn run() {
             // code == None means user-initiated (Cmd+Q), Some(_) means programmatic exit(0)
             if let tauri::RunEvent::ExitRequested { code: None, api, .. } = event {
                 api.prevent_exit();
-                commands::quit_with_daemon_prompt(app_handle);
+                commands::quit_with_chhlat_prompt(app_handle);
             }
         });
     }

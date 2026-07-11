@@ -12361,7 +12361,7 @@ declare namespace TailStream {
     interface ConnectEventInfo {
         readonly type: "connect";
     }
-    type EventOutcome = "ok" | "canceled" | "exception" | "unknown" | "killSwitch" | "daemonDown" | "exceededCpu" | "exceededMemory" | "loadShed" | "responseStreamDisconnected" | "scriptNotFound";
+    type EventOutcome = "ok" | "canceled" | "exception" | "unknown" | "killSwitch" | "\u0064aemonDown" | "exceededCpu" | "exceededMemory" | "loadShed" | "responseStreamDisconnected" | "scriptNotFound";
     interface ScriptVersion {
         readonly id: string;
         readonly tag?: string;

@@ -1,5 +1,5 @@
 -- Make machine_token.workspace_id nullable so tokens can be created before workspace exists.
--- The workspace is created when the daemon actually registers.
+-- The workspace is created when the machine actually registers.
 
 -- SQLite doesn't support ALTER COLUMN, so we recreate the table.
 CREATE TABLE machine_token_new (

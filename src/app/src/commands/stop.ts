@@ -11,15 +11,15 @@ function cliEntry(): string {
   return join(__dirname, "cli", "index.js");
 }
 
-function stopDaemon(): boolean {
-  const status = spawnSync("node", [cliEntry(), "daemon", "status"], {
+function stopChhlat(): boolean {
+  const status = spawnSync("node", [cliEntry(), "chhlat", "status"], {
     stdio: ["pipe", "pipe", "pipe"],
     env: buildCliEnv(),
   });
   const running = (status.stdout?.toString() ?? "").includes("running (pid=");
   if (!running) return false;
 
-  spawnSync("node", [cliEntry(), "daemon", "stop"], {
+  spawnSync("node", [cliEntry(), "chhlat", "stop"], {
     stdio: "inherit",
     env: buildCliEnv(),
   });
@@ -30,9 +30,9 @@ export function stopCommand(): Command {
   return new Command("stop")
     .description("Stop all ភ្នាក់ងារ services")
     .action(() => {
-      console.log("Stopping ភ្នាក់ងារ services and daemon...");
+      console.log("Stopping ភ្នាក់ងារ services and chhlat...");
       stopServices();
-      stopDaemon();
+      stopChhlat();
       console.log("\nAll services stopped.");
     });
 }

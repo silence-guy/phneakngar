@@ -39,9 +39,9 @@ export const deleteAgent = (id: string, workspaceId: string) =>
 export const listRuntimes = (workspaceId: string) =>
   apiFetch<AgentRuntime[]>(`/api/runtimes${wsQuery(workspaceId)}`);
 
-export const deleteMachine = (daemonId: string, workspaceId: string) =>
+export const deleteMachine = (chhlatId: string, workspaceId: string) =>
   apiFetch<void>(
-    `/api/runtimes/machine${wsQuery(workspaceId, { daemon_id: daemonId })}`,
+    `/api/runtimes/machine${wsQuery(workspaceId, { chhlat_id: chhlatId })}`,
     { method: "DELETE" }
   );
 
@@ -300,6 +300,6 @@ export const createMachineToken = (name?: string, workspaceId?: string) =>
   );
 
 export const getMachineTokenStatus = () =>
-  apiFetch<{ status: "pending" | "active" | null; token?: string; workspace_id?: string; hostname?: string; daemon_online?: boolean }>(
+  apiFetch<{ status: "pending" | "active" | null; token?: string; workspace_id?: string; hostname?: string; chhlat_online?: boolean }>(
     "/api/machine-tokens/status",
   );

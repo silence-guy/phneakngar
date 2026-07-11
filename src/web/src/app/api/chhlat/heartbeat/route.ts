@@ -1,0 +1,49 @@
+import { NextRequest } from "next/server";
+import { queries, HeartbeatRequestSchema, OFFLINE_THRESHOLD_MS } from "@phneakngar/shared";
+import { getDb } from "@/lib/db";
+import { withAuth } from "@/lib/middleware/auth";
+import { withChhlatMachine } from "@/lib/middleware/chhlat";
+import { writeJSON, writeError, parseBody } from "@/lib/middleware/helpers";
+import { broadcastToUser } from "@/lib/broadcast";
+import { log } from "@/lib/logger";
+
+export const POST = withAuth(async (req: NextRequest, ctx) => {
+
+  const [body, err] = await parseBody(req, HeartbeatRequestSchema);
+  if (err) return err;
+
+  if (!ctx.workspaceId) {
+    return writeError("Forbidden: machine token required", 403);
+  }
+
+  const db = getDb(ctx.env.DB);
+  const chhlatAuth = await withChhlatMachine(db, ctx, body.chhlat_id);
+  if (chhlatAuth instanceof Response) return chhlatAuth;
+
+  let wasOffline = false;
+  try {
+    const existing = await queries.machine.getMachineByChhlat(db, body.chhlat_id, ctx.workspaceId!);
+    if (!existing || !existing.lastSeenAt || Date.now() - new Date(existing.lastSeenAt).getTime() >= OFFLINE_THRESHOLD_MS) {
+      wasOffline = true;
+    }
+    await queries.machine.upsertMachine(db, {
+      chhlatId: body.chhlat_id,
+      workspaceId: ctx.workspaceId!,
+      deviceInfo: body.chhlat_id,
+      ownerId: ctx.userId,
+    });
+  } catch (e) {
+    log.warn("heartbeat: machine upsert failed", { chhlatId: body.chhlat_id, err: String(e) });
+  }
+
+  if (wasOffline) {
+    broadcastToUser(ctx.userId, {
+      type: "runtime.status",
+      chhlatId: body.chhlat_id,
+      workspaceId: ctx.workspaceId,
+      status: "online",
+    }).catch(() => {});
+  }
+
+  return writeJSON({ ok: true });
+});

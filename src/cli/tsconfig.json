@@ -7,5 +7,5 @@
     "skipLibCheck": true,
     "types": ["bun", "vitest/globals"]
   },
-  "include": ["src", "commands", "daemon", "lib", "**/*.test.ts", "**/__tests__/**/*.ts"]
+  "include": ["src", "commands", "chhlat", "lib", "**/*.test.ts", "**/__tests__/**/*.ts"]
 }

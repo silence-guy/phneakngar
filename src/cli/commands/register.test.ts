@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 const mockLoadCLIConfigForProfile = vi.fn();
 const mockSaveCLIConfigForProfile = vi.fn();
-const mockReadDaemonPid = vi.fn();
+const mockReadChhlatPid = vi.fn();
 const mockIsProcessAlive = vi.fn();
 
 vi.mock("../lib/config.js", () => ({
@@ -10,8 +10,8 @@ vi.mock("../lib/config.js", () => ({
   saveCLIConfigForProfile: (...args: any[]) => mockSaveCLIConfigForProfile(...args),
 }));
 
-vi.mock("../daemon/pidfile.js", () => ({
-  readDaemonPid: (...args: any[]) => mockReadDaemonPid(...args),
+vi.mock("../chhlat/pidfile.js", () => ({
+  readChhlatPid: (...args: any[]) => mockReadChhlatPid(...args),
   isProcessAlive: (...args: any[]) => mockIsProcessAlive(...args),
 }));
 
@@ -77,7 +77,7 @@ function mockFetch(responses: Record<string, { status: number; body: unknown }>)
 }
 
   const activateResponse = {
-    daemon_id: "host1",
+    chhlat_id: "host1",
     workspace_id: "ws_1",
     runtimes: [{ id: "rt_1", provider: "claude" }],
   };
@@ -87,7 +87,7 @@ function mockFetch(responses: Record<string, { status: number; body: unknown }>)
       server_url: "http://localhost:3000",
       watched_workspaces: [],
     });
-    mockReadDaemonPid.mockReturnValue(null);
+    mockReadChhlatPid.mockReturnValue(null);
 
     const fetchMock = mockFetch({
       "/api/me": { status: 200, body: { id: "u1", email: "test@test.com" } },
@@ -121,7 +121,7 @@ function mockFetch(responses: Record<string, { status: number; body: unknown }>)
         { id: "ws_1", name: "Existing", token: "al_old", status: "active", agent_ids: ["ag_1"] },
       ],
     });
-    mockReadDaemonPid.mockReturnValue(null);
+    mockReadChhlatPid.mockReturnValue(null);
 
     mockFetch({
       "/api/me": { status: 200, body: { id: "u1", email: "test@test.com" } },
@@ -143,12 +143,12 @@ function mockFetch(responses: Record<string, { status: number; body: unknown }>)
     );
   });
 
-  it("sends SIGHUP when daemon is running", async () => {
+  it("sends SIGHUP when chhlat is running", async () => {
     mockLoadCLIConfigForProfile.mockReturnValue({
       server_url: "http://localhost:3000",
       watched_workspaces: [],
     });
-    mockReadDaemonPid.mockReturnValue(12345);
+    mockReadChhlatPid.mockReturnValue(12345);
     mockIsProcessAlive.mockReturnValue(true);
 
     mockFetch({
@@ -162,15 +162,15 @@ function mockFetch(responses: Record<string, { status: number; body: unknown }>)
     await cmd.parseAsync(["node", "register", "--token", "al_test", "--server", "http://localhost:3000"]);
 
     expect(mockKill).toHaveBeenCalledWith(12345, "SIGHUP");
-    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("Daemon (pid 12345) notified"));
+    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("Chhlat (pid 12345) notified"));
   });
 
-  it("auto-starts daemon when not running", async () => {
+  it("auto-starts chhlat when not running", async () => {
     mockLoadCLIConfigForProfile.mockReturnValue({
       server_url: "http://localhost:3000",
       watched_workspaces: [],
     });
-    mockReadDaemonPid.mockReturnValue(null);
+    mockReadChhlatPid.mockReturnValue(null);
 
     mockFetch({
       "/api/me": { status: 200, body: { id: "u1", email: "test@test.com" } },
@@ -183,6 +183,6 @@ function mockFetch(responses: Record<string, { status: number; body: unknown }>)
     await cmd.parseAsync(["node", "register", "--token", "al_test", "--server", "http://localhost:3000"]);
 
     expect(mockKill).not.toHaveBeenCalled();
-    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("Starting daemon"));
+    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("Starting chhlat"));
   });
 });

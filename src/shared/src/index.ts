@@ -26,7 +26,7 @@ export type {
   Channel,
   WsMessage,
   WorkspaceFileResult,
-  DaemonPushMessage,
+  ChhlatPushMessage,
 } from "./types";
 
 // API types
@@ -171,10 +171,10 @@ export {
   PollResponseSchema,
   PollMeetingItemSchema,
   RegisterResponseSchema,
-  DaemonRuntimeItemSchema,
+  ChhlatRuntimeItemSchema,
   ActivateTokenRuntimeSchema,
   ActivateTokenRequestSchema,
-  RegisterDaemonRequestSchema,
+  RegisterChhlatRequestSchema,
   DeregisterRequestSchema,
   CompleteTaskRequestSchema,
   FailTaskRequestSchema,
@@ -222,7 +222,7 @@ export {
   CreateStudioRequestSchema,
   RecruitAgentRequestSchema,
   CreateThreadRequestSchema,
-  DaemonPushMessageSchema,
+  ChhlatPushMessageSchema,
 } from "./schemas";
 
 export type {
@@ -240,10 +240,10 @@ export type {
   PollResponse,
   PollMeetingItem,
   RegisterResponse,
-  DaemonRuntimeItem,
+  ChhlatRuntimeItem,
   ActivateTokenRuntime,
   ActivateTokenRequest,
-  RegisterDaemonRequest,
+  RegisterChhlatRequest,
   DeregisterRequest,
   CompleteTaskRequest,
   FailTaskRequest,
@@ -277,7 +277,7 @@ export type {
   CreateStudioRequest,
   RecruitAgentRequest,
   CreateThreadRequest,
-  DaemonPushMessageType,
+  ChhlatPushMessageType,
 } from "./schemas";
 
 // Database
@@ -321,12 +321,13 @@ export { isUniqueConstraintError } from "./utils/db-errors";
 export { generateWorkspaceSlug } from "./utils/slug";
 export { truncateTitle, truncateGraphemes, sliceGraphemes, toGraphemes } from "./utils/title";
 export { semverGte } from "./semver";
+export { resolveChhlatId, withChhlatIdFields } from "./chhlat-id";
 export {
   resolveMode,
   cliCommand,
   cliPackageName,
   updateCommand,
-  daemonCommand,
+  chhlatCommand,
   getBaseUrl,
   DEFAULT_BASE_URL,
   isTauri,

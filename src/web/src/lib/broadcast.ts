@@ -1,5 +1,5 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare"
-import type { WsMessage, DaemonPushMessage } from "@phneakngar/shared"
+import type { WsMessage, ChhlatPushMessage } from "@phneakngar/shared"
 import { DEV_WS_DO_URL, WS_SERVICE_SECRET_HEADER, createLogger } from "@phneakngar/shared"
 
 const log = createLogger({ service: "broadcast" })
@@ -73,11 +73,11 @@ export function broadcastToUser(userId: string, message: WsMessage): Promise<voi
 }
 
 
-export function broadcastToDaemon(daemonId: string, message: DaemonPushMessage): Promise<{ sent: number }> {
+export function broadcastToChhlat(chhlatId: string, message: ChhlatPushMessage): Promise<{ sent: number }> {
   const promise = doSend(
-    `/broadcast/daemon/${daemonId}`,
+    `/broadcast/chhlat/${chhlatId}`,
     JSON.stringify(message),
-    { daemonId, type: message.type },
+    { chhlatId, type: message.type },
   )
   try {
     // CF worker may terminate before the fetch completes if the response is sent early;

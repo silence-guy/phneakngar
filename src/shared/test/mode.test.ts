@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { resolveMode, cliCommand, cliPackageName, updateCommand, daemonCommand, getBaseUrl, DEFAULT_BASE_URL, isTauri, isDesktop, isMobile, tauriInvoke } from "../src/mode";
+import { resolveMode, cliCommand, cliPackageName, updateCommand, chhlatCommand, getBaseUrl, DEFAULT_BASE_URL, isTauri, isDesktop, isMobile, tauriInvoke } from "../src/mode";
 
 describe("resolveMode", () => {
   it("production: no signals", () => {
@@ -211,8 +211,8 @@ describe("tauriInvoke", () => {
     (globalThis as Record<string, unknown>).window = {
       __TAURI__: { core: { invoke: mockInvoke } },
     };
-    const result = await tauriInvoke("daemon_start", { force: true });
-    expect(mockInvoke).toHaveBeenCalledWith("daemon_start", { force: true });
+    const result = await tauriInvoke("chhlat_start", { force: true });
+    expect(mockInvoke).toHaveBeenCalledWith("chhlat_start", { force: true });
     expect(result).toEqual({ success: true });
   });
 
@@ -249,25 +249,25 @@ describe("cliCommand", () => {
   });
 });
 
-describe("daemonCommand", () => {
+describe("chhlatCommand", () => {
   it("production → no --foreground", () => {
-    expect(daemonCommand("production")).toBe("npx @phneakngar/cli daemon start");
+    expect(chhlatCommand("production")).toBe("npx @phneakngar/cli chhlat start");
   });
 
   it("dev → with --foreground", () => {
-    expect(daemonCommand("dev")).toBe("pnpm dev:cli daemon start --foreground");
+    expect(chhlatCommand("dev")).toBe("pnpm dev:cli chhlat start --foreground");
   });
 
   it("app → no --foreground", () => {
-    expect(daemonCommand("app")).toBe("npx @phneakngar/app cli daemon start");
+    expect(chhlatCommand("app")).toBe("npx @phneakngar/app cli chhlat start");
   });
 
   it("desktop → no --foreground", () => {
-    expect(daemonCommand("desktop")).toBe("npx @phneakngar/cli daemon start");
+    expect(chhlatCommand("desktop")).toBe("npx @phneakngar/cli chhlat start");
   });
 
   it("mobile → no --foreground", () => {
-    expect(daemonCommand("mobile")).toBe("npx @phneakngar/cli daemon start");
+    expect(chhlatCommand("mobile")).toBe("npx @phneakngar/cli chhlat start");
   });
 });
 
@@ -300,27 +300,27 @@ describe("updateCommand", () => {
     );
   });
 
-  it("production → daemon stop and start with @phneakngar/cli", () => {
+  it("production → chhlat stop and start with @phneakngar/cli", () => {
     expect(updateCommand("production")).toBe(
-      "npx @phneakngar/cli@latest daemon stop && npx @phneakngar/cli@latest daemon start",
+      "npx @phneakngar/cli@latest chhlat stop && npx @phneakngar/cli@latest chhlat start",
     );
   });
 
-  it("desktop → daemon stop and start with @phneakngar/cli", () => {
+  it("desktop → chhlat stop and start with @phneakngar/cli", () => {
     expect(updateCommand("desktop")).toBe(
-      "npx @phneakngar/cli@latest daemon stop && npx @phneakngar/cli@latest daemon start",
+      "npx @phneakngar/cli@latest chhlat stop && npx @phneakngar/cli@latest chhlat start",
     );
   });
 
-  it("mobile → daemon stop and start with @phneakngar/cli", () => {
+  it("mobile → chhlat stop and start with @phneakngar/cli", () => {
     expect(updateCommand("mobile")).toBe(
-      "npx @phneakngar/cli@latest daemon stop && npx @phneakngar/cli@latest daemon start",
+      "npx @phneakngar/cli@latest chhlat stop && npx @phneakngar/cli@latest chhlat start",
     );
   });
 
-  it("dev → daemon stop and start with @phneakngar/cli", () => {
+  it("dev → chhlat stop and start with @phneakngar/cli", () => {
     expect(updateCommand("dev")).toBe(
-      "npx @phneakngar/cli@latest daemon stop && npx @phneakngar/cli@latest daemon start",
+      "npx @phneakngar/cli@latest chhlat stop && npx @phneakngar/cli@latest chhlat start",
     );
   });
 });

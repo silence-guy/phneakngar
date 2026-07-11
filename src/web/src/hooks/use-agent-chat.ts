@@ -1720,7 +1720,7 @@ export function useAgentChat(
 
     // Every send goes through the same enqueue-and-steer path: POST /messages
     // enqueues a real task carrying contextKey=conversationId, so when a task
-    // is already running the daemon supersedes it (steering). No client-side
+    // is already running the chhlat supersedes it (steering). No client-side
     // buffering — sending while busy just drops a new bubble and steers.
     const optimisticId = `temp-${Date.now()}`;
     const optimistic: Message = {

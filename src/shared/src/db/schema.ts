@@ -191,7 +191,7 @@ export const agentSidebarOrder = sqliteTable(
 export const machine = sqliteTable(
   "machine",
   {
-    daemonId: text("daemon_id").notNull(),
+    chhlatId: text("chhlat_id").notNull(),
     workspaceId: text("workspace_id")
       .notNull()
       .references(() => workspace.id, { onDelete: "cascade" }),
@@ -203,7 +203,7 @@ export const machine = sqliteTable(
     updatedAt: text("updated_at").notNull().$defaultFn(() => new Date().toISOString()),
     ownerId: text("owner_id").references(() => user.id, { onDelete: "set null" }),
   },
-  (t) => [primaryKey({ columns: [t.workspaceId, t.daemonId] })]
+  (t) => [primaryKey({ columns: [t.workspaceId, t.chhlatId] })]
 );
 
 export const agentRuntime = sqliteTable(
@@ -213,7 +213,7 @@ export const agentRuntime = sqliteTable(
     workspaceId: text("workspace_id")
       .notNull()
       .references(() => workspace.id, { onDelete: "cascade" }),
-    daemonId: text("daemon_id").notNull(),
+    chhlatId: text("chhlat_id").notNull(),
     runtimeMode: text("runtime_mode").notNull().default("local"),
     provider: text("provider").notNull(),
     deviceInfo: text("device_info").notNull().default(""),
@@ -222,13 +222,13 @@ export const agentRuntime = sqliteTable(
     updatedAt: text("updated_at").notNull().$defaultFn(() => new Date().toISOString()),
   },
   (t) => [
-    unique("agent_runtime_workspace_daemon_provider").on(
+    unique("agent_runtime_workspace_chhlat_provider").on(
       t.workspaceId,
-      t.daemonId,
+      t.chhlatId,
       t.provider
     ),
-    index("idx_agent_runtime_workspace_daemon").on(t.workspaceId, t.daemonId),
-    index("idx_agent_runtime_daemon_workspace").on(t.daemonId, t.workspaceId),
+    index("idx_agent_runtime_workspace_chhlat").on(t.workspaceId, t.chhlatId),
+    index("idx_agent_runtime_chhlat_workspace").on(t.chhlatId, t.workspaceId),
   ]
 );
 
@@ -792,14 +792,14 @@ export const agentSkill = sqliteTable(
       .notNull()
       .references(() => workspace.id, { onDelete: "cascade" }),
     agentId: text("agent_id"),
-    daemonId: text("daemon_id"),
+    chhlatId: text("chhlat_id"),
     runtime: text("runtime").notNull(),
     name: text("name").notNull(),
     description: text("description").notNull().default(""),
     syncedAt: text("synced_at").notNull().$defaultFn(() => new Date().toISOString()),
   },
   (t) => [
-    unique("agent_skill_ws_runtime_name_agent_daemon").on(t.workspaceId, t.runtime, t.name, t.agentId, t.daemonId),
+    unique("agent_skill_ws_runtime_name_agent_chhlat").on(t.workspaceId, t.runtime, t.name, t.agentId, t.chhlatId),
     index("idx_as_workspace_runtime").on(t.workspaceId, t.runtime),
     index("idx_as_agent_runtime").on(t.agentId, t.runtime),
     foreignKey({

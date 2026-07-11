@@ -39,7 +39,7 @@ vi.mock("@/lib/middleware/workspace", () => ({
   withWorkspaceMember: vi.fn(async () => ({ workspaceId: "w1" })),
 }));
 vi.mock("@/lib/api/responses", () => ({ meetingToResponse: (m: any) => ({ id: m.id, status: m.status }) }));
-vi.mock("@/lib/broadcast", () => ({ broadcastToDaemon: vi.fn().mockResolvedValue(undefined) }));
+vi.mock("@/lib/broadcast", () => ({ broadcastToChhlat: vi.fn().mockResolvedValue(undefined) }));
 
 import { GET, POST } from "./route";
 

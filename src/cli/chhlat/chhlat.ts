@@ -1,0 +1,1351 @@
+import { ChhlatClient } from "./client.js";
+import { type ChhlatConfig, loadChhlatConfig, sessionRunnerLogDir, chhlatLogFilePath } from "./config.js";
+import { createHealthServer, detectHeadroomHealth, type HeadroomHealth } from "./health.js";
+import { detectVersion, createBackend } from "./agent/index.js";
+import { type Task, type Attachment, type SessionRunnerInput, fromApiTask } from "./types.js";
+import { type MarkerData, writeMarkerFile, downloadAttachments } from "./session-runner.js";
+import { buildPrompt, buildMergedPrompt } from "./prompt.js";
+import { loadCLIConfigForProfile, saveCLIConfigForProfile } from "../lib/config.js";
+import { createLogger } from "../lib/logger.js";
+import { ChhlatWsClient } from "./ws-client.js";
+import type { ChhlatPushMessage } from "@phneakngar/shared";
+
+const log = createLogger({ module: "chhlat" });
+import { cmdPrefix } from "../lib/env.js";
+import { acquireChhlatPid, releaseChhlatPid } from "./pidfile.js";
+import { handleCliUpdate, isUpdating, readUpdateMarker, clearUpdateMarker } from "./update-handler.js";
+import { findRunningPidByTaskId, findSupersedablePredecessor, steerWarmupGraceMs, updateEntry, type ContextTimelineEntry } from "./execenv/timeline.js";
+import { isAlive, killGraceMs } from "./kill-tree.js";
+import {
+  writeKillIntent,
+  readKillIntent,
+  clearKillIntent,
+  acquireSteeringLock,
+  releaseSteeringLock,
+  cleanupStaleIntents,
+} from "./execenv/steering.js";
+import {
+  ensureMailboxDirs,
+  writeSteerMessage,
+  waitForAck,
+  inboxDir as steeringInboxDir,
+} from "./steering/mailbox.js";
+import { TASK_TYPES } from "@phneakngar/shared";
+import { readDirectoryTree, readFileContent, validatePath } from "./workspace-files.js";
+import { startSkillScanner, stopSkillScanner } from "./skill-scanner.js";
+import { resolveLoginShellEnv } from "../lib/shell-env.js";
+import { existsSync, mkdirSync, openSync, closeSync, readdirSync, statSync, unlinkSync } from "fs";
+import { readdir, readFile, unlink, stat as fsStat } from "fs/promises";
+import { execSync, spawn, type ChildProcess } from "child_process";
+import { fileURLToPath } from "url";
+import { dirname, join } from "path";
+
+const _dir = dirname(fileURLToPath(import.meta.url));
+const sessionRunnerPath = existsSync(join(_dir, "session-runner.js"))
+  ? join(_dir, "session-runner.js")
+  : join(_dir, "session-runner.ts");
+const meetingRunnerPath = existsSync(join(_dir, "meeting-runner.js"))
+  ? join(_dir, "meeting-runner.js")
+  : join(_dir, "meeting-runner.ts");
+
+interface WorkspaceState {
+  workspaceId: string;
+  token: string;
+  runtimeIds: string[];
+}
+
+interface RuntimeData {
+  id: string;
+  workspaceId: string;
+  provider: string;
+}
+
+type HeadroomRegisterMetadata = Omit<HeadroomHealth, "proxy_url">;
+
+function headroomHealthForRegister(health: HeadroomHealth): HeadroomRegisterMetadata {
+  return {
+    status: health.status,
+    configured: health.configured,
+    available: health.available,
+    mode: health.mode,
+    port: health.port,
+    executable: health.executable.slice(0, 100),
+    next_actions: health.next_actions,
+  };
+}
+
+interface PendingEntry {
+  tasks: Task[];
+  attachments: Map<string, Attachment[]>;
+  ownerTaskId: string;
+  wake: () => void;
+}
+
+function isCommandAvailable(cmd: string): boolean {
+  try {
+    const check = process.platform === "win32" ? `where ${cmd}` : `which ${cmd}`;
+    execSync(check, { stdio: "ignore" });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+const MAX_SESSION_RUNNER_LOGS = 500;
+
+export function pruneSessionRunnerLogs(): void {
+  const logDir = sessionRunnerLogDir();
+  let entries: string[];
+  try {
+    entries = readdirSync(logDir).filter((f) => f.endsWith(".log"));
+  } catch {
+    return;
+  }
+  if (entries.length <= MAX_SESSION_RUNNER_LOGS) return;
+
+  const withMtime = entries.map((name) => {
+    const full = join(logDir, name);
+    try {
+      return { name, mtime: statSync(full).mtimeMs };
+    } catch {
+      return { name, mtime: 0 };
+    }
+  });
+  withMtime.sort((a, b) => b.mtime - a.mtime);
+
+  for (const entry of withMtime.slice(MAX_SESSION_RUNNER_LOGS)) {
+    try {
+      unlinkSync(join(logDir, entry.name));
+    } catch {
+      // best-effort
+    }
+  }
+}
+
+export function isClientError(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  const match = error.message.match(/^HTTP (\d+):/);
+  if (!match) return false;
+  const status = Number(match[1]);
+  if (status === 408 || status === 429) return false;
+  return status >= 400 && status < 500;
+}
+
+function isValidMarker(data: unknown): data is MarkerData {
+  if (!data || typeof data !== "object") return false;
+  const d = data as Record<string, unknown>;
+  if (typeof d.taskId !== "string") return false;
+  if (typeof d.token !== "string") return false;
+  if (typeof d.serverURL !== "string") return false;
+  if (typeof d.createdAt !== "string" || isNaN(new Date(d.createdAt).getTime())) return false;
+  if (!d.payload || typeof d.payload !== "object") return false;
+  const payload = d.payload as Record<string, unknown>;
+  if (d.type === "complete") {
+    return typeof payload.output === "string";
+  }
+  if (d.type === "fail") {
+    return typeof payload.error === "string";
+  }
+  return false;
+}
+
+const MARKER_STALE_MS = 24 * 60 * 60 * 1000;
+const TMP_STALE_MS = 60 * 60 * 1000;
+
+export async function reconcilePendingCompletions(workspacesRoot: string): Promise<void> {
+  const dir = join(workspacesRoot, ".pending_completions");
+  let entries: string[];
+  try {
+    entries = await readdir(dir);
+  } catch {
+    return;
+  }
+
+  // Housekeeping: clean up stale .tmp files
+  for (const name of entries) {
+    if (!name.endsWith(".tmp")) continue;
+    try {
+      const s = await fsStat(join(dir, name));
+      if (Date.now() - s.mtimeMs > TMP_STALE_MS) {
+        await unlink(join(dir, name));
+      }
+    } catch { /* best-effort */ }
+  }
+
+  const jsonFiles = entries.filter((f) => f.endsWith(".json"));
+  for (const name of jsonFiles) {
+    const filePath = join(dir, name);
+    try {
+      let raw: string;
+      try {
+        raw = await readFile(filePath, "utf-8");
+      } catch {
+        continue;
+      }
+
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(raw);
+      } catch {
+        log.warn(`reconcile: malformed marker ${name}, deleting`);
+        try { await unlink(filePath); } catch { /* best-effort */ }
+        continue;
+      }
+
+      if (!isValidMarker(parsed)) {
+        log.warn(`reconcile: invalid marker structure ${name}, deleting`);
+        try { await unlink(filePath); } catch { /* best-effort */ }
+        continue;
+      }
+
+      const marker = parsed;
+      const age = Date.now() - new Date(marker.createdAt).getTime();
+      if (age > MARKER_STALE_MS) {
+        log.warn(`reconcile: stale marker ${name} (${Math.round(age / 3600000)}h old), deleting`);
+        try { await unlink(filePath); } catch { /* best-effort */ }
+        continue;
+      }
+
+      const client = new ChhlatClient(marker.serverURL);
+      try {
+        if (marker.type === "complete") {
+          await client.completeTask(marker.token, marker.taskId, marker.payload);
+        } else {
+          await client.failTask(marker.token, marker.taskId, marker.payload.error);
+        }
+        try { await unlink(filePath); } catch (delErr) {
+          log.warn(`reconcile: delivered marker ${name} but failed to delete: ${delErr}`);
+        }
+      } catch (deliverErr) {
+        if (isClientError(deliverErr)) {
+          try { await unlink(filePath); } catch { /* best-effort */ }
+        } else {
+          log.debug(`reconcile: delivery failed for ${name}, will retry next cycle`);
+        }
+      }
+    } catch (e) {
+      log.debug(`reconcile: error processing ${name}`, e);
+    }
+  }
+}
+
+export async function startChhlat(
+  profile?: string,
+  serverUrl?: string,
+): Promise<void> {
+  pruneSessionRunnerLogs();
+
+  if (!acquireChhlatPid(profile)) {
+    process.exit(1);
+  }
+
+  // Safety net: no matter how the process terminates (normal exit, early
+  // process.exit, shutdown timeout kick, uncaughtException), release the
+  // pidfile. `releaseChhlatPid` only deletes when the file still points at us,
+  // so a newer chhlat's pidfile is safe.
+  process.once("exit", () => releaseChhlatPid(profile));
+  const bailOnUnexpected = (label: string, err: unknown) => {
+    log.error(`${label} — shutting down`, err);
+    releaseChhlatPid(profile);
+    process.exit(1);
+  };
+  process.once("uncaughtException", (err) =>
+    bailOnUnexpected("uncaughtException", err),
+  );
+  process.once("unhandledRejection", (err) =>
+    bailOnUnexpected("unhandledRejection", err),
+  );
+
+  const config = loadChhlatConfig(profile);
+  if (serverUrl) config.serverURL = serverUrl;
+
+  const marker = readUpdateMarker(profile);
+  if (marker) {
+    clearUpdateMarker(profile);
+    if (marker === config.cliVersion) {
+      log.info(`Cleared update marker — now running v${config.cliVersion}`);
+    } else {
+      log.info(`Cleared stale update marker (was v${marker}, running v${config.cliVersion}) — update will be retried`);
+    }
+  }
+
+  const cliConfig = loadCLIConfigForProfile(profile);
+
+  const allEntries = cliConfig.watched_workspaces || [];
+  const workspaces = allEntries.filter((ws): ws is typeof ws & { id: string; name: string } => ws.status !== "deleted" && !!ws.id);
+
+  if (workspaces.length === 0) {
+    log.info("No workspaces configured — chhlat starting in standby mode. Register a workspace to begin.");
+  }
+
+  // Validate: each active workspace must have its own token
+  if (workspaces.length > 0) {
+    const hasPerWorkspaceTokens = workspaces.every((ws) => !!ws.token);
+    if (!hasPerWorkspaceTokens) {
+      log.error(
+        `Config uses old format. Run '${cmdPrefix()} register --token <token>' for each workspace to upgrade.`,
+      );
+      process.exit(1);
+      return;
+    }
+  }
+
+  // Use server_url from first workspace's config if available
+  if (cliConfig.server_url) config.serverURL = cliConfig.server_url;
+
+  const client = new ChhlatClient(config.serverURL);
+  // Pass the live detector so /health re-detects (TTL-cached) instead of
+  // freezing a startup snapshot that never reflects a later install/removal.
+  const health = createHealthServer(undefined, { detectHeadroom: detectHeadroomHealth });
+
+  const providers: { type: string; path: string; version: string }[] = [];
+  for (const [type, path] of [
+    ["claude", config.claudePath],
+    ["codex", config.codexPath],
+    ["opencode", config.opencodePath],
+    ["grok", config.grokPath],
+  ] as const) {
+    if (isCommandAvailable(path)) {
+      const version = await detectVersion(path);
+      providers.push({ type, path, version });
+    }
+  }
+
+  if (providers.length === 0) {
+    log.error("No agent CLI tools found on PATH.");
+    process.exit(1);
+    return;
+  }
+
+  log.info(
+    `Detected providers: ${providers.map((p) => `${p.type}@${p.version}`).join(", ")}`,
+  );
+
+  const workspaceStates: WorkspaceState[] = [];
+  const runtimeIndex = new Map<string, RuntimeData>();
+  let hadWorkspaces = workspaces.length > 0;
+  const registerHeadroom = headroomHealthForRegister(await detectHeadroomHealth());
+
+  for (const ws of workspaces) {
+    const runtimes = providers.map((p) => ({
+      type: p.type,
+      version: p.version,
+      headroom: registerHeadroom,
+    }));
+
+    log.info(`Registering workspace ${ws.id} (${ws.name ?? "unnamed"}) with ${runtimes.length} runtime(s)...`);
+    let resp;
+    try {
+      resp = await client.register(ws.token, {
+        workspace_id: ws.id,
+        chhlat_id: config.chhlatId,
+        device_name: config.deviceName,
+        cli_version: config.cliVersion,
+        workspaces_root: config.workspacesRoot,
+        runtimes,
+      });
+    } catch (e) {
+      if (e instanceof Error && e.message.startsWith("HTTP 401")) {
+        log.warn(`Workspace ${ws.id} token invalid — skipping (run '${cmdPrefix()} register --token <token>' to fix)`);
+      } else {
+        log.error(`Failed to register workspace ${ws.id}, skipping`, e);
+      }
+      continue;
+    }
+    log.info(`Workspace ${ws.id} registered — ${resp.runtimes.length} runtime(s)`);
+
+    const runtimeIds = resp.runtimes.map((r: { id: string }) => r.id);
+    workspaceStates.push({ workspaceId: ws.id, token: ws.token, runtimeIds });
+
+    for (let i = 0; i < runtimeIds.length; i++) {
+      runtimeIndex.set(runtimeIds[i], {
+        id: runtimeIds[i],
+        workspaceId: ws.id,
+        provider: providers[i].type,
+      });
+    }
+  }
+
+  if (workspaceStates.length === 0 && hadWorkspaces) {
+    log.error("No workspaces registered successfully.");
+    process.exit(1);
+    return;
+  }
+
+  const allRuntimeIds = workspaceStates.flatMap((ws) => ws.runtimeIds);
+  health.setRuntimeCount(allRuntimeIds.length);
+  log.info(
+    `Chhlat started — ${allRuntimeIds.length} runtime(s) across ${workspaceStates.length} workspace(s)`,
+  );
+
+  const activeTasks = new Set<string>();
+  const pendingSteer = new Map<string, PendingEntry>();
+
+  // Seed known agent IDs from config so we only write on genuinely new ones
+  const knownAgentIds = new Set<string>(
+    workspaces.flatMap((ws) => ws.agent_ids ?? []),
+  );
+
+  function syncAgentId(agentId: string, workspaceId: string): void {
+    if (knownAgentIds.has(agentId)) return;
+    knownAgentIds.add(agentId);
+    try {
+      const cfg = loadCLIConfigForProfile(profile);
+      const ws = cfg.watched_workspaces?.find((w) => w.id === workspaceId);
+      if (!ws) return;
+      if (!ws.agent_ids) ws.agent_ids = [];
+      if (!ws.agent_ids.includes(agentId)) {
+        ws.agent_ids.push(agentId);
+        saveCLIConfigForProfile(profile, cfg);
+      }
+    } catch {
+      // Non-fatal — config sync is best-effort
+    }
+  }
+
+  function evictWorkspace(workspaceId: string): void {
+    const idx = workspaceStates.findIndex((ws) => ws.workspaceId === workspaceId);
+    if (idx === -1) return;
+
+    const ws = workspaceStates[idx];
+    for (const rid of ws.runtimeIds) {
+      runtimeIndex.delete(rid);
+    }
+    workspaceStates.splice(idx, 1);
+
+    health.setRuntimeCount(
+      workspaceStates.reduce((sum, w) => sum + w.runtimeIds.length, 0),
+    );
+
+    try {
+      const cfg = loadCLIConfigForProfile(profile);
+      cfg.watched_workspaces = (cfg.watched_workspaces || []).filter(
+        (w) => w.id !== workspaceId,
+      );
+      saveCLIConfigForProfile(profile, cfg);
+    } catch {
+      // Best-effort — config write failure must not block eviction
+    }
+
+    log.info(`Workspace ${workspaceId} deleted server-side — removed from config`);
+  }
+
+  // Staggered per-workspace polling
+  const pollCycle = async () => {
+    const remaining = config.maxConcurrentTasks - activeTasks.size;
+    if (remaining <= 0) return;
+
+    const N = workspaceStates.length;
+    const evictedIds: string[] = [];
+
+    // Poll all workspaces concurrently; give each an even slice of the task budget.
+    // Only stagger before the first poll to avoid a thundering-herd on startup.
+    const staggerMs = N > 1 ? Math.floor(config.pollInterval / N) : 0;
+    if (staggerMs > 0) {
+      await new Promise((r) => setTimeout(r, staggerMs));
+    }
+
+    const budgetPerWs = Math.max(1, Math.floor(remaining / N));
+
+    const results = await Promise.all(
+      workspaceStates.map((ws) =>
+        client
+          .poll(ws.token, config.chhlatId, budgetPerWs, config.cliVersion)
+          .then((r) => ({ ws, r }))
+          .catch((e) => ({ ws, e })),
+      ),
+    );
+
+    // Process results sequentially so eviction/rescan ordering is deterministic
+    for (const result of results) {
+      if ('e' in result) {
+        const e = result.e;
+        if (e instanceof Error && e.message.startsWith('HTTP 401')) {
+          log.warn(`Workspace ${result.ws.workspaceId} poll returned 401 — will retry next cycle`);
+        } else {
+          log.debug('Poll error', e);
+        }
+        continue;
+      }
+      const { ws, r } = result;
+      const { tasks: apiTasks, evicted, pending_update, pending_rescan, file_requests, meetings } = r;
+
+      if (evicted) {
+        evictedIds.push(ws.workspaceId);
+        continue;
+      }
+
+      if (pending_update && !isUpdating() && pending_update.version !== config.cliVersion) {
+        handleCliUpdate(pending_update.version, () => requestRestart(), profile);
+      }
+
+      if (pending_rescan) {
+        log.info('Rescan requested — restarting chhlat to re-detect runtimes');
+        for (const id of evictedIds) {
+          evictWorkspace(id);
+        }
+        requestRestart();
+        return;
+      }
+
+      for (const apiTask of apiTasks) {
+        const task = fromApiTask(apiTask);
+        syncAgentId(task.agentId, ws.workspaceId);
+        activeTasks.add(task.id);
+        handleTask(client, config, runtimeIndex, task, ws.token, activeTasks, pendingSteer)
+          .catch((e) => {
+            log.error('Task error', e);
+            activeTasks.delete(task.id);
+          });
+      }
+
+      // Handle workspace file browse requests
+      if (file_requests) {
+        for (const req of file_requests) {
+          handleFileRequest(client, config, ws.workspaceId, req, ws.token)
+            .catch((e) => log.debug('File request error', e));
+        }
+      }
+
+      // Spawn meeting bots from merged poll response
+      if (meetings) {
+        for (const m of meetings) {
+          const agentBaseDir = join(config.workspacesRoot, m.workspace_id, m.agent_id, 'workdir');
+          const timelineDir = join(agentBaseDir, '.context_timeline');
+          spawnMeetingRunner({
+            meetingId: m.id,
+            meetingUrl: m.meeting_url,
+            participants: m.participants,
+            workspaceId: m.workspace_id,
+            callbackUrl: config.serverURL,
+            authToken: ws.token,
+            agentName: m.agent_name,
+            agentId: m.agent_id,
+            timelineDir,
+            title: m.title,
+          });
+        }
+      }
+    }
+
+    for (const id of evictedIds) {
+      evictWorkspace(id);
+    }
+
+    if (workspaceStates.length === 0 && hadWorkspaces) {
+      log.info("All workspaces evicted — shutting down");
+      shutdown();
+    }
+  };
+
+  let pollTimer = setInterval(pollCycle, config.pollInterval);
+
+  // --- Heartbeat timer (independent of poll and WS state) ---
+  const heartbeatPing = () => {
+    for (const ws of workspaceStates) {
+      client.heartbeat(ws.token, config.chhlatId).catch((e) => {
+        log.debug("heartbeat failed", { workspaceId: ws.workspaceId, err: String(e) });
+      });
+    }
+  };
+  const heartbeatTimer = setInterval(heartbeatPing, config.heartbeatInterval);
+
+  // --- WS Push Channel (primary) + Poll fallback ---
+  // Any active machine token suffices — WS auth validates chhlat-level access,
+  // not per-workspace. Tasks are routed by workspaceId within handleWsPush.
+  const firstToken = workspaceStates[0]?.token;
+
+  function updatePollInterval(newInterval: number) {
+    clearInterval(pollTimer);
+    pollTimer = setInterval(pollCycle, newInterval);
+  }
+
+  function handleWsPush(msg: ChhlatPushMessage) {
+    const wsMap = new Map(workspaceStates.map((ws) => [ws.workspaceId, ws]));
+
+    const type = msg.type;
+    switch (type) {
+      case "chhlat.tasks":
+        for (const apiTask of msg.tasks) {
+          if (activeTasks.size >= config.maxConcurrentTasks) break;
+          const task = fromApiTask(apiTask);
+          if (activeTasks.has(task.id)) continue;
+          const ws = wsMap.get(task.workspaceId);
+          if (!ws) continue;
+          syncAgentId(task.agentId, ws.workspaceId);
+          activeTasks.add(task.id);
+          handleTask(client, config, runtimeIndex, task, ws.token, activeTasks, pendingSteer)
+            .catch((e) => { log.error("WS task error", e); activeTasks.delete(task.id); });
+        }
+        break;
+
+      case "chhlat.file_requests": {
+        const ws = wsMap.get(msg.workspaceId);
+        if (ws) {
+          for (const req of msg.requests) {
+            handleFileRequest(client, config, ws.workspaceId, req, ws.token)
+              .catch((e) => log.debug("WS file request error", e));
+          }
+        }
+        break;
+      }
+
+
+      case "chhlat.meetings":
+        for (const m of msg.meetings) {
+          const ws = wsMap.get(m.workspace_id);
+          if (!ws) continue;
+          const agentBaseDir = join(config.workspacesRoot, m.workspace_id, m.agent_id, "workdir");
+          const timelineDir = join(agentBaseDir, ".context_timeline");
+          spawnMeetingRunner({
+            meetingId: m.id,
+            meetingUrl: m.meeting_url,
+            participants: m.participants,
+            workspaceId: m.workspace_id,
+            callbackUrl: config.serverURL,
+            authToken: ws.token,
+            agentName: m.agent_name,
+            agentId: m.agent_id,
+            timelineDir,
+            title: m.title,
+          });
+        }
+        break;
+
+      case "chhlat.evict":
+        evictWorkspace(msg.workspaceId);
+        break;
+
+      case "chhlat.update":
+        if (!isUpdating() && msg.version !== config.cliVersion) {
+          handleCliUpdate(msg.version, () => requestRestart(), profile);
+        }
+        break;
+
+      case "chhlat.rescan":
+        log.info("WS rescan requested — restarting chhlat");
+        requestRestart();
+        break;
+
+      case "chhlat.kill": {
+        const ws = wsMap.get(msg.workspaceId);
+        if (ws && !activeTasks.has(msg.taskId)) {
+          const killTask = fromApiTask({
+            id: msg.taskId,
+            agent_id: msg.agentId,
+            runtime_id: "",
+            conversation_id: "",
+            workspace_id: ws.workspaceId,
+            prompt: "",
+            status: "dispatched",
+            priority: 0,
+            dispatched_at: new Date().toISOString(),
+            started_at: null,
+            completed_at: null,
+            result: null,
+            error: null,
+            created_at: new Date().toISOString(),
+            type: "kill_task",
+            context: { target_task_id: msg.targetTaskId },
+            agent: null,
+            sender: null,
+          });
+          activeTasks.add(killTask.id);
+          handleTask(client, config, runtimeIndex, killTask, ws.token, activeTasks, pendingSteer)
+            .catch((e) => { log.error("WS kill task error", e); activeTasks.delete(killTask.id); });
+        }
+        break;
+      }
+
+    }
+  }
+
+  const wsToken = firstToken;
+
+  let wsClient = wsToken
+    ? new ChhlatWsClient({
+        serverURL: config.serverURL,
+        chhlatId: config.chhlatId,
+        machineToken: wsToken,
+        onMessage: handleWsPush,
+        onConnected: () => {
+          log.info("WS connected — switching to low-frequency poll");
+          updatePollInterval(config.wsPollInterval);
+        },
+        onDisconnected: () => {
+          log.info("WS disconnected — reverting to high-frequency poll");
+          updatePollInterval(config.pollInterval);
+        },
+      })
+    : null;
+
+  wsClient?.connect();
+
+  // --- Sweep timer: triggers server-side sweep + local reconciliation ---
+  const sweepTick = async () => {
+    for (const ws of workspaceStates) {
+      client.sweep(ws.token, config.chhlatId).catch((e) => {
+        log.debug("sweep ping failed", { workspaceId: ws.workspaceId, err: String(e) });
+      });
+    }
+    try {
+      await reconcilePendingCompletions(config.workspacesRoot);
+    } catch (e) {
+      log.debug("reconciliation error", e);
+    }
+  };
+  const sweepTimer = setInterval(sweepTick, config.sweepInterval);
+
+  // --- Skill scanner: scans global + agent skills every 60s ---
+  startSkillScanner(client, {
+    workspacesRoot: config.workspacesRoot,
+    workspaces: workspaces.map((ws) => ({
+      workspaceId: ws.id,
+      token: ws.token,
+      agentIds: ws.agent_ids ?? [],
+    })),
+    runtimes: providers.map((p) => p.type as "claude" | "codex" | "opencode" | "grok"),
+    chhlatId: config.chhlatId,
+  }, 60_000);
+
+  let shuttingDown = false;
+  let restartRequested = false;
+
+  const requestRestart = () => {
+    restartRequested = true;
+    shutdown();
+  };
+
+  const shutdown = async () => {
+    if (shuttingDown) return;
+    shuttingDown = true;
+    log.info(restartRequested ? "Restarting..." : "Shutting down...");
+    clearInterval(pollTimer);
+    clearInterval(heartbeatTimer);
+    clearInterval(sweepTimer);
+    stopSkillScanner();
+    wsClient?.close();
+
+    const shutdownMs = restartRequested ? 30000 : (Number(process.env.PHNEAKNGAR_SHUTDOWN_TIMEOUT_MS) || 5000);
+    const timeout = setTimeout(() => process.exit(1), shutdownMs);
+
+    try {
+      for (const ws of workspaceStates) {
+        await client.deregister(ws.token, config.chhlatId);
+      }
+    } catch {
+      // best-effort deregister
+    }
+
+    releaseChhlatPid(profile);
+    health.server.close(() => {
+      if (restartRequested) {
+        const entry = process.argv[1];
+        const args = [entry, "chhlat", "start", "--foreground"];
+        if (profile) args.push("--profile", profile);
+        if (serverUrl) args.push("--server", serverUrl);
+        const logPath = chhlatLogFilePath();
+        let logFd: number | undefined;
+        try {
+          mkdirSync(dirname(logPath), { recursive: true, mode: 0o700 });
+          logFd = openSync(logPath, "a", 0o600);
+        } catch (e) {
+          log.error(`Failed to open chhlat log file ${logPath}`, e);
+        }
+        const child = spawn(process.execPath, args, {
+          detached: true,
+          stdio: logFd != null ? ["ignore", logFd, logFd] : ["ignore", "ignore", "ignore"],
+          env: resolveLoginShellEnv(),
+        });
+        child.unref();
+        if (logFd != null) closeSync(logFd);
+        log.info(`Spawned new chhlat (pid=${child.pid}), logs: ${logPath}`);
+      }
+      clearTimeout(timeout);
+      process.exit(0);
+    });
+  };
+  process.on("SIGTERM", shutdown);
+  process.on("SIGINT", shutdown);
+
+  // SIGHUP: reload config and register any new workspaces
+  process.on("SIGHUP", async () => {
+    if (shuttingDown) return;
+    log.info("SIGHUP received — reloading config...");
+    try {
+      const freshConfig = loadCLIConfigForProfile(profile);
+      const freshWorkspaces = (freshConfig.watched_workspaces || [])
+        .filter((ws): ws is typeof ws & { id: string } => ws.status !== "deleted" && !!ws.id);
+      const existingIds = new Set(workspaceStates.map((ws) => ws.workspaceId));
+
+      const newWorkspaces = freshWorkspaces.filter(
+        (ws) => ws.token && !existingIds.has(ws.id),
+      );
+
+      for (const ws of newWorkspaces) {
+        const runtimes = providers.map((p) => ({ type: p.type, version: p.version }));
+        log.info(`Registering new workspace ${ws.id} (${ws.name ?? "unnamed"})...`);
+        try {
+          const resp = await client.register(ws.token, {
+            workspace_id: ws.id,
+            chhlat_id: config.chhlatId,
+            device_name: config.deviceName,
+            cli_version: config.cliVersion,
+            workspaces_root: config.workspacesRoot,
+            runtimes,
+          });
+          const runtimeIds = resp.runtimes.map((r: { id: string }) => r.id);
+          workspaceStates.push({ workspaceId: ws.id, token: ws.token, runtimeIds });
+          for (let i = 0; i < runtimeIds.length; i++) {
+            runtimeIndex.set(runtimeIds[i], {
+              id: runtimeIds[i],
+              workspaceId: ws.id,
+              provider: providers[i].type,
+            });
+          }
+          log.info(`Workspace ${ws.id} added — ${runtimeIds.length} runtime(s)`);
+        } catch (e) {
+          log.error(`Failed to register new workspace ${ws.id}`, e);
+        }
+      }
+
+      if (newWorkspaces.length > 0) {
+        hadWorkspaces = true;
+        health.setRuntimeCount(
+          workspaceStates.reduce((sum, w) => sum + w.runtimeIds.length, 0),
+        );
+        if (!wsClient && workspaceStates.length > 0) {
+          const token = workspaceStates[0].token;
+          wsClient = new ChhlatWsClient({
+            serverURL: config.serverURL,
+            chhlatId: config.chhlatId,
+            machineToken: token,
+            onMessage: handleWsPush,
+            onConnected: () => {
+              log.info("WS connected — switching to low-frequency poll");
+              updatePollInterval(config.wsPollInterval);
+            },
+            onDisconnected: () => {
+              log.info("WS disconnected — reverting to high-frequency poll");
+              updatePollInterval(config.pollInterval);
+            },
+          });
+          wsClient.connect();
+          log.info("WS push client initialized after SIGHUP reload");
+        }
+        log.info(`Reload complete — now polling ${workspaceStates.length} workspace(s)`);
+      } else {
+        log.info("Reload complete — no new workspaces found");
+      }
+    } catch (e) {
+      log.error("Failed to reload config", e);
+    }
+  });
+
+  await pollCycle();
+}
+
+export function spawnSessionRunner(input: SessionRunnerInput): ChildProcess {
+  const logDir = sessionRunnerLogDir();
+  mkdirSync(logDir, { recursive: true });
+
+  const logFilePath = join(logDir, `${input.task.id}.log`);
+  input.logFilePath = logFilePath;
+
+  const encoded = Buffer.from(JSON.stringify(input)).toString("base64");
+  let fd: number | undefined;
+  try {
+    fd = openSync(logFilePath, "a");
+  } catch (e) {
+    log.error(`Failed to open log file ${logFilePath}`, e);
+  }
+
+  const child = spawn(process.execPath, [sessionRunnerPath, encoded], {
+    detached: true,
+    stdio: fd != null ? ["ignore", fd, fd] : ["ignore", "ignore", "ignore"],
+  });
+  child.unref();
+  if (fd != null) closeSync(fd);
+
+  return child;
+}
+
+function spawnMeetingRunner(input: {
+  meetingId: string;
+  meetingUrl: string;
+  participants: string[];
+  workspaceId: string;
+  callbackUrl: string;
+  authToken: string;
+  agentName?: string;
+  agentId?: string;
+  timelineDir?: string;
+  title?: string;
+}): ChildProcess {
+  const logDir = sessionRunnerLogDir();
+  mkdirSync(logDir, { recursive: true });
+
+  const logFilePath = join(logDir, `meeting-${input.meetingId}.log`);
+  const encoded = Buffer.from(JSON.stringify(input)).toString("base64");
+  let fd: number | undefined;
+  try {
+    fd = openSync(logFilePath, "a");
+  } catch (e) {
+    log.error(`Failed to open meeting log file ${logFilePath}`, e);
+  }
+
+  const child = spawn(process.execPath, [meetingRunnerPath, encoded], {
+    detached: true,
+    stdio: fd != null ? ["ignore", fd, fd] : ["ignore", "ignore", "ignore"],
+  });
+  child.unref();
+  if (fd != null) closeSync(fd);
+
+  log.info(`Spawned meeting runner for ${input.meetingId} (pid=${child.pid})`);
+  return child;
+}
+
+async function handleFileRequest(
+  client: ChhlatClient,
+  config: ChhlatConfig,
+  workspaceId: string,
+  req: { id: string; agent_id: string; request_type: string; path: string },
+  token: string,
+): Promise<void> {
+  const agentWorkdir = join(config.workspacesRoot, workspaceId, req.agent_id, "workdir");
+  const resolved = validatePath(agentWorkdir, req.path);
+
+  if (!resolved) {
+    await client.reportFileData(token, { request_id: req.id, error: "invalid path", path: req.path });
+    return;
+  }
+
+  try {
+    if (req.request_type === "tree") {
+      const entries = await readDirectoryTree(resolved, agentWorkdir);
+      await client.reportFileData(token, { request_id: req.id, entries, path: req.path });
+    } else {
+      const { content, isBinary } = await readFileContent(resolved);
+      await client.reportFileData(token, { request_id: req.id, content, isBinary, path: req.path });
+    }
+  } catch (e) {
+    await client.reportFileData(token, {
+      request_id: req.id,
+      error: e instanceof Error ? e.message : String(e),
+      path: req.path,
+    });
+  }
+}
+
+/**
+ * Send SIGTERM to the session-runner `pid`, then verify it actually died and
+ * escalate to SIGKILL if not. Returns true if the signal was delivered, false
+ * if the target was already gone (ESRCH).
+ *
+ * Backstop only: the session-runner's own SIGTERM handler is what reaps the
+ * inner agent's process group. The verify window must EXCEED the session-runner
+ * grace (PHNEAKNGAR_KILL_GRACE_MS) so the runner gets to group-kill the inner agent
+ * before we force-kill the runner — otherwise SIGKILLing the runner first could
+ * orphan the inner agent. Inner agents are spawned in their own detached group
+ * (agent/*.ts) so even a SIGKILLed runner does not leave the group un-reapable.
+ */
+async function killAndVerify(pid: number): Promise<boolean> {
+  try {
+    process.kill(pid, "SIGTERM");
+  } catch (e: unknown) {
+    if ((e as NodeJS.ErrnoException)?.code === "ESRCH") return false;
+    throw e;
+  }
+
+  // The verify window MUST exceed the session-runner's own group-kill grace, so
+  // the runner gets to reap the inner agent's group before we force-kill it.
+  // Enforce that invariant rather than trusting operators to keep the env vars
+  // ordered (see the doc comment above).
+  const verifyMs = Math.max(Number(process.env.PHNEAKNGAR_KILL_VERIFY_MS) || 3000, killGraceMs() + 500);
+  const deadline = Date.now() + verifyMs;
+  while (Date.now() < deadline) {
+    if (!isAlive(pid)) return true;
+    await new Promise((r) => setTimeout(r, 100));
+  }
+
+  if (isAlive(pid)) {
+    log.warn(`session-runner pid=${pid} survived SIGTERM after ${verifyMs}ms — escalating to SIGKILL`);
+    try { process.kill(pid, "SIGKILL"); } catch { /* already gone */ }
+  }
+  return true;
+}
+
+async function handleTask(
+  client: ChhlatClient,
+  config: ChhlatConfig,
+  runtimeIndex: Map<string, RuntimeData>,
+  task: Task,
+  token: string,
+  activeTasks: Set<string>,
+  pendingSteer: Map<string, PendingEntry>,
+): Promise<void> {
+  log.info(`Task ${task.id} claimed agent=${task.agentId}`);
+
+  if (task.type === TASK_TYPES.KILL_TASK) {
+    const targetTaskId = (task.context as Record<string, unknown>)?.target_task_id as string | undefined;
+    if (!targetTaskId) {
+      await client.failTask(token, task.id, "missing target_task_id in context");
+      activeTasks.delete(task.id);
+      return;
+    }
+
+    const agentBaseDir = join(config.workspacesRoot, task.workspaceId, task.agentId, "workdir");
+    const timelineDir = join(agentBaseDir, ".context_timeline");
+
+    // Retry loop: session-runner may not have written its timeline entry yet
+    const MAX_WAIT_MS = Number(process.env.PHNEAKNGAR_KILL_TASK_MAX_WAIT_MS) || 15_000;
+    const POLL_MS = Number(process.env.PHNEAKNGAR_KILL_TASK_POLL_MS) || 200;
+    const waitStart = Date.now();
+    let pid: number | null = null;
+    while (Date.now() - waitStart < MAX_WAIT_MS) {
+      pid = findRunningPidByTaskId(timelineDir, targetTaskId);
+      if (pid != null) break;
+      await new Promise((r) => setTimeout(r, POLL_MS));
+    }
+
+    if (pid != null) {
+      writeKillIntent(agentBaseDir, {
+        reason: "cancelled",
+        targetTaskId,
+        expectedPid: pid,
+      });
+      try {
+        const delivered = await killAndVerify(pid);
+        if (delivered) {
+          await client.failTask(token, task.id, "killed");
+          log.info(`Kill task ${task.id}: terminated pid=${pid} for target=${targetTaskId}`);
+        } else {
+          await client.failTask(token, task.id, "target process already exited");
+          log.info(`Kill task ${task.id}: target pid=${pid} already exited`);
+        }
+      } catch (e: unknown) {
+        await client.failTask(token, task.id, `kill failed: ${e}`);
+      }
+    } else {
+      await client.failTask(token, task.id, "target not found in timeline");
+      log.info(`Kill task ${task.id}: target ${targetTaskId} not found in timeline`);
+    }
+
+    activeTasks.delete(task.id);
+    return;
+  }
+
+  try {
+    await client.startTask(token, task.id);
+  } catch (e) {
+    await client.failTask(token, task.id, `start failed: ${e}`);
+    activeTasks.delete(task.id);
+    return;
+  }
+
+  // Resolve provider-specific CLI path and model
+  const runtimeData = runtimeIndex.get(task.runtimeId);
+  if (!runtimeData) {
+    await client.failTask(token, task.id, `unknown runtime: ${task.runtimeId}`);
+    activeTasks.delete(task.id);
+    return;
+  }
+
+  const provider = runtimeData.provider;
+
+  // --- Steering: supersede predecessor if same context_key + provider ---
+  let promptOverride: string | undefined;
+  if (task.contextKey) {
+    const agentBaseDir = join(config.workspacesRoot, task.workspaceId, task.agentId, "workdir");
+    cleanupStaleIntents(agentBaseDir);
+    const timelineDir = join(agentBaseDir, ".context_timeline");
+    const ctxKey = task.contextKey;
+
+    let lockAcquired = acquireSteeringLock(agentBaseDir, ctxKey);
+    if (!lockAcquired) {
+      // Lock held by another task's steering cycle. Wait for the owner to
+      // create a pendingSteer entry so we can merge into it, rather than
+      // bypassing steering and spawning a concurrent runner.
+      const MERGE_WAIT_MS = 5_000;
+      const MERGE_POLL_MS = 50;
+      const mergeStart = Date.now();
+      while (Date.now() - mergeStart < MERGE_WAIT_MS) {
+        const existing = pendingSteer.get(ctxKey);
+        if (existing) {
+          const attachmentIds = (task.context?.attachment_ids as string[]) ?? [];
+          let myAttachments: Attachment[] = [];
+          if (attachmentIds.length > 0) {
+            try { myAttachments = await downloadAttachments(client, token, task.workspaceId, task.id, attachmentIds); } catch { /* best effort */ }
+          }
+          existing.tasks.push(task);
+          existing.attachments.set(task.id, myAttachments);
+          log.info(`Steering: ${task.id} merged into pending entry (lock contention) for context_key=${ctxKey} (${existing.tasks.length} tasks)`);
+          existing.wake();
+          try { await client.supersedeTask(token, task.id); } catch { /* best effort */ }
+          activeTasks.delete(task.id);
+          return;
+        }
+        // Owner hasn't set the entry yet — also try acquiring the lock ourselves
+        lockAcquired = acquireSteeringLock(agentBaseDir, ctxKey);
+        if (lockAcquired) break;
+        await new Promise((r) => setTimeout(r, MERGE_POLL_MS));
+      }
+      if (!lockAcquired) {
+        log.warn(`Steering lock contention for context_key=${ctxKey}, proceeding without steering`);
+      }
+    }
+    if (lockAcquired) {
+      try {
+        const result = findSupersedablePredecessor(timelineDir, ctxKey, provider, steerWarmupGraceMs(), Date.now());
+
+        if (result) {
+          // CASE 2: predecessor exists (pending or supersedable) — go through the pendingSteer Map.
+          const existing = pendingSteer.get(ctxKey);
+
+          if (!existing) {
+            // I am the owner (first waiter). Download my attachments, create the entry, run the wait loop.
+            const attachmentIds = (task.context?.attachment_ids as string[]) ?? [];
+            let myAttachments: Attachment[] = [];
+            if (attachmentIds.length > 0) {
+              try {
+                myAttachments = await downloadAttachments(client, token, task.workspaceId, task.id, attachmentIds);
+              } catch (e) {
+                log.warn(`Steering: failed to download attachments for ${task.id}`, e);
+              }
+            }
+
+            let ownerWake!: () => void;
+            const ownerSignal = new Promise<void>((resolve) => { ownerWake = resolve; });
+            const entry: PendingEntry = {
+              tasks: [task],
+              attachments: new Map([[task.id, myAttachments]]),
+              ownerTaskId: task.id,
+              wake: ownerWake,
+            };
+            pendingSteer.set(ctxKey, entry);
+
+            // Owner's wait loop: poll predecessor until started/stale/gone.
+            let predecessor = "entry" in result ? result.entry : null;
+            if (!predecessor) {
+              log.info(`Steering: predecessor ${(result as { pending: ContextTimelineEntry }).pending.task_id} warming up; ${task.id} waiting`);
+              const POLL_MS = 200;
+              const MAX_WAIT_MS = steerWarmupGraceMs();
+              const waitStart = Date.now();
+              while (Date.now() - waitStart < MAX_WAIT_MS) {
+                releaseSteeringLock(agentBaseDir, ctxKey);
+                await Promise.race([new Promise((r) => setTimeout(r, POLL_MS)), ownerSignal]);
+                if (!acquireSteeringLock(agentBaseDir, ctxKey)) continue;
+                const r = findSupersedablePredecessor(timelineDir, ctxKey, provider, steerWarmupGraceMs(), Date.now());
+                if (!r) { log.info(`Steering: predecessor vanished; ${task.id} proceeding`); break; }
+                if ("entry" in r) { predecessor = r.entry; break; }
+              }
+              if (!predecessor && Date.now() - waitStart >= MAX_WAIT_MS) {
+                releaseSteeringLock(agentBaseDir, ctxKey);
+                if (acquireSteeringLock(agentBaseDir, ctxKey)) {
+                  const finalCheck = findSupersedablePredecessor(timelineDir, ctxKey, provider, 0, Date.now());
+                  if (finalCheck && "entry" in finalCheck) predecessor = finalCheck.entry;
+                }
+              }
+            }
+
+            // Supersede predecessor if found.
+            if (predecessor && predecessor.task_id !== task.id) {
+              // Steering-first: try mailbox injection for persistent backends
+              const backendInst = createBackend(provider, "");
+              const isPersistent = backendInst.lifecycle?.kind === "persistent";
+
+              if (config.enableSteering && isPersistent && predecessor.pid != null) {
+                log.info(`Steering: task ${task.id} steering into predecessor ${predecessor.task_id} via mailbox (context_key=${ctxKey})`);
+                try {
+                  ensureMailboxDirs(agentBaseDir, ctxKey);
+
+                  // Download attachments for the steered task
+                  const attachmentIds = (task.context?.attachment_ids as string[]) ?? [];
+                  let steerAttachments: { localPath: string; filename: string; contentType: string }[] = [];
+                  if (attachmentIds.length > 0) {
+                    try {
+                      const downloaded = await downloadAttachments(client, token, task.workspaceId, task.id, attachmentIds);
+                      steerAttachments = downloaded.map((a) => ({ localPath: a.path, filename: a.filename, contentType: a.content_type }));
+                    } catch (e) {
+                      log.warn(`Steering mailbox: failed to download attachments for ${task.id}`, e);
+                    }
+                  }
+
+                  const seq = writeSteerMessage(agentBaseDir, ctxKey, {
+                    taskId: task.id,
+                    text: buildPrompt(task),
+                    attachments: steerAttachments,
+                    createdAt: new Date().toISOString(),
+                  });
+
+                  const ackResult = await waitForAck(agentBaseDir, ctxKey, seq);
+                  if (ackResult.acked) {
+                    log.info(`Steering: task ${task.id} steered into predecessor ${predecessor.task_id} (acked)`);
+                    try { await client.startTask(token, task.id); } catch { /* best effort — already started above */ }
+                    pendingSteer.delete(ctxKey);
+                    activeTasks.delete(task.id);
+                    return;
+                  }
+                  log.info(`Steering: mailbox delivery failed for ${task.id} (${ackResult.nackReason}), falling back to kill-and-respawn`);
+                } catch (e) {
+                  log.warn(`Steering: mailbox error for ${task.id}, falling back to kill-and-respawn`, e);
+                }
+              }
+
+              // Fallback: kill-and-respawn (existing behavior)
+              log.info(`Steering: task ${task.id} supersedes predecessor ${predecessor.task_id} (context_key=${ctxKey})`);
+              if (predecessor.pid != null) {
+                writeKillIntent(agentBaseDir, { reason: "superseded", targetTaskId: predecessor.task_id, expectedPid: predecessor.pid, successorTaskId: task.id });
+                try {
+                  const delivered = await killAndVerify(predecessor.pid);
+                  log.info(delivered ? `Steering: terminated predecessor pid=${predecessor.pid}` : `Steering: predecessor pid=${predecessor.pid} already exited`);
+                } catch (e: unknown) { log.warn(`Steering: kill failed for pid=${predecessor.pid}`, e); }
+                const killWaitStart = Date.now();
+                while (Date.now() - killWaitStart < 15_000) {
+                  if (findRunningPidByTaskId(timelineDir, predecessor.task_id) == null) break;
+                  await new Promise((r) => setTimeout(r, 200));
+                }
+              }
+              try {
+                await client.supersedeTask(token, predecessor.task_id);
+              } catch { /* best effort — predecessor may already be in terminal state from its close handler */ }
+            }
+
+            // Build merged prompt if multiple tasks accumulated.
+            const finalEntry = pendingSteer.get(ctxKey);
+            if (finalEntry && finalEntry.tasks.length > 1) {
+              promptOverride = buildMergedPrompt(finalEntry.tasks, finalEntry.attachments);
+              log.info(`Steering: merged ${finalEntry.tasks.length} tasks for context_key=${ctxKey}`);
+            } else if (finalEntry && finalEntry.tasks.length === 1) {
+              const att = finalEntry.attachments.get(task.id);
+              if (att && att.length > 0) {
+                promptOverride = buildPrompt(task, att);
+              }
+            }
+            pendingSteer.delete(ctxKey);
+          } else {
+            // I am NOT the owner — merge my content into the existing entry and exit.
+            const attachmentIds = (task.context?.attachment_ids as string[]) ?? [];
+            let myAttachments: Attachment[] = [];
+            if (attachmentIds.length > 0) {
+              try {
+                myAttachments = await downloadAttachments(client, token, task.workspaceId, task.id, attachmentIds);
+              } catch (e) { log.warn(`Steering: failed to download attachments for ${task.id}`, e); }
+            }
+
+            // Mark all previous tasks in the entry as superseded server-side (content kept in tasks array).
+            for (const prev of existing.tasks) {
+              if (prev.id !== existing.ownerTaskId) {
+                try { await client.supersedeTask(token, prev.id); } catch { /* best effort */ }
+              }
+            }
+
+            existing.tasks.push(task);
+            existing.attachments.set(task.id, myAttachments);
+            log.info(`Steering: ${task.id} merged into pending entry for context_key=${ctxKey} (${existing.tasks.length} tasks)`);
+            existing.wake();
+            try { await client.supersedeTask(token, task.id); } catch { /* best effort */ }
+            activeTasks.delete(task.id);
+            return; // Non-owner exits — owner spawns on my behalf. Lock released by finally.
+          }
+        }
+        // CASE 1 (null result) falls through: no predecessor → spawn immediately.
+      } finally {
+        releaseSteeringLock(agentBaseDir, ctxKey);
+      }
+    }
+  }
+
+  const pathByProvider: Record<string, string> = {
+    claude: config.claudePath,
+    codex: config.codexPath,
+    opencode: config.opencodePath,
+    grok: config.grokPath,
+  };
+  const modelByProvider: Record<string, string> = {
+    claude: config.claudeModel,
+    codex: config.codexModel,
+    opencode: config.opencodeModel,
+    grok: config.grokModel,
+  };
+  const cliPath = pathByProvider[provider] ?? config.opencodePath;
+  const configModel = modelByProvider[provider] ?? config.opencodeModel;
+  const agentModel = task.agent?.runtimeConfig?.model;
+  const model = (typeof agentModel === "string" && agentModel) ? agentModel : configModel;
+
+  // Determine if this session-runner should watch the steering mailbox
+  const backendForInput = createBackend(provider, "");
+  const steeringEligible = config.enableSteering && backendForInput.lifecycle?.kind === "persistent" && !!task.contextKey;
+  let steeringMailboxDir: string | undefined;
+  if (steeringEligible) {
+    const agentBaseDirForSteering = join(config.workspacesRoot, task.workspaceId, task.agentId, "workdir");
+    ensureMailboxDirs(agentBaseDirForSteering, task.contextKey!);
+    steeringMailboxDir = steeringInboxDir(agentBaseDirForSteering, task.contextKey!);
+  }
+
+  const input: SessionRunnerInput = {
+    task,
+    provider,
+    cliPath,
+    model,
+    serverURL: config.serverURL,
+    token,
+    workspacesRoot: config.workspacesRoot,
+    agentTimeout: config.agentTimeout,
+    messageInactivityTimeout: config.messageInactivityTimeout,
+    ...(promptOverride && { promptOverride }),
+    ...(steeringEligible && { steeringEnabled: true }),
+    ...(steeringMailboxDir && { steeringMailboxDir }),
+  };
+
+  const child = spawnSessionRunner(input);
+  child.on("close", async (code) => {
+    activeTasks.delete(task.id);
+    if (code !== 0) {
+      const agentBaseDir = join(config.workspacesRoot, task.workspaceId, task.agentId, "workdir");
+
+      // Check kill intent first — if present, the exit was expected.
+      const killIntent = readKillIntent(agentBaseDir, task.id);
+      if (killIntent) {
+        log.info(`Task ${task.id} exited (${killIntent.reason}) — expected, skipping failTask`);
+        clearKillIntent(agentBaseDir, task.id);
+        return;
+      }
+
+      // No intent file — the session-runner's onKill handler may have already
+      // cleared it and marked the task terminal (superseded/cancelled/failed).
+      // Try to mark it failed server-side; if it's already terminal, that's fine.
+      const errorMsg = code === null ? "killed by signal" : `session-runner exited with code ${code}`;
+      try {
+        await client.failTask(token, task.id, errorMsg);
+        // failTask succeeded → this was a genuine unexpected crash.
+        log.warn(`session-runner crashed (${errorMsg}, task ${task.id})`);
+        const timelineDir = join(agentBaseDir, ".context_timeline");
+        updateEntry(timelineDir, task.id, (entry) => {
+          entry.pid = null;
+          entry.status = "failed";
+          entry.errmsg = errorMsg;
+        });
+      } catch (e) {
+        if (isClientError(e)) {
+          // Task already in terminal state (session-runner's onKill handled it).
+          // This is the normal path for superseded/cancelled tasks — not a crash.
+          log.info(`Task ${task.id} exited (already terminal) — session-runner handled cleanup`);
+          return;
+        }
+        log.error(`Failed to report crash for task ${task.id}`, e);
+        try {
+          await writeMarkerFile(config.workspacesRoot, {
+            taskId: task.id,
+            type: "fail",
+            payload: { error: errorMsg },
+            token,
+            serverURL: config.serverURL,
+            createdAt: new Date().toISOString(),
+          });
+        } catch { /* best-effort */ }
+      }
+    }
+  });
+  log.info(`Task ${task.id} dispatched to session-runner (pid=${child.pid})`);
+}

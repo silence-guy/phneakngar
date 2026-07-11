@@ -512,7 +512,7 @@ export async function failStaleDispatchedTasks(db: Database, workspaceId: string
     .set({
       status: "failed",
       completedAt: new Date().toISOString(),
-      error: "timed out in dispatched state (daemon likely disconnected)",
+      error: "timed out in dispatched state (chhlat likely disconnected)",
       visibleOutcomeStatus: "not_required",
     })
     .where(
@@ -735,7 +735,7 @@ export async function failStaleKillTasks(db: Database, workspaceId: string) {
     .set({
       status: "failed",
       completedAt: new Date().toISOString(),
-      error: "kill_task timed out (daemon likely offline)",
+      error: "kill_task timed out (chhlat likely offline)",
       visibleOutcomeStatus: "not_required",
     })
     .where(

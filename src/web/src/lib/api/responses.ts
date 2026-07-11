@@ -204,7 +204,7 @@ export function runtimeToResponse(rt: AgentRuntimeRow & { machineLastSeenAt?: Da
   return {
     id: rt.id,
     workspace_id: rt.workspaceId,
-    daemon_id: rt.daemonId || null,
+    chhlat_id: rt.chhlatId || null,
     runtime_mode: rt.runtimeMode,
     provider: rt.provider,
     status: isOnline(lastSeenStr) ? "online" : "offline",

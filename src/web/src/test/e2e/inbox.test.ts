@@ -35,16 +35,16 @@ beforeAll(async () => {
   }
 
   // Poll, start, and complete the task so it shows up in inbox
-  await tokenRequest(`/api/daemon/tasks/poll`, seed.machineToken, {
+  await tokenRequest(`/api/chhlat/tasks/poll`, seed.machineToken, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ daemon_id: seed.daemonId, max_tasks: 1 }),
+    body: JSON.stringify({ chhlat_id: seed.chhlatId, max_tasks: 1 }),
   })
-  await tokenRequest(`/api/daemon/tasks/${taskId}/start`, seed.machineToken, { method: "POST" })
+  await tokenRequest(`/api/chhlat/tasks/${taskId}/start`, seed.machineToken, { method: "POST" })
 
   // Post an assistant message so the inbox query can find it
   await tokenRequest(
-    `/api/daemon/tasks/${taskId}/messages`,
+    `/api/chhlat/tasks/${taskId}/messages`,
     seed.machineToken,
     {
       method: "POST",
@@ -55,7 +55,7 @@ beforeAll(async () => {
     },
   )
 
-  await tokenRequest(`/api/daemon/tasks/${taskId}/complete`, seed.machineToken, {
+  await tokenRequest(`/api/chhlat/tasks/${taskId}/complete`, seed.machineToken, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ output: "done", session_id: "sess_inbox_1" }),

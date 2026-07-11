@@ -38,7 +38,7 @@ import { trackRuntimeConnected } from "@/lib/analytics";
 import {
   RUNTIMES_LABELS,
   runtimeStatusLabel,
-  updateDaemonDescription,
+  updateChhlatDescription,
   rescanRuntimesDescription,
   removeMachineDescription,
 } from "./runtimes-labels";
@@ -57,12 +57,12 @@ export default function RuntimesPage() {
   const [sheetOpen, setSheetOpen] = useState(() => searchParams.has("connect"));
   const [generatedToken, setGeneratedToken] = useState("");
   const [generatingToken, setGeneratingToken] = useState(false);
-  const [registeredDaemonId, setRegisteredDaemonId] = useState<string | null>(null);
-  const [daemonOnline, setDaemonOnline] = useState(false);
+  const [registeredChhlatId, setRegisteredChhlatId] = useState<string | null>(null);
+  const [chhlatOnline, setChhlatOnline] = useState(false);
 
   const [latestCliVersion, setLatestCliVersion] = useState<string | null>(null);
-  const [updatingDaemons, setUpdatingDaemons] = useState<Set<string>>(new Set());
-  const [rescanningDaemons, setRescanningDaemons] = useState<Set<string>>(new Set());
+  const [updatingChhlats, setUpdatingChhlats] = useState<Set<string>>(new Set());
+  const [rescanningChhlats, setRescanningChhlats] = useState<Set<string>>(new Set());
 
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmTitle, setConfirmTitle] = useState("");
@@ -91,26 +91,26 @@ export default function RuntimesPage() {
   useEffect(() => { sheetOpenRef.current = sheetOpen; }, [sheetOpen]);
   const agentsRef = useRef(agents);
   useEffect(() => { agentsRef.current = agents; }, [agents]);
-  const registeredDaemonIdRef = useRef(registeredDaemonId);
-  useEffect(() => { registeredDaemonIdRef.current = registeredDaemonId; }, [registeredDaemonId]);
+  const registeredChhlatIdRef = useRef(registeredChhlatId);
+  useEffect(() => { registeredChhlatIdRef.current = registeredChhlatId; }, [registeredChhlatId]);
   useEffect(() => {
     return subscribeWs((msg) => {
       if (!sheetOpenRef.current) return;
       if (msg.type === "runtime.registered" && msg.workspaceId === workspaceId) {
-        setRegisteredDaemonId(msg.daemonId);
+        setRegisteredChhlatId(msg.chhlatId);
       }
       if (
         msg.type === "runtime.status" &&
         msg.workspaceId === workspaceId &&
         msg.status === "online" &&
-        registeredDaemonIdRef.current &&
-        msg.daemonId === registeredDaemonIdRef.current
+        registeredChhlatIdRef.current &&
+        msg.chhlatId === registeredChhlatIdRef.current
       ) {
         trackRuntimeConnected({ runtime_type: "desktop" });
         setSheetOpen(false);
         setGeneratedToken("");
-        setRegisteredDaemonId(null);
-        setDaemonOnline(false);
+        setRegisteredChhlatId(null);
+        setChhlatOnline(false);
         toast.success(RUNTIMES_LABELS.machineConnected);
         if (agentsRef.current.length === 0) {
           const slug = pathname.split("/")[2];
@@ -157,61 +157,61 @@ export default function RuntimesPage() {
     }
   }, [handleGenerateToken]);
 
-  const handleUpdate = async (runtimeId: string, daemonId: string) => {
-    setUpdatingDaemons((prev) => new Set(prev).add(daemonId));
+  const handleUpdate = async (runtimeId: string, chhlatId: string) => {
+    setUpdatingChhlats((prev) => new Set(prev).add(chhlatId));
     try {
       await triggerRuntimeUpdate(runtimeId, workspaceId);
       toast.success(RUNTIMES_LABELS.updateTriggered);
     } catch {
       toast.error(RUNTIMES_LABELS.updateTriggerFailed);
-      setUpdatingDaemons((prev) => {
+      setUpdatingChhlats((prev) => {
         const next = new Set(prev);
-        next.delete(daemonId);
+        next.delete(chhlatId);
         return next;
       });
     }
   };
 
-  const handleRescan = async (runtimeId: string, daemonId: string) => {
-    setRescanningDaemons((prev) => new Set(prev).add(daemonId));
+  const handleRescan = async (runtimeId: string, chhlatId: string) => {
+    setRescanningChhlats((prev) => new Set(prev).add(chhlatId));
     try {
       await triggerRuntimeRescan(runtimeId, workspaceId);
       toast.success(RUNTIMES_LABELS.rescanTriggered);
     } catch {
       toast.error(RUNTIMES_LABELS.rescanTriggerFailed);
-      setRescanningDaemons((prev) => {
+      setRescanningChhlats((prev) => {
         const next = new Set(prev);
-        next.delete(daemonId);
+        next.delete(chhlatId);
         return next;
       });
     }
   };
 
   // Derive effective optimistic sets: clear once server-side flag is gone AND runtime refreshed
-  const effectiveUpdatingDaemons = useMemo(() => {
-    if (updatingDaemons.size === 0) return updatingDaemons;
+  const effectiveUpdatingChhlats = useMemo(() => {
+    if (updatingChhlats.size === 0) return updatingChhlats;
     const still = new Set<string>();
-    for (const id of updatingDaemons) {
-      const rt = runtimes.find((r) => (r.daemon_id || r.id) === id);
+    for (const id of updatingChhlats) {
+      const rt = runtimes.find((r) => (r.chhlat_id || r.id) === id);
       // Keep optimistic state until runtime data confirms update is done (flag cleared)
       if (!rt || rt.pending_update_version) {
         still.add(id);
       }
     }
     return still;
-  }, [runtimes, updatingDaemons]);
+  }, [runtimes, updatingChhlats]);
 
-  const effectiveRescanningDaemons = useMemo(() => {
-    if (rescanningDaemons.size === 0) return rescanningDaemons;
+  const effectiveRescanningChhlats = useMemo(() => {
+    if (rescanningChhlats.size === 0) return rescanningChhlats;
     const still = new Set<string>();
     for (const rt of runtimes) {
-      const key = rt.daemon_id || rt.id;
-      if (rescanningDaemons.has(key) && rt.pending_rescan) {
+      const key = rt.chhlat_id || rt.id;
+      if (rescanningChhlats.has(key) && rt.pending_rescan) {
         still.add(key);
       }
     }
     return still;
-  }, [runtimes, rescanningDaemons]);
+  }, [runtimes, rescanningChhlats]);
 
   // Group runtimes by machine
   const machines = new Map<
@@ -219,7 +219,7 @@ export default function RuntimesPage() {
     { deviceInfo: string; status: string; lastSeenAt: string | null; pendingUpdateVersion: string | null; pendingRescan: boolean; cliVersion: string | null; runtimes: Runtime[] }
   >();
   for (const rt of runtimes) {
-    const key = rt.daemon_id || rt.id;
+    const key = rt.chhlat_id || rt.id;
     if (!machines.has(key)) {
       const meta = rt.metadata as Record<string, unknown> | null;
       machines.set(key, {
@@ -292,7 +292,7 @@ export default function RuntimesPage() {
             variant="outline"
             onClick={() => {
               setGeneratedToken("");
-              setRegisteredDaemonId(null);
+              setRegisteredChhlatId(null);
               setSheetOpen(true);
             }}
             disabled={generatingToken}
@@ -328,11 +328,11 @@ export default function RuntimesPage() {
           </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {Array.from(machines.entries()).map(([daemonId, machine]) => {
+            {Array.from(machines.entries()).map(([chhlatId, machine]) => {
               const displayName =
-                machine.deviceInfo || daemonId;
+                machine.deviceInfo || chhlatId;
               return (
-                <Card key={daemonId} size="sm">
+                <Card key={chhlatId} size="sm">
                   <CardHeader>
                     <div className="flex items-center gap-2 min-w-0">
                       <Monitor className="size-4 text-muted-foreground shrink-0" />
@@ -364,7 +364,7 @@ export default function RuntimesPage() {
                         </span>
                         <div className="flex items-center gap-1">
                           {(() => {
-                            const isUpdating = !!machine.pendingUpdateVersion || effectiveUpdatingDaemons.has(daemonId);
+                            const isUpdating = !!machine.pendingUpdateVersion || effectiveUpdatingChhlats.has(chhlatId);
                             const needsUpdate = machine.status === "online" && latestCliVersion && (!machine.cliVersion || !semverGte(machine.cliVersion, latestCliVersion));
                             if (isUpdating) {
                               return (
@@ -381,9 +381,9 @@ export default function RuntimesPage() {
                                   size="sm"
                                   className="text-xs h-6 px-2"
                                   onClick={() => openConfirm(
-                                    RUNTIMES_LABELS.updateDaemonTitle,
-                                    updateDaemonDescription(displayName),
-                                    async () => { await handleUpdate(machine.runtimes[0].id, daemonId); },
+                                    RUNTIMES_LABELS.updateChhlatTitle,
+                                    updateChhlatDescription(displayName),
+                                    async () => { await handleUpdate(machine.runtimes[0].id, chhlatId); },
                                     { label: RUNTIMES_LABELS.update, loadingLabel: RUNTIMES_LABELS.updating, variant: "default" }
                                   )}
                                 >
@@ -394,7 +394,7 @@ export default function RuntimesPage() {
                             return null;
                           })()}
                           {(() => {
-                            const isRescanning = machine.pendingRescan || effectiveRescanningDaemons.has(daemonId);
+                            const isRescanning = machine.pendingRescan || effectiveRescanningChhlats.has(chhlatId);
                             if (machine.status !== "online") return null;
                             if (isRescanning) {
                               return (
@@ -412,7 +412,7 @@ export default function RuntimesPage() {
                                 onClick={() => openConfirm(
                                   RUNTIMES_LABELS.rescanRuntimesTitle,
                                   rescanRuntimesDescription(displayName),
-                                  async () => { await handleRescan(machine.runtimes[0].id, daemonId); },
+                                  async () => { await handleRescan(machine.runtimes[0].id, chhlatId); },
                                   { label: RUNTIMES_LABELS.rescan, loadingLabel: RUNTIMES_LABELS.triggering, variant: "default" }
                                 )}
                               >
@@ -430,7 +430,7 @@ export default function RuntimesPage() {
                                 RUNTIMES_LABELS.removeMachineTitle,
                                 removeMachineDescription(displayName),
                                 async () => {
-                                  await handleDeleteMachine(daemonId);
+                                  await handleDeleteMachine(chhlatId);
                                 }
                               );
                             }}
@@ -468,14 +468,14 @@ export default function RuntimesPage() {
                               className="w-full h-7 text-[11px]"
                               onClick={async () => {
                                 try {
-                                  await tauriInvoke("daemon_start");
-                                  toast.success(RUNTIMES_LABELS.daemonStarted);
+                                  await tauriInvoke("chhlat_start");
+                                  toast.success(RUNTIMES_LABELS.chhlatStarted);
                                 } catch {
-                                  toast.error(RUNTIMES_LABELS.startDaemonFailed);
+                                  toast.error(RUNTIMES_LABELS.startChhlatFailed);
                                 }
                               }}
                             >
-                              {RUNTIMES_LABELS.startDaemon}
+                              {RUNTIMES_LABELS.startChhlat}
                             </Button>
                           ) : (
                             <Tooltip>
@@ -484,14 +484,14 @@ export default function RuntimesPage() {
                                   <div
                                     className="relative overflow-hidden rounded-md bg-muted px-2.5 py-1.5 font-mono text-[11px] text-muted-foreground cursor-pointer hover:bg-muted/80 transition-colors"
                                     onClick={() => {
-                                      navigator.clipboard.writeText(`${cliCmd()} daemon start`);
+                                      navigator.clipboard.writeText(`${cliCmd()} chhlat start`);
                                       toast.success(connectMachineLabel("copiedToClipboard"));
                                     }}
                                   />
                                 }
                               >
                                 <span className="absolute inset-0 -translate-x-full animate-[shimmer_2.5s_infinite] bg-linear-to-r from-transparent via-(--shimmer-peak) to-transparent" />
-                                <span className="relative">{cliCmd()} daemon start</span>
+                                <span className="relative">{cliCmd()} chhlat start</span>
                               </TooltipTrigger>
                               <TooltipContent>{connectMachineLabel("clickToCopy")}</TooltipContent>
                             </Tooltip>
@@ -529,8 +529,8 @@ export default function RuntimesPage() {
               generatedToken={generatedToken}
               generatingToken={generatingToken}
               onGenerateToken={onGenerateToken}
-              registered={!!registeredDaemonId}
-              daemonOnline={daemonOnline}
+              registered={!!registeredChhlatId}
+              chhlatOnline={chhlatOnline}
             />
           </SheetBody>
         </SheetContent>

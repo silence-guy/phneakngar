@@ -6,15 +6,15 @@ import {
   type TestSeed,
   sqlRun,
 } from "@phneakngar/test-utils"
-import { DaemonClient } from "../../../src/cli/daemon/client"
-import { DaemonPushMessageSchema } from "@phneakngar/shared"
+import { ChhlatClient } from "../../../src/cli/chhlat/client"
+import { ChhlatPushMessageSchema } from "@phneakngar/shared"
 
 const APP_URL = process.env.APP_URL ?? "http://localhost:3000"
 const WS_DO_URL = process.env.WS_DO_URL ?? "http://localhost:8789"
-const client = new DaemonClient(APP_URL)
+const client = new ChhlatClient(APP_URL)
 
 let seed: TestSeed
-const daemonId = `daemon_ws_${randomUUID().slice(0, 8)}`
+const chhlatId = `chhlat_ws_${randomUUID().slice(0, 8)}`
 let runtimeId: string
 let wsAvailable = false
 
@@ -31,7 +31,7 @@ beforeAll(async () => {
 
   const reg = await client.register(seed.machineToken, {
     workspace_id: seed.workspaceId,
-    daemon_id: daemonId,
+    chhlat_id: chhlatId,
     device_name: "ws-test-machine",
     cli_version: "0.1.0-integ",
     runtimes: [{ provider: "claude", runtime_mode: "local", version: "4.0" }],
@@ -41,7 +41,7 @@ beforeAll(async () => {
 afterAll(() => cleanupTestData(seed))
 
 describe("WebSocket push → poll", () => {
-  it.skipIf(!wsAvailable)("daemon.tasks push triggers immediate poll with correct task", async () => {
+  it.skipIf(!wsAvailable)("chhlat.tasks push triggers immediate poll with correct task", async () => {
     const now = new Date().toISOString()
     const conversationId = `conv_ws_${randomUUID().slice(0, 8)}`
     const taskId = `task_ws_${randomUUID().slice(0, 8)}`
@@ -50,19 +50,19 @@ describe("WebSocket push → poll", () => {
     sqlRun(`INSERT INTO agent_task_queue (id, agent_id, runtime_id, workspace_id, conversation_id, prompt, status, type, priority, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?)`, taskId, seed.agentId, runtimeId, seed.workspaceId, conversationId, 'WS push test prompt', 'queued', 'user_dm_message', now)
 
     // Connect WebSocket and wait for push message
-    const wsUrl = `${WS_DO_URL.replace("http", "ws")}/ws/daemon?token=${seed.machineToken}&daemon_id=${daemonId}`
+    const wsUrl = `${WS_DO_URL.replace("http", "ws")}/ws/chhlat?token=${seed.machineToken}&chhlat_id=${chhlatId}`
     const ws = new WebSocket(wsUrl)
 
     const pushMessage = await new Promise<unknown>((resolve, reject) => {
       const timeout = setTimeout(() => {
         ws.close()
-        reject(new Error("WebSocket push timeout — no daemon.tasks message received within 10s"))
+        reject(new Error("WebSocket push timeout — no chhlat.tasks message received within 10s"))
       }, 10_000)
 
       ws.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data as string)
-          if (data.type === "daemon.tasks") {
+          if (data.type === "chhlat.tasks") {
             clearTimeout(timeout)
             ws.close()
             resolve(data)
@@ -75,16 +75,16 @@ describe("WebSocket push → poll", () => {
       }
     })
 
-    const parsed = DaemonPushMessageSchema.safeParse(pushMessage)
+    const parsed = ChhlatPushMessageSchema.safeParse(pushMessage)
     expect(parsed.success).toBe(true)
-    if (parsed.success && parsed.data.type === "daemon.tasks") {
+    if (parsed.success && parsed.data.type === "chhlat.tasks") {
       expect(parsed.data.tasks.length).toBeGreaterThanOrEqual(1)
       const pushed = parsed.data.tasks.find((t) => t.id === taskId)
       expect(pushed).toBeDefined()
     }
 
     // Poll should also return the task
-    const pollResult = await client.poll(seed.machineToken, daemonId, 1)
+    const pollResult = await client.poll(seed.machineToken, chhlatId, 1)
     expect(pollResult.tasks.length).toBeGreaterThanOrEqual(1)
 
     // Cleanup
@@ -94,8 +94,8 @@ describe("WebSocket push → poll", () => {
 
   afterAll(() => {
     try {
-      sqlRun(`DELETE FROM agent_runtime WHERE daemon_id = ?`, daemonId)
-      sqlRun(`DELETE FROM machine WHERE daemon_id = ?`, daemonId)
+      sqlRun(`DELETE FROM agent_runtime WHERE chhlat_id = ?`, chhlatId)
+      sqlRun(`DELETE FROM machine WHERE chhlat_id = ?`, chhlatId)
     } catch { /* ignore */ }
   })
 })

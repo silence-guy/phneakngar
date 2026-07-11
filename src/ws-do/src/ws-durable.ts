@@ -12,7 +12,7 @@ function utf8ByteLength(value: string): number {
 
 type ConnectionState =
   | { type: "user"; userId: string; authenticated: boolean }
-  | { type: "daemon"; daemonId: string; userId: string; authenticated: boolean }
+  | { type: "chhlat"; chhlatId: string; userId: string; authenticated: boolean }
 
 export class WebSocketDurableObject extends DurableObject<Env> {
   async fetch(request: Request): Promise<Response> {
@@ -34,11 +34,11 @@ export class WebSocketDurableObject extends DurableObject<Env> {
     }
 
     if (url.pathname === "/check-alive") {
-      const hasAuthDaemon = this.ctx.getWebSockets().some(ws => {
+      const hasAuthChhlat = this.ctx.getWebSockets().some(ws => {
         const s = ws.deserializeAttachment() as ConnectionState
-        return s?.type === "daemon" && s.authenticated
+        return s?.type === "chhlat" && s.authenticated
       })
-      return new Response(JSON.stringify({ alive: hasAuthDaemon }), {
+      return new Response(JSON.stringify({ alive: hasAuthChhlat }), {
         headers: { "Content-Type": "application/json" },
       })
     }
@@ -47,10 +47,10 @@ export class WebSocketDurableObject extends DurableObject<Env> {
       return new Response("Expected WebSocket", { status: 426 })
     }
 
-    const daemonId = url.searchParams.get("daemonId")
+    const chhlatId = url.searchParams.get("chhlatId")
     const userId = url.searchParams.get("userId")
-    if (!daemonId && !userId) {
-      return new Response("userId or daemonId required", { status: 400 })
+    if (!chhlatId && !userId) {
+      return new Response("userId or chhlatId required", { status: 400 })
     }
 
     const existingSockets = this.ctx.getWebSockets()
@@ -70,8 +70,8 @@ export class WebSocketDurableObject extends DurableObject<Env> {
 
     this.ctx.acceptWebSocket(server)
 
-    const initialState: ConnectionState = daemonId
-      ? { type: "daemon", daemonId, userId: "", authenticated: false }
+    const initialState: ConnectionState = chhlatId
+      ? { type: "chhlat", chhlatId, userId: "", authenticated: false }
       : { type: "user", userId: userId!, authenticated: false }
     server.serializeAttachment(initialState)
 
@@ -97,27 +97,33 @@ export class WebSocketDurableObject extends DurableObject<Env> {
 
     const state = ws.deserializeAttachment() as ConnectionState
 
-    const msg = parsed as { type: string; token?: string; machineToken?: string; daemonId?: string }
+    const msg = parsed as {
+      type: string
+      token?: string
+      machineToken?: string
+      chhlatId?: string
+    }
+    const msgChhlatId = msg.chhlatId
 
     if (msg.type === "auth") {
-      if (msg.machineToken && msg.daemonId) {
-        if (state?.type !== "daemon" || state.daemonId !== msg.daemonId) {
-          log.warn("daemon websocket route mismatch", { daemonId: msg.daemonId })
+      if (msg.machineToken && msgChhlatId) {
+        if (state?.type !== "chhlat" || state.chhlatId !== msgChhlatId) {
+          log.warn("chhlat websocket route mismatch", { chhlatId: msgChhlatId })
           ws.close(1008, "Unauthorized")
           return
         }
 
-        const authResult = await this.validateMachineToken(msg.machineToken, msg.daemonId)
+        const authResult = await this.validateMachineToken(msg.machineToken, msgChhlatId)
         if (!authResult) {
-          log.warn("daemon websocket auth failed", { daemonId: msg.daemonId })
+          log.warn("chhlat websocket auth failed", { chhlatId: msgChhlatId })
           ws.close(1008, "Unauthorized")
           return
         }
-        ws.serializeAttachment({ type: "daemon", daemonId: msg.daemonId, userId: authResult.userId, authenticated: true } as ConnectionState)
-        log.info("daemon websocket authenticated", { daemonId: msg.daemonId })
+        ws.serializeAttachment({ type: "chhlat", chhlatId: msgChhlatId, userId: authResult.userId, authenticated: true } as ConnectionState)
+        log.info("chhlat websocket authenticated", { chhlatId: msgChhlatId })
         ws.send(JSON.stringify({ type: "auth.ok" }))
 
-        this.notifyUserDO(authResult.userId, { type: "runtime.status", status: "online", daemonId: msg.daemonId }).catch(() => {})
+        this.notifyUserDO(authResult.userId, { type: "runtime.status", status: "online", chhlatId: msgChhlatId }).catch(() => {})
         return
       }
 
@@ -142,19 +148,19 @@ export class WebSocketDurableObject extends DurableObject<Env> {
       return
     }
 
-    if (msg.type === "check_daemon_status" && state.type === "user") {
-      const daemonId = await this.getDaemonIdForUser(state.userId)
-      if (daemonId) {
+    if (msg.type === "check_chhlat_status" && state.type === "user") {
+      const chhlatId = await this.getChhlatIdForUser(state.userId)
+      if (chhlatId) {
         try {
-          const daemonDoId = this.env.WS_DO.idFromName("daemon:" + daemonId)
-          const daemonStub = this.env.WS_DO.get(daemonDoId)
-          const resp = await daemonStub.fetch(new Request("http://internal/check-alive"))
-          const { alive } = await resp.json() as { alive: boolean }
-          if (alive) {
-            ws.send(JSON.stringify({ type: "runtime.status", status: "online", daemonId }))
+          const doId = this.env.WS_DO.idFromName("chhlat:" + chhlatId)
+          const stub = this.env.WS_DO.get(doId)
+          const resp = await stub.fetch(new Request("http://internal/check-alive"))
+          const body = await resp.json() as { alive: boolean }
+          if (body.alive) {
+            ws.send(JSON.stringify({ type: "runtime.status", status: "online", chhlatId }))
           }
         } catch {
-          log.debug("check_daemon_status: failed to reach daemon DO", { daemonId })
+          log.debug("check_chhlat_status: failed to reach chhlat DO", { chhlatId })
         }
       }
       return
@@ -163,9 +169,9 @@ export class WebSocketDurableObject extends DurableObject<Env> {
 
   async webSocketClose(ws: WebSocket): Promise<void> {
     const state = ws.deserializeAttachment() as ConnectionState
-    if (state?.type === "daemon" && state.authenticated) {
-      log.info("daemon websocket closed", { daemonId: state.daemonId })
-      this.notifyUserDO(state.userId, { type: "runtime.status", status: "offline", daemonId: state.daemonId }).catch(() => {})
+    if (state?.type === "chhlat" && state.authenticated) {
+      log.info("chhlat websocket closed", { chhlatId: state.chhlatId })
+      this.notifyUserDO(state.userId, { type: "runtime.status", status: "offline", chhlatId: state.chhlatId }).catch(() => {})
     }
   }
 
@@ -197,7 +203,7 @@ export class WebSocketDurableObject extends DurableObject<Env> {
     }))
   }
 
-  private async getDaemonIdForUser(userId: string): Promise<string | null> {
+  private async getChhlatIdForUser(userId: string): Promise<string | null> {
     const db = createDb(this.env.DB)
     const token = await queries.machineToken.getLatestTokenForUser(db, userId)
     return token?.hostname || null
@@ -208,17 +214,17 @@ export class WebSocketDurableObject extends DurableObject<Env> {
     return queries.session.getValidSession(db, token)
   }
 
-  private async validateMachineToken(token: string, daemonId: string): Promise<{ userId: string } | null> {
+  private async validateMachineToken(token: string, chhlatId: string): Promise<{ userId: string } | null> {
     if (!token.startsWith("al_")) return null
     const db = createDb(this.env.DB)
     const mt = await queries.machineToken.getMachineTokenByToken(db, token)
     if (!mt) return null
     if (mt.status !== "active" || !mt.workspaceId) return null
 
-    const machine = await queries.machine.getMachineByDaemon(db, daemonId, mt.workspaceId)
+    const machine = await queries.machine.getMachineByChhlat(db, chhlatId, mt.workspaceId)
     if (!machine || machine.ownerId !== mt.userId) return null
 
-    const runtimes = await queries.runtime.getRuntimeIdsByDaemon(db, daemonId, mt.workspaceId)
+    const runtimes = await queries.runtime.getRuntimeIdsByChhlat(db, chhlatId, mt.workspaceId)
     return runtimes.length > 0 ? { userId: mt.userId } : null
   }
 }

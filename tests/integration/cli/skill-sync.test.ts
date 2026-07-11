@@ -6,20 +6,20 @@ import {
   type TestSeed,
   sqlQuery,
 } from "@phneakngar/test-utils"
-import { DaemonClient } from "../../../src/cli/daemon/client"
+import { ChhlatClient } from "../../../src/cli/chhlat/client"
 
 const APP_URL = process.env.APP_URL ?? "http://localhost:3000"
-const client = new DaemonClient(APP_URL)
+const client = new ChhlatClient(APP_URL)
 
 let seed: TestSeed
-const daemonId = `daemon_skill_${randomUUID().slice(0, 8)}`
+const chhlatId = `chhlat_skill_${randomUUID().slice(0, 8)}`
 
 beforeAll(async () => {
   seed = seedTestData()
 
   await client.register(seed.machineToken, {
     workspace_id: seed.workspaceId,
-    daemon_id: daemonId,
+    chhlat_id: chhlatId,
     device_name: "skill-test-machine",
     cli_version: "0.1.0-integ",
     runtimes: [{ provider: "claude", runtime_mode: "local", version: "4.0" }],
@@ -33,16 +33,16 @@ describe("skill sync", () => {
     { name: "test-skill-beta", description: "Beta skill for testing" },
   ]
 
-  it("POST /api/daemon/skills/sync (global scope) stores skills in DB", async () => {
+  it("POST /api/chhlat/skills/sync (global scope) stores skills in DB", async () => {
     await client.syncSkills(seed.machineToken, {
       scope: "global",
-      daemon_id: daemonId,
+      chhlat_id: chhlatId,
       runtime: "claude",
       skills,
     })
 
-    const rows = sqlQuery<{ name: string; description: string; runtime: string; daemon_id: string | null }>(
-      `SELECT name, description, runtime, daemon_id FROM agent_skill WHERE workspace_id = '${seed.workspaceId}' AND runtime = 'claude' AND daemon_id = '${daemonId}' ORDER BY name`
+    const rows = sqlQuery<{ name: string; description: string; runtime: string; chhlat_id: string | null }>(
+      `SELECT name, description, runtime, chhlat_id FROM agent_skill WHERE workspace_id = '${seed.workspaceId}' AND runtime = 'claude' AND chhlat_id = '${chhlatId}' ORDER BY name`
     )
     expect(rows.length).toBeGreaterThanOrEqual(2)
     const alpha = rows.find(r => r.name === "test-skill-alpha")
@@ -56,19 +56,19 @@ describe("skill sync", () => {
   it("re-sync replaces old skills (stale removal)", async () => {
     await client.syncSkills(seed.machineToken, {
       scope: "global",
-      daemon_id: daemonId,
+      chhlat_id: chhlatId,
       runtime: "claude",
       skills: [{ name: "test-skill-gamma", description: "Gamma replaces all" }],
     })
 
     const rows = sqlQuery<{ name: string }>(
-      `SELECT name FROM agent_skill WHERE workspace_id = '${seed.workspaceId}' AND runtime = 'claude' AND daemon_id = '${daemonId}'`
+      `SELECT name FROM agent_skill WHERE workspace_id = '${seed.workspaceId}' AND runtime = 'claude' AND chhlat_id = '${chhlatId}'`
     )
     expect(rows).toHaveLength(1)
     expect(rows[0].name).toBe("test-skill-gamma")
   })
 
-  it("POST /api/daemon/skills/sync (agent scope) scopes to agent", async () => {
+  it("POST /api/chhlat/skills/sync (agent scope) scopes to agent", async () => {
     await client.syncSkills(seed.machineToken, {
       scope: "agent",
       agent_id: seed.agentId,

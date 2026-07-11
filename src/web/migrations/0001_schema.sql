@@ -73,20 +73,20 @@ CREATE TABLE IF NOT EXISTS member (
 );
 
 CREATE TABLE IF NOT EXISTS machine (
-  daemon_id    TEXT NOT NULL,
+  chhlat_id    TEXT NOT NULL,
   workspace_id TEXT NOT NULL REFERENCES workspace(id) ON DELETE CASCADE,
   device_info  TEXT NOT NULL DEFAULT '',
   pending_update_version TEXT,
   last_seen_at TEXT,
   created_at   TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at   TEXT NOT NULL DEFAULT (datetime('now')),
-  PRIMARY KEY (workspace_id, daemon_id)
+  PRIMARY KEY (workspace_id, chhlat_id)
 );
 
 CREATE TABLE IF NOT EXISTS agent_runtime (
   id TEXT PRIMARY KEY,
   workspace_id TEXT NOT NULL REFERENCES workspace(id) ON DELETE CASCADE,
-  daemon_id TEXT NOT NULL,
+  chhlat_id TEXT NOT NULL,
   name TEXT NOT NULL DEFAULT '',
   runtime_mode TEXT NOT NULL DEFAULT 'local',
   provider TEXT NOT NULL,
@@ -96,7 +96,7 @@ CREATE TABLE IF NOT EXISTS agent_runtime (
   last_seen_at TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now')),
-  UNIQUE(workspace_id, daemon_id, provider)
+  UNIQUE(workspace_id, chhlat_id, provider)
 );
 
 CREATE TABLE IF NOT EXISTS agent (

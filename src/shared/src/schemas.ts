@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { IssueStatus, TASK_TYPES } from "./constants";
 import { isPublicNetworkHost } from "./network-host";
+import { withChhlatIdFields } from "./chhlat-id";
 
 // ---------------------------------------------------------------------------
 // Task status
@@ -148,9 +149,7 @@ export type TaskApi = z.infer<typeof TaskApiSchema>;
 // Heartbeat (lightweight liveness ping, independent of poll)
 // ---------------------------------------------------------------------------
 
-export const HeartbeatRequestSchema = z.object({
-  daemon_id: z.string().min(1),
-});
+export const HeartbeatRequestSchema = withChhlatIdFields({});
 export type HeartbeatRequest = z.infer<typeof HeartbeatRequestSchema>;
 
 export const SweepRequestSchema = HeartbeatRequestSchema;
@@ -160,8 +159,7 @@ export type SweepRequest = HeartbeatRequest;
 // Poll request/response (replaces heartbeat + per-runtime claim)
 // ---------------------------------------------------------------------------
 
-export const PollRequestSchema = z.object({
-  daemon_id: z.string().min(1),
+export const PollRequestSchema = withChhlatIdFields({
   max_tasks: z.number().int().min(1).default(1),
   cli_version: z.string().optional(),
 });
@@ -197,19 +195,19 @@ export const PollResponseSchema = z.object({
 export type PollResponse = z.infer<typeof PollResponseSchema>;
 
 // ---------------------------------------------------------------------------
-// Daemon push messages (server -> daemon WebSocket)
+// Chhlat push messages (server -> chhlat WebSocket)
 // ---------------------------------------------------------------------------
 
-export const DaemonPushMessageSchema = z.discriminatedUnion("type", [
-  z.object({ type: z.literal("daemon.tasks"), tasks: z.array(TaskApiSchema) }),
-  z.object({ type: z.literal("daemon.file_requests"), workspaceId: z.string(), requests: z.array(FileRequestItemSchema) }),
-  z.object({ type: z.literal("daemon.meetings"), meetings: z.array(PollMeetingItemSchema) }),
-  z.object({ type: z.literal("daemon.evict"), workspaceId: z.string() }),
-  z.object({ type: z.literal("daemon.update"), version: z.string() }),
-  z.object({ type: z.literal("daemon.rescan") }),
-  z.object({ type: z.literal("daemon.kill"), workspaceId: z.string(), agentId: z.string().min(1), taskId: z.string(), targetTaskId: z.string() }),
+export const ChhlatPushMessageSchema = z.discriminatedUnion("type", [
+  z.object({ type: z.literal("chhlat.tasks"), tasks: z.array(TaskApiSchema) }),
+  z.object({ type: z.literal("chhlat.file_requests"), workspaceId: z.string(), requests: z.array(FileRequestItemSchema) }),
+  z.object({ type: z.literal("chhlat.meetings"), meetings: z.array(PollMeetingItemSchema) }),
+  z.object({ type: z.literal("chhlat.evict"), workspaceId: z.string() }),
+  z.object({ type: z.literal("chhlat.update"), version: z.string() }),
+  z.object({ type: z.literal("chhlat.rescan") }),
+  z.object({ type: z.literal("chhlat.kill"), workspaceId: z.string(), agentId: z.string().min(1), taskId: z.string(), targetTaskId: z.string() }),
 ]);
-export type DaemonPushMessageType = z.infer<typeof DaemonPushMessageSchema>;
+export type ChhlatPushMessageType = z.infer<typeof ChhlatPushMessageSchema>;
 
 // ---------------------------------------------------------------------------
 // Register response
@@ -221,16 +219,16 @@ export const RegisterResponseSchema = z.object({
 export type RegisterResponse = z.infer<typeof RegisterResponseSchema>;
 
 // ---------------------------------------------------------------------------
-// Daemon API request schemas
+// Chhlat API request schemas
 // ---------------------------------------------------------------------------
 
-const DaemonHeadroomNextActionSchema = z.enum([
+const ChhlatHeadroomNextActionSchema = z.enum([
   "enable_headroom",
   "install_headroom",
   "configure_headroom_path",
 ]);
 
-const DaemonHeadroomCapabilitySchema = z
+const ChhlatHeadroomCapabilitySchema = z
   .object({
     status: z.enum(["disabled", "available", "missing"]),
     configured: z.boolean(),
@@ -238,20 +236,20 @@ const DaemonHeadroomCapabilitySchema = z
     mode: z.literal("proxy"),
     port: z.number().int().min(1024).max(65535),
     executable: z.string().min(1).max(100),
-    next_actions: z.array(DaemonHeadroomNextActionSchema).max(3).optional().default([]),
+    next_actions: z.array(ChhlatHeadroomNextActionSchema).max(3).optional().default([]),
   })
   .strict();
 
-export const DaemonRuntimeItemSchema = z.object({
+export const ChhlatRuntimeItemSchema = z.object({
   type: z.string().optional(),
   provider: z.string().optional(),
   runtime_mode: z.string().optional(),
   version: z.string().optional(),
   status: z.string().optional(),
   model: z.string().optional(),
-  headroom: DaemonHeadroomCapabilitySchema.optional(),
+  headroom: ChhlatHeadroomCapabilitySchema.optional(),
 });
-export type DaemonRuntimeItem = z.infer<typeof DaemonRuntimeItemSchema>;
+export type ChhlatRuntimeItem = z.infer<typeof ChhlatRuntimeItemSchema>;
 
 export const ActivateTokenRuntimeSchema = z.object({
   type: z.string().min(1),
@@ -266,20 +264,16 @@ export const ActivateTokenRequestSchema = z.object({
 });
 export type ActivateTokenRequest = z.infer<typeof ActivateTokenRequestSchema>;
 
-export const RegisterDaemonRequestSchema = z.object({
+export const RegisterChhlatRequestSchema = withChhlatIdFields({
   workspace_id: z.string().min(1).optional(),
-  daemon_id: z.string().min(1),
   device_name: z.string().optional().default(""),
   cli_version: z.string().optional().default(""),
   workspaces_root: z.string().optional().default(""),
-  runtimes: z.array(DaemonRuntimeItemSchema).min(1),
+  runtimes: z.array(ChhlatRuntimeItemSchema).min(1),
 });
-export type RegisterDaemonRequest = z.infer<typeof RegisterDaemonRequestSchema>;
+export type RegisterChhlatRequest = z.infer<typeof RegisterChhlatRequestSchema>;
 
-
-export const DeregisterRequestSchema = z.object({
-  daemon_id: z.string().min(1),
-});
+export const DeregisterRequestSchema = withChhlatIdFields({});
 export type DeregisterRequest = z.infer<typeof DeregisterRequestSchema>;
 
 
@@ -468,7 +462,7 @@ export const CreateIssueCommentBodySchema = z.object({
 });
 export type CreateIssueCommentBody = z.infer<typeof CreateIssueCommentBodySchema>;
 
-/** @deprecated Use CreateIssueCommentBodySchema instead */
+/**  Use CreateIssueCommentBodySchema instead */
 export const CreateIssueCommentRequestSchema = CreateIssueCommentBodySchema;
 export type CreateIssueCommentRequestInput = CreateIssueCommentBody;
 
@@ -612,7 +606,7 @@ export const CreateMessageRequestSchema = z.object({
 export type CreateMessageRequest = z.infer<typeof CreateMessageRequestSchema>;
 
 // Agent-authored DM: the agent's own `role:"assistant"` reply, posted via the
-// machine-token daemon route (`phneakngar sync send-dm`). Unlike CreateMessageRequest
+// machine-token chhlat route (`phneakngar sync send-dm`). Unlike CreateMessageRequest
 // (a user send) this does NOT enqueue a task — it only delivers the message.
 export const AgentDmRequestSchema = z.object({
   content: z.string().min(1, "content is required"),
@@ -832,7 +826,7 @@ const SkillItemSchema = z.object({
 export const SkillSyncRequestSchema = z.object({
   scope: z.enum(["global", "agent"]),
   agent_id: z.string().min(1).optional(),
-  daemon_id: z.string().min(1).optional(),
+  chhlat_id: z.string().min(1).optional(),
   runtime: z.enum(["claude", "codex", "opencode", "grok"]),
   skills: z.array(SkillItemSchema),
 });

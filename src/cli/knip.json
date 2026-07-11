@@ -1,12 +1,12 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
   "entry": [
-    "daemon/session-runner.ts",
-    "daemon/meeting-runner.ts",
+    "chhlat/session-runner.ts",
+    "chhlat/meeting-runner.ts",
     "commands/**/*.ts",
     "scripts/**/*.mjs"
   ],
-  "project": ["src/**/*.ts", "commands/**/*.ts", "daemon/**/*.ts", "lib/**/*.ts"],
+  "project": ["src/**/*.ts", "commands/**/*.ts", "chhlat/**/*.ts", "lib/**/*.ts"],
   "ignoreDependencies": [
     "citty"
   ],

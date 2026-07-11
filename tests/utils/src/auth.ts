@@ -46,7 +46,7 @@ export async function tokenRequest(
   opts: RequestInit = {},
 ): Promise<Response> {
   let body = opts.body
-  if (path.startsWith("/api/daemon/tasks/poll") && typeof body === "string") {
+  if (path.startsWith("/api/chhlat/tasks/poll") && typeof body === "string") {
     const parsed = JSON.parse(body) as Record<string, unknown>
     if (!parsed.cli_version) parsed.cli_version = getCurrentCliVersion()
     body = JSON.stringify(parsed)

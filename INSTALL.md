@@ -3,7 +3,7 @@
 This is the **single client install guide** for running ភ្នាក់ងារ Agents on a machine.
 You do **not** need to clone this monorepo, install Cloudflare tools, or deploy Workers.
 
-Agents run as a background **daemon** (`@phneakngar/cli` → command `phneakngar`). The daemon connects to your control plane, receives tasks, and executes them with a local AI runtime (`claude`, `codex`, `opencode`, or `grok`).
+Agents run as a background **chhlat** (`@phneakngar/cli` → command `phneakngar`). Chhlat connects to your control plane, receives tasks, and executes them with a local AI runtime (`claude`, `codex`, `opencode`, or `grok`).
 
 For operator Cloudflare deploys, see [DEPLOY.md](DEPLOY.md). For full local self-host of the web stack, see [src/app/README.md](src/app/README.md).
 
@@ -116,17 +116,17 @@ phneakngar login
 phneakngar register --token al_xxxxxxxxxxxxxxxxxxxxxxxx
 ```
 
-**3. Start the daemon only after registration succeeds:**
+**3. Start chhlat only after registration succeeds:**
 
 ```bash
 phneakngar status          # should say Registered
-phneakngar daemon start
+phneakngar chhlat start
 phneakngar doctor          # no FAIL lines
 ```
 
 If login says **device code expired**: you must approve within the code TTL (now 15 minutes). Sign in on the web first, then run `phneakngar login` again and Approve promptly.
 
-Expected healthy doctor: **Registration**, **Daemon**, **Server**, and **Daemon health** are PASS.
+Expected healthy doctor: **Registration**, **Chhlat**, **Server**, and **Chhlat health** are PASS.
 
 ---
 
@@ -134,13 +134,13 @@ Expected healthy doctor: **Registration**, **Daemon**, **Server**, and **Daemon 
 
 | Goal | Command |
 | --- | --- |
-| Start agents | `phneakngar daemon start` |
-| Check daemon | `phneakngar daemon status` |
+| Start agents | `phneakngar chhlat start` |
+| Check chhlat | `phneakngar chhlat status` |
 | Full status | `phneakngar status` |
 | Diagnostics | `phneakngar doctor` |
 | View logs | `phneakngar logs` |
 | Log path only | `phneakngar logs --path-only` |
-| Stop agents | `phneakngar daemon stop` |
+| Stop agents | `phneakngar chhlat stop` |
 | CLI version | `phneakngar version` |
 | Show config | `phneakngar config show` |
 | Config path | `phneakngar config path` |
@@ -149,7 +149,7 @@ Expected healthy doctor: **Registration**, **Daemon**, **Server**, and **Daemon 
 Foreground debug:
 
 ```bash
-phneakngar daemon start --foreground
+phneakngar chhlat start --foreground
 ```
 
 ---
@@ -161,8 +161,8 @@ phneakngar daemon start --foreground
 | Path | Purpose |
 | --- | --- |
 | `~/.phneakngar/config.json` | Server URL, profiles, workspace tokens |
-| `~/.phneakngar/daemon.pid` | Daemon process id |
-| `~/.phneakngar/daemon/logs/YYYY-MM-DD.log` | Daemon logs |
+| `~/.phneakngar/chhlat.pid` | Chhlat process id |
+| `~/.phneakngar/chhlat/logs/YYYY-MM-DD.log` | Chhlat logs (under chhlat/logs) |
 | `~/.phneakngar/workspaces/` | Per-task workspace directories |
 
 Config directory mode is `0700`; `config.json` is written as `0600`.
@@ -180,14 +180,14 @@ export PHNEAKNGAR_PROJECT_ROOT=/var/lib/phneakngar
 | `PHNEAKNGAR_SERVER_URL` | No | Control plane base URL (default: Cloudflare workers.dev origin above) |
 | `PHNEAKNGAR_PROJECT_ROOT` | No | Config/state directory (default `~/.phneakngar`) |
 | `PHNEAKNGAR_AGENT_ID` | Sometimes | Default agent id for some commands |
-| `PHNEAKNGAR_HEALTH_PORT` | No | Local daemon health port (default `19514`) |
+| `PHNEAKNGAR_HEALTH_PORT` | No | Local chhlat health port (default `19514`) |
 | `PHNEAKNGAR_CLAUDE_PATH` | No | Path to `claude` binary |
 | `PHNEAKNGAR_CODEX_PATH` | No | Path to `codex` binary |
 | `PHNEAKNGAR_OPENCODE_PATH` | No | Path to `opencode` binary |
 | `PHNEAKNGAR_GROK_PATH` | No | Path to `grok` binary |
 | `PHNEAKNGAR_*_MODEL` | No | Model overrides per provider |
 | `XAI_API_KEY` | For Grok API mode | Alternative to `grok login` |
-| `PHNEAKNGAR_DAEMON_MAX_CONCURRENT_TASKS` | No | Default `20` |
+| `PHNEAKNGAR_CHHLAT_MAX_CONCURRENT_TASKS` | No | Default `20` |
 | `PHNEAKNGAR_SHUTDOWN_TIMEOUT_MS` | No | Graceful stop wait (default `5000`) |
 
 ### Secrets
@@ -202,11 +202,11 @@ export PHNEAKNGAR_PROJECT_ROOT=/var/lib/phneakngar
 ## Update
 
 ```bash
-phneakngar daemon stop
+phneakngar chhlat stop
 npm install --global @phneakngar/cli@latest
 phneakngar version
 phneakngar doctor
-phneakngar daemon start
+phneakngar chhlat start
 ```
 
 Or:
@@ -218,9 +218,9 @@ phneakngar update
 From a new tarball:
 
 ```bash
-phneakngar daemon stop
+phneakngar chhlat stop
 npm install --global ./phneakngar-cli-<version>.tgz
-phneakngar daemon start
+phneakngar chhlat start
 ```
 
 ---
@@ -228,7 +228,7 @@ phneakngar daemon start
 ## Uninstall
 
 ```bash
-phneakngar daemon stop
+phneakngar chhlat stop
 npm uninstall --global @phneakngar/cli
 # Optional: remove local state (destructive)
 rm -rf ~/.phneakngar
@@ -245,12 +245,12 @@ rm -rf ~/.phneakngar
 | `doctor` FAIL: Registration | Run `phneakngar login` or `register --token`. |
 | Server WARN / unreachable | Confirm origin: `curl -sS https://phneakngar-web.thatsilenceguy.workers.dev/api/health`. Set `phneakngar config set-server …` if needed. |
 | `login` → `invalid_client` | Operator must set Worker secret `DEVICE_CLIENT_IDS=phneakngar-cli` on `phneakngar-web` (see [DEPLOY.md](DEPLOY.md)). |
-| Daemon exits immediately | `phneakngar logs` + `phneakngar doctor`. |
-| Stale pidfile | `phneakngar daemon stop` then `phneakngar daemon start`. |
-| Tasks not arriving | Control plane up, CLI ≥ server `MIN_CLI_VERSION`, daemon running, agent online in dashboard. |
+| Chhlat exits immediately | `phneakngar logs` + `phneakngar doctor`. |
+| Stale pidfile | `phneakngar chhlat stop` then `phneakngar chhlat start`. |
+| Tasks not arriving | Control plane up, CLI ≥ server `MIN_CLI_VERSION`, chhlat running, agent online in dashboard. |
 | Grok not detected | Install [Grok CLI](https://x.ai/cli); `grok login` or `XAI_API_KEY`. |
 
-Local daemon health:
+Local chhlat health:
 
 ```bash
 curl -sS "http://127.0.0.1:${PHNEAKNGAR_HEALTH_PORT:-19514}/health"
@@ -282,10 +282,10 @@ If you stop receiving mail:
 ## Security
 
 - Treat machine tokens as credentials.
-- Restrict who can log into the agent machine — the daemon can run coding agents with local filesystem access.
+- Restrict who can log into the agent machine — chhlat can run coding agents with local filesystem access.
 - Keep the control plane on HTTPS (Cloudflare workers.dev is HTTPS by default).
 - Review provider CLI permissions and workspace roots under `~/.phneakngar/workspaces`.
-- Do not run the daemon as a shared multi-user root service without isolation.
+- Do not run chhlat as a shared multi-user root service without isolation.
 
 ---
 
@@ -342,8 +342,8 @@ npm install --global @phneakngar/cli   # or install the .tgz
 phneakngar init
 phneakngar doctor
 phneakngar login                      # or: register --token al_...
-phneakngar daemon start
+phneakngar chhlat start
 phneakngar status
 phneakngar logs
-phneakngar daemon stop
+phneakngar chhlat stop
 ```

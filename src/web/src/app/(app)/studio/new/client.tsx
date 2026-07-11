@@ -50,7 +50,7 @@ export function StudioOnboardingClient({
   const [generatedToken, setGeneratedToken] = useState("");
   const [generatingToken, setGeneratingToken] = useState(false);
   const [machineRegistered, setMachineRegistered] = useState(false);
-  const [daemonOnline, setDaemonOnline] = useState(false);
+  const [chhlatOnline, setChhlatOnline] = useState(false);
 
   const isTauriDesktop = isTauri() && isDesktop();
   const onlineRuntimes = runtimes.filter((r) => r.status === "online");
@@ -62,7 +62,7 @@ export function StudioOnboardingClient({
         setRuntimes(rts);
         if (rts.some((r) => r.status === "online")) {
           setMachineRegistered(true);
-          setDaemonOnline(true);
+          setChhlatOnline(true);
         }
       })
       .catch(() => {})
@@ -72,12 +72,12 @@ export function StudioOnboardingClient({
   const handleWsMessage = useCallback((msg: WsMessage) => {
     if (msg.type === "runtime.registered" && msg.workspaceId === workspaceId) {
       setMachineRegistered(true);
-      setDaemonOnline(true);
+      setChhlatOnline(true);
       listRuntimes(workspaceId).then(setRuntimes).catch(() => {});
     } else if (msg.type === "runtime.status" && msg.workspaceId === workspaceId) {
       setMachineRegistered(true);
-      if (msg.status === "online") setDaemonOnline(true);
-      else setDaemonOnline(false);
+      if (msg.status === "online") setChhlatOnline(true);
+      else setChhlatOnline(false);
     }
   }, [workspaceId]);
 
@@ -92,7 +92,7 @@ export function StudioOnboardingClient({
         const result = await tauriInvoke<{ success: boolean; message: string }>("register_cli", { token: res.token });
         if (result.success) {
           setMachineRegistered(true);
-          setDaemonOnline(true);
+          setChhlatOnline(true);
           const rts = await listRuntimes(workspaceId).catch(() => [] as Runtime[]);
           setRuntimes(rts);
         } else {
@@ -272,7 +272,7 @@ export function StudioOnboardingClient({
     scenarioId &&
     members.length > 0 &&
     members.every((m) => m.runtimeId) &&
-    (hasOnlineRuntime || (machineRegistered && daemonOnline) || isTauriDesktop);
+    (hasOnlineRuntime || (machineRegistered && chhlatOnline) || isTauriDesktop);
 
   if (!scenarioId) {
     return (
@@ -398,7 +398,7 @@ export function StudioOnboardingClient({
             {!isTauriDesktop && (
               <div className="space-y-3">
                 <h2 className="text-base font-semibold tracking-tight">{STUDIO_ONBOARDING_LABELS.build.connectComputer}</h2>
-                {(hasOnlineRuntime || (machineRegistered && daemonOnline)) ? (
+                {(hasOnlineRuntime || (machineRegistered && chhlatOnline)) ? (
                   <p className="text-xs text-emerald-600 flex items-center gap-1">
                     <CheckCircle2 className="size-3" /> {STUDIO_ONBOARDING_LABELS.build.computerConnected}
                   </p>
@@ -413,7 +413,7 @@ export function StudioOnboardingClient({
                         generatingToken={generatingToken}
                         onGenerateToken={handleGenerateToken}
                         registered={machineRegistered}
-                        daemonOnline={daemonOnline}
+                        chhlatOnline={chhlatOnline}
                       />
                     </div>
                   </>

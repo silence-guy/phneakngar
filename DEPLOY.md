@@ -274,8 +274,8 @@ After deployment, verify:
 
 1. OAuth login completes and the session cookie is issued only on HTTPS.
 2. A workspace can be created or loaded and a different workspace cannot retrieve its records.
-3. A current CLI can register, start the daemon, report health, authenticate its WebSocket, and receive one task.
-4. Reconnecting the daemon does not duplicate a task or its messages.
+3. A current CLI can register, start chhlat, report health, authenticate its WebSocket, and receive one task.
+4. Reconnecting chhlat does not duplicate a task or its messages.
 5. A CLI below `MIN_CLI_VERSION` receives no tasks and receives an update instruction.
 6. Inbound email creates one D1 email row and deterministic R2 objects; redelivery does not duplicate the agent task.
 7. IMAP account start, sync, status, and stop operations remain workspace scoped.
@@ -302,7 +302,7 @@ Monitor at minimum:
 - D1 errors and migration failures
 - WebSocket authentication failures, capacity rejections, reconnect storms, and message-size rejections
 - Email parse failures, oversized-message rejection, duplicate delivery, IMAP backoff, and notification failure
-- Daemon offline transitions, stale dispatches, update failures, and task retry exhaustion
+- Chhlat offline transitions, stale dispatches, update failures, and task retry exhaustion
 
 Logs must never include raw Worker secrets, OAuth secrets, machine tokens, encrypted account credentials, or email attachment bodies.
 

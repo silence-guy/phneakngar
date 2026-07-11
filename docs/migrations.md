@@ -76,6 +76,15 @@ The production-readiness audit validated the complete chain from an empty local 
 - `0045_email_delivery_idempotency.sql`, which adds a nullable workspace-scoped unique delivery key for retry-safe inbound email.
 - `0046_machine_token_hash.sql`, which adds the token digest index used for lazy migration away from active plaintext machine tokens.
 
+
+## Identity column (`chhlat_id`)
+
+Machine/runtime identity is stored as `chhlat_id`.
+
+- Fresh local databases (`pnpm db:reset`) create `chhlat_id` from the baseline schema chain.
+- Long-lived remotes that still use the pre-rename column name must run `scripts/ops-rename-pre-chhlat-identity-column.sh` once **before** deploying app code that expects `chhlat_id`.
+- Migration `0047_rename_machine_identity_to_chhlat_id.sql` is a no-op marker for the rename path.
+
 ## Production Procedure
 
 List pending remote migrations first:

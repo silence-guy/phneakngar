@@ -1,11 +1,11 @@
 -- Performance indexes for hot-path queries identified via audit
--- Targets: daemon poll, inbox unread, conversation listing, stale task sweep
+-- Targets: chhlat poll, inbox unread, conversation listing, stale task sweep
 
--- 1. agent_runtime: queries filter by (daemon_id, workspace_id) but existing index
---    idx_agent_runtime_workspace_daemon is (workspace_id, daemon_id) — wrong leading column
---    for getRuntimeIdsByDaemon / deleteRuntimesByDaemonId which filter daemon_id first.
-CREATE INDEX IF NOT EXISTS idx_agent_runtime_daemon_workspace
-  ON agent_runtime(daemon_id, workspace_id);
+-- 1. agent_runtime: queries filter by (chhlat_id, workspace_id) but existing index
+--    idx_agent_runtime_workspace_chhlat is (workspace_id, chhlat_id) — wrong leading column
+--    for getRuntimeIdsByChhlat / deleteRuntimesByChhlatId which filter chhlat_id first.
+CREATE INDEX IF NOT EXISTS idx_agent_runtime_chhlat_workspace
+  ON agent_runtime(chhlat_id, workspace_id);
 
 -- 2. agent_task_queue: inbox queries filter by
 --    (workspace_id, status IN ('completed','failed'), type, completed_at DESC)

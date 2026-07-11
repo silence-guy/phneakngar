@@ -10,17 +10,17 @@ beforeAll(() => {
 afterAll(() => cleanupTestData(seed));
 
 describe("CLI auto-update e2e", () => {
-  const daemonId = `daemon_upd_${randomUUID().slice(0, 8)}`;
-  const daemonId2 = `daemon_upd2_${randomUUID().slice(0, 8)}`;
+  const chhlatId = `chhlat_upd_${randomUUID().slice(0, 8)}`;
+  const chhlatId2 = `chhlat_upd2_${randomUUID().slice(0, 8)}`;
 
   beforeAll(async () => {
-    // Register two daemons to avoid 30s misc-throttle conflicts between tests
-    const res = await tokenRequest("/api/daemon/register", seed.machineToken, {
+    // Register two chhlats to avoid 30s misc-throttle conflicts between tests
+    const res = await tokenRequest("/api/chhlat/register", seed.machineToken, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         workspace_id: seed.workspaceId,
-        daemon_id: daemonId,
+        chhlat_id: chhlatId,
         device_name: "update-test-machine",
         cli_version: "0.0.1",
         runtimes: [
@@ -30,12 +30,12 @@ describe("CLI auto-update e2e", () => {
     });
     expect(res.status).toBe(200);
 
-    const res2 = await tokenRequest("/api/daemon/register", seed.machineToken, {
+    const res2 = await tokenRequest("/api/chhlat/register", seed.machineToken, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         workspace_id: seed.workspaceId,
-        daemon_id: daemonId2,
+        chhlat_id: chhlatId2,
         device_name: "update-test-machine-2",
         cli_version: "0.0.1",
         runtimes: [
@@ -48,21 +48,21 @@ describe("CLI auto-update e2e", () => {
 
   it("POST /api/runtimes/:id/update sets pendingUpdateVersion on machine", async () => {
     sqlRun(
-      `UPDATE machine SET pending_update_version = ? WHERE daemon_id = ? AND workspace_id = ?`, '1.0.0', daemonId, seed.workspaceId
+      `UPDATE machine SET pending_update_version = ? WHERE chhlat_id = ? AND workspace_id = ?`, '1.0.0', chhlatId, seed.workspaceId
     );
 
     const rows = sqlQuery<{ pending_update_version: string | null }>(
-      `SELECT pending_update_version FROM machine WHERE daemon_id = ? AND workspace_id = ?`, daemonId, seed.workspaceId
+      `SELECT pending_update_version FROM machine WHERE chhlat_id = ? AND workspace_id = ?`, chhlatId, seed.workspaceId
     );
     expect(rows[0]?.pending_update_version).toBe("1.0.0");
   });
 
   it("poll returns pending_update when version is older", async () => {
-    const res = await tokenRequest("/api/daemon/tasks/poll", seed.machineToken, {
+    const res = await tokenRequest("/api/chhlat/tasks/poll", seed.machineToken, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        daemon_id: daemonId,
+        chhlat_id: chhlatId,
         cli_version: getCurrentCliVersion(),
       }),
     });
@@ -72,16 +72,16 @@ describe("CLI auto-update e2e", () => {
   });
 
   it("poll auto-clears pendingUpdateVersion when cli_version matches", async () => {
-    // Use a separate daemon to avoid 30s misc-throttle from previous poll
+    // Use a separate chhlat to avoid 30s misc-throttle from previous poll
     sqlRun(
-      `UPDATE machine SET pending_update_version = ? WHERE daemon_id = ? AND workspace_id = ?`, '1.0.0', daemonId2, seed.workspaceId
+      `UPDATE machine SET pending_update_version = ? WHERE chhlat_id = ? AND workspace_id = ?`, '1.0.0', chhlatId2, seed.workspaceId
     );
 
-    const res = await tokenRequest("/api/daemon/tasks/poll", seed.machineToken, {
+    const res = await tokenRequest("/api/chhlat/tasks/poll", seed.machineToken, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        daemon_id: daemonId2,
+        chhlat_id: chhlatId2,
         cli_version: "1.0.0",
       }),
     });
@@ -90,17 +90,17 @@ describe("CLI auto-update e2e", () => {
     expect(data.pending_update).toBeUndefined();
 
     const rows = sqlQuery<{ pending_update_version: string | null }>(
-      `SELECT pending_update_version FROM machine WHERE daemon_id = ? AND workspace_id = ?`, daemonId2, seed.workspaceId
+      `SELECT pending_update_version FROM machine WHERE chhlat_id = ? AND workspace_id = ?`, chhlatId2, seed.workspaceId
     );
     expect(rows[0]?.pending_update_version).toBeNull();
   });
 
   afterAll(() => {
     try {
-      sqlRun(`DELETE FROM agent_runtime WHERE daemon_id = ?`, daemonId);
-      sqlRun(`DELETE FROM machine WHERE daemon_id = ?`, daemonId);
-      sqlRun(`DELETE FROM agent_runtime WHERE daemon_id = ?`, daemonId2);
-      sqlRun(`DELETE FROM machine WHERE daemon_id = ?`, daemonId2);
+      sqlRun(`DELETE FROM agent_runtime WHERE chhlat_id = ?`, chhlatId);
+      sqlRun(`DELETE FROM machine WHERE chhlat_id = ?`, chhlatId);
+      sqlRun(`DELETE FROM agent_runtime WHERE chhlat_id = ?`, chhlatId2);
+      sqlRun(`DELETE FROM machine WHERE chhlat_id = ?`, chhlatId2);
     } catch { /* ignore */ }
   });
 });

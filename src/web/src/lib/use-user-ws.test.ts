@@ -242,8 +242,8 @@ describe("useUserWs", () => {
     const ws = MockWebSocket.instances[0]
     ws.simulateOpen()
 
-    send({ type: "check_daemon_status" })
-    expect(ws.sent).toContain(JSON.stringify({ type: "check_daemon_status" }))
+    send({ type: "check_chhlat_status" })
+    expect(ws.sent).toContain(JSON.stringify({ type: "check_chhlat_status" }))
   })
 
   it("send() is a no-op when WS is not connected", async () => {

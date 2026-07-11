@@ -22,7 +22,7 @@ This will:
 4. Run database migrations (SQLite via Cloudflare D1 local)
 5. Start all services (web, email worker, WebSocket)
 6. Create your account and workspace
-7. Register your AI runtime and start the daemon
+7. Register your AI runtime and start chhlat
 8. Open the dashboard in your browser
 
 ## Commands
@@ -36,13 +36,13 @@ This will:
 
 ### Embedded CLI
 
-`@phneakngar/app` bundles a copy of `@phneakngar/cli` for managing the local daemon and runtime registration:
+`@phneakngar/app` bundles a copy of `@phneakngar/cli` for managing the local chhlat and runtime registration:
 
 ```bash
 npx @phneakngar/app register          # Register CLI with local server
-npx @phneakngar/app daemon start      # Start the daemon
-npx @phneakngar/app daemon stop       # Stop the daemon
-npx @phneakngar/app daemon status     # Check daemon status
+npx @phneakngar/app chhlat start      # Start chhlat
+npx @phneakngar/app chhlat stop       # Stop chhlat
+npx @phneakngar/app chhlat status     # Check chhlat status
 npx @phneakngar/app cli <any command> # Pass-through to @phneakngar/cli
 ```
 

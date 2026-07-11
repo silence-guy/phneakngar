@@ -103,12 +103,12 @@ describe("POST /api/machine-tokens/activate", () => {
     const body = await res.json();
 
     expect(res.status).toBe(200);
-    expect(body.daemon_id).toBe("TestMachine.local");
+    expect(body.chhlat_id).toBe("TestMachine.local");
     expect(body.workspace_id).toBe("ws_1");
     expect(body.runtimes).toHaveLength(1);
 
     expect(mockUpsertMachine).toHaveBeenCalledWith(expect.anything(), {
-      daemonId: "TestMachine.local",
+      chhlatId: "TestMachine.local",
       workspaceId: "ws_1",
       deviceInfo: "TestMachine.local",
       lastSeenAt: null,
@@ -117,7 +117,7 @@ describe("POST /api/machine-tokens/activate", () => {
 
     expect(mockUpsertAgentRuntime).toHaveBeenCalledWith(expect.anything(), {
       workspaceId: "ws_1",
-      daemonId: "TestMachine.local",
+      chhlatId: "TestMachine.local",
       runtimeMode: "local",
       provider: "claude",
       deviceInfo: "TestMachine.local",
@@ -144,7 +144,7 @@ describe("POST /api/machine-tokens/activate", () => {
 
     expect(mockBroadcastToUser).toHaveBeenCalledWith("u1", {
       type: "runtime.registered",
-      daemonId: "TestMachine.local",
+      chhlatId: "TestMachine.local",
       hostname: "TestMachine.local",
       workspaceId: "ws_1",
     });

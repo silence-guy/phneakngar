@@ -52,7 +52,7 @@ export interface RuntimeMetadata {
 export interface AgentRuntime {
   id: string;
   workspace_id: string;
-  daemon_id: string | null;
+  chhlat_id: string | null;
   runtime_mode: string;
   provider: string;
   status: string;
@@ -164,7 +164,7 @@ export interface TaskMessageResponse {
 }
 
 export interface Machine {
-  daemon_id: string;
+  chhlat_id: string;
   workspace_id: string;
   device_info: string;
   last_seen_at: string | null;
@@ -286,9 +286,9 @@ export interface MeetingSession {
 
 /** WebSocket event types — single source of truth for the WS protocol. */
 export type WsMessage =
-  | { type: "runtime.registered"; daemonId: string; hostname: string; workspaceId: string }
-  | { type: "runtime.status"; daemonId: string; workspaceId?: string; status: string }
-  | { type: "runtime.deleted"; daemonId: string }
+  | { type: "runtime.registered"; chhlatId: string; hostname: string; workspaceId: string }
+  | { type: "runtime.status"; chhlatId: string; workspaceId?: string; status: string }
+  | { type: "runtime.deleted"; chhlatId: string }
   | { type: "task.created"; conversationId: string; task: TaskApi }
   | { type: "task.updated"; taskId: string; agentId: string; status: string }
   | { type: "task.messages"; taskId: string; messages: TaskMessageResponse[] }
@@ -310,12 +310,14 @@ export interface WorkspaceFileResult {
   path: string;
 }
 
-/** Messages pushed from server to daemon via WebSocket. */
-export type DaemonPushMessage =
-  | { type: "daemon.tasks"; tasks: TaskApi[] }
-  | { type: "daemon.file_requests"; workspaceId: string; requests: FileRequestItem[] }
-  | { type: "daemon.meetings"; meetings: PollMeetingItem[] }
-  | { type: "daemon.evict"; workspaceId: string }
-  | { type: "daemon.update"; version: string }
-  | { type: "daemon.rescan" }
-  | { type: "daemon.kill"; workspaceId: string; agentId: string; taskId: string; targetTaskId: string }
+/** Messages pushed from server to chhlat via WebSocket. */
+export type ChhlatPushMessage =
+  | { type: "chhlat.tasks"; tasks: TaskApi[] }
+  | { type: "chhlat.file_requests"; workspaceId: string; requests: FileRequestItem[] }
+  | { type: "chhlat.meetings"; meetings: PollMeetingItem[] }
+  | { type: "chhlat.evict"; workspaceId: string }
+  | { type: "chhlat.update"; version: string }
+  | { type: "chhlat.rescan" }
+  | { type: "chhlat.kill"; workspaceId: string; agentId: string; taskId: string; targetTaskId: string };
+
+

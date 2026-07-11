@@ -65,7 +65,7 @@ interface AgentContextValue {
   handleReorderUnpinned: (orderedAgentIds: string[]) => Promise<void>;
   getFirstOnlineRuntimeId: () => string;
   handleGenerateToken: () => Promise<string | null>;
-  handleDeleteMachine: (daemonId: string) => Promise<boolean>;
+  handleDeleteMachine: (chhlatId: string) => Promise<boolean>;
   patchAgent: (id: string, fields: Partial<Agent>) => void;
 }
 
@@ -381,9 +381,9 @@ export function AgentProvider({
   }, [workspaceId]);
 
   const handleDeleteMachine = useCallback(
-    async (daemonId: string): Promise<boolean> => {
+    async (chhlatId: string): Promise<boolean> => {
       try {
-        await deleteMachine(daemonId, workspaceId);
+        await deleteMachine(chhlatId, workspaceId);
         await reload();
         return true;
       } catch (err) {

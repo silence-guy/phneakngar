@@ -1,7 +1,7 @@
 import type { Database } from "@phneakngar/shared";
 import { queries, TASK_TYPES, MAX_TASKS_PER_TRACE } from "@phneakngar/shared";
 import { log } from "@/lib/logger";
-import { broadcastToUser, broadcastToDaemon } from "@/lib/broadcast";
+import { broadcastToUser, broadcastToChhlat } from "@/lib/broadcast";
 import { messageToResponse } from "@/lib/api/responses";
 import { invalidate, cacheKeys } from "@/lib/cache";
 import { TaskPayloadBuilder } from "@/lib/services/task-payload-builder";
@@ -69,10 +69,10 @@ export class TaskService {
         })).task
       : await taskQueries.createTask(this.db, taskData);
     invalidate(cacheKeys.activeTaskCounts(workspaceId)).catch(() => {});
-    // Push task to daemon via WS (best-effort). Awaited to ensure task state
+    // Push task to chhlat via WS (best-effort). Awaited to ensure task state
     // settles (dispatched on success, reverted to queued on failure) before
     // the HTTP response returns, preventing races with subsequent poll calls.
-    await this.pushTaskToDaemon(task, workspaceId).catch(() => {});
+    await this.pushTaskToChhlat(task, workspaceId).catch(() => {});
     return task;
   }
 
@@ -378,19 +378,19 @@ export class TaskService {
         context: { target_task_id: activeTask.id },
       });
 
-      // Dispatch (claim) the kill task so it arrives at the daemon in "dispatched" status,
-      // allowing the daemon to call failTask without a status mismatch error.
+      // Dispatch (claim) the kill task so it arrives at the chhlat in "dispatched" status,
+      // allowing the chhlat to call failTask without a status mismatch error.
       await taskQueries.dispatchTaskById(this.db, killTask.id, workspaceId);
 
       const runtime = await queries.runtime.getAgentRuntime(this.db, activeTask.runtimeId);
       if (runtime) {
-        broadcastToDaemon(runtime.daemonId, {
-          type: "daemon.kill",
+        broadcastToChhlat(runtime.chhlatId, {
+          type: "chhlat.kill",
           workspaceId,
           agentId: activeTask.agentId,
           taskId: killTask.id,
           targetTaskId: activeTask.id,
-        }).catch((e) => log.warn("daemon.kill broadcast failed, relying on poll fallback", e));
+        }).catch((e) => log.warn("chhlat.kill broadcast failed, relying on poll fallback", e));
       }
     }
 
@@ -431,7 +431,7 @@ export class TaskService {
     }
   }
 
-  private async pushTaskToDaemon(
+  private async pushTaskToChhlat(
     task: Awaited<ReturnType<typeof taskQueries.createTask>>,
     workspaceId: string,
   ) {
@@ -449,8 +449,8 @@ export class TaskService {
     }
 
     try {
-      const { sent } = await broadcastToDaemon(runtime.daemonId, {
-        type: "daemon.tasks",
+      const { sent } = await broadcastToChhlat(runtime.chhlatId, {
+        type: "chhlat.tasks",
         tasks: payloads,
       });
       if (sent === 0) {

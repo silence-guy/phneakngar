@@ -62,12 +62,12 @@ describe("regression: WS broadcast HTTP endpoint on task events", () => {
     expect(data.sent).toBe(0)
   })
 
-  it("daemon broadcast endpoint delivers to daemon WS clients", async () => {
+  it("chhlat broadcast endpoint delivers to chhlat WS clients", async () => {
     if (!wsAvailable) return
 
-    const res = await fetch(`${WS_DO_HTTP}/broadcast/daemon/${seed.daemonId}`, {
+    const res = await fetch(`${WS_DO_HTTP}/broadcast/chhlat/${seed.chhlatId}`, {
       method: "POST",
-      body: JSON.stringify({ type: "daemon.tasks", tasks: [] }),
+      body: JSON.stringify({ type: "chhlat.tasks", tasks: [] }),
     })
     expect(res.status).toBe(200)
   })

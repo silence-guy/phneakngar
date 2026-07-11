@@ -44,7 +44,7 @@ const CODER_STEPS: DashboardStep[] = [
 const TERMINAL_LINES: TerminalLine[] = [
   { spans: [
     { text: "INFO  ", color: "keyword" },
-    { text: "[daemon] ", color: "muted" },
+    { text: "[chhlat] ", color: "muted" },
     { text: "Task ", color: "info" },
     { text: "PhGFC9l ", color: "string" },
     { text: "claimed agent=", color: "info" },
@@ -66,7 +66,7 @@ const TERMINAL_LINES: TerminalLine[] = [
   ] },
   { spans: [
     { text: "INFO  ", color: "keyword" },
-    { text: "[daemon] ", color: "muted" },
+    { text: "[chhlat] ", color: "muted" },
     { text: "Task ", color: "info" },
     { text: "xK9mT2r ", color: "string" },
     { text: "claimed agent=", color: "info" },

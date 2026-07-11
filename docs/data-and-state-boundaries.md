@@ -9,7 +9,7 @@ Always include the owning scope in the query predicate before reading data:
 - Workspace-owned data: filter with `workspaceId`.
 - User-owned data: filter with `userId` and, when applicable, `workspaceId`.
 - Agent-owned data: filter with `agentId` and `workspaceId`.
-- Runtime/daemon data: filter with `daemonId`, `runtimeId`, or `workspaceId` before returning rows.
+- Runtime/chhlat data: filter with `chhlatId`, `runtimeId`, or `workspaceId` before returning rows.
 
 Do not fetch by broad ID and then check ownership in application code. The shared query layer in `src/shared/src/db/queries/*.ts` should encode ownership in the database query itself.
 

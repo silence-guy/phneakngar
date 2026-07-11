@@ -4,8 +4,8 @@ import { loadCLIConfigForProfile, configPath, configDir } from "../lib/config.js
 import { getServerUrl, cmdPrefix } from "../lib/env.js";
 import { detectRuntimes } from "../lib/runtimes.js";
 import { getCurrentVersion } from "../lib/version.js";
-import { isProcessAlive, readDaemonPid } from "../daemon/pidfile.js";
-import { daemonLogFilePath, pidFilePath } from "../daemon/config.js";
+import { isProcessAlive, readChhlatPid } from "../chhlat/pidfile.js";
+import { chhlatLogFilePath, pidFilePath } from "../chhlat/config.js";
 
 export type CheckStatus = "pass" | "fail" | "warn" | "info";
 
@@ -119,41 +119,41 @@ export function checkRuntimes(): DoctorCheck {
   };
 }
 
-export function checkDaemon(profile?: string): DoctorCheck {
-  const pid = readDaemonPid(profile);
+export function checkChhlat(profile?: string): DoctorCheck {
+  const pid = readChhlatPid(profile);
   if (pid == null) {
     return {
-      name: "Daemon",
+      name: "Chhlat",
       status: "fail",
       detail: "not running",
-      hint: `Start with '${cmdPrefix()} daemon start'`,
+      hint: `Start with '${cmdPrefix()} chhlat start'`,
     };
   }
   if (!isProcessAlive(pid)) {
     return {
-      name: "Daemon",
+      name: "Chhlat",
       status: "fail",
       detail: `stale pidfile (pid=${pid}) at ${pidFilePath(profile)}`,
-      hint: `Remove stale pidfile or run '${cmdPrefix()} daemon stop' then '${cmdPrefix()} daemon start'`,
+      hint: `Remove stale pidfile or run '${cmdPrefix()} chhlat stop' then '${cmdPrefix()} chhlat start'`,
     };
   }
   return {
-    name: "Daemon",
+    name: "Chhlat",
     status: "pass",
     detail: `running (pid=${pid})`,
   };
 }
 
-export async function checkDaemonHealth(
+export async function checkChhlatHealth(
   profile?: string,
   fetchImpl: typeof fetch = fetch,
 ): Promise<DoctorCheck> {
-  const pid = readDaemonPid(profile);
+  const pid = readChhlatPid(profile);
   if (pid == null || !isProcessAlive(pid)) {
     return {
-      name: "Daemon health",
+      name: "Chhlat health",
       status: "warn",
-      detail: "skipped (daemon not running)",
+      detail: "skipped (chhlat not running)",
     };
   }
   const port = Number(process.env.PHNEAKNGAR_HEALTH_PORT) || 19514;
@@ -162,10 +162,10 @@ export async function checkDaemonHealth(
     const res = await fetchImpl(url, { signal: AbortSignal.timeout(3000) });
     if (!res.ok) {
       return {
-        name: "Daemon health",
+        name: "Chhlat health",
         status: "warn",
         detail: `HTTP ${res.status} from ${url}`,
-        hint: `Check logs: ${daemonLogFilePath()}`,
+        hint: `Check logs: ${chhlatLogFilePath()}`,
       };
     }
     let body = "";
@@ -175,16 +175,16 @@ export async function checkDaemonHealth(
       // optional
     }
     return {
-      name: "Daemon health",
+      name: "Chhlat health",
       status: "pass",
       detail: body ? `ok (${url})` : `ok HTTP ${res.status} (${url})`,
     };
   } catch (err) {
     return {
-      name: "Daemon health",
+      name: "Chhlat health",
       status: "warn",
       detail: `unreachable at ${url}: ${err instanceof Error ? err.message : String(err)}`,
-      hint: `Check logs: ${daemonLogFilePath()}`,
+      hint: `Check logs: ${chhlatLogFilePath()}`,
     };
   }
 }
@@ -232,11 +232,11 @@ export async function runDoctor(
     checkConfig(profile),
     checkRegistration(profile),
     checkRuntimes(),
-    checkDaemon(profile),
+    checkChhlat(profile),
   ];
 
   if (!options.skipNetwork) {
-    checks.push(await checkDaemonHealth(profile, fetchImpl));
+    checks.push(await checkChhlatHealth(profile, fetchImpl));
     checks.push(await checkServerReachability(profile, fetchImpl));
   }
 

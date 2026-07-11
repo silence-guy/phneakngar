@@ -55,10 +55,10 @@ export function RuntimeVersionGate() {
     return !semverGte(cliVersion, minVersion);
   });
 
-  // Deduplicate by daemon_id — show one card per machine
+  // Deduplicate by chhlat_id — show one card per machine
   const outdatedMachines = new Map<string, AgentRuntime>();
   for (const rt of outdatedRuntimes) {
-    const key = rt.daemon_id ?? rt.id;
+    const key = rt.chhlat_id ?? rt.id;
     if (!outdatedMachines.has(key)) outdatedMachines.set(key, rt);
   }
 
@@ -123,20 +123,20 @@ export function RuntimeVersionGate() {
         </DialogHeader>
 
         <div className="space-y-3 mt-2">
-          {[...outdatedMachines.entries()].map(([daemonId, rt]) => {
+          {[...outdatedMachines.entries()].map(([chhlatId, rt]) => {
             const cliVersion = rt.metadata?.cli_version as string | undefined;
             const isUpdating = updating.has(rt.id);
 
             return (
               <div
-                key={daemonId}
+                key={chhlatId}
                 className="flex items-center justify-between rounded-lg border p-3"
               >
                 <div className="flex items-center gap-3 min-w-0">
                   <span className="size-2 shrink-0 rounded-full bg-emerald-500" />
                   <div className="min-w-0">
                     <div className="text-sm font-medium truncate">
-                      {rt.device_info || daemonId.slice(0, 12)}
+                      {rt.device_info || chhlatId.slice(0, 12)}
                     </div>
                     <div className="text-xs text-muted-foreground flex items-center gap-2 mt-0.5">
                       <span>v{cliVersion || COMPONENT_LABELS.runtime.unknownVersion}</span>

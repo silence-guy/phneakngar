@@ -5,14 +5,14 @@ import { dirname } from "path";
 import { APIClient } from "./client.js";
 import { loadCLIConfigForProfile, saveCLIConfigForProfile } from "./config.js";
 import { cmdPrefix, isDev } from "./env.js";
-import { readDaemonPid, isProcessAlive } from "../daemon/pidfile.js";
-import { daemonLogFilePath } from "../daemon/config.js";
-import { startDaemon } from "../daemon/daemon.js";
+import { readChhlatPid, isProcessAlive } from "../chhlat/pidfile.js";
+import { chhlatLogFilePath } from "../chhlat/config.js";
+import { startChhlat } from "../chhlat/chhlat.js";
 import { resolveLoginShellEnv } from "./shell-env.js";
 import { detectRuntimes } from "./runtimes.js";
 
 interface ActivateResponse {
-  daemon_id: string;
+  chhlat_id?: string;
   workspace_id: string;
   runtimes: { id: string; provider: string }[];
 }
@@ -113,26 +113,26 @@ export async function activateAndSave(opts: {
     watched_workspaces: watched,
   });
 
-  const daemonPid = readDaemonPid(profile);
-  if (daemonPid && isProcessAlive(daemonPid)) {
+  const chhlatPid = readChhlatPid(profile);
+  if (chhlatPid && isProcessAlive(chhlatPid)) {
     try {
-      process.kill(daemonPid, "SIGHUP");
-      console.log(`\nDaemon (pid ${daemonPid}) notified — workspace will be active shortly.`);
+      process.kill(chhlatPid, "SIGHUP");
+      console.log(`\nChhlat (pid ${chhlatPid}) notified — workspace will be active shortly.`);
     } catch {
-      console.log(`\nDaemon is running but could not be notified. Restart it to pick up the new workspace.`);
+      console.log(`\nChhlat is running but could not be notified. Restart it to pick up the new workspace.`);
     }
   } else if (isDev() && process.stdout.isTTY) {
-    console.log("\nStarting daemon in foreground...");
-    await startDaemon(profile, serverUrl);
+    console.log("\nStarting chhlat in foreground...");
+    await startChhlat(profile, serverUrl);
   } else {
-    console.log("\nStarting daemon...");
+    console.log("\nStarting chhlat...");
     try {
       const entry = process.argv[1];
       const args = [entry];
       if (profile) args.push("--profile", profile);
-      args.push("daemon", "start", "--foreground");
+      args.push("chhlat", "start", "--foreground");
 
-      const logPath = daemonLogFilePath();
+      const logPath = chhlatLogFilePath();
       mkdirSync(dirname(logPath), { recursive: true, mode: 0o700 });
       const logFd = openSync(logPath, "a", 0o600);
 
@@ -143,10 +143,10 @@ export async function activateAndSave(opts: {
       });
       child.unref();
       closeSync(logFd);
-      console.log("Daemon started in background.");
+      console.log("Chhlat started in background.");
       console.log(`Logs: ${logPath}`);
     } catch {
-      console.log(`Failed to auto-start daemon. Run '${cmdPrefix()} daemon start' manually.`);
+      console.log(`Failed to auto-start chhlat. Run '${cmdPrefix()} chhlat start' manually.`);
     }
   }
 

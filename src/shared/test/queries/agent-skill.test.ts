@@ -22,7 +22,7 @@ describe("agent-skill query module exports", () => {
 });
 
 describe("agent-skill query function signatures", () => {
-  it("syncGlobalSkills accepts (db, workspaceId, runtime, skills, daemonId?)", () => {
+  it("syncGlobalSkills accepts (db, workspaceId, runtime, skills, chhlatId?)", () => {
     expect(agentSkillQueries.syncGlobalSkills.length).toBe(5);
   });
   it("syncAgentSkills accepts (db, agentId, runtime, workspaceId, skills)", () => {

@@ -121,10 +121,10 @@ describe("workspace invite flow", () => {
     // Create a runtime owned by the invitee so they can pass the member-isolation check
     const inviteeUserId = sqlQuery<{ id: string }>(`SELECT id FROM "user" WHERE email = ?`, inviteeEmail)[0].id
     const now = new Date().toISOString()
-    const inviteeDaemonId = `daemon_invitee_${Date.now()}`
+    const inviteeChhlatId = `chhlat_invitee_${Date.now()}`
     const inviteeRtId = `rt_invitee_${Date.now()}`
-    sqlRun(`INSERT INTO machine (daemon_id, workspace_id, device_info, last_seen_at, created_at, updated_at, owner_id) VALUES (?, ?, ?, ?, ?, ?, ?)`, inviteeDaemonId, seed.workspaceId, "test", now, now, now, inviteeUserId)
-    sqlRun(`INSERT INTO agent_runtime (id, workspace_id, daemon_id, runtime_mode, provider, status, device_info, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`, inviteeRtId, seed.workspaceId, inviteeDaemonId, "local", "claude", "online", "test", now, now)
+    sqlRun(`INSERT INTO machine (chhlat_id, workspace_id, device_info, last_seen_at, created_at, updated_at, owner_id) VALUES (?, ?, ?, ?, ?, ?, ?)`, inviteeChhlatId, seed.workspaceId, "test", now, now, now, inviteeUserId)
+    sqlRun(`INSERT INTO agent_runtime (id, workspace_id, chhlat_id, runtime_mode, provider, status, device_info, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`, inviteeRtId, seed.workspaceId, inviteeChhlatId, "local", "claude", "online", "test", now, now)
 
     const res = await sessionRequest(`/api/studios`, inviteeCookie, {
       method: "POST",

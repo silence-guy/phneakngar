@@ -48,7 +48,7 @@ export async function listTaskMessages(db: Database, taskId: string, workspaceId
     .from(taskMessage)
     .innerJoin(agentTaskQueue, eq(taskMessage.taskId, agentTaskQueue.id))
     // Exclude tool-result/tool-use/thinking from the READ side only: the UI
-    // doesn't render them. They ARE still written (see daemon messages route)
+    // doesn't render them. They ARE still written (see chhlat messages route)
     // and retained for future data analysis — do NOT take this filter as a
     // sign the rows are dead and stop persisting them.
     .where(and(eq(taskMessage.taskId, taskId), eq(agentTaskQueue.workspaceId, workspaceId), notInArray(taskMessage.type, ["tool-result", "tool-use", "thinking"])))

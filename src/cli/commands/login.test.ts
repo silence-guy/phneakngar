@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 const mockLoadCLIConfigForProfile = vi.fn();
 const mockSaveCLIConfigForProfile = vi.fn();
-const mockReadDaemonPid = vi.fn();
+const mockReadChhlatPid = vi.fn();
 const mockIsProcessAlive = vi.fn();
 
 vi.mock("../lib/config.js", () => ({
@@ -10,8 +10,8 @@ vi.mock("../lib/config.js", () => ({
   saveCLIConfigForProfile: (...args: any[]) => mockSaveCLIConfigForProfile(...args),
 }));
 
-vi.mock("../daemon/pidfile.js", () => ({
-  readDaemonPid: (...args: any[]) => mockReadDaemonPid(...args),
+vi.mock("../chhlat/pidfile.js", () => ({
+  readChhlatPid: (...args: any[]) => mockReadChhlatPid(...args),
   isProcessAlive: (...args: any[]) => mockIsProcessAlive(...args),
 }));
 
@@ -56,7 +56,7 @@ describe("phneakngar login", () => {
       server_url: "http://localhost:3000",
       watched_workspaces: [],
     });
-    mockReadDaemonPid.mockReturnValue(null);
+    mockReadChhlatPid.mockReturnValue(null);
   });
 
   afterEach(() => {
@@ -109,7 +109,7 @@ describe("phneakngar login", () => {
       { url: "/api/me", status: 200, body: { id: "u1", email: "test@phneakngar.ai" } },
       { url: "/api/workspaces", status: 200, body: [{ id: "sp_ws1", name: "My Workspace" }] },
       { url: "/api/machine-tokens", status: 201, body: { token: "al_machine_tok" } },
-      { url: "/api/machine-tokens/activate", status: 200, body: { daemon_id: "host1", workspace_id: "sp_ws1", runtimes: [{ id: "r1", provider: "claude" }] } },
+      { url: "/api/machine-tokens/activate", status: 200, body: { chhlat_id: "host1", workspace_id: "sp_ws1", runtimes: [{ id: "r1", provider: "claude" }] } },
       { url: "/api/workspaces", status: 200, body: [{ id: "sp_ws1", name: "My Workspace" }] },
       { url: "/api/agents", status: 200, body: [{ id: "ag_1" }] },
     ];
@@ -166,7 +166,7 @@ describe("phneakngar login", () => {
       { url: "/api/me", status: 200, body: { id: "u1", email: "poll@phneakngar.ai" } },
       { url: "/api/workspaces", status: 200, body: [{ id: "sp_poll", name: "Poll WS" }] },
       { url: "/api/machine-tokens", status: 201, body: { token: "al_poll_tok" } },
-      { url: "/api/machine-tokens/activate", status: 200, body: { daemon_id: "host1", workspace_id: "sp_poll", runtimes: [{ id: "r1", provider: "claude" }] } },
+      { url: "/api/machine-tokens/activate", status: 200, body: { chhlat_id: "host1", workspace_id: "sp_poll", runtimes: [{ id: "r1", provider: "claude" }] } },
       { url: "/api/workspaces", status: 200, body: [{ id: "sp_poll", name: "Poll WS" }] },
       { url: "/api/agents", status: 200, body: [] },
     ]);
@@ -186,7 +186,7 @@ describe("phneakngar login", () => {
       { url: "/api/me", status: 200, body: { id: "u1", email: "slow@phneakngar.ai" } },
       { url: "/api/workspaces", status: 200, body: [{ id: "sp_slow", name: "Slow WS" }] },
       { url: "/api/machine-tokens", status: 201, body: { token: "al_slow_tok" } },
-      { url: "/api/machine-tokens/activate", status: 200, body: { daemon_id: "host1", workspace_id: "sp_slow", runtimes: [{ id: "r1", provider: "claude" }] } },
+      { url: "/api/machine-tokens/activate", status: 200, body: { chhlat_id: "host1", workspace_id: "sp_slow", runtimes: [{ id: "r1", provider: "claude" }] } },
       { url: "/api/workspaces", status: 200, body: [{ id: "sp_slow", name: "Slow WS" }] },
       { url: "/api/agents", status: 200, body: [] },
     ]);
@@ -197,8 +197,8 @@ describe("phneakngar login", () => {
     expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("Logged in as slow@phneakngar.ai"));
   });
 
-  it("sends SIGHUP when daemon is running after login", async () => {
-    mockReadDaemonPid.mockReturnValue(99999);
+  it("sends SIGHUP when chhlat is running after login", async () => {
+    mockReadChhlatPid.mockReturnValue(99999);
     mockIsProcessAlive.mockReturnValue(true);
     mockFetchSequence(fullSuccessResponses());
 
@@ -267,7 +267,7 @@ describe("phneakngar login", () => {
         { url: "/api/me", status: 200, body: { id: "u1", email: "test@phneakngar.ai" } },
         { url: "/api/workspaces", status: 200, body: [{ id: "sp_ws1", name: "My Workspace" }] },
         { url: "/api/machine-tokens", status: 201, body: { token: "al_new_tok" } },
-        { url: "/api/machine-tokens/activate", status: 200, body: { daemon_id: "host1", workspace_id: "sp_ws1", runtimes: [{ id: "r1", provider: "claude" }] } },
+        { url: "/api/machine-tokens/activate", status: 200, body: { chhlat_id: "host1", workspace_id: "sp_ws1", runtimes: [{ id: "r1", provider: "claude" }] } },
         { url: "/api/workspaces", status: 200, body: [{ id: "sp_ws1", name: "My Workspace" }] },
         { url: "/api/agents", status: 200, body: [] },
       ]);
@@ -399,7 +399,7 @@ describe("phneakngar login", () => {
           { id: "sp_ws2", name: "Personal" },
         ] },
         { url: "/api/machine-tokens", status: 201, body: { token: "al_mt" } },
-        { url: "/api/machine-tokens/activate", status: 200, body: { daemon_id: "h1", workspace_id: "sp_ws1", runtimes: [{ id: "r1", provider: "claude" }] } },
+        { url: "/api/machine-tokens/activate", status: 200, body: { chhlat_id: "h1", workspace_id: "sp_ws1", runtimes: [{ id: "r1", provider: "claude" }] } },
         { url: "/api/workspaces", status: 200, body: [
           { id: "sp_ws1", name: "Work" },
           { id: "sp_ws2", name: "Personal" },

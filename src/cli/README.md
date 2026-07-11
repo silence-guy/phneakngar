@@ -1,6 +1,6 @@
 # @phneakngar/cli
 
-ភ្នាក់ងារ CLI — register machines, run the agent daemon, and manage agents from the command line.
+ភ្នាក់ងារ CLI — register machines, run the agent chhlat, and manage agents from the command line.
 
 Client install guide: [INSTALL.md](../../INSTALL.md)
 
@@ -44,20 +44,20 @@ phneakngar login
 phneakngar register --token al_xxxxxxxxxxxxxxxxxxxxxxxx
 ```
 
-4. Start the daemon:
+4. Start chhlat:
 
 ```bash
-phneakngar daemon start
+phneakngar chhlat start
 phneakngar status
 ```
 
-The daemon runs in the background, polling for tasks and dispatching them to your local AI runtimes (Claude, Codex, OpenCode, or Grok).
+Chhlat runs in the background, polling for tasks and dispatching them to your local AI runtimes (Claude, Codex, OpenCode, or Grok).
 
 ### Grok (xAI)
 
 1. Install the [Grok Build CLI](https://x.ai/cli) and put `grok` on your `PATH`.
 2. Authenticate with a Grok subscription: `grok login` (or set `XAI_API_KEY` for API-key mode).
-3. Start the daemon — it auto-detects `grok` like other providers.
+3. Start chhlat — it auto-detects `grok` like other providers.
 4. Optional overrides: `PHNEAKNGAR_GROK_PATH`, `PHNEAKNGAR_GROK_MODEL`.
 
 ## Commands
@@ -65,14 +65,14 @@ The daemon runs in the background, polling for tasks and dispatching them to you
 | Command | Description |
 | --- | --- |
 | `init` | Create local config (`~/.phneakngar`) and optional server URL |
-| `doctor` | Diagnose Node, registration, runtimes, daemon, and server health |
+| `doctor` | Diagnose Node, registration, runtimes, chhlat, and server health |
 | `register --token <token>` | Register this machine with your ភ្នាក់ងារ account |
 | `login` | Browser device-code login |
-| `status` | Registration, daemon, and AI runtime summary |
-| `daemon start` | Start the background daemon |
-| `daemon stop` | Stop the daemon |
-| `daemon status` | Check if the daemon is running |
-| `logs` | Show daemon log path and recent lines |
+| `status` | Registration, chhlat, and AI runtime summary |
+| `chhlat start` | Start the background chhlat |
+| `chhlat stop` | Stop chhlat |
+| `chhlat status` | Check if chhlat is running |
+| `logs` | Show chhlat log path and recent lines |
 | `email pull` | Download agent emails |
 | `email send --to <addr> --subject "..." --body-file <path>` | Send an email |
 | `calendar set --event_title "..." --datetime <YYYY-MM-DDTHH:MM>` | Create a scheduled event |
@@ -87,19 +87,19 @@ The daemon runs in the background, polling for tasks and dispatching them to you
 Run `phneakngar <command> --help` for all subcommand options.
 
 <details>
-<summary><strong>daemon</strong> — manage the background daemon</summary>
+<summary><strong>chhlat</strong> — manage the always-on agent</summary>
 
 ```bash
-phneakngar daemon start               # Start in background
-phneakngar daemon start --foreground  # Start in foreground (for debugging)
-phneakngar daemon stop                # Stop the daemon
-phneakngar daemon status              # Check if the daemon is running
+phneakngar chhlat start               # Start in background
+phneakngar chhlat start --foreground  # Start in foreground (for debugging)
+phneakngar chhlat stop                # Stop chhlat
+phneakngar chhlat status              # Check if chhlat is running
 ```
 
 </details>
 
 <details>
-<summary><strong>logs</strong> — inspect daemon output</summary>
+<summary><strong>logs</strong> — inspect chhlat output</summary>
 
 ```bash
 phneakngar logs                # path + last 50 lines
@@ -183,7 +183,7 @@ Config is stored at `~/.phneakngar/config.json` and includes:
 
 - `server_url` — ភ្នាក់ងារ server URL
 - `profiles` — per-profile settings with workspace bindings
-- `watched_workspaces` — workspaces the daemon monitors (each with `id`, `name`, `token`, `agent_ids`)
+- `watched_workspaces` — workspaces chhlat monitors (each with `id`, `name`, `token`, `agent_ids`)
 
 </details>
 
@@ -198,7 +198,7 @@ Config is stored at `~/.phneakngar/config.json` and includes:
 ## Update / uninstall
 
 ```bash
-phneakngar daemon stop
+phneakngar chhlat stop
 npm install --global @phneakngar/cli@latest
 
 npm uninstall --global @phneakngar/cli

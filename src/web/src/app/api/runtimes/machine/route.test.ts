@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 
-const mockDeleteRuntimesByDaemonId = vi.fn();
+const mockDeleteRuntimesByChhlatId = vi.fn();
 const mockDeleteMachine = vi.fn();
-const mockGetMachineByDaemon = vi.fn();
+const mockGetMachineByChhlat = vi.fn();
 const mockGetMemberByUserAndWorkspace = vi.fn();
 
 vi.mock("@opennextjs/cloudflare", () => ({
@@ -18,14 +18,14 @@ vi.mock("@phneakngar/shared", async (importOriginal) => {
     createDb: vi.fn(() => ({})),
   queries: {
     runtime: {
-      deleteRuntimesByDaemonId: (...args: any[]) =>
-        mockDeleteRuntimesByDaemonId(...args),
+      deleteRuntimesByChhlatId: (...args: any[]) =>
+        mockDeleteRuntimesByChhlatId(...args),
     },
     machine: {
       deleteMachine: (...args: any[]) =>
         mockDeleteMachine(...args),
-      getMachineByDaemon: (...args: any[]) =>
-        mockGetMachineByDaemon(...args),
+      getMachineByChhlat: (...args: any[]) =>
+        mockGetMachineByChhlat(...args),
     },
     member: {
       getMemberByUserAndWorkspace: (...args: any[]) =>
@@ -62,7 +62,7 @@ vi.mock("@/lib/logger", () => ({
 }));
 vi.mock("@/lib/broadcast", () => ({
   broadcastToUser: vi.fn().mockResolvedValue(undefined),
-  broadcastToDaemon: vi.fn().mockResolvedValue({ sent: 1 }),
+  broadcastToChhlat: vi.fn().mockResolvedValue({ sent: 1 }),
 }));
 
 import { DELETE } from "./route";
@@ -78,18 +78,18 @@ function makeReq(params: Record<string, string>) {
 describe("DELETE /api/runtimes/machine", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("returns 400 when daemon_id is missing", async () => {
+  it("returns 400 when chhlat_id is missing", async () => {
     mockGetMemberByUserAndWorkspace.mockResolvedValue({ id: "m1" });
 
     const res = await DELETE(makeReq({ workspace_id: "w1" }));
     const body = await res.json();
 
     expect(res.status).toBe(400);
-    expect(body.error).toContain("daemon_id");
+    expect(body.error).toContain("chhlat_id");
   });
 
   it("returns 400 when workspace_id is missing", async () => {
-    const res = await DELETE(makeReq({ daemon_id: "d1" }));
+    const res = await DELETE(makeReq({ chhlat_id: "d1" }));
     const body = await res.json();
 
     expect(res.status).toBe(400);
@@ -99,7 +99,7 @@ describe("DELETE /api/runtimes/machine", () => {
   it("returns 404 when user is not a workspace member", async () => {
     mockGetMemberByUserAndWorkspace.mockResolvedValue(null);
 
-    const res = await DELETE(makeReq({ daemon_id: "d1", workspace_id: "w-other" }));
+    const res = await DELETE(makeReq({ chhlat_id: "d1", workspace_id: "w-other" }));
     const body = await res.json();
 
     expect(res.status).toBe(404);
@@ -108,12 +108,12 @@ describe("DELETE /api/runtimes/machine", () => {
 
   it("returns 204 on successful delete (TC-12)", async () => {
     mockGetMemberByUserAndWorkspace.mockResolvedValue({ id: "m1" });
-    mockGetMachineByDaemon.mockResolvedValue({ daemonId: "d1", ownerId: "u1" });
-    mockDeleteRuntimesByDaemonId.mockResolvedValue(undefined);
+    mockGetMachineByChhlat.mockResolvedValue({ chhlatId: "d1", ownerId: "u1" });
+    mockDeleteRuntimesByChhlatId.mockResolvedValue(undefined);
     mockDeleteMachine.mockResolvedValue(undefined);
 
     const res = await DELETE(
-      makeReq({ daemon_id: "d1", workspace_id: "w1" })
+      makeReq({ chhlat_id: "d1", workspace_id: "w1" })
     );
 
     expect(res.status).toBe(204);
@@ -121,24 +121,24 @@ describe("DELETE /api/runtimes/machine", () => {
 
   it("TC-11: returns 404 when deleting another member's machine", async () => {
     mockGetMemberByUserAndWorkspace.mockResolvedValue({ id: "m1" });
-    mockGetMachineByDaemon.mockResolvedValue({ daemonId: "d1", ownerId: "other-user" });
+    mockGetMachineByChhlat.mockResolvedValue({ chhlatId: "d1", ownerId: "other-user" });
 
     const res = await DELETE(
-      makeReq({ daemon_id: "d1", workspace_id: "w1" })
+      makeReq({ chhlat_id: "d1", workspace_id: "w1" })
     );
     const body = await res.json();
 
     expect(res.status).toBe(404);
     expect(body.error).toContain("not found");
-    expect(mockDeleteRuntimesByDaemonId).not.toHaveBeenCalled();
+    expect(mockDeleteRuntimesByChhlatId).not.toHaveBeenCalled();
   });
 
   it("returns 404 when machine does not exist", async () => {
     mockGetMemberByUserAndWorkspace.mockResolvedValue({ id: "m1" });
-    mockGetMachineByDaemon.mockResolvedValue(null);
+    mockGetMachineByChhlat.mockResolvedValue(null);
 
     const res = await DELETE(
-      makeReq({ daemon_id: "d1", workspace_id: "w1" })
+      makeReq({ chhlat_id: "d1", workspace_id: "w1" })
     );
     const body = await res.json();
 
@@ -146,40 +146,40 @@ describe("DELETE /api/runtimes/machine", () => {
     expect(body.error).toContain("not found");
   });
 
-  it("passes correct daemon_id with dots and dashes", async () => {
+  it("passes correct chhlat_id with dots and dashes", async () => {
     mockGetMemberByUserAndWorkspace.mockResolvedValue({ id: "m1" });
-    mockGetMachineByDaemon.mockResolvedValue({ daemonId: "my-daemon.v2.host-01", ownerId: "u1" });
-    mockDeleteRuntimesByDaemonId.mockResolvedValue(undefined);
+    mockGetMachineByChhlat.mockResolvedValue({ chhlatId: "my-chhlat.v2.host-01", ownerId: "u1" });
+    mockDeleteRuntimesByChhlatId.mockResolvedValue(undefined);
     mockDeleteMachine.mockResolvedValue(undefined);
 
-    const daemonId = "my-daemon.v2.host-01";
-    await DELETE(makeReq({ daemon_id: daemonId, workspace_id: "w1" }));
+    const chhlatId = "my-chhlat.v2.host-01";
+    await DELETE(makeReq({ chhlat_id: chhlatId, workspace_id: "w1" }));
 
-    expect(mockDeleteRuntimesByDaemonId).toHaveBeenCalledWith(
+    expect(mockDeleteRuntimesByChhlatId).toHaveBeenCalledWith(
       {},
-      daemonId,
+      chhlatId,
       "w1"
     );
   });
 
-  it("calls deleteRuntimesByDaemonId exactly once", async () => {
+  it("calls deleteRuntimesByChhlatId exactly once", async () => {
     mockGetMemberByUserAndWorkspace.mockResolvedValue({ id: "m1" });
-    mockGetMachineByDaemon.mockResolvedValue({ daemonId: "d1", ownerId: "u1" });
-    mockDeleteRuntimesByDaemonId.mockResolvedValue(undefined);
+    mockGetMachineByChhlat.mockResolvedValue({ chhlatId: "d1", ownerId: "u1" });
+    mockDeleteRuntimesByChhlatId.mockResolvedValue(undefined);
     mockDeleteMachine.mockResolvedValue(undefined);
 
-    await DELETE(makeReq({ daemon_id: "d1", workspace_id: "w1" }));
+    await DELETE(makeReq({ chhlat_id: "d1", workspace_id: "w1" }));
 
-    expect(mockDeleteRuntimesByDaemonId).toHaveBeenCalledOnce();
+    expect(mockDeleteRuntimesByChhlatId).toHaveBeenCalledOnce();
   });
 
-  it("returns 500 when deleteRuntimesByDaemonId throws", async () => {
+  it("returns 500 when deleteRuntimesByChhlatId throws", async () => {
     mockGetMemberByUserAndWorkspace.mockResolvedValue({ id: "m1" });
-    mockGetMachineByDaemon.mockResolvedValue({ daemonId: "d1", ownerId: "u1" });
-    mockDeleteRuntimesByDaemonId.mockRejectedValue(new Error("DB exploded"));
+    mockGetMachineByChhlat.mockResolvedValue({ chhlatId: "d1", ownerId: "u1" });
+    mockDeleteRuntimesByChhlatId.mockRejectedValue(new Error("DB exploded"));
 
     const res = await DELETE(
-      makeReq({ daemon_id: "d1", workspace_id: "w1" })
+      makeReq({ chhlat_id: "d1", workspace_id: "w1" })
     );
     const body = await res.json();
 
@@ -187,17 +187,17 @@ describe("DELETE /api/runtimes/machine", () => {
     expect(body.error).toContain("Failed to remove machine");
   });
 
-  it("broadcasts daemon.evict on successful delete", async () => {
-    const { broadcastToDaemon } = await import("@/lib/broadcast");
+  it("broadcasts chhlat.evict on successful delete", async () => {
+    const { broadcastToChhlat } = await import("@/lib/broadcast");
     mockGetMemberByUserAndWorkspace.mockResolvedValue({ id: "m1" });
-    mockGetMachineByDaemon.mockResolvedValue({ daemonId: "d1", ownerId: "u1" });
-    mockDeleteRuntimesByDaemonId.mockResolvedValue(undefined);
+    mockGetMachineByChhlat.mockResolvedValue({ chhlatId: "d1", ownerId: "u1" });
+    mockDeleteRuntimesByChhlatId.mockResolvedValue(undefined);
     mockDeleteMachine.mockResolvedValue(undefined);
 
-    await DELETE(makeReq({ daemon_id: "d1", workspace_id: "w1" }));
+    await DELETE(makeReq({ chhlat_id: "d1", workspace_id: "w1" }));
 
-    expect(broadcastToDaemon).toHaveBeenCalledWith("d1", {
-      type: "daemon.evict",
+    expect(broadcastToChhlat).toHaveBeenCalledWith("d1", {
+      type: "chhlat.evict",
       workspaceId: "w1",
     });
   });

@@ -45,7 +45,7 @@ describe("getIssue", () => {
   it("returns null when userId does not match (where adds creatorUserId condition)", async () => {
     expect(await issueQueries.getIssue(createSelectMock([]), "iss_1", "w", "other_user")).toBeNull();
   });
-  it("returns issue without userId (backwards compat for daemon)", async () => {
+  it("returns issue without userId (backwards compat for chhlat)", async () => {
     const i = { id: "iss_1" };
     expect(await issueQueries.getIssue(createSelectMock([i]), "iss_1", "w")).toEqual(i);
   });

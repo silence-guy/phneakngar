@@ -5,7 +5,7 @@ import { withAuth } from "@/lib/middleware/auth";
 import { withWorkspaceMember } from "@/lib/middleware/workspace";
 import { writeJSON } from "@/lib/middleware/helpers";
 import { log } from "@/lib/logger";
-import { broadcastToUser, broadcastToDaemon } from "@/lib/broadcast";
+import { broadcastToUser, broadcastToChhlat } from "@/lib/broadcast";
 import { invalidate, cacheKeys } from "@/lib/cache";
 
 export const DELETE = withAuth(async (req: NextRequest, ctx) => {
@@ -14,21 +14,21 @@ export const DELETE = withAuth(async (req: NextRequest, ctx) => {
 
   const db = getDb(ctx.env.DB)
 
-  const daemonId = req.nextUrl.searchParams.get("daemon_id");
-  if (!daemonId) {
-    return writeJSON({ error: "daemon_id is required" }, 400);
+  const chhlatId = req.nextUrl.searchParams.get("chhlat_id");
+  if (!chhlatId) {
+    return writeJSON({ error: "chhlat_id is required" }, 400);
   }
 
-  const ownerMachine = await queries.machine.getMachineByDaemon(db, daemonId, ws.workspaceId);
+  const ownerMachine = await queries.machine.getMachineByChhlat(db, chhlatId, ws.workspaceId);
   if (!ownerMachine || ownerMachine.ownerId !== ctx.userId) {
     return writeJSON({ error: "machine not found" }, 404);
   }
 
   try {
-    await queries.runtime.deleteRuntimesByDaemonId(db, daemonId, ws.workspaceId);
-    await queries.machine.deleteMachine(db, daemonId, ws.workspaceId);
+    await queries.runtime.deleteRuntimesByChhlatId(db, chhlatId, ws.workspaceId);
+    await queries.machine.deleteMachine(db, chhlatId, ws.workspaceId);
     await Promise.all([
-      invalidate(cacheKeys.runtimeIds(ws.workspaceId, daemonId)),
+      invalidate(cacheKeys.runtimeIds(ws.workspaceId, chhlatId)),
       invalidate(cacheKeys.allRuntimes(ws.workspaceId)),
     ]);
   } catch (e) {
@@ -36,14 +36,14 @@ export const DELETE = withAuth(async (req: NextRequest, ctx) => {
     return writeJSON({ error: "Failed to remove machine" }, 500);
   }
 
-  broadcastToDaemon(daemonId, {
-    type: "daemon.evict",
+  broadcastToChhlat(chhlatId, {
+    type: "chhlat.evict",
     workspaceId: ws.workspaceId,
   }).catch(() => {});
 
   broadcastToUser(ctx.userId, {
     type: "runtime.deleted",
-    daemonId,
+    chhlatId,
   }).catch(() => {});
 
   return new Response(null, { status: 204 });

@@ -5,7 +5,7 @@ import { withWorkspaceMember } from "@/lib/middleware/workspace"
 import { writeJSON, writeError } from "@/lib/middleware/helpers"
 import { meetingToResponse } from "@/lib/api/responses"
 import { getDb } from "@/lib/db"
-import { broadcastToDaemon } from "@/lib/broadcast"
+import { broadcastToChhlat } from "@/lib/broadcast"
 
 const MEET_URL_RE = /^https:\/\/meet\.google\.com\/[a-z]{3}-[a-z]{4}-[a-z]{3}$/
 
@@ -78,8 +78,8 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
       const scheduledTime = body.scheduledAt ? new Date(body.scheduledAt) : new Date()
       const fiveMinFromNow = new Date(Date.now() + 5 * 60 * 1000)
       if (scheduledTime <= fiveMinFromNow) {
-        broadcastToDaemon(runtime.daemonId, {
-          type: "daemon.meetings",
+        broadcastToChhlat(runtime.chhlatId, {
+          type: "chhlat.meetings",
           meetings: [{
             id: created.id,
             meeting_url: created.meetingUrl,

@@ -6,7 +6,7 @@ export interface TestSeed {
   workspaceId: string
   memberId: string
   runtimeId: string
-  daemonId: string
+  chhlatId: string
   agentId: string
   agentEmailHandle: string
   /** Raw machine token (starts with al_) */
@@ -29,7 +29,7 @@ export function seedTestData(): TestSeed {
   const memberId = `mb_${nanoid()}`
   const runtimeId = `rt_${nanoid()}`
   const agentId = `ag_${nanoid()}`
-  const daemonId = `daemon_${nanoid()}`
+  const chhlatId = `chhlat_${nanoid()}`
   const machineTokenId = `mt_${nanoid()}`
   const rawToken = `al_${randomUUID().replace(/-/g, "")}`
   const emailHandle = `e2e-${nanoid()}`
@@ -41,8 +41,8 @@ export function seedTestData(): TestSeed {
   sqlRun(`INSERT INTO "user" (id, name, email, emailVerified, createdAt, updatedAt) VALUES (?, ?, ?, 1, ?, ?)`, userId, 'Test User', `${userId}@test.local`, now, now)
   sqlRun(`INSERT INTO workspace (id, name, slug, created_at, updated_at) VALUES (?, ?, ?, ?, ?)`, workspaceId, 'Test Workspace', slug, now, now)
   sqlRun(`INSERT INTO member (id, workspace_id, user_id, role, created_at) VALUES (?, ?, ?, ?, ?)`, memberId, workspaceId, userId, 'owner', now)
-  sqlRun(`INSERT INTO machine (daemon_id, workspace_id, device_info, last_seen_at, created_at, updated_at, owner_id) VALUES (?, ?, ?, ?, ?, ?, ?)`, daemonId, workspaceId, 'test-device', now, now, now, userId)
-  sqlRun(`INSERT INTO agent_runtime (id, workspace_id, daemon_id, runtime_mode, provider, status, device_info, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`, runtimeId, workspaceId, daemonId, 'local', 'claude', 'online', 'test-device', now, now)
+  sqlRun(`INSERT INTO machine (chhlat_id, workspace_id, device_info, last_seen_at, created_at, updated_at, owner_id) VALUES (?, ?, ?, ?, ?, ?, ?)`, chhlatId, workspaceId, 'test-device', now, now, now, userId)
+  sqlRun(`INSERT INTO agent_runtime (id, workspace_id, chhlat_id, runtime_mode, provider, status, device_info, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`, runtimeId, workspaceId, chhlatId, 'local', 'claude', 'online', 'test-device', now, now)
   sqlRun(`INSERT INTO agent (id, workspace_id, name, runtime_id, email_handle, owner_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, agentId, workspaceId, 'Test Agent', runtimeId, emailHandle, userId, now, now)
   sqlRun(`INSERT INTO machine_token (id, user_id, workspace_id, token, name, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)`, machineTokenId, userId, workspaceId, rawToken, 'test-token', 'active', now)
   sqlRun(`INSERT INTO agent_whitelist (id, agent_id, workspace_id, email, created_at) VALUES (?, ?, ?, ?, ?)`, whitelistId, agentId, workspaceId, `${userId}@test.local`, now)
@@ -55,7 +55,7 @@ export function seedTestData(): TestSeed {
   const authEmail = `${userId}@test.local`
   const authPassword = "e2e-test-pass"
 
-  return { userId, workspaceId, memberId, runtimeId, daemonId, agentId, agentEmailHandle: emailHandle, machineToken: rawToken, machineTokenId, whitelistId, authEmail, authPassword }
+  return { userId, workspaceId, memberId, runtimeId, chhlatId, agentId, agentEmailHandle: emailHandle, machineToken: rawToken, machineTokenId, whitelistId, authEmail, authPassword }
 }
 
 export function cleanupTestData(seed: TestSeed) {

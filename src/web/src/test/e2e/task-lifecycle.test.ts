@@ -46,14 +46,14 @@ describe("task lifecycle", () => {
     expect(taskId).toBeTruthy()
   })
 
-  it("POST /api/daemon/tasks/poll claims the task", async () => {
+  it("POST /api/chhlat/tasks/poll claims the task", async () => {
     const res = await tokenRequest(
-      `/api/daemon/tasks/poll`,
+      `/api/chhlat/tasks/poll`,
       seed.machineToken,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ daemon_id: seed.daemonId, max_tasks: 1 }),
+        body: JSON.stringify({ chhlat_id: seed.chhlatId, max_tasks: 1 }),
       },
     )
     expect(res.status).toBe(200)
@@ -69,9 +69,9 @@ describe("task lifecycle", () => {
     expect(agent.name).toBe("Test Agent")
   })
 
-  it("POST /api/daemon/tasks/:id/start marks task as running", async () => {
+  it("POST /api/chhlat/tasks/:id/start marks task as running", async () => {
     const res = await tokenRequest(
-      `/api/daemon/tasks/${taskId}/start`,
+      `/api/chhlat/tasks/${taskId}/start`,
       seed.machineToken,
       { method: "POST" },
     )
@@ -81,9 +81,9 @@ describe("task lifecycle", () => {
     expect(data.started_at).toBeTruthy()
   })
 
-  it("POST /api/daemon/tasks/:id/messages stores messages", async () => {
+  it("POST /api/chhlat/tasks/:id/messages stores messages", async () => {
     const res = await tokenRequest(
-      `/api/daemon/tasks/${taskId}/messages`,
+      `/api/chhlat/tasks/${taskId}/messages`,
       seed.machineToken,
       {
         method: "POST",
@@ -101,11 +101,11 @@ describe("task lifecycle", () => {
     expect(data.status).toBe("ok")
   })
 
-  it("GET /api/daemon/tasks/:id/messages returns stored messages", async () => {
+  it("GET /api/chhlat/tasks/:id/messages returns stored messages", async () => {
     let data: Array<Record<string, unknown>> = []
     for (let attempt = 0; attempt < 5; attempt++) {
       const res = await tokenRequest(
-        `/api/daemon/tasks/${taskId}/messages`,
+        `/api/chhlat/tasks/${taskId}/messages`,
         seed.machineToken,
       )
       expect(res.status).toBe(200)
@@ -118,9 +118,9 @@ describe("task lifecycle", () => {
     expect(data.some(m => m.type === "tool")).toBe(true)
   })
 
-  it("POST /api/daemon/tasks/:id/complete marks task complete", async () => {
+  it("POST /api/chhlat/tasks/:id/complete marks task complete", async () => {
     const res = await tokenRequest(
-      `/api/daemon/tasks/${taskId}/complete`,
+      `/api/chhlat/tasks/${taskId}/complete`,
       seed.machineToken,
       {
         method: "POST",
@@ -150,12 +150,12 @@ describe("task lifecycle", () => {
 
   it("poll returns empty tasks when nothing queued", async () => {
     const res = await tokenRequest(
-      `/api/daemon/tasks/poll`,
+      `/api/chhlat/tasks/poll`,
       seed.machineToken,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ daemon_id: seed.daemonId, max_tasks: 1 }),
+        body: JSON.stringify({ chhlat_id: seed.chhlatId, max_tasks: 1 }),
       },
     )
     expect(res.status).toBe(200)
@@ -188,12 +188,12 @@ describe("context_key resume contract", () => {
 
     // Poll to claim
     const pollRes = await tokenRequest(
-      `/api/daemon/tasks/poll`,
+      `/api/chhlat/tasks/poll`,
       seed.machineToken,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ daemon_id: seed.daemonId, max_tasks: 1 }),
+        body: JSON.stringify({ chhlat_id: seed.chhlatId, max_tasks: 1 }),
       },
     )
     const pollData = await pollRes.json() as { tasks: Array<Record<string, unknown>> }
@@ -202,8 +202,8 @@ describe("context_key resume contract", () => {
     expect(pollData.tasks[0].context_key).toBe(conversationId)
 
     // Clean up: start + complete this task
-    await tokenRequest(`/api/daemon/tasks/${task2Id}/start`, seed.machineToken, { method: "POST" })
-    await tokenRequest(`/api/daemon/tasks/${task2Id}/complete`, seed.machineToken, {
+    await tokenRequest(`/api/chhlat/tasks/${task2Id}/start`, seed.machineToken, { method: "POST" })
+    await tokenRequest(`/api/chhlat/tasks/${task2Id}/complete`, seed.machineToken, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ output: "done", session_id: "sess_2" }),
@@ -237,12 +237,12 @@ describe("context_key resume contract", () => {
     expect(msgData.task).toBeTruthy()
 
     const pollRes = await tokenRequest(
-      `/api/daemon/tasks/poll`,
+      `/api/chhlat/tasks/poll`,
       seed.machineToken,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ daemon_id: seed.daemonId, max_tasks: 1 }),
+        body: JSON.stringify({ chhlat_id: seed.chhlatId, max_tasks: 1 }),
       },
     )
     const pollData = await pollRes.json() as { tasks: Array<Record<string, unknown>> }
@@ -253,8 +253,8 @@ describe("context_key resume contract", () => {
 
     // Clean up
     const tid = pollData.tasks[0].id as string
-    await tokenRequest(`/api/daemon/tasks/${tid}/start`, seed.machineToken, { method: "POST" })
-    await tokenRequest(`/api/daemon/tasks/${tid}/complete`, seed.machineToken, {
+    await tokenRequest(`/api/chhlat/tasks/${tid}/start`, seed.machineToken, { method: "POST" })
+    await tokenRequest(`/api/chhlat/tasks/${tid}/complete`, seed.machineToken, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ output: "done", session_id: "sess_3" }),
@@ -288,12 +288,12 @@ describe("context_key resume contract", () => {
 
     // Poll to get first task
     const poll1 = await tokenRequest(
-      `/api/daemon/tasks/poll`,
+      `/api/chhlat/tasks/poll`,
       seed.machineToken,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ daemon_id: seed.daemonId, max_tasks: 1 }),
+        body: JSON.stringify({ chhlat_id: seed.chhlatId, max_tasks: 1 }),
       },
     )
     const poll1Data = await poll1.json() as { tasks: Array<Record<string, unknown>> }
@@ -305,8 +305,8 @@ describe("context_key resume contract", () => {
 
     // Complete it
     const tid1 = poll1Data.tasks[0].id as string
-    await tokenRequest(`/api/daemon/tasks/${tid1}/start`, seed.machineToken, { method: "POST" })
-    await tokenRequest(`/api/daemon/tasks/${tid1}/complete`, seed.machineToken, {
+    await tokenRequest(`/api/chhlat/tasks/${tid1}/start`, seed.machineToken, { method: "POST" })
+    await tokenRequest(`/api/chhlat/tasks/${tid1}/complete`, seed.machineToken, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ output: "replied", session_id: "sess_email_1" }),
@@ -336,12 +336,12 @@ describe("context_key resume contract", () => {
 
     // Poll second task
     const poll2 = await tokenRequest(
-      `/api/daemon/tasks/poll`,
+      `/api/chhlat/tasks/poll`,
       seed.machineToken,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ daemon_id: seed.daemonId, max_tasks: 1 }),
+        body: JSON.stringify({ chhlat_id: seed.chhlatId, max_tasks: 1 }),
       },
     )
     const poll2Data = await poll2.json() as { tasks: Array<Record<string, unknown>> }
@@ -352,8 +352,8 @@ describe("context_key resume contract", () => {
 
     // Clean up
     const tid2 = poll2Data.tasks[0].id as string
-    await tokenRequest(`/api/daemon/tasks/${tid2}/start`, seed.machineToken, { method: "POST" })
-    await tokenRequest(`/api/daemon/tasks/${tid2}/complete`, seed.machineToken, {
+    await tokenRequest(`/api/chhlat/tasks/${tid2}/start`, seed.machineToken, { method: "POST" })
+    await tokenRequest(`/api/chhlat/tasks/${tid2}/complete`, seed.machineToken, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ output: "replied again", session_id: "sess_email_2" }),
@@ -393,24 +393,24 @@ describe("task failure and retry", () => {
 
     // Claim and start the task via poll
     await tokenRequest(
-      `/api/daemon/tasks/poll`,
+      `/api/chhlat/tasks/poll`,
       seed.machineToken,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ daemon_id: seed.daemonId, max_tasks: 1 }),
+        body: JSON.stringify({ chhlat_id: seed.chhlatId, max_tasks: 1 }),
       },
     )
     await tokenRequest(
-      `/api/daemon/tasks/${failTaskId}/start`,
+      `/api/chhlat/tasks/${failTaskId}/start`,
       seed.machineToken,
       { method: "POST" },
     )
   })
 
-  it("POST /api/daemon/tasks/:id/fail marks task failed", async () => {
+  it("POST /api/chhlat/tasks/:id/fail marks task failed", async () => {
     const res = await tokenRequest(
-      `/api/daemon/tasks/${failTaskId}/fail`,
+      `/api/chhlat/tasks/${failTaskId}/fail`,
       seed.machineToken,
       {
         method: "POST",
@@ -489,17 +489,17 @@ describe("task progress reporting", () => {
       progressTaskId = msgData.task.id
     }
 
-    await tokenRequest(`/api/daemon/tasks/poll`, seed.machineToken, {
+    await tokenRequest(`/api/chhlat/tasks/poll`, seed.machineToken, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ daemon_id: seed.daemonId, max_tasks: 1 }),
+      body: JSON.stringify({ chhlat_id: seed.chhlatId, max_tasks: 1 }),
     })
-    await tokenRequest(`/api/daemon/tasks/${progressTaskId}/start`, seed.machineToken, { method: "POST" })
+    await tokenRequest(`/api/chhlat/tasks/${progressTaskId}/start`, seed.machineToken, { method: "POST" })
   })
 
-  it("POST /api/daemon/tasks/:id/progress returns ok", async () => {
+  it("POST /api/chhlat/tasks/:id/progress returns ok", async () => {
     const res = await tokenRequest(
-      `/api/daemon/tasks/${progressTaskId}/progress`,
+      `/api/chhlat/tasks/${progressTaskId}/progress`,
       seed.machineToken,
       { method: "POST" },
     )
@@ -510,14 +510,14 @@ describe("task progress reporting", () => {
 
   it("rejects unauthenticated progress request", async () => {
     const res = await fetch(
-      `${process.env.APP_URL || "http://localhost:3000"}/api/daemon/tasks/${progressTaskId}/progress`,
+      `${process.env.APP_URL || "http://localhost:3000"}/api/chhlat/tasks/${progressTaskId}/progress`,
       { method: "POST" },
     )
     expect(res.status).toBe(401)
   })
 
   it("cleanup: complete progress task", async () => {
-    await tokenRequest(`/api/daemon/tasks/${progressTaskId}/complete`, seed.machineToken, {
+    await tokenRequest(`/api/chhlat/tasks/${progressTaskId}/complete`, seed.machineToken, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ output: "done", session_id: "sess_progress" }),
@@ -556,21 +556,21 @@ describe("task supersede", () => {
 
     // Keep polling until our specific task is dispatched
     for (let attempt = 0; attempt < 5; attempt++) {
-      const pollRes = await tokenRequest(`/api/daemon/tasks/poll`, seed.machineToken, {
+      const pollRes = await tokenRequest(`/api/chhlat/tasks/poll`, seed.machineToken, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ daemon_id: seed.daemonId, max_tasks: 10 }),
+        body: JSON.stringify({ chhlat_id: seed.chhlatId, max_tasks: 10 }),
       })
       const pollData = await pollRes.json() as { tasks: Array<{ id: string }> }
       if (pollData.tasks.some(t => t.id === supersedeTaskId)) break
       await new Promise(r => setTimeout(r, 200))
     }
-    await tokenRequest(`/api/daemon/tasks/${supersedeTaskId}/start`, seed.machineToken, { method: "POST" })
+    await tokenRequest(`/api/chhlat/tasks/${supersedeTaskId}/start`, seed.machineToken, { method: "POST" })
   })
 
-  it("POST /api/daemon/tasks/:id/supersede marks task as superseded", async () => {
+  it("POST /api/chhlat/tasks/:id/supersede marks task as superseded", async () => {
     const res = await tokenRequest(
-      `/api/daemon/tasks/${supersedeTaskId}/supersede`,
+      `/api/chhlat/tasks/${supersedeTaskId}/supersede`,
       seed.machineToken,
       { method: "POST" },
     )
@@ -582,7 +582,7 @@ describe("task supersede", () => {
 
   it("superseding an already superseded task returns 400", async () => {
     const res = await tokenRequest(
-      `/api/daemon/tasks/${supersedeTaskId}/supersede`,
+      `/api/chhlat/tasks/${supersedeTaskId}/supersede`,
       seed.machineToken,
       { method: "POST" },
     )

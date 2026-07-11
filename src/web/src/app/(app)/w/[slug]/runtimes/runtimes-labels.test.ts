@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   RUNTIMES_LABELS,
   runtimeStatusLabel,
-  updateDaemonDescription,
+  updateChhlatDescription,
   rescanRuntimesDescription,
   removeMachineDescription,
 } from "./runtimes-labels";
@@ -27,8 +27,8 @@ describe("runtimes labels", () => {
   });
 
   it("interpolates machine names into Khmer confirm descriptions", () => {
-    expect(updateDaemonDescription("Mac")).toContain("Mac");
-    expect(updateDaemonDescription("Mac")).toContain("daemon");
+    expect(updateChhlatDescription("Mac")).toContain("Mac");
+    expect(updateChhlatDescription("Mac")).toContain("chhlat");
     expect(rescanRuntimesDescription("Mac")).toContain("Claude Code, Codex, OpenCode");
     expect(removeMachineDescription("Mac")).toContain("បរិស្ថានដំណើរការ");
   });

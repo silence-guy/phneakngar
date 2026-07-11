@@ -83,7 +83,7 @@ describe("workspace isolation", () => {
   const slugB = `e2e-iso-b-${randomUUID().slice(0, 8)}`
   let workspaceIdA: string
   let workspaceIdB: string
-  const daemonId = `daemon_iso_${randomUUID().slice(0, 8)}`
+  const chhlatId = `chhlat_iso_${randomUUID().slice(0, 8)}`
 
   it("creates two separate workspaces", async () => {
     // Create workspace A
@@ -109,16 +109,16 @@ describe("workspace isolation", () => {
     expect(workspaceIdA).not.toBe(workspaceIdB)
   })
 
-  it("registering daemon to workspace A does not affect workspace B", async () => {
+  it("registering chhlat to workspace A does not affect workspace B", async () => {
     // Create machine token for workspace A
     const tokenId = `mt_iso_${randomUUID().replace(/-/g, "").slice(0, 16)}`
     const rawToken = `al_${randomUUID().replace(/-/g, "")}`
     const now = new Date().toISOString()
     sqlRun(`INSERT INTO machine_token (id, user_id, workspace_id, token, name, status, created_at) VALUES (?, (SELECT id FROM "user" WHERE email = ?), ?, ?, ?, ?, ?)`, tokenId, testEmail, workspaceIdA, rawToken, 'iso-token', 'active', now)
 
-    // Register daemon to workspace A
+    // Register chhlat to workspace A
     const APP_URL = process.env.APP_URL ?? "http://localhost:3000"
-    const res = await fetch(`${APP_URL}/api/daemon/register`, {
+    const res = await fetch(`${APP_URL}/api/chhlat/register`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -126,7 +126,7 @@ describe("workspace isolation", () => {
       },
       body: JSON.stringify({
         workspace_id: workspaceIdA,
-        daemon_id: daemonId,
+        chhlat_id: chhlatId,
         device_name: "iso-machine",
         cli_version: "0.1.0",
         runtimes: [{ provider: "claude", runtime_mode: "local", version: "4.0" }],
@@ -139,27 +139,27 @@ describe("workspace isolation", () => {
 
     // Workspace A should have the runtime
     const runtimesA = sqlQuery<{ id: string }>(
-      `SELECT id FROM agent_runtime WHERE workspace_id = ? AND daemon_id = ?`, workspaceIdA, daemonId
+      `SELECT id FROM agent_runtime WHERE workspace_id = ? AND chhlat_id = ?`, workspaceIdA, chhlatId
     )
     expect(runtimesA.length).toBeGreaterThan(0)
 
     // Workspace B should have NO runtimes
     const runtimesB = sqlQuery<{ id: string }>(
-      `SELECT id FROM agent_runtime WHERE workspace_id = ? AND daemon_id = ?`, workspaceIdB, daemonId
+      `SELECT id FROM agent_runtime WHERE workspace_id = ? AND chhlat_id = ?`, workspaceIdB, chhlatId
     )
     expect(runtimesB).toHaveLength(0)
 
-    // Workspace B should have NO machine entry for this daemon
-    const machinesB = sqlQuery<{ daemon_id: string }>(
-      `SELECT daemon_id FROM machine WHERE workspace_id = ? AND daemon_id = ?`, workspaceIdB, daemonId
+    // Workspace B should have NO machine entry for this chhlat
+    const machinesB = sqlQuery<{ chhlat_id: string }>(
+      `SELECT chhlat_id FROM machine WHERE workspace_id = ? AND chhlat_id = ?`, workspaceIdB, chhlatId
     )
     expect(machinesB).toHaveLength(0)
   })
 
   afterAll(() => {
     try {
-      sqlRun(`DELETE FROM agent_runtime WHERE daemon_id = ?`, daemonId)
-      sqlRun(`DELETE FROM machine WHERE daemon_id = ?`, daemonId)
+      sqlRun(`DELETE FROM agent_runtime WHERE chhlat_id = ?`, chhlatId)
+      sqlRun(`DELETE FROM machine WHERE chhlat_id = ?`, chhlatId)
       sqlRun(`DELETE FROM machine_token WHERE workspace_id IN (?, ?)`, workspaceIdA, workspaceIdB)
       sqlRun(`DELETE FROM member WHERE workspace_id IN (?, ?)`, workspaceIdA, workspaceIdB)
       sqlRun(`DELETE FROM workspace WHERE id IN (?, ?)`, workspaceIdA, workspaceIdB)

@@ -61,8 +61,8 @@ describe("token/workspace lifecycle — simplified activate flow", () => {
         }),
       })
       expect(res.status).toBe(200)
-      const body = await res.json() as { daemon_id: string; workspace_id: string; runtimes: Array<{ id: string }> }
-      expect(body.daemon_id).toBe("TestMachine.local")
+      const body = await res.json() as { chhlat_id: string; workspace_id: string; runtimes: Array<{ id: string }> }
+      expect(body.chhlat_id).toBe("TestMachine.local")
       expect(body.workspace_id).toBe(workspaceId)
       expect(body.runtimes.length).toBeGreaterThan(0)
     })
@@ -99,7 +99,7 @@ describe("token/workspace lifecycle — simplified activate flow", () => {
     it("returns active status after activation", async () => {
       const res = await sessionRequest("/api/machine-tokens/status", sessionCookie)
       expect(res.status).toBe(200)
-      const body = await res.json() as { status: string; hostname?: string; daemon_online?: boolean }
+      const body = await res.json() as { status: string; hostname?: string; chhlat_online?: boolean }
       expect(body.status).toBe("active")
       expect(body.hostname).toBe("TestMachine.local")
     })
