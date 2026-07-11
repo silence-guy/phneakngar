@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { getSession } from "@/lib/session";
-import { TEMPLATES, TEMPLATE_CATEGORIES } from "@/lib/templates";
+import { TEMPLATES, TEMPLATE_CATEGORIES, getTemplates } from "@/lib/templates";
 import { TemplatesClient } from "./client";
 
 const description =
@@ -24,6 +24,7 @@ export const metadata: Metadata = {
   },
 };
 
+// JSON-LD / SEO stays English for search engines; UI uses getTemplates() (KM default).
 const itemListJsonLd = {
   "@context": "https://schema.org",
   "@type": "ItemList",
@@ -53,7 +54,7 @@ export default async function TemplatesPage({
         dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListJsonLd) }}
       />
       <TemplatesClient
-        templates={TEMPLATES}
+        templates={getTemplates()}
         categories={TEMPLATE_CATEGORIES}
         isLoggedIn={!!session}
         workspaceId={params.workspace_id}

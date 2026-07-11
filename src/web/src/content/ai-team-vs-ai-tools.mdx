@@ -1,243 +1,243 @@
 export const metadata = {
   slug: 'ai-team-vs-ai-tools',
-  title: 'AI Team vs AI Tools: Stop Being the Human Copy-Paste Between Your Coding Agents',
+  title: 'ក្រុម AI vs ឧបករណ៍ AI៖ ឈប់ធ្វើជា Human Copy-Paste រវាងភ្នាក់ងារសរសេរកូដ',
   date: '2026-06-15',
   author: 'Donia',
-  excerpt: 'Every context switch between Claude Code, Cursor, and Windsurf costs you 23 minutes. Learn how AI teams eliminate the human bottleneck in your development workflow.',
-  readingTime: '8 min read'
+  excerpt: 'ការប្តូរ context រវាង Claude Code, Cursor និង Windsurf មួយដងចំណាយ ២៣ នាទី។ រៀនរបៀបក្រុម AI លុប bottleneck មនុស្សក្នុង workflow អភិវឌ្ឍន៍។',
+  readingTime: 'អាន ៨ នាទី'
 };
 
-# AI Team vs AI Tools: Stop Being the Human Copy-Paste Between Your Coding Agents
+# ក្រុម AI vs ឧបករណ៍ AI៖ ឈប់ធ្វើជា Human Copy-Paste រវាងភ្នាក់ងារសរសេរកូដ
 
 ![AI Team vs AI Tools - Comparison of human copy-paste workflow versus AI team coordination](/blog/ai-team-vs-ai-tools/hero.png)
 
-You start a project in Claude Code. It builds the initial architecture beautifully.
+អ្នកចាប់ផ្តើមគម្រោងក្នុង Claude Code។ វាកសាង architecture ដំបូងស្អាតណាស់។
 
-Then you need to refactor something complex, so you copy the code to Cursor for its multi-file editing.
+បន្ទាប់មកត្រូវ refactor អ្វីស្មុគស្មាញ ដូច្នេះចម្លងកូដទៅ Cursor សម្រាប់ multi-file editing។
 
-Later, you want to test a different approach, so you paste everything into Windsurf.
+ក្រោយមកចង់សាកវិធីផ្សេង បិទ paste ទាំងអស់ទៅ Windsurf។
 
-By the end of the day? Three different versions. Inconsistent implementations. And you're sitting there trying to merge suggestions from tools that have zero idea what the others just recommended.
+ចុងថ្ងៃ? កំណែបីផ្សេង។ Implementation មិនស៊ីសង្វាក់។ ហើយអ្នកអង្គុយព្យាយាម merge សំណើពីឧបករណ៍ដែលមិនដឹងអ្វីអំពីគ្នា។
 
-I've been there. Actually, I was there last Tuesday. **You're not using AI tools. You're being used BY them.**
+ខ្ញុំធ្លាប់នៅទីនោះ។ ពិតជាកាលពីថ្ងៃអង្គារមុន។ **អ្នកមិនកំពុងប្រើឧបករណ៍ AI។ អ្នកកំពុងត្រូវឧបករណ៍ AI ប្រើ។**
 
-## The Hidden Cost of Context Switching
+## ថ្លៃលាក់នៃការប្តូរ Context
 
-[Microsoft did this study](https://www.microsoft.com/en-us/research/publication/task-interruption-resumption-lag/) that found it takes about 23 minutes to fully refocus after a context switch. Twenty-three minutes. Every single time.
+[Microsoft បានសិក្សា](https://www.microsoft.com/en-us/research/publication/task-interruption-resumption-lag/) ថាត្រូវប្រហែល ២៣ នាទីដើម្បីផ្តោតពេញបន្ទាប់ពី context switch។ ម្ភៃបីនាទី។ រាល់ដង។
 
-Let me walk you through what my typical day used to look like:
-- Morning: Claude Code for new feature, then copy context
-- Midday: Cursor for refactoring, paste everything, explain again  
-- Afternoon: Windsurf for debugging, re-explain the entire codebase
-- Evening: Back to Claude Code, completely lost the original context
+ថ្ងៃធម្មតាខ្ញុំធ្លាប់មាន៖
+- ព្រឹក៖ Claude Code សម្រាប់ feature ថ្មី បន្ទាប់មកចម្លង context
+- ថ្ងៃត្រង់៖ Cursor សម្រាប់ refactor paste ទាំងអស់ ពន្យល់ម្តងទៀត
+- រសៀល៖ Windsurf សម្រាប់ debug ពន្យល់ codebase ទាំងមូលម្តងទៀត
+- ល្ងាច៖ ត្រលប់ Claude Code បាត់ context ដើមទាំងស្រុង
 
-Four switches. That's basically an hour and a half gone. Just... gone.
+ប្តូរបួនដង។ នោះប្រហែលមួយម៉ោងកន្លះបាត់។ គ្រាន់តែ… បាត់។
 
-But honestly? The time loss isn't even the worst part. **Each tool is solving in complete isolation.**
+ប៉ុន្តែពិត? ការបាត់ពេលមិនមែនអាក្រក់បំផុត។ **ឧបករណ៍មួយៗដោះស្រាយដាច់ដោយឡែកទាំងស្រុង។**
 
-## Why Isolated Tools Make Everything Worse
+## ហេតុអ្វីឧបករណ៍ដាច់ដោយឡែកធ្វើឱ្យអ្វីទាំងអស់អាក្រក់ជាង
 
-### What Actually Happens (AI Tools Reality)
+### អ្វីកើតឡើងពិត (ការពិតឧបករណ៍ AI)
 
-So you're building a payment system. I'll use a real example from last month.
+អ្នកកំពុងកសាងប្រព័ន្ធ payment។ ឧទាហរណ៍ពិតកាលពីខែមុន។
 
-**Claude Code Session:**
-Started strong. Designed the payment architecture, suggested Stripe integration, created the initial models. Felt productive. Closed my laptop feeling good.
+**Session Claude Code៖**
+ចាប់ផ្តើមខ្លាំង។ រចនា architecture បង់ប្រាក់ ស្នើ Stripe បង្កើត model ដំបូង។ មានផលិតភាព។ បិទ laptop ដោយអារម្មណ៍ល្អ។
 
-**Cursor Session (2 hours later):**
-Pasted the code. Cursor looked at it and immediately suggested a different architecture. Actually recommended PayPal instead of Stripe. Started refactoring everything. It had no idea why I chose Stripe in the first place (regulatory requirements, but how would it know?).
+**Session Cursor (២ ម៉ោងក្រោយ)៖**
+Paste កូដ។ Cursor មើលហើយភ្លាមស្នើ architecture ផ្សេង។ ណែនាំ PayPal ជំនួស Stripe។ ចាប់ផ្តើម refactor ទាំងអស់។ វាមិនដឹងហេតុអ្វីខ្ញុំជ្រើស Stripe (តម្រូវការបទប្បញ្ញត្តិ ប៉ុន្តែវាមិនអាចដឹង)។
 
-**Windsurf Session (next day):**
-This is where it got ridiculous. Pasted both versions. Windsurf found security issues (real ones, to be fair) and suggested a completely different approach. No context about any previous decisions.
+**Session Windsurf (ថ្ងៃបន្ទាប់)៖**
+នេះហួសហេតុ។ Paste កំណែទាំងពីរ។ Windsurf រកបញ្ហាសុវត្ថិភាព (ពិត ត្រូវនិយាយ) ហើយស្នើវិធីសាស្ត្រផ្សេងទាំងស្រុង។ គ្មាន context អំពីការសម្រេចមុន។
 
-**Result:** Three implementations. Zero shared context. Me, trying to play diplomat between three AI opinions.
+**លទ្ធផល៖** Implementation បី។ Shared context សូន្យ។ ខ្ញុំព្យាយាមធ្វើអ្នកការទូតរវាងមតិ AI បី។
 
-### What Should Actually Happen (AI Team Reality)
+### អ្វីគួរកើតឡើង (ការពិតក្រុម AI)
 
 ![AI Tools Reality vs AI Team Reality - Sequential 4+ hours workflow versus parallel 45 minutes execution](/blog/ai-team-vs-ai-tools/workflow.png)
 
-Here's what happens when you have an actual AI team instead of isolated tools.
+នេះជាអ្វីកើតឡើងពេលមានក្រុម AI ពិត មិនមែនឧបករណ៍ដាច់ដោយឡែក។
 
-You say: "Build a payment system."
+អ្នកនិយាយ៖ «កសាងប្រព័ន្ធ payment។»
 
-Your Architecture Agent designs the system and documents why it chose Stripe (those regulatory requirements). The Implementation Agent builds based on that architecture, already knowing all the constraints. Security Agent is reviewing in real-time, catching issues before they become issues. Testing Agent writes tests based on what was actually built, not some imagined ideal. Documentation updates itself.
+ភ្នាក់ងារ Architecture រចនាប្រព័ន្ធ និងឯកសារហេតុអ្វីជ្រើស Stripe (តម្រូវការបទប្បញ្ញត្តិ)។ ភ្នាក់ងារ Implementation កសាងតាម architecture នោះ ដឹង constraint ទាំងអស់រួច។ ភ្នាក់ងារ Security ពិនិត្យពេលវេលាពិត ចាប់បញ្ហាមុនក្លាយជាបញ្ហា។ ភ្នាក់ងារ Testing សរសេរ test តាមអ្វីដែលកសាងពិត មិនមែន ideal ស្រមៃ។ ឯកសារអាប់ដេតខ្លួនឯង។
 
-Everything shares context. Decisions are preserved. No copy-paste. No conflicts.
+អ្វីទាំងអស់ចែក context។ ការសម្រេចត្រូវរក្សា។ គ្មាន copy-paste។ គ្មានជម្លោះ។
 
-Honestly, the first time I saw this work, I felt stupid for all the time I'd wasted before.
+ពេលដំបូងខ្ញុំឃើញនេះដំណើរការ ខ្ញុំមានអារម្មណ៍ឆោតចំពោះពេលវេលាដែលខ្ញុំខ្ជះខ្ជាយមុន។
 
-## Real Stories from Real Developers
+## រឿងពិតពីអ្នកអភិវឌ្ឍន៍ពិត
 
-For more insights on building effective AI systems, check out our guide on [AI agent orchestration patterns](/blog/ai-agent-orchestration) and learn [how to delegate tasks to AI agents](/blog/how-to-delegate-tasks-to-ai-agents) effectively.
+សម្រាប់ insight បន្ថែមអំពីការកសាងប្រព័ន្ធ AI ប្រសើរ មើល [លំនាំ orchestration ភ្នាក់ងារ AI](/blog/ai-agent-orchestration) និង [របៀបប្រគល់ task ទៅភ្នាក់ងារ AI](/blog/how-to-delegate-tasks-to-ai-agents)។
 
-### Jake's Week (Senior Engineer, Fintech Startup)
+### សប្តាហ៍ Jake (វិស្វករជើងចាស់, Fintech Startup)
 
-Jake tracked his tool usage for a week. I'm sharing his numbers because they're almost identical to what I was seeing:
+Jake តាមដានការប្រើឧបករណ៍មួយសប្តាហ៍។ ខ្ញុំចែកលេខគាត់ពីព្រោះស្ទើរដូចខ្ញុំ៖
 
-**Monday through Wednesday:** Building authentication system
-Forty-something copy-paste operations between tools. Three hours re-explaining context. Two conflicting implementations that he had to somehow merge. The final code looked like Frankenstein's monster.
+**ច័ន្ទដល់ពុធ៖** កសាងប្រព័ន្ធ authentication  
+ប្រតិបត្តិការ copy-paste បួនសិបដងរវាងឧបករណ៍។ បីម៉ោងពន្យល់ context ម្តងទៀត។ Implementation ជម្លោះពីរដែលគាត់ត្រូវ merge។ កូដចុងក្រោយដូច Frankenstein។
 
-**Thursday and Friday:** Tried the AI team approach
-Zero copy-paste operations. Zero context re-explanations. One consistent implementation. The agents caught three security issues Jake had missed while juggling tools.
+**ព្រហស្បតិ៍ និងសុក្រ៖** សាកវិធីក្រុម AI  
+Copy-paste សូន្យ។ ពន្យល់ context ម្តងទៀតសូន្យ។ Implementation ស៊ីសង្វាក់មួយ។ ភ្នាក់ងារចាប់បញ្ហាសុវត្ថិភាពបីដែល Jake ខកខានពេល juggling ឧបករណ៍។
 
-He saved 11 hours that week. Eleven hours.
+គាត់សន្សំ ១១ ម៉ោងសប្តាហ៍នោះ។ ដប់មួយម៉ោង។
 
-### Sarah's Transformation (CTO, 12-person startup)
+### ការផ្លាស់ប្តូរ Sarah (CTO, startup ១២ នាក់)
 
-Sarah sent me this email that I'm just going to quote directly:
+Sarah ផ្ញើអ៊ីមែលនេះដែលខ្ញុំនឹងដកស្រង់ផ្ទាល់៖
 
-"We were using Claude Code for architecture, Cursor for implementation, GitHub Copilot for completions, and Codeium for reviews. Four tools, zero communication between them.
+«យើងប្រើ Claude Code សម្រាប់ architecture, Cursor សម្រាប់ implementation, GitHub Copilot សម្រាប់ completion, និង Codeium សម្រាប់ review។ ឧបករណ៍បួន ទំនាក់ទំនងសូន្យរវាងគ្នា។
 
-Every PR was chaos. Claude would suggest one pattern. Cursor would implement something different. Copilot would autocomplete in a third style. Then Codeium would flag everything.
+PR មួយៗជា chaos។ Claude ស្នើ pattern មួយ។ Cursor implement អ្វីផ្សេង។ Copilot autocomplete ស្ទីលទីបី។ បន្ទាប់មក Codeium flag ទាំងអស់។
 
-Now our Architecture Agent maintains all design decisions. Code Agent implements following those exact patterns. Review Agent knows the architecture context. Deploy Agent understands the full system.
+ឥឡូវភ្នាក់ងារ Architecture រក្សាការសម្រេចរចនាទាំងអស់។ ភ្នាក់ងារកូដ implement តាម pattern នោះជាក់លាក់។ ភ្នាក់ងារ Review ដឹង context architecture។ ភ្នាក់ងារ Deploy យល់ប្រព័ន្ធពេញ។
 
-PRs that took 3 days now take 3 hours. I'm not exaggerating."
+PR ដែលត្រូវ ៣ ថ្ងៃឥឡូវ ៣ ម៉ោង។ ខ្ញុំមិនបំផ្លើសទេ។»
 
-## What Tools Literally Cannot Provide
+## អ្វីដែលឧបករណ៍មិនអាចផ្តល់
 
 ![What AI Tools Can't Provide But AI Teams Can - Three core advantages of integrated AI teams](/blog/ai-team-vs-ai-tools/three-advantages.png)
 
-### Persistent Collective Memory
+### Memory សមូហភាពជាប់រហូត
 
-**With isolated tools:**
-Claude Code forgets your architecture decisions after each session. Cursor has no idea what you built yesterday. Windsurf starts fresh every single time. You explain the same constraints probably fifty times per week. I actually counted once. Fifty-seven times.
+**ជាមួយឧបករណ៍ដាច់ដោយឡែក៖**  
+Claude Code ភ្លេចការសម្រេច architecture បន្ទាប់ពី session មួយៗ។ Cursor មិនដឹងអ្វីអ្នកកសាងម្សិលមិញ។ Windsurf ចាប់ផ្តើមថ្មីរាល់ដង។ អ្នកពន្យល់ constraint ដដែលប្រហែល ៥០ ដង/សប្តាហ៍។ ខ្ញុំរាប់ម្តង។ ៥៧ ដង។
 
-**With an AI team:**
-Every decision is remembered. Every pattern is preserved. Your Database Agent still remembers why you denormalized that specific table three months ago. It remembers because it matters.
+**ជាមួយក្រុម AI៖**  
+ការសម្រេចមួយៗត្រូវចងចាំ។ Pattern មួយៗត្រូវរក្សា។ ភ្នាក់ងារ Database នៅចងចាំហេតុអ្វី denormalize table នោះបីខែមុន។ វាចងចាំពីព្រោះវាសំខាន់។
 
-### Autonomous Handoffs
+### Handoff ស្វ័យប្រវត្តិ
 
-**With isolated tools:**
-You are the handoff mechanism. You literally copy from Tool A, paste to Tool B, explain context, wait for output, copy again, paste to Tool C. You're middleware. Human middleware.
+**ជាមួយឧបករណ៍ដាច់ដោយឡែក៖**  
+អ្នកជាយន្តការប្រគល់។ អ្នកចម្លងពី Tool A paste ទៅ Tool B ពន្យល់ context រង់ចាំ output ចម្លងម្តងទៀត paste ទៅ Tool C។ អ្នកជា middleware។ Middleware មនុស្ស។
 
-**With an AI team:**
-Spec Agent hands off to Design Agent, which hands off to Code Agent, then Test Agent, then Deploy Agent. No human involvement required. Each agent builds on the previous work. Context flows automatically.
+**ជាមួយក្រុម AI៖**  
+ភ្នាក់ងារ Spec ប្រគល់ទៅ Design បន្ទាប់ទៅ Code បន្ទាប់ Test បន្ទាប់ Deploy។ មិនត្រូវមនុស្ស។ ភ្នាក់ងារមួយៗកសាងលើការងារមុន។ Context ហូរដោយស្វ័យប្រវត្តិ។
 
-I cannot overstate how much better this feels.
+ខ្ញុំមិនអាចបំផ្លើសថាអារម្មណ៍នេះល្អប៉ុណ្ណា។
 
-### Specialized Deep Expertise
+### ឯកទេសជ្រៅ
 
-**With isolated tools:**
-Every tool tries to do everything. Your coding assistant attempts architecture, implementation, testing, deployment, and documentation. It's mediocre at all of them.
+**ជាមួយឧបករណ៍ដាច់ដោយឡែក៖**  
+ឧបករណ៍មួយៗព្យាយាមធ្វើអ្វីទាំងអស់។ ជំនួយការសរសេរកូដព្យាយាម architecture, implementation, testing, deployment, និង documentation។ វាធម្មតាក្នុងអ្វីទាំងអស់។
 
-**With an AI team:**
-Each agent masters one domain. Security Agent only thinks about vulnerabilities. Performance Agent obsesses over milliseconds. API Agent knows every endpoint's history. And they get better at their specialties over time.
+**ជាមួយក្រុម AI៖**  
+ភ្នាក់ងារមួយៗស្ទាត់ដែនមួយ។ ភ្នាក់ងារ Security គិតតែ vulnerability។ ភ្នាក់ងារ Performance ស្រលាញ់ millisecond។ ភ្នាក់ងារ API ដឹងប្រវត្តិ endpoint មួយៗ។ ហើយពួកគេកាន់តែល្អក្នុងឯកទេសតាមពេលវេលា។
 
-## The Compound Effect (This Blew My Mind)
+## ផលបូកសមាស (នេះធ្វើឱ្យខ្ញុំភ្ញាក់ផ្អើល)
 
-Here's what nobody tells you about agents sharing context.
+នេះជាអ្វីដែលគ្មាននរណាប្រាប់អ្នកអំពីភ្នាក់ងារចែក context។
 
-**Week 1:** Agents learn your codebase patterns. Nothing special yet.
+**សប្តាហ៍ ១៖** ភ្នាក់ងាររៀន pattern codebase។ មិនពិសេសនៅឡើយ។
 
-**Week 2:** They start preventing mistakes before they happen. You notice fewer bugs.
+**សប្តាហ៍ ២៖** ពួកគេចាប់ផ្តើមការពារកំហុសមុនកើត។ អ្នកឃើញ bug តិច។
 
-**Week 3:** They begin suggesting improvements based on collective knowledge. Things you wouldn't have thought of.
+**សប្តាហ៍ ៣៖** ពួកគេស្នើការកែលម្អតាមចំណេះដឹងសមូហភាព។ អ្វីដែលអ្នកមិនគិតដល់។
 
-**Month 2:** Your codebase is more consistent than any human team could realistically maintain.
+**ខែ ២៖** Codebase របស់អ្នកស៊ីសង្វាក់ជាងក្រុមមនុស្សណាដែលអាចរក្សាបាន។
 
-**Month 3:** Agents are catching architectural issues before implementation even starts.
+**ខែ ៣៖** ភ្នាក់ងារចាប់បញ្ហា architecture មុន implementation ចាប់ផ្តើម។
 
-This is literally impossible with isolated tools. Claude Code can't tell Cursor about that performance issue. Cursor can't warn Windsurf about that deprecated pattern.
+នេះមិនអាចធ្វើបានជាមួយឧបករណ៍ដាច់ដោយឡែក។ Claude Code មិនអាចប្រាប់ Cursor អំពីបញ្ហា performance។ Cursor មិនអាចព្រមាន Windsurf អំពី pattern deprecated។
 
-## Numbers from Teams That Made the Switch
+## លេខពីក្រុមដែលប្តូរ
 
-We tracked 31 development teams for about three months. [The methodology was similar to this developer productivity research](https://queue.acm.org/detail.cfm?id=3454124), if you want the details.
+យើងតាមដានក្រុមអភិវឌ្ឍន៍ ៣១ ប្រហែលបីខែ។ [វិធីសាស្ត្រស្រដៀងនឹងការស្រាវជ្រាវផលិតភាពអ្នកអភិវឌ្ឍន៍នេះ](https://queue.acm.org/detail.cfm?id=3454124) បើចង់លម្អិត។
 
-**Before (Multiple Tools):**
-- Average context switches daily: somewhere around 30-35
-- Time lost to re-explanation: about 3 hours per day
-- Inconsistent implementations: roughly two-thirds of PRs
-- Bugs from tool miscommunication: maybe 20-25% of total bugs
+**មុន (ឧបករណ៍ច្រើន)៖**
+- ការប្តូរ context ប្រចាំថ្ងៃមធ្យម៖ ប្រហែល ៣០–៣៥
+- ពេលបាត់ដោយពន្យល់ម្តងទៀត៖ ប្រហែល ៣ ម៉ោង/ថ្ងៃ
+- Implementation មិនស៊ីសង្វាក់៖ ប្រហែលពីរភាគបីនៃ PR
+- Bug ពី miscommunication ឧបករណ៍៖ ប្រហែល ២០–២៥% នៃ bug សរុប
 
-**After (AI Team):**
-- Context switches: basically zero (agents handle handoffs)
-- Time lost: zero (persistent shared context)
-- Inconsistent implementations: almost none
-- Bugs from miscommunication: nearly eliminated
+**ក្រោយ (ក្រុម AI)៖**
+- ការប្តូរ context៖ ស្ទើរសូន្យ (ភ្នាក់ងារគ្រប់គ្រង handoff)
+- ពេលបាត់៖ សូន្យ (shared context ជាប់រហូត)
+- Implementation មិនស៊ីសង្វាក់៖ ស្ទើរគ្មាន
+- Bug ពី miscommunication៖ ស្ទើរលុប
 
-Rough math? About 18 hours saved per developer per week. 
+គណិតរហ័ស? ប្រហែល ១៨ ម៉ោងសន្សំ/អ្នកអភិវឌ្ឍន៍/សប្តាហ៍។
 
-## "But I Like My Current Tools"
+## «ប៉ុន្តែខ្ញុំចូលចិត្តឧបករណ៍បច្ចុប្បន្ន»
 
-Look, you can keep them. This isn't about abandoning tools, it's about stopping the copy-paste between them. If you're still figuring out the [difference between AI agents and chatbots](/blog/ai-agent-vs-chatbot), start there to understand why integration matters.
+មើល អ្នកអាចរក្សា។ នេះមិនមែនអំពីការបោះបង់ឧបករណ៍ វាអំពីការឈប់ copy-paste រវាងគ្នា។ បើនៅស្វែងយល់ [ភាពខុសគ្នារវាងភ្នាក់ងារ AI និង chatbot](/blog/ai-agent-vs-chatbot) ចាប់ផ្តើមទីនោះដើម្បីយល់ហេតុអ្វីការរួមបញ្ចូលសំខាន់។
 
-Your tools are specialists trapped in isolation. An AI team lets those specialists actually talk to each other.
+ឧបករណ៍របស់អ្នកជាអ្នកឯកទេសជាប់ក្នុងភាពដាច់ដោយឡែក។ ក្រុម AI ឲ្យអ្នកឯកទេសទាំងនោះនិយាយគ្នាពិត។
 
-Think about it this way. You wouldn't hire five developers and then forbid them from talking to each other. That would be insane. So why do it with AI?
+គិតដូចនេះ។ អ្នកមិនជួលអ្នកអភិវឌ្ឍន៍ប្រាំនាក់ហើយហាមមិនឲ្យនិយាយគ្នាទេ។ នោះឆ្កួត។ ដូច្នេះហេតុអ្វីធ្វើបែបនេះជាមួយ AI?
 
-## How to Actually Start
+## របៀបចាប់ផ្តើមពិត
 
-### The Essential Trio
+### ត្រីយ៉ូសំខាន់
 
-Don't try to replace everything at once. That's a recipe for disaster. Start with three agents:
+មិនព្យាយាមជំនួសអ្វីទាំងអស់ក្នុងពេលតែមួយ។ នោះជារូបមន្តគ្រោះថ្នាក់។ ចាប់ផ្តើមដោយភ្នាក់ងារបី៖
 
-**Architect Agent:** Owns all design decisions, patterns, constraints. This one is non-negotiable.
+**ភ្នាក់ងារ Architect៖** កាន់ការសម្រេចរចនា pattern constraint ទាំងអស់។ មួយនេះមិនអាចខកខាន។
 
-**Builder Agent:** Implements following the architect's patterns exactly. No freelancing.
+**ភ្នាក់ងារ Builder៖** Implement តាម pattern របស់ architect ជាក់លាក់។ គ្មាន freelance។
 
-**Guardian Agent:** Reviews everything, maintains quality. Your safety net.
+**ភ្នាក់ងារ Guardian៖** ពិនិត្យអ្វីទាំងអស់ រក្សាគុណភាព។ សុវត្ថិភាពរបស់អ្នក។
 
-These three eliminate most of the context-switching pain. Like 80% of it.
+បីនេះលុបការឈឺចាប់ប្តូរ context ភាគច្រើន។ ប្រហែល ៨០%។
 
-### What Your First Week Looks Like
+### សប្តាហ៍ដំបូងរបស់អ្នកមើលទៅដូចម្តេច
 
-**Day 1:** Agents ingest your codebase. This takes time. Let it happen.
+**ថ្ងៃ ១៖** ភ្នាក់ងារ ingest codebase។ ត្រូវពេល។ ទុកឱ្យកើត។
 
-**Day 3:** First successful agent-to-agent handoff. You'll probably stare at it in disbelief.
+**ថ្ងៃ ៣៖** Handoff ភ្នាក់ងារទៅភ្នាក់ងារជោគជ័យដំបូង។ អ្នកប្រហែលសម្លឹងដោយមិនជឿ។
 
-**Day 5:** You realize you haven't copied code between tools once.
+**ថ្ងៃ ៥៖** អ្នកដឹងថាមិនបានចម្លងកូដរវាងឧបករណ៍សោះ។
 
-**Day 7:** You ship something that would have taken two weeks.
+**ថ្ងៃ ៧៖** អ្នក ship អ្វីដែលធ្លាប់ត្រូវពីរសប្តាហ៍។
 
-### After a Month
+### បន្ទាប់ពីមួយខែ
 
-By day 30, assuming you don't completely mess it up:
-- Your codebase will be more consistent
-- Bugs drop significantly (ours dropped about 40%)
-- Deployment frequency roughly doubles
-- You're actually coding instead of copy-pasting
+ថ្ងៃទី ៣០ បើមិនខូចទាំងស្រុង៖
+- Codebase កាន់តែស៊ីសង្វាក់
+- Bug ធ្លាក់យ៉ាងខ្លាំង (របស់យើងប្រហែល ៤០%)
+- ប្រេកង់ deployment ស្ទើរពីរ
+- អ្នកពិតជាសរសេរកូដ មិនមែន copy-paste
 
-## The Competitive Reality Nobody Wants to Discuss
+## ការពិតប្រកួតប្រជែងដែលគ្មាននរណាចង់ពិភាក្សា
 
-While you're copy-pasting between Claude Code and Cursor, your competitor's AI team is implementing features in parallel. They're maintaining perfect context. They're learning from every decision. They're getting stronger literally every day.
+ខណៈអ្នក copy-paste រវាង Claude Code និង Cursor ក្រុម AI របស់គូប្រកួតកំពុង implement feature ស្របគ្នា។ ពួកគេរក្សា context ល្អឥតខ្ចោះ។ ពួកគេរៀនពីការសម្រេចមួយៗ។ ពួកគេកាន់តែខ្លាំងរាល់ថ្ងៃ។
 
-They're not 10x faster because they're smarter. They're 10x faster because they're not wasting time being human routers.
+ពួកគេមិនលឿន ១០x ពីព្រោះឆ្លាតជាង។ ពួកគេលឿន ១០x ពីព្រោះមិនខ្ជះខ្ជាយពេលជា router មនុស្ស។
 
-## The Only Question That Actually Matters
+## សំណួរតែមួយដែលសំខាន់ពិត
 
-It's not "Which AI tool should I use?"
+មិនមែន «តើខ្ញុំគួរប្រើឧបករណ៍ AI ណា?»
 
-It's "How can my AI tools work together?"
+គឺ «តើឧបករណ៍ AI របស់ខ្ញុំអាចធ្វើការជាមួយគ្នាយ៉ាងដូចម្តេច?»
 
-Every tool you use in isolation is wasted potential. Every copy-paste is a failure of integration. Every context re-explanation is time your competitor gains on you.
+ឧបករណ៍មួយៗដែលអ្នកប្រើដាច់ដោយឡែកគឺសក្តានុពលខ្ជះខ្ជាយ។ Copy-paste មួយៗគឺបរាជ័យនៃការរួមបញ្ចូល។ ការពន្យល់ context ម្តងទៀតមួយៗគឺពេលវេលាដែលគូប្រកួតទទួលបានលើអ្នក។
 
-I know that sounds dramatic. It's also true.
+ខ្ញុំដឹងថាស្តាប់ទៅ dramatic។ វាក៏ពិត។
 
-## Your Next Sprint Could Be Different
+## Sprint បន្ទាប់របស់អ្នកអាចខុសគ្នា
 
-Imagine starting Monday differently.
+ស្រមៃចាប់ផ្តើមថ្ងៃច័ន្ទខុសគ្នា។
 
-Instead of opening three different coding agents, you say: "Team, we're building the notification system."
+ជំនួសការបើកភ្នាក់ងារសរសេរកូដបីផ្សេង អ្នកនិយាយ៖ «ក្រុម យើងកំពុងកសាងប្រព័ន្ធ notification។»
 
-Your Architecture Agent designs it. Your Implementation Agent builds it. Your Testing Agent validates it. Your Documentation Agent documents it.
+ភ្នាក់ងារ Architecture រចនា។ ភ្នាក់ងារ Implementation កសាង។ ភ្នាក់ងារ Testing បញ្ជាក់។ ភ្នាក់ងារ Documentation ឯកសារ។
 
-No copy-paste. No context loss. No conflicting suggestions.
+គ្មាន copy-paste។ គ្មានបាត់ context។ គ្មានសំណើជម្លោះ។
 
-Just consistent, accelerated development.
+មានតែការអភិវឌ្ឍស៊ីសង្វាក់ និងលឿន។
 
-## Here's the Thing
+## ចំណុចគឺ
 
-The tools revolution gave us powerful AI assistants. That was phase one.
+បដិវត្តឧបករណ៍ផ្តល់ជំនួយការ AI ខ្លាំង។ នោះជាដំណាក់កាលមួយ។
 
-The team revolution makes them work together. That's phase two, and it's happening right now.
+បដិវត្តក្រុមធ្វើឱ្យពួកគេធ្វើការជាមួយគ្នា។ នោះជាដំណាក់កាលពីរ ហើយកំពុងកើតឥឡូវ។
 
-You can keep juggling isolated tools, being the human clipboard between disconnected AI agents.
+អ្នកអាចបន្ត juggling ឧបករណ៍ដាច់ដោយឡែក ធ្វើជា clipboard មនុស្សរវាងភ្នាក់ងារ AI ដាច់គ្នា។
 
-Or you can build a team where agents collaborate like actual developers.
+ឬអ្នកអាចកសាងក្រុមដែលភ្នាក់ងារសហការដូចអ្នកអភិវឌ្ឍន៍ពិត។
 
-Your competitors have already chosen. When are you going to?
+គូប្រកួតរបស់អ្នកជ្រើសរួច។ តើអ្នកនឹងជ្រើសពេលណា?
 
 ---
 
-*Ready to stop being the human copy-paste? Build your AI development team with [ភ្នាក់ងារ](https://phneakngar.ai). Let your agents talk to each other so you can focus on actually building.*
+*ត្រៀមឈប់ធ្វើជា human copy-paste? កសាងក្រុមអភិវឌ្ឍន៍ AI ជាមួយ [ភ្នាក់ងារ](https://phneakngar.ai)។ ទុកឱ្យភ្នាក់ងារនិយាយគ្នា ដើម្បីអ្នកផ្តោតលើការកសាងពិត។*

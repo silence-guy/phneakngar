@@ -1,24 +1,24 @@
 export const metadata = {
   slug: "claude-code-dynamic-workflow-alternative",
-  title: "Open Source Alternative to Claude Code Dynamic Workflow: Email-Based Agent Coordination",
+  title: "ជម្រើស Open Source សម្រាប់ Claude Code Dynamic Workflow៖ ការសម្របសម្រួលភ្នាក់ងារតាមអ៊ីមែល",
   date: "2026-06-01",
   author: "ភ្នាក់ងារ Team",
   excerpt:
-    "Claude Code's dynamic workflows orchestrate 100+ agents from JavaScript. Powerful for one-shot tasks. But what if you need team coordination, persistent memory, or multi-day workflows? Compare script orchestration vs email-based coordination.",
-  readingTime: "4 min read",
+    "Dynamic workflow របស់ Claude Code អាចបញ្ជា agent រាប់រយពី JavaScript។ មានថាមពលសម្រាប់ការងារមួយវគ្គ។ ប៉ុន្តែបើត្រូវការសម្របសម្រួលក្រុម ការចងចាំជាប់រហូត ឬ workflow ច្រើនថ្ងៃ? ប្រៀបធៀប script orchestration និងការសម្របសម្រួលតាមអ៊ីមែល។",
+  readingTime: "អាន ៤ នាទី",
   keywords: ["claude code alternative", "dynamic workflow", "open source", "agent orchestration", "email coordination", "phneakngar"],
   image: "/blog/claude-code-dynamic-workflow-alternative/seo-team.png",
 };
 
-Claude Code shipped dynamic workflows last week. Write JavaScript, run 100+ agents, keep working.
+Claude Code បានដាក់ dynamic workflows កាលពីសប្តាហ៍មុន។ សរសេរ JavaScript បើក agent ១០០+ ហើយបន្តធ្វើការ។
 
-Great if you never close your browser and work alone.
+ល្អប្រសិនបើអ្នកមិនបិទ browser និងធ្វើការម្នាក់ឯង។
 
-We built something different at ភ្នាក់ងារ because we needed agents that remember things tomorrow and can hand off work to teammates. After testing both for a month, I can tell you exactly when each one breaks.
+យើងកសាងអ្វីផ្សេងនៅ ភ្នាក់ងារ ពីព្រោះយើងត្រូវការ agent ដែលចងចាំអ្វីនៅថ្ងៃស្អែក និងអាចប្រគល់ការងារទៅសហការី។ បន្ទាប់ពីសាកល្បងទាំងពីរមួយខែ ខ្ញុំអាចប្រាប់បានថាគ្នាខូចពេលណា។
 
-## Dynamic Workflows Do One Thing Really Well
+## Dynamic Workflows ធ្វើអ្វីមួយបានល្អណាស់
 
-You write JavaScript that orchestrates agents:
+អ្នកសរសេរ JavaScript ដើម្បី orchestrate agent៖
 
 ```javascript
 const results = await Promise.all([
@@ -29,23 +29,23 @@ const results = await Promise.all([
 const report = await synthesizer.merge(results);
 ```
 
-Launch 50 to 500 agents at once. They all run in parallel while you keep working. When they're done, you get one merged report. For huge parallel tasks, nothing beats it.
+បើក ៥០ ទៅ ៥០០ agent ក្នុងពេលតែមួយ។ ពួកគេរត់ស្របគ្នាខណៈអ្នកបន្តធ្វើការ។ ពេលរួច បាន report មួយរួម។ សម្រាប់ការងារស្របដ៏ធំ គ្មានអ្វីល្អជាងនេះទេ។
 
-## Then You Close Your Browser
+## បន្ទាប់មកអ្នកបិទ Browser
 
-I audited a codebase with dynamic workflows. Spent $47 in tokens, saved six hours of manual work. Great trade.
+ខ្ញុំបាន audit codebase មួយដោយ dynamic workflows។ ចំណាយ $៤៧ token សន្សំ ៦ ម៉ោងការងារដៃ។ ល្អណាស់។
 
-Next day I wanted to run it again with a small change. Had to start from scratch because closing the browser destroyed everything. Tried to hand it to a colleague who handles our security reviews. Couldn't. The session was mine alone. Asked if agents could remember what they found last time. They can't.
+ថ្ងៃបន្ទាប់ចង់រត់ម្តងទៀតដោយផ្លាស់ប្តូរតិច។ ត្រូវចាប់ផ្តើមពីសូន្យ — បិទ browser បំផ្លាញអ្វីទាំងអស់។ ព្យាយាមប្រគល់ទៅសហការីដែលធ្វើ security review។ មិនបាន។ Session នោះជារបស់ខ្ញុំតែម្នាក់។ សួរថា agent ចងចាំអ្វីដែលរកឃើញកាលពីមុនបានទេ។ មិនបាន។
 
-The whole thing runs on Anthropic's servers as a black box. You need Claude Pro minimum. $20/month just to start.
+អ្វីទាំងអស់រត់នៅ server Anthropic ជា black box។ ត្រូវការ Claude Pro យ៉ាងហោច។ $២០/ខែ គ្រាន់តែចាប់ផ្តើម។
 
-## We Went with Email Instead
+## យើងជ្រើសអ៊ីមែល
 
-Sounds primitive. Agents literally email each other. That's also why it works across sessions, across weeks, and across teammates.
+ស្តាប់ទៅ primitive។ Agent ពិតជាផ្ញើអ៊ីមែលទៅគ្នា។ នោះហើយជាហេតុដែលវាដំណើរការឆ្លង session សប្តាហ៍ និងសហការី។
 
-ភ្នាក់ងារ does this. While dynamic workflows only work in Claude Code, ភ្នាក់ងារ connects to Codex, OpenCode, and Claude Code today. OpenClaw and Hermes Agent coming Q3.
+ភ្នាក់ងារ ធ្វើបែបនេះ។ ខណៈ dynamic workflows ដំណើរការតែក្នុង Claude Code ភ្នាក់ងារ ភ្ជាប់ Codex, OpenCode និង Claude Code ឥឡូវនេះ។ OpenClaw និង Hermes Agent នឹងមក Q3។
 
-### Agents Get Their Own Space
+### Agent មានកន្លែងផ្ទាល់ខ្លួន
 
 ```
 Donia (Lead) routes work
@@ -55,88 +55,88 @@ Donia (Lead) routes work
   └─ Kai tracks metrics
 ```
 
-![Agent organization structure](/blog/claude-code-dynamic-workflow-alternative/seo-team.png)
+![រចនាសម្ព័ន្ធអង្គការភ្នាក់ងារ](/blog/claude-code-dynamic-workflow-alternative/seo-team.png)
 
-Each agent has a separate workspace. No shared state bugs. Everything logs to `.context_timeline/*.jsonl` files you can grep later. Email threads become documentation. Schedule recurring tasks like meetings.
+Agent មួយៗមាន workspace ផ្សេង។ គ្មាន shared state bug។ អ្វីទាំងអស់ log ទៅ `.context_timeline/*.jsonl` ដែល grep បាន។ Thread អ៊ីមែលក្លាយជាឯកសារ។ កំណត់ task ម្តងម្កាលដូច meeting។
 
-### Watching It Work Over Weeks
+### មើលវាដំណើរការឆ្លងសប្តាហ៍
 
-Our SEO program works like this. Monday: Rosanna finds keywords. Wednesday: Vera writes posts. Friday: Oralla ships them. Following week: Kai reports numbers. Adjust based on data. Repeat.
+កម្មវិធី SEO របស់យើងដូចនេះ។ ច័ន្ទ៖ Rosanna រក keyword។ ពុធ៖ Vera សរសេរ។ សុក្រ៖ Oralla deploy។ សប្តាហ៍បន្ទាប់៖ Kai រាយការណ៍លេខ។ កែតាម data។ ធ្វើម្តងទៀត។
 
-The agents remember. Vera references keyword research from two weeks ago. Oralla knows which deployment patterns worked. Kai tracks trends across months. Try keeping that context alive in one browser tab.
+Agent ចងចាំ។ Vera យោង research ពីពីរសប្តាហ៍មុន។ Oralla ដឹង pattern deploy ណាដំណើរការ។ Kai តាមដាននិន្នាការឆ្លងខែ។ សាករក្សា context នោះក្នុង tab browser តែមួយ។
 
-May numbers: 3 articles live, 173 impressions, 41 clicks, 23.70% CTR. Not massive but real. System logged 87 tasks over 18 days. Each one searchable.
+លេខខែឧសភា៖ ៣ អត្ថបទ live, ១៧៣ impressions, ៤១ clicks, CTR ២៣.៧០%។ មិនធំ ប៉ុន្តែពិត។ ប្រព័ន្ធ log ៨៧ task ក្នុង ១៨ ថ្ងៃ។ មួយៗស្វែងរកបាន។
 
-## When Each One Wins
+## ពេលណាគ្នាឈ្នះ
 
-| Feature | Claude Code Dynamic Workflow | Email Coordination (ភ្នាក់ងារ) |
+| លក្ខណៈ | Claude Code Dynamic Workflow | ការសម្របសម្រួលអ៊ីមែល (ភ្នាក់ងារ) |
 |---------|------------------------------|----------------------------|
-| **Sweet spot** | 500 files, right now | 3-month project |
-| **How long** | Hours in one session | Weeks to months |
-| **Who uses it** | You, alone | Team with handoffs |
-| **Memory** | Gone when done | Permanent timeline |
-| **Agent communication** | JavaScript | Email |
-| **Can pause?** | No, runs to completion | Yes, async everything |
-| **Where it runs** | Anthropic only | Your servers |
-| **Frameworks** | Claude Code | Codex, OpenCode, Claude Code, more coming |
+| **កន្លែងល្អបំផុត** | ៥០០ file ឥឡូវនេះ | គម្រោង ៣ ខែ |
+| **រយៈពេល** | ម៉ោងក្នុង session មួយ | សប្តាហ៍ទៅខែ |
+| **អ្នកប្រើ** | អ្នកម្នាក់ឯង | ក្រុមមាន handoff |
+| **Memory** | បាត់ពេលរួច | Timeline ជាប់រហូត |
+| **ទំនាក់ទំនង agent** | JavaScript | អ៊ីមែល |
+| **ផ្អាកបាន?** | ទេ រត់ដល់ចប់ | បាទ async ទាំងអស់ |
+| **រត់នៅណា** | Anthropic តែប៉ុណ្ណោះ | Server របស់អ្នក |
+| **Framework** | Claude Code | Codex, OpenCode, Claude Code និងច្រើនទៀត |
 
-## Audit 500 Files or Run a Program?
+## Audit ៥០០ File ឬដំណើរការកម្មវិធី?
 
-Need to check 500 API endpoints for auth bugs? Dynamic workflow. Write the script, 100 agents take 5 endpoints each, done in 20 minutes for $30. Manual would take two days.
+ត្រូវពិនិត្យ API endpoint ៥០០ សម្រាប់ auth bug? Dynamic workflow។ សរសេរ script, agent ១០០ យក ៥ endpoint ម្នាក់ ២០ នាទី $៣០។ ដៃពីរថ្ងៃ។
 
-Building a content program? Email coordination. Research accumulates. Writing improves based on what worked. Deployment follows a checklist that evolves. Analytics inform next week's topics. You can't script that ahead of time because you don't know what you'll learn.
+កសាង content program? ការសម្របសម្រួលអ៊ីមែល។ Research ប្រមូល។ ការសរសេរកែលម្អតាមអ្វីដែលដំណើរការ។ Deploy តាម checklist ដែលវិវត្ត។ Analytics ណែនាំប្រធានបទសប្តាហ៍ក្រោយ។ មិនអាច script ជាមុនបានពីព្រោះមិនទាន់ដឹងនឹងរៀនអ្វី។
 
-## Using Dynamic Workflows
+## ប្រើ Dynamic Workflows
 
-Claude Code v2.1.154 minimum. Pro subscription required.
+Claude Code v2.1.154 យ៉ាងហោច។ ត្រូវ Pro subscription។
 
-Enable in settings, then:
+បើកក្នុង settings បន្ទាប់មក៖
 > Run a workflow to find all TypeScript files importing deprecated APIs
 
-Watch the progress bar. See agent count, token spend, partial results.
+មើល progress bar។ មើលចំនួន agent, token spend, លទ្ធផលផ្នែក។
 
-## Using Email Coordination
+## ប្រើការសម្របសម្រួលអ៊ីមែល
 
-Hit phneakngar.ai, make an account. You get Donia immediately.
+ចូល phneakngar.ai បង្កើតគណនី។ បាន Donia ភ្លាម។
 
-![Chat interface showing task input](/blog/claude-code-dynamic-workflow-alternative/chat-interface.jpg)
+![ចំណុចប្រទាក់ chat បញ្ចូល task](/blog/claude-code-dynamic-workflow-alternative/chat-interface.jpg)
 
-Type what you need:
+វាយអ្វីដែលត្រូវការ៖
 ```
 Research our top 5 competitors and explain 
 what makes us different
 ```
 
-Donia emails the right agent. You see it happen in the activity feed.
+Donia ផ្ញើអ៊ីមែលទៅ agent ត្រឹមត្រូវ។ អ្នកឃើញក្នុង activity feed។
 
-![Email activity feed](/blog/claude-code-dynamic-workflow-alternative/email-inbox.png)
+![ប្រអប់អ៊ីមែល activity](/blog/claude-code-dynamic-workflow-alternative/email-inbox.png)
 
-Real workflow from last week:
-- Me: "Write API rate limiting best practices post"
-- Donia → Rosanna: "Research rate limiting approaches"
-- Rosanna → Donia: "Found 5 patterns with tradeoffs" (3 hours later)
-- Donia → Vera: "Write post from attached research"
-- Vera → Donia: "Draft attached, 1,200 words" (next morning)
-- Donia → Me: "Post ready for review"
+Workflow ពិតកាលពីសប្តាហ៍មុន៖
+- ខ្ញុំ៖ "Write API rate limiting best practices post"
+- Donia → Rosanna៖ "Research rate limiting approaches"
+- Rosanna → Donia៖ "Found 5 patterns with tradeoffs" (៣ ម៉ោងក្រោយ)
+- Donia → Vera៖ "Write post from attached research"
+- Vera → Donia៖ "Draft attached, 1,200 words" (ព្រឹកបន្ទាប់)
+- Donia → ខ្ញុំ៖ "Post ready for review"
 
-Everything saved. Search it later. Agents reference it next time.
+រក្សាទុកទាំងអស់។ ស្វែងរកក្រោយ។ Agent យោងម្តងទៀត។
 
-## I Ran the Same Audit Both Ways
+## ខ្ញុំ Audit ដូចគ្នាទាំងពីរវិធី
 
-Security audit of our auth system.
+Security audit ប្រព័ន្ធ auth របស់យើង។
 
-Dynamic workflow: 5 minutes writing JavaScript. 100 agents, 18 minutes runtime. $31. Complete coverage report.
+Dynamic workflow៖ ៥ នាទីសរសេរ JavaScript។ Agent ១០០, runtime ១៨ នាទី។ $៣១។ Report coverage ពេញ។
 
-Email coordination: 10 minutes explaining the task. One agent, 4 hours (I did other work). $8. Found fewer issues but explained each one. When I ran it again two weeks later, it remembered the previous patterns and specifically checked if we'd regressed.
+ការសម្របសម្រួលអ៊ីមែល៖ ១០ នាទីពន្យល់ task។ Agent មួយ, ៤ ម៉ោង (ខ្ញុំធ្វើការផ្សេង)។ $៨។ រកបញ្ហាតិចជាង ប៉ុន្តែពន្យល់មួយៗ។ ពេលរត់ម្តងទៀតពីរសប្តាហ៍ក្រោយ វាចងចាំ pattern មុន និងពិនិត្យ regression ជាពិសេស។
 
-Speed isn't the difference. Coverage versus understanding is.
+ល្បឿនមិនមែនជាភាពខុសគ្នា។ Coverage ប្រៀបនឹងការយល់ដឹងទេ។
 
-## You Probably Want Both
+## អ្នកប្រហែលត្រូវការទាំងពីរ
 
-Claude Code dynamic workflows demolish single-session parallel work. Migrations, comprehensive audits, "check everything right now" tasks.
+Claude Code dynamic workflows បំផ្លាញការងារស្របក្នុង session តែមួយ។ Migration, audit ធំ, "ពិនិត្យអ្វីទាំងអស់ឥឡូវ"។
 
-Email coordination handles everything that unfolds over time. Programs that run for months. Work that moves between people. Context that matters next week.
+ការសម្របសម្រួលអ៊ីមែលគ្រប់គ្រងអ្វីដែលលាតសន្ធឹងពេលវេលា។ កម្មវិធីច្រើនខែ។ ការងារផ្លាស់រវាងមនុស្ស។ Context សំខាន់សប្តាហ៍ក្រោយ។
 
-They solve different problems. We use email coordination to run our product team. When someone needs to audit 500 files, they trigger a dynamic workflow. Results come back through email for the next person.
+ដោះស្រាយបញ្ហាផ្សេងគ្នា។ យើងប្រើការសម្របសម្រួលអ៊ីមែលដើម្បីដំណើរការក្រុមផលិតផល។ ពេលនរណាម្នាក់ត្រូវ audit ៥០០ file ពួកគេ trigger dynamic workflow។ លទ្ធផលត្រលប់មកតាមអ៊ីមែលសម្រាប់មនុស្សបន្ទាប់។
 
-**About ភ្នាក់ងារ:** Agent coordination platform. Self-hosted option. Works with Codex/OpenCode/Claude Code.
+**អំពី ភ្នាក់ងារ៖** វេទិកាសម្របសម្រួលភ្នាក់ងារ។ មាន self-hosted។ ដំណើរការជាមួយ Codex/OpenCode/Claude Code។

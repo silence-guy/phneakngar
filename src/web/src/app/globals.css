@@ -18,7 +18,8 @@
   --font-mono: var(--font-dm-mono);
   --font-heading: var(--font-dm-sans);
   --font-display: var(--font-dm-sans);
-  --font-news: var(--font-literata);
+  /* Literata first for Latin display; Noto Sans Khmer must follow so Khmer clusters don't collapse */
+  --font-news: var(--font-literata), var(--font-noto-sans-khmer), var(--font-dm-sans), system-ui, sans-serif;
   --font-brand: var(--font-caveat);
   --font-khmer: var(--font-noto-sans-khmer), var(--font-dm-sans), system-ui, sans-serif;
   --color-sidebar-ring: var(--sidebar-ring);
@@ -162,6 +163,23 @@ html[lang="km"] body {
 
 html[lang="km"] :is(code, kbd, pre, samp, .font-mono) {
   font-family: var(--font-dm-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+}
+
+/*
+ * Display serif (Literata) + tight tracking collapses Khmer subscript/cluster glyphs.
+ * Force Khmer-capable face and normal letter-spacing on large titles in km locale.
+ */
+html[lang="km"] :is(h1, h2, h3).font-news,
+html[lang="km"] :is(h1, h2, h3)[style*="font-news"],
+html[lang="km"] :is(h1, h2, h3)[style*="--font-news"] {
+  font-family: var(--font-khmer);
+  letter-spacing: normal;
+  line-height: 1.4;
+}
+
+html[lang="km"] .font-khmer {
+  font-family: var(--font-khmer);
+  letter-spacing: normal;
 }
 
 /* ── Object-mimicry card grain texture (shared) ── */

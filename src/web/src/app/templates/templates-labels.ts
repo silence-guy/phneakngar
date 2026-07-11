@@ -1,4 +1,5 @@
 import { coreEntityLabels, Locale } from "@phneakngar/shared";
+import type { TemplateCategory } from "@/lib/templates";
 
 export const TEMPLATES_LABELS = {
   nav: {
@@ -14,6 +15,12 @@ export const TEMPLATES_LABELS = {
     allCategory: "ទាំងអស់",
     emptyCategory: "មិនទាន់មានគំរូក្នុងប្រភេទនេះទេ។",
   },
+  categories: {
+    Developer: "អ្នកអភិវឌ្ឍន៍",
+    "Content Creator": "អ្នកបង្កើតមាតិកា",
+    "Knowledge Worker": "អ្នកចំណេះដឹង",
+    Freelancer: "អ្នកឯករាជ្យ",
+  } satisfies Record<TemplateCategory, string>,
   card: {
     use: "ប្រើ",
   },
@@ -33,6 +40,12 @@ export const TEMPLATES_LABELS = {
     assistant: "ជំនួយការ",
   },
 } as const;
+
+export function templateCategoryLabel(category: string): string {
+  return (
+    TEMPLATES_LABELS.categories[category as TemplateCategory] ?? category
+  );
+}
 
 export function templateRoleLabel(role: string): string {
   return (

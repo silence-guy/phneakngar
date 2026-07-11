@@ -36,7 +36,8 @@ let cachedPosts: BlogPost[] | null = null;
 export type { BlogPost } from "../types";
 
 export async function getAllPosts(): Promise<BlogPost[]> {
-  if (cachedPosts) {
+  // Cache only in production so MDX metadata HMR works in dev.
+  if (cachedPosts && process.env.NODE_ENV === "production") {
     return [...cachedPosts].sort(
       (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
     );

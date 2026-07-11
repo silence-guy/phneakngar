@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { getAllPosts, getPostBySlug } from "@/lib/blog/posts";
+import { BLOG_LABELS, formatBlogDate } from "@/lib/blog/blog-labels";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "";
 
@@ -28,7 +29,7 @@ export async function generateMetadata({
   const postUrl = absoluteUrl(`/blog/${post.slug}`);
 
   return {
-    title: `${post.title} — ភ្នាក់ងារ Blog`,
+    title: `${post.title} — ភ្នាក់ងារ ${BLOG_LABELS.nav.blog}`,
     description: post.excerpt,
     ...(postUrl ? { alternates: { canonical: postUrl } } : {}),
     openGraph: {
@@ -102,23 +103,17 @@ export default async function BlogPostPage({
           className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-8 sm:mb-14"
         >
           <ArrowLeft className="size-3.5" />
-          ប្លុកទាំងអស់
+          {BLOG_LABELS.detail.allPosts}
         </Link>
 
         <header className="mb-10 sm:mb-16">
-          <h1 className="font-news text-4xl sm:text-5xl font-semibold tracking-tight leading-[1.12]">
+          <h1 className="font-khmer text-4xl sm:text-5xl font-semibold tracking-normal leading-[1.4]">
             {post.title}
           </h1>
-          <div className="mt-6 flex items-center gap-3 text-sm text-muted-foreground">
+          <div className="mt-6 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
             <span className="font-medium text-foreground/70">{post.author}</span>
             <span className="text-muted-foreground/40">/</span>
-            <span>
-              {new Date(post.date).toLocaleDateString("en-US", {
-                year: "numeric",
-                month: "long",
-                day: "numeric",
-              })}
-            </span>
+            <span>{formatBlogDate(post.date)}</span>
             <span className="text-muted-foreground/40">/</span>
             <span>{post.readingTime}</span>
           </div>
@@ -134,9 +129,9 @@ export default async function BlogPostPage({
               href={`/blog/${prevPost.slug}`}
               className="group flex flex-col gap-1.5 text-left max-w-[45%]"
             >
-              <span className="text-[11px] uppercase tracking-[0.15em] font-mono text-muted-foreground flex items-center gap-1.5">
+              <span className="text-[11px] tracking-[0.15em] font-mono text-muted-foreground flex items-center gap-1.5">
                 <ArrowLeft className="size-3" />
-                មុន
+                {BLOG_LABELS.detail.previous}
               </span>
               <span className="text-[15px] font-sans group-hover:-translate-x-0.5 transition-transform duration-200 leading-snug">
                 {prevPost.title}
@@ -150,8 +145,8 @@ export default async function BlogPostPage({
               href={`/blog/${nextPost.slug}`}
               className="group flex flex-col gap-1.5 text-right ml-auto max-w-[45%]"
             >
-              <span className="text-[11px] uppercase tracking-[0.15em] font-mono text-muted-foreground flex items-center justify-end gap-1.5">
-                បន្ទាប់
+              <span className="text-[11px] tracking-[0.15em] font-mono text-muted-foreground flex items-center justify-end gap-1.5">
+                {BLOG_LABELS.detail.next}
                 <ArrowRight className="size-3" />
               </span>
               <span className="text-[15px] font-sans group-hover:translate-x-0.5 transition-transform duration-200 leading-snug">

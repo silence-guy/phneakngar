@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   TEMPLATES_LABELS,
+  templateCategoryLabel,
   templateRoleLabel,
   templateAgentCountLabel,
   templateAgentsWorkingLabel,
@@ -9,11 +10,12 @@ import {
 const isKhmer = (s: string) => /[ក-៿]/.test(s);
 
 describe("templates labels", () => {
-  it("localizes nav, list, card, and detail strings to Khmer", () => {
+  it("localizes nav, list, card, categories, and detail strings to Khmer", () => {
     const groups = [
       TEMPLATES_LABELS.nav,
       TEMPLATES_LABELS.list,
       TEMPLATES_LABELS.card,
+      TEMPLATES_LABELS.categories,
       TEMPLATES_LABELS.detail,
     ];
     for (const group of groups) {
@@ -29,6 +31,14 @@ describe("templates labels", () => {
     expect(templateRoleLabel("engineer")).toBe("វិស្វករ");
     expect(templateRoleLabel("assistant")).toBe("ជំនួយការ");
     expect(templateRoleLabel("unknown")).toBe("unknown");
+  });
+
+  it("maps category filter keys to Khmer display labels and falls back", () => {
+    expect(templateCategoryLabel("Developer")).toBe("អ្នកអភិវឌ្ឍន៍");
+    expect(templateCategoryLabel("Content Creator")).toBe("អ្នកបង្កើតមាតិកា");
+    expect(templateCategoryLabel("Knowledge Worker")).toBe("អ្នកចំណេះដឹង");
+    expect(templateCategoryLabel("Freelancer")).toBe("អ្នកឯករាជ្យ");
+    expect(templateCategoryLabel("Unknown Cat")).toBe("Unknown Cat");
   });
 
   it("formats agent counts with the Khmer agent noun", () => {

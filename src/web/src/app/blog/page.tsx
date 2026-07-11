@@ -1,29 +1,29 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getAllPosts } from "@/lib/blog/posts";
+import { BLOG_LABELS, formatBlogDate } from "@/lib/blog/blog-labels";
 
-const description =
-  "គំនិតអំពីការកសាងក្រុមហ៊ុន AI ការសហការភ្នាក់ងារ និងអនាគតនៃកម្មវិធីផ្ទាល់ខ្លួន។";
+const description = BLOG_LABELS.list.description;
 
 // Set NEXT_PUBLIC_SITE_URL in your environment to your canonical domain; empty = relative.
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "";
 
 export const metadata: Metadata = {
-  title: "ប្លុក",
+  title: BLOG_LABELS.list.title,
   description,
   alternates: {
     types: { "application/rss+xml": "/blog/feed.xml" },
   },
   openGraph: {
-    title: "ប្លុក",
+    title: BLOG_LABELS.list.title,
     description,
-    images: [{ url: "/og?title=ប្លុក", width: 1200, height: 630 }],
+    images: [{ url: `/og?title=${encodeURIComponent(BLOG_LABELS.list.title)}`, width: 1200, height: 630 }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "ប្លុក",
+    title: BLOG_LABELS.list.title,
     description,
-    images: ["/og?title=ប្លុក"],
+    images: [`/og?title=${encodeURIComponent(BLOG_LABELS.list.title)}`],
   },
 };
 
@@ -47,8 +47,9 @@ export default async function BlogPage() {
       />
       <div className="mx-auto max-w-3xl px-6 pt-10 sm:pt-20 pb-24">
         <header className="mb-16">
-          <h1 className="font-news text-5xl sm:text-6xl font-semibold tracking-tight leading-none">
-            ប្លុក
+          {/* font-khmer + normal tracking: Literata/tracking-tight stacks Khmer clusters */}
+          <h1 className="font-khmer text-5xl sm:text-6xl font-semibold tracking-normal leading-[1.35]">
+            {BLOG_LABELS.list.title}
           </h1>
           <p className="mt-4 text-[1.0625rem] text-muted-foreground font-sans leading-relaxed max-w-xl">
             {description}
@@ -61,18 +62,13 @@ export default async function BlogPage() {
             className="group block pb-14 mb-14 border-b border-border"
           >
             <span className="text-xs font-mono uppercase tracking-[0.2em] text-muted-foreground/60">
-              ថ្មីៗ
+              {BLOG_LABELS.list.latest}
             </span>
-            <h2 className="mt-3 font-news text-3xl sm:text-4xl font-semibold tracking-tight leading-tight group-hover:translate-x-1 transition-transform duration-200">
+            <h2 className="mt-3 font-khmer text-3xl sm:text-4xl font-semibold tracking-normal leading-[1.4] group-hover:translate-x-1 transition-transform duration-200">
               {featured.title}
             </h2>
             <p className="mt-3 text-sm text-muted-foreground">
-              {new Date(featured.date).toLocaleDateString("en-US", {
-                year: "numeric",
-                month: "long",
-                day: "numeric",
-              })}{" "}
-              &middot; {featured.readingTime}
+              {formatBlogDate(featured.date)} &middot; {featured.readingTime}
             </p>
             <p className="mt-4 font-sans text-lg text-foreground/80 leading-relaxed max-w-2xl">
               {featured.excerpt}
@@ -92,16 +88,11 @@ export default async function BlogPage() {
                     {String(i + 2).padStart(2, "0")}
                   </span>
                   <div>
-                    <h2 className="font-news text-xl sm:text-2xl font-semibold tracking-tight group-hover:translate-x-0.5 transition-transform duration-200">
+                    <h2 className="font-khmer text-xl sm:text-2xl font-semibold tracking-normal leading-[1.4] group-hover:translate-x-0.5 transition-transform duration-200">
                       {post.title}
                     </h2>
                     <p className="mt-1.5 text-sm text-muted-foreground">
-                      {new Date(post.date).toLocaleDateString("en-US", {
-                        year: "numeric",
-                        month: "long",
-                        day: "numeric",
-                      })}{" "}
-                      &middot; {post.readingTime}
+                      {formatBlogDate(post.date)} &middot; {post.readingTime}
                     </p>
                     <p className="mt-3 font-sans text-foreground/75 leading-relaxed">
                       {post.excerpt}

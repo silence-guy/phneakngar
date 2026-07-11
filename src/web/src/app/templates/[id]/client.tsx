@@ -8,6 +8,7 @@ import { MemberCard } from "./_components/member-card";
 import type { TemplatePreset } from "@/lib/templates";
 import {
   TEMPLATES_LABELS,
+  templateCategoryLabel,
   templateRoleLabel,
   templateAgentsWorkingLabel,
 } from "../templates-labels";
@@ -82,12 +83,9 @@ export function TemplateDetailClient({
               </span>
               <div>
                 <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                  {template.category}
+                  {templateCategoryLabel(template.category)}
                 </p>
-                <h1
-                  className="mt-0.5 text-2xl font-semibold tracking-tight"
-                  style={{ fontFamily: "var(--font-news)" }}
-                >
+                <h1 className="mt-0.5 font-khmer text-2xl font-semibold tracking-normal leading-[1.4]">
                   {template.name}
                 </h1>
               </div>

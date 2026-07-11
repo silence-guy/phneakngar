@@ -6,7 +6,7 @@ import { PublicLayout } from "@/components/public-layout";
 import { TemplateCard } from "./_components/template-card";
 import type { TemplatePreset, TemplateCategory } from "@/lib/templates";
 import { trackTemplatesBrowsed } from "@/lib/analytics";
-import { TEMPLATES_LABELS } from "./templates-labels";
+import { TEMPLATES_LABELS, templateCategoryLabel } from "./templates-labels";
 
 export function TemplatesClient({
   templates,
@@ -76,10 +76,7 @@ export function TemplatesClient({
     >
       {/* Header */}
       <div className="mx-auto max-w-4xl px-6 pt-16 pb-2">
-        <h1
-          className="text-3xl font-semibold tracking-tight"
-          style={{ fontFamily: "var(--font-news)" }}
-        >
+        <h1 className="font-khmer text-3xl font-semibold tracking-normal leading-[1.4]">
           {TEMPLATES_LABELS.list.title}
         </h1>
         <p className="mt-3 max-w-lg text-sm leading-relaxed text-muted-foreground">
@@ -100,7 +97,9 @@ export function TemplatesClient({
                   : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground"
               }`}
             >
-              {cat === "All" ? TEMPLATES_LABELS.list.allCategory : cat}
+              {cat === "All"
+                ? TEMPLATES_LABELS.list.allCategory
+                : templateCategoryLabel(cat)}
             </button>
           ))}
         </div>
