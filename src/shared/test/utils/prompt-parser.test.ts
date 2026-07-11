@@ -10,9 +10,9 @@ const bot = (name: string, emailHandle: string | null = null, description = "") 
 describe("parsePromptMentions", () => {
   it("enriches a single mention with email", () => {
     const result = parsePromptMentions("Hey @TestBot do this", [bot("TestBot", "testbot")])
-    expect(result.enrichedPrompt).toBe("Hey @TestBot (testbot@phneakngar.ai) do this")
+    expect(result.enrichedPrompt).toBe("Hey @TestBot (testbot@cieee.xyz) do this")
     expect(result.mentions).toHaveLength(1)
-    expect(result.mentions[0]).toEqual({ name: "TestBot", email: "testbot@phneakngar.ai", description: "" })
+    expect(result.mentions[0]).toEqual({ name: "TestBot", email: "testbot@cieee.xyz", description: "" })
   })
 
   it("enriches multiple mentions", () => {
@@ -20,7 +20,7 @@ describe("parsePromptMentions", () => {
       bot("Alpha", "alpha"),
       bot("Beta", "beta"),
     ])
-    expect(result.enrichedPrompt).toBe("@Alpha (alpha@phneakngar.ai) and @Beta (beta@phneakngar.ai) please coordinate")
+    expect(result.enrichedPrompt).toBe("@Alpha (alpha@cieee.xyz) and @Beta (beta@cieee.xyz) please coordinate")
     expect(result.mentions).toHaveLength(2)
   })
 
@@ -51,32 +51,32 @@ describe("parsePromptMentions", () => {
 
   it("matches case-insensitively and preserves canonical name", () => {
     const result = parsePromptMentions("hey @testbot", [bot("TestBot", "testbot")])
-    expect(result.enrichedPrompt).toBe("hey @TestBot (testbot@phneakngar.ai)")
+    expect(result.enrichedPrompt).toBe("hey @TestBot (testbot@cieee.xyz)")
     expect(result.mentions).toHaveLength(1)
   })
 
   it("prefers longest match (greedy)", () => {
     const result = parsePromptMentions("@SalesBot", [bot("Sales", "sales"), bot("SalesBot", "salesbot")])
-    expect(result.enrichedPrompt).toBe("@SalesBot (salesbot@phneakngar.ai)")
+    expect(result.enrichedPrompt).toBe("@SalesBot (salesbot@cieee.xyz)")
     expect(result.mentions).toHaveLength(1)
     expect(result.mentions[0].name).toBe("SalesBot")
   })
 
   it("matches mention at start of string", () => {
     const result = parsePromptMentions("@Bot do this", [bot("Bot", "bot")])
-    expect(result.enrichedPrompt).toBe("@Bot (bot@phneakngar.ai) do this")
+    expect(result.enrichedPrompt).toBe("@Bot (bot@cieee.xyz) do this")
     expect(result.mentions).toHaveLength(1)
   })
 
   it("matches mention after newline", () => {
     const result = parsePromptMentions("line one\n@Bot do this", [bot("Bot", "bot")])
-    expect(result.enrichedPrompt).toBe("line one\n@Bot (bot@phneakngar.ai) do this")
+    expect(result.enrichedPrompt).toBe("line one\n@Bot (bot@cieee.xyz) do this")
     expect(result.mentions).toHaveLength(1)
   })
 
   it("matches agent name with spaces", () => {
     const result = parsePromptMentions("Hey @Marketing Bot do this", [bot("Marketing Bot", "marketing-bot")])
-    expect(result.enrichedPrompt).toBe("Hey @Marketing Bot (marketing-bot@phneakngar.ai) do this")
+    expect(result.enrichedPrompt).toBe("Hey @Marketing Bot (marketing-bot@cieee.xyz) do this")
     expect(result.mentions).toHaveLength(1)
   })
 
@@ -94,7 +94,7 @@ describe("parsePromptMentions", () => {
 
   it("enriches duplicate mentions of same agent", () => {
     const result = parsePromptMentions("@Bot do this and @Bot do that", [bot("Bot", "bot")])
-    expect(result.enrichedPrompt).toBe("@Bot (bot@phneakngar.ai) do this and @Bot (bot@phneakngar.ai) do that")
+    expect(result.enrichedPrompt).toBe("@Bot (bot@cieee.xyz) do this and @Bot (bot@cieee.xyz) do that")
     expect(result.mentions).toHaveLength(2)
   })
 
@@ -102,14 +102,14 @@ describe("parsePromptMentions", () => {
     const result = parsePromptMentions("@Bot1@Bot2", [bot("Bot1", "bot1"), bot("Bot2", "bot2")])
     // @Bot1 matches (followed by @, a non-alphanumeric char)
     // @Bot2 does NOT match (@ preceded by '1', an alphanumeric)
-    expect(result.enrichedPrompt).toBe("@Bot1 (bot1@phneakngar.ai)@Bot2")
+    expect(result.enrichedPrompt).toBe("@Bot1 (bot1@cieee.xyz)@Bot2")
     expect(result.mentions).toHaveLength(1)
     expect(result.mentions[0].name).toBe("Bot1")
   })
 
   it("matches agent name with special characters (parentheses)", () => {
     const result = parsePromptMentions("Hey @Bot (v2) do this", [bot("Bot (v2)", "bot-v2")])
-    expect(result.enrichedPrompt).toBe("Hey @Bot (v2) (bot-v2@phneakngar.ai) do this")
+    expect(result.enrichedPrompt).toBe("Hey @Bot (v2) (bot-v2@cieee.xyz) do this")
     expect(result.mentions).toHaveLength(1)
   })
 
@@ -120,7 +120,7 @@ describe("parsePromptMentions", () => {
 
   it("handles @ after punctuation (parentheses, quotes)", () => {
     const result = parsePromptMentions('(@Bot) and "@Bot"', [bot("Bot", "bot")])
-    expect(result.enrichedPrompt).toBe('(@Bot (bot@phneakngar.ai)) and "@Bot (bot@phneakngar.ai)"')
+    expect(result.enrichedPrompt).toBe('(@Bot (bot@cieee.xyz)) and "@Bot (bot@cieee.xyz)"')
     expect(result.mentions).toHaveLength(2)
   })
 })

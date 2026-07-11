@@ -78,7 +78,7 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
     const agent = await queries.agent.getAgent(db, meeting.agentId, body.workspaceId)
 
     if (agent?.emailHandle) {
-      const messageId = `<meeting-${body.meetingId}@phneakngar.ai>`
+      const messageId = `<meeting-${body.meetingId}@${process.env.PHNEAKNGAR_DOMAIN || "cieee.xyz"}>`
       const existing = await queries.email.getEmailByMessageId(db, messageId, body.workspaceId)
       if (!existing) {
         const fromAddr = toPhneakngarAddress("no-reply")

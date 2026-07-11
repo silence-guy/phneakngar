@@ -17,3 +17,6 @@ EMAIL_NOTIFY_SECRET=
 # Public or local web origin used for authenticated /api/email/notify callbacks.
 # Production example: https://app.example.com
 WEB_ORIGIN=http://localhost:3000
+
+# Public agent/OTP email domain (must match Cloudflare Email Sending zone)
+PHNEAKNGAR_DOMAIN=cieee.xyz

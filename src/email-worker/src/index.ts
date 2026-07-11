@@ -1,6 +1,6 @@
 import { nanoid } from "nanoid"
 import PostalMime from "postal-mime"
-import { createDb, queries, parseEmailHandle, toPhneakngarAddress, createLogger, buildMimeMessage, extractAttachmentMeta, isEmailDraftAttachmentKeyForScope, EMAIL_NOTIFY_SECRET_HEADER } from "@phneakngar/shared"
+import { createDb, queries, parseEmailHandle, toPhneakngarAddress, getEmailDomain, createLogger, buildMimeMessage, extractAttachmentMeta, isEmailDraftAttachmentKeyForScope, EMAIL_NOTIFY_SECRET_HEADER } from "@phneakngar/shared"
 import { decrypt } from "@phneakngar/shared/crypto"
 import { safeEqualSecret } from "@phneakngar/shared/secrets"
 import { WorkerMailer, type AuthType } from "worker-mailer"
@@ -100,14 +100,26 @@ export default {
       return Response.json({ error: "to and subject are required" }, { status: 400 })
     }
 
-    await env.SEND_EMAIL.send({
-      from: toPhneakngarAddress("no-reply"),
-      to: body.to,
-      subject: body.subject,
-      html: body.html ?? "",
-    })
+    const from = toPhneakngarAddress("no-reply", env.PHNEAKNGAR_DOMAIN)
+    try {
+      await env.SEND_EMAIL.send({
+        from,
+        to: body.to,
+        subject: body.subject,
+        html: body.html ?? "",
+        text: body.html ? undefined : body.subject,
+      })
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err)
+      const code = err && typeof err === "object" && "code" in err ? String((err as { code: unknown }).code) : ""
+      log.error("OTP SEND_EMAIL failed", { error: msg, code, from, to: body.to })
+      return Response.json(
+        { error: `email send failed: ${code || msg}`, from, domain: env.PHNEAKNGAR_DOMAIN ?? null },
+        { status: 502 },
+      )
+    }
 
-    return Response.json({ ok: true })
+    return Response.json({ ok: true, from })
   },
 
   async handleSendAgent(request: Request, env: EmailEnv): Promise<Response> {
@@ -150,7 +162,7 @@ export default {
       if (!agent.emailHandle) {
         return Response.json({ error: "agent has no email handle configured" }, { status: 400 })
       }
-      fromAddress = toPhneakngarAddress(agent.emailHandle)
+      fromAddress = toPhneakngarAddress(agent.emailHandle, env.PHNEAKNGAR_DOMAIN)
     }
 
     const htmlBody = body.htmlBody ?? ""
@@ -197,11 +209,11 @@ export default {
     // Generate the outbound Message-ID ONCE, before sending. This same id is placed
     // on the wire, returned to the caller (for conversation-map registration), and
     // stored in the R2 archive — so a human's reply (In-Reply-To = this id) threads
-    // back into the originating conversation. The id's domain must match the sending
-    // domain: @phneakngar.ai for the CF path, the custom-account domain for the SMTP path.
+    // back into the originating conversation. Domain must match the sending path:
+    // PHNEAKNGAR_DOMAIN for CF Email Service, or the custom SMTP account domain.
     const fromDomain = useCustomSmtp && customAccount
       ? customAccount.emailAddress.split("@").pop()
-      : "phneakngar.ai"
+      : getEmailDomain(env.PHNEAKNGAR_DOMAIN)
     const outMessageId = `<${nanoid()}@${fromDomain}>`
 
     // Build the raw MIME once — used both as the wire message (CF path) and as the
@@ -389,7 +401,7 @@ export default {
     const emailLog = log.child({ traceId, from: message.from, to: message.to })
 
     const db = createDb(env.DB)
-    const handle = parseEmailHandle(message.to)
+    const handle = parseEmailHandle(message.to, env.PHNEAKNGAR_DOMAIN)
 
     const agent = await queries.agent.getAgentByHandle(db, handle)
     if (!agent) {

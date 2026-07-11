@@ -67,11 +67,14 @@ vi.mock("@phneakngar/shared", async () => {
     EMAIL_NOTIFY_SECRET_HEADER: real.EMAIL_NOTIFY_SECRET_HEADER,
     createDb: (d1: unknown) => mockCreateDb(d1),
     createLogger: () => noopLogger,
-    parseEmailHandle: (address: string) => {
-      const domain = "@phneakngar.ai"
-      return address.endsWith(domain) ? address.slice(0, -domain.length) : ""
+    parseEmailHandle: (address: string, domain?: string | null) => {
+      const suffix = `@${(domain || "cieee.xyz").replace(/^@/, "")}`
+      return address.toLowerCase().endsWith(suffix) ? address.slice(0, -suffix.length) : ""
     },
-    toPhneakngarAddress: (h: string) => `${h}@phneakngar.ai`,
+    toPhneakngarAddress: (h: string, domain?: string | null) =>
+      `${h}@${(domain || "cieee.xyz").replace(/^@/, "")}`,
+    getEmailDomain: (domain?: string | null) =>
+      (domain || "cieee.xyz").replace(/^@/, "").toLowerCase(),
     DEV_WEB_URL: "http://localhost:3000",
     queries: {
       agent: {
@@ -122,7 +125,7 @@ function setup(overrides?: {
   const { message, setReject, forward, rawText } = createMockMessage(
     overrides?.messageOpts ?? {
       from: "owner@example.com",
-      to: "jarvis@phneakngar.ai",
+      to: "jarvis@cieee.xyz",
       subject: "Hello",
       body: "Test body",
     }
@@ -150,7 +153,7 @@ describe("agent resolution", () => {
     expect(put).not.toHaveBeenCalled()
   })
 
-  it("parses handle from phneakngar.ai address and looks up agent", async () => {
+  it("parses handle from cieee.xyz address and looks up agent", async () => {
     const { env, message } = setup({ isWhitelisted: true })
 
     await handler.email(message, env)
@@ -222,7 +225,7 @@ describe("whitelisted path", () => {
   it("defaults subject to '(No Subject)' when header is missing", async () => {
     const { env, message, wsFetch } = setup({
       isWhitelisted: true,
-      messageOpts: { from: "owner@example.com", to: "jarvis@phneakngar.ai", subject: null },
+      messageOpts: { from: "owner@example.com", to: "jarvis@cieee.xyz", subject: null },
     })
 
     await handler.email(message, env)
@@ -244,7 +247,7 @@ describe("whitelisted path", () => {
       isWhitelisted: true,
       messageOpts: {
         from: "owner@example.com",
-        to: "jarvis@phneakngar.ai",
+        to: "jarvis@cieee.xyz",
         subject: "Re: Thread",
         extraHeaders: {
           "message-id": "<msg-123@example.com>",
@@ -283,7 +286,7 @@ describe("RFC 2047 subject decoding", () => {
       isWhitelisted: true,
       messageOpts: {
         from: "owner@example.com",
-        to: "jarvis@phneakngar.ai",
+        to: "jarvis@cieee.xyz",
         subject: encodedSubject,
         body: "Test body",
       },
@@ -301,7 +304,7 @@ describe("RFC 2047 subject decoding", () => {
       isWhitelisted: true,
       messageOpts: {
         from: "owner@example.com",
-        to: "jarvis@phneakngar.ai",
+        to: "jarvis@cieee.xyz",
         subject: encodedSubject,
         body: "Test body",
       },
@@ -318,7 +321,7 @@ describe("RFC 2047 subject decoding", () => {
       isWhitelisted: true,
       messageOpts: {
         from: "owner@example.com",
-        to: "jarvis@phneakngar.ai",
+        to: "jarvis@cieee.xyz",
         subject: "Plain subject",
         body: "Test body",
       },
@@ -335,7 +338,7 @@ describe("RFC 2047 subject decoding", () => {
       isWhitelisted: true,
       messageOpts: {
         from: "owner@example.com",
-        to: "jarvis@phneakngar.ai",
+        to: "jarvis@cieee.xyz",
         subject: null,
         body: "Test body",
       },
@@ -353,7 +356,7 @@ describe("RFC 2047 subject decoding", () => {
 
     const rawText = [
       "From: owner@example.com",
-      "To: jarvis@phneakngar.ai",
+      "To: jarvis@cieee.xyz",
       "Subject: ",
       "",
       "Test body",
@@ -363,7 +366,7 @@ describe("RFC 2047 subject decoding", () => {
     const forward = vi.fn().mockResolvedValue(undefined)
     const message = {
       from: "owner@example.com",
-      to: "jarvis@phneakngar.ai",
+      to: "jarvis@cieee.xyz",
       headers,
       raw: new Response(rawText).body!,
       rawSize: rawText.length,
@@ -391,7 +394,7 @@ describe("RFC 2047 subject decoding", () => {
 
 describe("non-whitelisted path", () => {
   const strangerOpts = {
-    messageOpts: { from: "stranger@example.com", to: "jarvis@phneakngar.ai", subject: "Spam" } as const,
+    messageOpts: { from: "stranger@example.com", to: "jarvis@cieee.xyz", subject: "Spam" } as const,
   }
 
   it("notifies web service with isWhitelisted: false and forwarded: false", async () => {
@@ -475,7 +478,7 @@ describe("POST /send/otp", () => {
     expect(json.ok).toBe(true)
     expect(send).toHaveBeenCalledOnce()
     expect(send).toHaveBeenCalledWith({
-      from: "no-reply@phneakngar.ai",
+      from: "no-reply@cieee.xyz",
       to: "user@example.com",
       subject: "Your code",
       html: "<p>123456</p>",
@@ -547,9 +550,9 @@ describe("POST /send/agent", () => {
     // Verify SEND_EMAIL.send was called with a raw-MIME EmailMessage
     expect(send).toHaveBeenCalledOnce()
     const sendArg = send.mock.calls[0][0] as { from: string; to: string; raw: string }
-    expect(sendArg.from).toBe("jarvis@phneakngar.ai")
+    expect(sendArg.from).toBe("jarvis@cieee.xyz")
     expect(sendArg.to).toBe("user@example.com")
-    expect(sendArg.raw).toContain("From: jarvis@phneakngar.ai")
+    expect(sendArg.raw).toContain("From: jarvis@cieee.xyz")
     expect(sendArg.raw).toContain("To: user@example.com")
     expect(sendArg.raw).toContain("Subject: Hello")
     expect(sendArg.raw).toContain("<p>Hi there</p>")
@@ -563,7 +566,7 @@ describe("POST /send/agent", () => {
     expect(key).toMatch(/^emails\/mock-id-\d+\/raw$/)
     expect(opts).toEqual({ httpMetadata: { contentType: "message/rfc822" } })
     expect(body).toBe(sendArg.raw)
-    expect(body).toContain("From: jarvis@phneakngar.ai")
+    expect(body).toContain("From: jarvis@cieee.xyz")
     expect(body).toContain("To: user@example.com")
     expect(body).toContain("Subject: Hello")
     expect(body).toContain("Content-Type: text/html; charset=utf-8")
@@ -747,7 +750,7 @@ describe("POST /send/agent", () => {
 
     expect(res.status).toBe(200)
     const json = await res.json() as { ok: boolean; messageId: string }
-    expect(json.messageId).toMatch(/@phneakngar\.ai>$/)
+    expect(json.messageId).toMatch(/@cieee.xyz>$/)
 
     // Threading headers now ride the WIRE message (raw MIME), not just the archive.
     const sendArg = send.mock.calls[0][0] as { raw: string }
@@ -778,7 +781,7 @@ describe("POST /send/agent", () => {
 
     expect(res.status).toBe(200)
     const json = await res.json() as { ok: boolean; messageId: string }
-    expect(json.messageId).toMatch(/@phneakngar\.ai>$/)
+    expect(json.messageId).toMatch(/@cieee.xyz>$/)
 
     const storedMime = put.mock.calls[0][1] as string
     expect(storedMime).toContain("Message-ID:")

@@ -29,3 +29,7 @@ GOOGLE_CLIENT_SECRET=
 
 # Device Code Flow — comma-separated allowed client IDs
 DEVICE_CLIENT_IDS=phneakngar-cli
+
+# Public agent email domain (must match Cloudflare Email Routing/Sending zone)
+PHNEAKNGAR_DOMAIN=cieee.xyz
+NEXT_PUBLIC_PHNEAKNGAR_DOMAIN=cieee.xyz

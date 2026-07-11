@@ -32,6 +32,10 @@ bucket_name = "phneakngar-emails"
 [[send_email]]
 name = "SEND_EMAIL"
 
+# Public mail domain for agent addresses and OTP From: (must be onboarded to CF Email Sending)
+[vars]
+PHNEAKNGAR_DOMAIN = "cieee.xyz"
+
 [[durable_objects.bindings]]
 name = "IMAP_POLLER"
 class_name = "ImapPollerDO"

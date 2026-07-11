@@ -25,6 +25,8 @@ declare namespace Cloudflare {
     RUNTIME_MODEL_OPTIONS?: string
     MIN_CLI_VERSION?: string
     DEVICE_CLIENT_IDS?: string
+    /** Public email domain for agent addresses (must match Email Worker / CF Email Sending) */
+    PHNEAKNGAR_DOMAIN?: string
     NODE_ENV?: string
   }
 }

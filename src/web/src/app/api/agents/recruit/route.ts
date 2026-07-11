@@ -120,7 +120,7 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
       const toAddress = toPhneakngarAddress(handle);
       const subject = "Welcome aboard";
       const htmlBody = `<p>Hi, I just recruited you. Your instructions are already set. Please reply confirming you're ready to work — tell me your name and email address.</p>`;
-      const messageId = `<${nanoid()}@phneakngar.ai>`;
+      const messageId = `<${nanoid()}@${process.env.PHNEAKNGAR_DOMAIN || "cieee.xyz"}>`;
       const traceId = "tr_" + nanoid();
 
       const rawMime = buildMimeMessage({

@@ -45,6 +45,38 @@ The resource names and IDs in the three `wrangler.toml` files must belong to the
 | IMAP poller Durable Object | `ImapPollerDO` |
 | Email send binding | `SEND_EMAIL` |
 
+### Email domain (required for OTP + agent mail)
+
+This account uses zone **`cieee.xyz`** for Cloudflare Email Routing and Email Sending.
+
+```bash
+# Enable once per zone
+pnpm exec wrangler email sending enable cieee.xyz
+pnpm exec wrangler email routing enable cieee.xyz
+
+# Route inbound *@cieee.xyz to the email Worker
+pnpm exec wrangler email routing rules create cieee.xyz \
+  --name agent-inbox \
+  --enabled true \
+  --match-type literal \
+  --match-field to \
+  --match-value '*@cieee.xyz' \
+  --action-type worker \
+  --action-value phneakngar-email-worker
+```
+
+Set `PHNEAKNGAR_DOMAIN=cieee.xyz` (and `NEXT_PUBLIC_PHNEAKNGAR_DOMAIN` on web) so From/To addresses use a verified domain — **not** `phneakngar.ai` unless that domain is onboarded.
+
+Smoke-test outbound:
+
+```bash
+pnpm exec wrangler email sending send \
+  --from no-reply@cieee.xyz \
+  --to you@example.com \
+  --subject "test" \
+  --text "hello"
+```
+
 Create missing storage resources before editing the generated IDs into `src/web/wrangler.toml`, `src/email-worker/wrangler.toml`, and `src/ws-do/wrangler.toml`:
 
 ```bash

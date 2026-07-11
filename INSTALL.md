@@ -17,6 +17,9 @@ For operator Cloudflare deploys, see [DEPLOY.md](DEPLOY.md). For full local self
 | **Public origin** | `https://phneakngar-web.thatsilenceguy.workers.dev` |
 | **Health** | `https://phneakngar-web.thatsilenceguy.workers.dev/api/health` |
 | **Dashboard** | `https://phneakngar-web.thatsilenceguy.workers.dev` |
+| **Email domain** | **`cieee.xyz`** (Cloudflare Email Routing + Sending) |
+| **OTP / system From** | `no-reply@cieee.xyz` |
+| **Agent addresses** | `{handle}@cieee.xyz` |
 
 This origin is the CLI default (`DEFAULT_BASE_URL` in `@phneakngar/shared`). Override only if you run a different environment.
 
@@ -242,6 +245,21 @@ curl -sS https://phneakngar-web.thatsilenceguy.workers.dev/api/health
 ```
 
 ---
+
+## Email notes
+
+Outbound (OTP, agent mail) and inbound both require a **Cloudflare-onboarded zone**. This deployment uses **`cieee.xyz`**:
+
+- Outbound: Worker `SEND_EMAIL` binding, From `*@cieee.xyz`
+- Inbound: Email Routing rule `to:*@cieee.xyz` → `phneakngar-email-worker`
+- Env: `PHNEAKNGAR_DOMAIN=cieee.xyz` on web + email Workers
+
+If you stop receiving mail:
+
+1. `pnpm exec wrangler email sending settings cieee.xyz` — must be enabled  
+2. `pnpm exec wrangler email routing rules list cieee.xyz` — worker rule enabled  
+3. Confirm agent handles and OTP From use `@cieee.xyz`, not `@phneakngar.ai`  
+4. Check spam for `no-reply@cieee.xyz`
 
 ## Security
 

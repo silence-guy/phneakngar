@@ -305,7 +305,14 @@ export {
 } from "./db/queries/calendar-event";
 
 // Utils
-export { parseEmailHandle, toPhneakngarAddress, isValidHandle } from "./utils/email";
+export {
+  parseEmailHandle,
+  toPhneakngarAddress,
+  isValidHandle,
+  getEmailDomain,
+  emailDomainSuffix,
+  DEFAULT_EMAIL_DOMAIN,
+} from "./utils/email";
 export { parsePromptMentions } from "./utils/prompt-parser";
 export type { PromptAgent, PromptMention, ParseResult } from "./utils/prompt-parser";
 export { isValidToken, isValidEmail } from "./utils/validation";

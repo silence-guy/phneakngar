@@ -317,7 +317,9 @@ export function EmailHandleField({
           className="w-full border-0 bg-transparent px-0 py-0.5 text-sm text-foreground shadow-none outline-none placeholder:text-muted-foreground/40 focus-visible:ring-0"
         />
         <span className="shrink-0 text-sm text-muted-foreground/70">
-          @phneakngar.ai
+          @{process.env.NEXT_PUBLIC_PHNEAKNGAR_DOMAIN ||
+            process.env.PHNEAKNGAR_DOMAIN ||
+            "cieee.xyz"}
         </span>
       </div>
       {handleError && (
