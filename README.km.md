@@ -51,7 +51,7 @@ export PATH="$HOME/.bun/bin:$PATH"
 ## ២. ទាញយកប្រភពកូដ (Clone the Repository)
 
 ```bash
-git clone https://github.com/phneakngar/phneakngar.git
+git clone https://github.com/silence-guy/phneakngar.git
 cd phneakngar
 ```
 

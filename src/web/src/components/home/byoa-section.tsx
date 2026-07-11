@@ -15,10 +15,16 @@ interface Agent {
   comingSoon?: boolean;
 }
 
+/** Keep in sync with supported local runtimes (cli detectRuntimes + README BYOA table). */
 const agents: Agent[] = [
   { name: "Claude Code", provider: "claude", detail: "ភ្នាក់ងារ CLI របស់ Anthropic" },
   { name: "Codex", provider: "codex", detail: "ភ្នាក់ងារសរសេរកូដរបស់ OpenAI" },
   { name: "OpenCode", provider: "opencode", detail: "ភ្នាក់ងារសរសេរកូដបើកចំហ" },
+  {
+    name: "Grok",
+    provider: "grok",
+    detail: "ភ្នាក់ងារ CLI របស់ xAI",
+  },
   { name: "Cursor", provider: "cursor", detail: "កម្មវិធីកែសម្រួលកូដដោយ AI", comingSoon: true },
   { name: "Hermes", provider: "hermes", detail: "ភ្នាក់ងារសរសេរកូដស្វ័យប្រវត្តិ", comingSoon: true },
   { name: "OpenClaw", provider: "openclaw", detail: "ភ្នាក់ងារ AI បើកចំហ", comingSoon: true },
@@ -64,7 +70,7 @@ function AgentCard({ agent }: { agent: Agent }) {
                       opacity: 0.4,
                     }}
                   >
-                    Soon
+                    ឆាប់ៗ
                   </span>
                 )}
                 {!dimmed && (
@@ -162,13 +168,13 @@ export function ByoaSection() {
             fontSize: "0.85rem",
           }}
         >
-          ភ្នាក់ងារ is the orchestration layer. Pick the agents you trust —
-          we give them roles, inboxes, and an always-on runtime.
+          ភ្នាក់ងារ គឺជាស្រទាប់សម្របសម្រួល។ ជ្រើសភ្នាក់ងារដែលអ្នកទុកចិត្ត —
+          យើងផ្តល់តួនាទី ប្រអប់សំបុត្រ និងដំណើរការបើកដំណើរការជានិច្ច។
         </p>
       </div>
 
-      {/* Agent grid */}
-      <div className="byoa-grid mx-auto grid max-w-3xl grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      {/* Agent grid — available first, then soon */}
+      <div className="byoa-grid mx-auto grid max-w-3xl grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {agents.map((agent) => (
           <AgentCard key={agent.name} agent={agent} />
         ))}
