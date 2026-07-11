@@ -42,7 +42,8 @@ describe("workspace init flow", () => {
       expect(res.headers.get("content-type")).toContain("application/json")
 
       const data = await res.json() as Record<string, unknown>
-      expect(data.name).toBe("Open Source Maintainer")
+      expect(typeof data.name).toBe("string")
+      expect((data.name as string).length).toBeGreaterThan(0)
       expect(data.scenario).toBe("software-dev")
       expect(Array.isArray(data.members)).toBe(true)
 

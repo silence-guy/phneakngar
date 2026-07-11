@@ -10,12 +10,6 @@ export interface HeadroomSettingsValue {
   outputShaper: boolean;
 }
 
-const DEFAULT_HEADROOM_SETTINGS: HeadroomSettingsValue = {
-  enabled: false,
-  requireOptimization: false,
-  outputShaper: false,
-};
-
 function asRecord(value: unknown): Record<string, unknown> | null {
   return value && typeof value === "object" && !Array.isArray(value)
     ? value as Record<string, unknown>

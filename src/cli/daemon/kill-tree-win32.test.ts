@@ -1,16 +1,17 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
+// Mock execSync at module scope because Vitest hoists vi.mock calls before test suites.
+const { execSyncMock } = vi.hoisted(() => ({ execSyncMock: vi.fn() }));
+vi.mock("child_process", () => ({
+  execSync: (...args: any[]) => execSyncMock(...args),
+}));
+
 // This test file tests Windows-specific kill-tree behavior.
 // These tests only work reliably when running on Windows or with proper module mocking.
 // Skip on non-Windows platforms where the module-level isPosix check won't match.
 const isWindows = process.platform === "win32";
 
 describe.skipIf(!isWindows)("killProcessTree (Windows)", () => {
-  // Mock execSync to avoid actually running taskkill
-  const execSyncMock = vi.fn();
-  vi.mock("child_process", () => ({
-    execSync: (...args: any[]) => execSyncMock(...args),
-  }));
 
   beforeEach(() => {
     execSyncMock.mockReset();

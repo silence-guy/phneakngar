@@ -157,7 +157,6 @@ export async function getWorkspaceHealth(
     (agent) => agent.runtimeId && !runtimeIds.has(agent.runtimeId),
   ).length;
   const unassignedAgents = agents.length - assignedAgents;
-  const runtimeById = new Map(runtimes.map((runtime) => [runtime.id, runtime]));
 
   // Pre-parse metadata once per runtime; accumulate reporting/available counts.
   let headroomReportingRuntimes = 0;

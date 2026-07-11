@@ -1,15 +1,11 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest"
-import { seedTestData, cleanupTestData, type TestSeed, tokenRequest } from "@phneakngar/test-utils"
+import { seedTestData, cleanupTestData, type TestSeed, tokenRequest, emailWorkerHeaders } from "@phneakngar/test-utils"
 
 let seed: TestSeed
 let conversationId: string
 let taskId: string
 
-const EMAIL_NOTIFY_SECRET = process.env.EMAIL_NOTIFY_SECRET ?? "test-notify-secret"
-const emailNotifyHeaders = {
-  "Content-Type": "application/json",
-  "X-Phneakngar-Email-Notify-Secret": EMAIL_NOTIFY_SECRET,
-}
+const emailNotifyHeaders = emailWorkerHeaders({ "Content-Type": "application/json" })
 
 beforeAll(async () => {
   seed = seedTestData()

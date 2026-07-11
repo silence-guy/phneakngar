@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockGetCloudflareContext = vi.hoisted(() => vi.fn());
 
@@ -31,6 +31,11 @@ function createEnv(overrides: Record<string, unknown> = {}) {
 describe("GET /api/health", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
   });
 
   it("returns healthy only when configuration, D1, and both service bindings respond", async () => {
@@ -79,5 +84,42 @@ describe("GET /api/health", () => {
 
     expect(response.status).toBe(503);
     expect(body.checks.websocket_worker.status).toBe("error");
+  });
+
+  it("uses an explicit local Worker URL when a development binding is unavailable", async () => {
+    vi.stubEnv("NODE_ENV", "development");
+    vi.stubEnv("DEV_WS_DO_URL", "http://127.0.0.1:18789");
+    const fixture = createEnv();
+    fixture.wsFetch.mockRejectedValueOnce(new Error("binding unavailable"));
+    const fallbackFetch = vi.fn().mockResolvedValue(Response.json({ status: "ok" }));
+    vi.stubGlobal("fetch", fallbackFetch);
+    mockGetCloudflareContext.mockReturnValue({ env: fixture.env });
+
+    const response = await GET();
+    const body = await response.json() as any;
+
+    expect(response.status).toBe(200);
+    expect(body.checks.websocket_worker.status).toBe("ok");
+    expect(fallbackFetch).toHaveBeenCalledWith(
+      new URL("http://127.0.0.1:18789/health"),
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    );
+  });
+
+  it("does not use local fallback URLs in production", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("DEV_WS_DO_URL", "http://127.0.0.1:18789");
+    const fixture = createEnv();
+    fixture.wsFetch.mockResolvedValueOnce(new Response("unavailable", { status: 503 }));
+    const fallbackFetch = vi.fn();
+    vi.stubGlobal("fetch", fallbackFetch);
+    mockGetCloudflareContext.mockReturnValue({ env: fixture.env });
+
+    const response = await GET();
+    const body = await response.json() as any;
+
+    expect(response.status).toBe(503);
+    expect(body.checks.websocket_worker.status).toBe("error");
+    expect(fallbackFetch).not.toHaveBeenCalled();
   });
 });

@@ -16,6 +16,7 @@ describe("POST /api/daemon/skills/sync", () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         scope: "global",
+        daemon_id: seed.daemonId,
         runtime: "claude",
         skills: [
           { name: "test-skill-1", description: "Test skill one" },
@@ -41,6 +42,7 @@ describe("POST /api/daemon/skills/sync", () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         scope: "agent",
+        daemon_id: seed.daemonId,
         runtime: "claude",
         agent_id: seed.agentId,
         skills: [
@@ -64,6 +66,7 @@ describe("POST /api/daemon/skills/sync", () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         scope: "global",
+        daemon_id: seed.daemonId,
         runtime: "claude",
         skills: [
           { name: "updated-skill", description: "Replaced" },
@@ -85,6 +88,7 @@ describe("POST /api/daemon/skills/sync", () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         scope: "agent",
+        daemon_id: seed.daemonId,
         runtime: "claude",
         skills: [{ name: "x", description: "" }],
       }),
@@ -98,6 +102,7 @@ describe("POST /api/daemon/skills/sync", () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         scope: "agent",
+        daemon_id: seed.daemonId,
         runtime: "claude",
         agent_id: "ag_nonexistent_id_12345",
         skills: [{ name: "bad-skill", description: "" }],
@@ -114,6 +119,7 @@ describe("GET /api/agents/[id]/skills", () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         scope: "global",
+        daemon_id: seed.daemonId,
         runtime: "claude",
         skills: [{ name: "global-one", description: "G" }],
       }),
@@ -123,6 +129,7 @@ describe("GET /api/agents/[id]/skills", () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         scope: "agent",
+        daemon_id: seed.daemonId,
         runtime: "claude",
         agent_id: seed.agentId,
         skills: [{ name: "agent-one", description: "A" }],

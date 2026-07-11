@@ -30,7 +30,6 @@ export async function syncGlobalSkills(
     : and(eq(agentSkill.workspaceId, workspaceId), eq(agentSkill.runtime, runtime), isNull(agentSkill.agentId), isNull(agentSkill.daemonId));
 
   const BATCH_SIZE = 10;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const statements: any[] = [
     db.delete(agentSkill).where(deleteCondition),
   ];
@@ -58,7 +57,6 @@ export async function syncAgentSkills(
   }));
 
   const BATCH_SIZE = 10;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const statements: any[] = [
     db.delete(agentSkill).where(
       and(

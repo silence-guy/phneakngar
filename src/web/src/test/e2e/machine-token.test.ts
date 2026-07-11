@@ -37,12 +37,13 @@ describe("machine tokens", () => {
     expect((data.token as string).startsWith("al_")).toBe(true)
     expect(data.name).toBe("e2e-created")
 
-    // Verify the new token works for auth
-    const meRes = await tokenRequest(
+    // Newly issued tokens remain pending until the activation flow binds them
+    // to a machine. They must not authenticate API requests before activation.
+    const pendingAuthRes = await tokenRequest(
       `/api/machine-tokens?workspace_id=${seed.workspaceId}`,
       data.token as string,
     )
-    expect(meRes.status).toBe(200)
+    expect(pendingAuthRes.status).toBe(401)
 
     // Cleanup: delete the created token
     const deleteRes = await tokenRequest(

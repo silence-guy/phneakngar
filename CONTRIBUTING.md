@@ -98,9 +98,10 @@ Use the body to explain *what and why*, not how. Reference issues with `Closes #
 ## Testing
 
 - **Framework:** Vitest
-- **E2E:** Playwright (web package)
+- **E2E:** Vitest HTTP integration suite against the live web, Email Worker, WebSocket Worker, and local D1 state
 - **Run all:** `pnpm test`
-- **Run by package:** `pnpm test:shared`, `pnpm test:cli`, `pnpm test:web`, `pnpm test:e2e`
+- **Run by package:** `pnpm test:shared`, `pnpm test:cli`, `pnpm test:web`
+- **Run E2E:** start the complete local stack, then run `APP_URL=http://localhost:15210 pnpm test:e2e`
 
 Tests run on both Ubuntu and Windows in CI.
 

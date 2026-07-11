@@ -5,7 +5,6 @@
 
 import * as sharedMockModule from "./shared-mock";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type MockFn = ReturnType<typeof import("vitest").vi.fn>;
 
 /**
@@ -41,8 +40,7 @@ export function mockFetch(mock: MockFn) {
 }
 
 // Mock for modules that use vi.mock with importActual pattern
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createModuleMock(partialMock: Record<string, any>) {
+export function createModuleMock(partialMock: Record<string, unknown>) {
   return partialMock;
 }
 
@@ -188,7 +186,10 @@ export const sharedMock = {
   buildEmailMapKey: (agentId: string, threadId: string) => `email:${agentId}:${threadId}`,
 
   // ICS
-  parseIcs: (_ics: string) => ({ events: [] }),
+  parseIcs: (_ics: string) => {
+    void _ics;
+    return { events: [] };
+  },
 
   // MIME
   buildMimeMessage: () => "",
@@ -196,9 +197,15 @@ export const sharedMock = {
   filterDownloadableAttachments: () => [],
 
   // Calendar
-  addRepeatInterval: (date: string, _interval: string) => date,
+  addRepeatInterval: (date: string, _interval: string) => {
+    void _interval;
+    return date;
+  },
   computeNextScheduledAt: (date: string) => date,
-  expandOccurrences: (date: string, _count: number) => [date],
+  expandOccurrences: (date: string, _count: number) => {
+    void _count;
+    return [date];
+  },
   getOccurrencesPerDay: () => 0,
 
   // Logger
@@ -209,7 +216,10 @@ export const sharedMock = {
   createDb: () => ({}),
 
   // Prompt parser
-  parsePromptMentions: (_prompt: string) => ({ agents: [], mentions: [] }),
+  parsePromptMentions: (_prompt: string) => {
+    void _prompt;
+    return { agents: [], mentions: [] };
+  },
 
   // Schemas
   CreateAgentRequestSchema: { parse: (data: unknown) => data },

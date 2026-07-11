@@ -141,7 +141,9 @@ export function useAgentChat(
   const [conversation, setConversation] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const messagesSnapshotRef = useRef<Message[]>([]);
-  messagesSnapshotRef.current = messages;
+  useEffect(() => {
+    messagesSnapshotRef.current = messages;
+  }, [messages]);
   const [sending, setSending] = useState(false);
   const [activeTask, setActiveTask] = useState<Task | null>(null);
   const [taskMessages, setTaskMessages] = useState<TaskMessageResponse[]>([]);
@@ -155,8 +157,6 @@ export function useAgentChat(
   // changed (same ids in same order, same thumbnail readiness). This prevents
   // `listArtifacts` from creating a new array reference that cascades through
   // `agentArtifacts` → `timeline` → every MessageItem re-render.
-  const artifactsRef = useRef(artifacts);
-  artifactsRef.current = artifacts;
   const setArtifacts = useCallback((next: Artifact[] | ((prev: Artifact[]) => Artifact[])) => {
     setArtifactsRaw((prev) => {
       const resolved = typeof next === "function" ? next(prev) : next;
@@ -318,7 +318,7 @@ export function useAgentChat(
   // This prevents layout shift: the browser image cache is warm before we
   // remove the local blob source, so the <img> switches without a flash.
   const preloadThenCleanPending = useCallback(
-    (arts: Artifact[], conversationId: string) => {
+    (arts: Artifact[]) => {
       // Collect thumbnail URLs for image artifacts that have server thumbnails.
       const thumbUrls = arts
         .filter((a) => a.content_type.startsWith("image/") && a.has_thumbnail)
@@ -1408,7 +1408,7 @@ export function useAgentChat(
                 // This prevents layout shift: the browser cache is warm before
                 // we remove the local blob, so the <img> switches sources without
                 // a visible flash or reflow.
-                preloadThenCleanPending(arts, conversationId);
+                preloadThenCleanPending(arts);
               }
               setActiveTask(task);
             } catch {
@@ -1792,7 +1792,7 @@ export function useAgentChat(
             setArtifacts(arts);
             persistArtifactsToCache(conversation.id, arts);
             // Preload server thumbnails, then clean up pending blob entries.
-            preloadThenCleanPending(arts, conversation.id);
+            preloadThenCleanPending(arts);
           })
           .catch(() => { });
       }
@@ -1889,7 +1889,7 @@ export function useAgentChat(
                 setArtifacts(arts);
                 persistArtifactsToCache(conversation.id, arts);
                 // Preload server thumbnails, then clean up pending blob entries.
-                preloadThenCleanPending(arts, conversation.id);
+                preloadThenCleanPending(arts);
               })
               .catch(() => { });
           }
@@ -1908,7 +1908,16 @@ export function useAgentChat(
           setSending(false);
         });
     },
-    [failedSends, conversation, sending, workspaceId, startPolling],
+    [
+      failedSends,
+      conversation,
+      sending,
+      workspaceId,
+      startPolling,
+      persistArtifactsToCache,
+      preloadThenCleanPending,
+      setArtifacts,
+    ],
   );
 
   const handleRetryTask = useCallback(async () => {

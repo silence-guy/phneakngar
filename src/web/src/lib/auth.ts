@@ -1,6 +1,7 @@
 import { betterAuth } from "better-auth"
 import { emailOTP, deviceAuthorization, bearer } from "better-auth/plugins"
-import { createLogger, resolveMode } from "@phneakngar/shared"
+import { createLogger } from "@phneakngar/shared/logger"
+import { resolveMode } from "@phneakngar/shared/mode"
 import { getOtpSubject, renderOtpEmail } from "./email-templates"
 import { fetchEmailWorker } from "./email-worker"
 
@@ -26,6 +27,10 @@ export function createAuth(env: Env) {
     DEFAULT_OTP_RATE_LIMIT_WINDOW_SEC,
   )
   const kvTtl = Math.max(KV_MIN_TTL_SEC, otpWindow)
+  const trustedOrigins = (env.AUTH_TRUSTED_ORIGINS || process.env.AUTH_TRUSTED_ORIGINS || "")
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean)
 
   const validateClient = (clientId: string) => {
     const allowed = (env.DEVICE_CLIENT_IDS || "").split(",").map((s) => s.trim()).filter(Boolean)
@@ -52,6 +57,7 @@ export function createAuth(env: Env) {
 
   return betterAuth({
     baseURL: env.BETTER_AUTH_URL,
+    ...(trustedOrigins.length > 0 ? { trustedOrigins } : {}),
     database: env.DB,
     secret: env.BETTER_AUTH_SECRET,
     // Signed session-data cookie lets getSession() validate without hitting D1.

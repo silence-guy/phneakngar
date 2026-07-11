@@ -6,6 +6,7 @@ export default mergeConfig(shared, defineConfig({
     testTimeout: 30_000,
     hookTimeout: 30_000,
     include: ["src/test/e2e/**/*.test.ts"],
+    globalSetup: ["src/test/e2e-global-setup.ts"],
     setupFiles: ["src/test/e2e-setup.ts"],
     fileParallelism: false,
   },

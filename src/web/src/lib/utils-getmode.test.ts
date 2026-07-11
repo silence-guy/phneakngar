@@ -4,15 +4,16 @@ const mockIsTauri = vi.fn(() => false);
 const mockIsMobile = vi.fn(() => false);
 const mockResolveMode = vi.fn(() => "production" as const);
 
-vi.mock("@phneakngar/shared", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@phneakngar/shared")>();
+vi.mock("@phneakngar/shared/mode", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@phneakngar/shared/mode")>();
   return {
     ...actual,
     resolveMode: (...args: any[]) => mockResolveMode(...args),
-  cliCommand: vi.fn(() => "npx @phneakngar/cli"),
-  daemonCommand: vi.fn(() => "npx @phneakngar/cli daemon start"),
-  isTauri: (...args: any[]) => mockIsTauri(...args),
-  isMobile: (...args: any[]) => mockIsMobile(...args),
+    cliCommand: vi.fn(() => "npx @phneakngar/cli"),
+    daemonCommand: vi.fn(() => "npx @phneakngar/cli daemon start"),
+    updateCommand: vi.fn(() => "npx @phneakngar/cli@latest daemon stop"),
+    isTauri: (...args: any[]) => mockIsTauri(...args),
+    isMobile: (...args: any[]) => mockIsMobile(...args),
   };
 });
 

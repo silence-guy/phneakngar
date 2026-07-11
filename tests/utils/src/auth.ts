@@ -1,4 +1,5 @@
 import { fetchWithRetry } from "./fetch"
+import { getCurrentCliVersion } from "./runtime"
 
 const APP_URL = process.env.APP_URL ?? "http://localhost:3000"
 
@@ -44,8 +45,16 @@ export async function tokenRequest(
   token: string,
   opts: RequestInit = {},
 ): Promise<Response> {
+  let body = opts.body
+  if (path.startsWith("/api/daemon/tasks/poll") && typeof body === "string") {
+    const parsed = JSON.parse(body) as Record<string, unknown>
+    if (!parsed.cli_version) parsed.cli_version = getCurrentCliVersion()
+    body = JSON.stringify(parsed)
+  }
+
   return fetchWithRetry(`${APP_URL}${path}`, {
     ...opts,
+    body,
     headers: {
       ...(opts.headers ?? {}),
       Authorization: `Bearer ${token}`,

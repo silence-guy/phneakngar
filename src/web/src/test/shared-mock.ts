@@ -270,7 +270,10 @@ export const extractThreadId = (key: string): string | null => {
 export const buildEmailMapKey = (agentId: string, threadId: string): string => `email:${agentId}:${threadId}`;
 
 // ICS parser
-export const parseIcs = (_ics: string) => ({ events: [] });
+export const parseIcs = (_ics: string) => {
+  void _ics;
+  return { events: [] };
+};
 
 // MIME
 export const buildMimeMessage = () => "";
@@ -278,25 +281,49 @@ export const extractAttachmentMeta = () => null;
 export const filterDownloadableAttachments = () => [];
 
 // Calendar
-export const addRepeatInterval = (date: string, _interval: string): string => date;
+export const addRepeatInterval = (date: string, _interval: string): string => {
+  void _interval;
+  return date;
+};
 export const computeNextScheduledAt = (date: string): string => date;
-export const expandOccurrences = (date: string, _count: number): string[] => [date];
+export const expandOccurrences = (date: string, _count: number): string[] => {
+  void _count;
+  return [date];
+};
 export const getOccurrencesPerDay = (): number => 0;
 
 // Logger
 export class Logger {
-  debug = (_message: string, _data?: unknown) => {};
-  info = (_message: string, _data?: unknown) => {};
-  warn = (_message: string, _data?: unknown) => {};
-  error = (_message: string, _data?: unknown) => {};
+  debug = (_message: string, _data?: unknown) => {
+    void _message;
+    void _data;
+  };
+  info = (_message: string, _data?: unknown) => {
+    void _message;
+    void _data;
+  };
+  warn = (_message: string, _data?: unknown) => {
+    void _message;
+    void _data;
+  };
+  error = (_message: string, _data?: unknown) => {
+    void _message;
+    void _data;
+  };
 }
-export const createLogger = (_options?: unknown) => new Logger();
+export const createLogger = (_options?: unknown) => {
+  void _options;
+  return new Logger();
+};
 
 // Database mock
 export const createDb = () => ({});
 
 // Prompt parser
-export const parsePromptMentions = (_prompt: string) => ({ agents: [], mentions: [] });
+export const parsePromptMentions = (_prompt: string) => {
+  void _prompt;
+  return { agents: [], mentions: [] };
+};
 
 // Schemas (minimal mocks for testing)
 

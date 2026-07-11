@@ -14,6 +14,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { MockNetworkBanner } from "@/components/mock-network-banner";
 import { TauriThemeSync } from "@/components/tauri-theme-sync";
 import { DEFAULT_WEB_LOCALE } from "@/lib/locale";
+import { resolveMetadataBase } from "@/lib/public-site-url";
 import "./globals.css";
 
 const dmSans = DM_Sans({
@@ -52,7 +53,8 @@ const notoSansKhmer = Noto_Sans_Khmer({
   weight: ["400", "500", "600"],
 });
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "";
+const METADATA_BASE = resolveMetadataBase();
+const SITE_URL = METADATA_BASE.origin;
 const SITE_TITLE = "ភ្នាក់ងារ — ក្រុមហ៊ុនផ្ទាល់ខ្លួន";
 const ENABLE_GTM = process.env.NODE_ENV === "production";
 const SITE_DESCRIPTION =
@@ -73,7 +75,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  ...(SITE_URL ? { metadataBase: new URL(SITE_URL) } : {}),
+  metadataBase: METADATA_BASE,
   title: {
     default: SITE_TITLE,
     template: "%s — ភ្នាក់ងារ",
@@ -96,7 +98,7 @@ export const metadata: Metadata = {
     siteName: "ភ្នាក់ងារ",
     title: SITE_TITLE,
     description: SITE_DESCRIPTION,
-    ...(SITE_URL ? { url: SITE_URL } : {}),
+    url: SITE_URL,
     images: [
       {
         url: OG_IMAGE_URL,
@@ -119,7 +121,7 @@ const webApplicationJsonLd = {
   "@context": "https://schema.org",
   "@type": "WebApplication",
   name: "ភ្នាក់ងារ",
-  ...(SITE_URL ? { url: SITE_URL } : {}),
+  url: SITE_URL,
   description: SITE_DESCRIPTION,
   applicationCategory: "DeveloperApplication",
   operatingSystem: "All",
@@ -134,12 +136,8 @@ const organizationJsonLd = {
   "@context": "https://schema.org",
   "@type": "Organization",
   name: "ភ្នាក់ងារ",
-  ...(SITE_URL
-    ? {
-        url: SITE_URL,
-        logo: `${SITE_URL}/phneakngar.svg`,
-      }
-    : {}),
+  url: SITE_URL,
+  logo: `${SITE_URL}/phneakngar.svg`,
   contactPoint: {
     "@type": "ContactPoint",
     email: "support@phneakngar.ai",

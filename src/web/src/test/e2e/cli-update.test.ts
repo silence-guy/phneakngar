@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { randomUUID } from "crypto";
-import { seedTestData, cleanupTestData, type TestSeed, tokenRequest, sqlRun, sqlQuery } from "@phneakngar/test-utils"
+import { seedTestData, cleanupTestData, type TestSeed, tokenRequest, sqlRun, sqlQuery, getCurrentCliVersion } from "@phneakngar/test-utils"
 
 let seed: TestSeed;
 
@@ -63,7 +63,7 @@ describe("CLI auto-update e2e", () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         daemon_id: daemonId,
-        cli_version: "0.0.1",
+        cli_version: getCurrentCliVersion(),
       }),
     });
     expect(res.status).toBe(200);

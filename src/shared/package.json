@@ -6,6 +6,8 @@
     ".": "./src/index.ts",
     "./crypto": "./src/utils/crypto.ts",
     "./secrets": "./src/utils/secrets.ts",
+    "./logger": "./src/logger.ts",
+    "./mode": "./src/mode.ts",
     "./browser": "./src/browser/index.ts"
   },
   "scripts": {

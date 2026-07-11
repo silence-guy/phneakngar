@@ -12,3 +12,10 @@ export {
 export { signUp, signIn, sessionRequest, tokenRequest } from "./auth"
 export { fetchWithRetry, isRetryableError } from "./fetch"
 export { rawEmail, rawEmailWithHeaders, postEmail, postEmailRaw } from "./email"
+export {
+  getCurrentCliVersion,
+  getEmailNotifySecret,
+  getWsServiceSecret,
+  emailWorkerHeaders,
+  wsWorkerHeaders,
+} from "./runtime"

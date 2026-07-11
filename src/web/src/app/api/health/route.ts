@@ -40,10 +40,30 @@ async function checkD1(env: Env): Promise<ComponentHealth> {
   }
 }
 
-async function checkService(fetcher: Fetcher): Promise<ComponentHealth> {
+async function checkService(
+  fetcher: Fetcher,
+  developmentFallbackUrl?: string,
+): Promise<ComponentHealth> {
   const startedAt = performance.now();
   try {
     const response = await fetcher.fetch("http://internal/health", {
+      signal: AbortSignal.timeout(HEALTH_TIMEOUT_MS),
+    });
+    if (response.ok || process.env.NODE_ENV === "production" || !developmentFallbackUrl) {
+      return {
+        status: response.ok ? "ok" : "error",
+        latency_ms: Math.round(performance.now() - startedAt),
+      };
+    }
+  } catch {
+    if (process.env.NODE_ENV === "production" || !developmentFallbackUrl) {
+      return { status: "error", latency_ms: Math.round(performance.now() - startedAt) };
+    }
+  }
+
+  try {
+    const healthUrl = new URL("/health", developmentFallbackUrl);
+    const response = await fetch(healthUrl, {
       signal: AbortSignal.timeout(HEALTH_TIMEOUT_MS),
     });
     return {
@@ -61,8 +81,8 @@ export async function GET() {
 
   const [database, emailWorker, websocketWorker] = await Promise.all([
     checkD1(cfEnv),
-    checkService(cfEnv.EMAIL_WORKER),
-    checkService(cfEnv.WS_DO_WORKER),
+    checkService(cfEnv.EMAIL_WORKER, process.env.DEV_EMAIL_WORKER_URL),
+    checkService(cfEnv.WS_DO_WORKER, process.env.DEV_WS_DO_URL),
   ]);
 
   const configuration = requiredConfigurationPresent(cfEnv) ? "ok" : "error";

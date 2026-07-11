@@ -168,7 +168,13 @@ pnpm --filter @phneakngar/email-worker exec wrangler deploy --dry-run --outdir /
 pnpm --filter @phneakngar/web exec wrangler deploy --dry-run --outdir /tmp/phneakngar-web
 ```
 
-Run `pnpm test:e2e` when local browser and Worker processes are available.
+Run E2E only against an explicitly selected, healthy local stack. The global preflight rejects a missing URL, an unrelated service, or a degraded dependency:
+
+```bash
+APP_URL=http://localhost:15210 pnpm test:e2e
+```
+
+Start the web app on port `15210` and the Email and WebSocket Workers on their documented local ports before running this command. CI uses the same check with `APP_URL=http://localhost:3000`.
 
 ## 7. Database Migrations
 
