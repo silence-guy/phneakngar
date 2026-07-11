@@ -59,8 +59,8 @@ describe("apiFetch", () => {
         }),
       );
 
-      await expect(apiFetch("/api/test")).rejects.toThrow(ApiError);
       await expect(apiFetch("/api/test")).rejects.toMatchObject({
+        name: "ApiError",
         status: 401,
         message: "Unauthorized",
       });
@@ -89,8 +89,8 @@ describe("apiFetch", () => {
         }),
       );
 
-      await expect(apiFetch("/api/test")).rejects.toThrow(ApiError);
       await expect(apiFetch("/api/test")).rejects.toMatchObject({
+        name: "ApiError",
         status: 429,
         message: "Please wait a moment before trying again",
       });
@@ -104,8 +104,8 @@ describe("apiFetch", () => {
         }),
       );
 
-      await expect(apiFetch("/api/test")).rejects.toThrow(ApiError);
       await expect(apiFetch("/api/test")).rejects.toMatchObject({
+        name: "ApiError",
         status: 500,
         message: "Internal server error",
       });
@@ -119,8 +119,8 @@ describe("apiFetch", () => {
         }),
       );
 
-      await expect(apiFetch("/api/test")).rejects.toThrow(ApiError);
       await expect(apiFetch("/api/test")).rejects.toMatchObject({
+        name: "ApiError",
         status: 500,
         message: "Something went wrong — please try again",
       });
@@ -168,14 +168,17 @@ describe("apiFetch", () => {
     it("throws ApiError with connection message on network error", async () => {
       mockFetch.mockRejectedValueOnce(new TypeError("Failed to fetch"));
 
-      await expect(apiFetch("/api/test")).rejects.toThrow(ApiError);
-      await expect(apiFetch("/api/test")).rejects.toMatchObject({
-        status: 0,
-        message: "Unable to connect — check your network",
-      });
-      await expect(apiFetch("/api/test")).rejects.toMatchObject({
-        isNetworkError: true,
-      });
+      try {
+        await apiFetch("/api/test");
+        expect.unreachable("expected ApiError");
+      } catch (e) {
+        expect(e).toBeInstanceOf(ApiError);
+        expect(e).toMatchObject({
+          status: 0,
+          message: "Unable to connect — check your network",
+        });
+        expect((e as ApiError).isNetworkError).toBe(true);
+      }
     });
 
     it("rethrows non-TypeError network errors", async () => {

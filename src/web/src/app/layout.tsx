@@ -84,11 +84,11 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       {
-        url: "/phneakngar.svg",
+        url: "/logo-mark.svg",
         media: "(prefers-color-scheme: light)",
       },
       {
-        url: "/phneakngar-dark.svg",
+        url: "/logo-mark-dark.svg",
         media: "(prefers-color-scheme: dark)",
       },
     ],
@@ -137,7 +137,7 @@ const organizationJsonLd = {
   "@type": "Organization",
   name: "ភ្នាក់ងារ",
   url: SITE_URL,
-  logo: `${SITE_URL}/phneakngar.svg`,
+  logo: `${SITE_URL}/logo-mark.svg`,
   contactPoint: {
     "@type": "ContactPoint",
     email: "support@phneakngar.ai",

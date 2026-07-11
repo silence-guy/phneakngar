@@ -27,9 +27,11 @@ vi.mock("./config.js", () => ({
     claudePath: "claude",
     codexPath: "codex",
     opencodePath: "opencode",
+    grokPath: "grok",
     claudeModel: "opus",
     codexModel: "gpt-4",
     opencodeModel: "",
+    grokModel: "",
     pollInterval: 3000,
     agentTimeout: 7200000,
     messageInactivityTimeout: 300000,
@@ -829,7 +831,13 @@ describe("daemon with multi-workspace config", () => {
     await startDaemon();
 
     const [, body] = mockClientInstance.register.mock.calls[0];
-    expect(body.runtimes).toHaveLength(3);
+    expect(body.runtimes).toHaveLength(4);
+    expect(body.runtimes.map((r: { type: string }) => r.type)).toEqual([
+      "claude",
+      "codex",
+      "opencode",
+      "grok",
+    ]);
     expect(body.runtimes[0].headroom).toEqual({
       status: "missing",
       configured: true,

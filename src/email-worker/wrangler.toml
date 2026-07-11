@@ -11,12 +11,10 @@ head_sampling_rate = 0.1
 [observability.logs]
 invocation_logs = true
 head_sampling_rate = 0.1
-destinations = ["grafana-logs"]
 
 [observability.traces]
 enabled = true
 head_sampling_rate = 0.05
-destinations = ["grafana-traces"]
 
 [dev]
 port = 8787
@@ -24,7 +22,7 @@ inspector_port = 9231
 
 [[d1_databases]]
 binding = "DB"
-database_id = "1593b87c-d8a8-4cdf-b6c0-c80d94442654"
+database_id = "45d8f476-3631-47fb-abd1-49659a6234fe"
 database_name = "phneakngar-app"
 
 [[r2_buckets]]

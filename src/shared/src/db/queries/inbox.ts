@@ -1,6 +1,6 @@
-import { eq, and, desc, inArray, sql } from "drizzle-orm";
+import { eq, and, desc, sql } from "drizzle-orm";
 import { nanoid } from "nanoid";
-import { inboxUnread, conversationReadState, conversation, message, agent } from "../schema";
+import { inboxUnread, message } from "../schema";
 import type { Database } from "../index";
 
 const UNREAD_ELIGIBLE_TYPES = ["user_dm_message", "email_notification", "calendar_event"];

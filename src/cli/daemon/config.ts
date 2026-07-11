@@ -66,9 +66,11 @@ export interface DaemonConfig {
   claudePath: string;
   codexPath: string;
   opencodePath: string;
+  grokPath: string;
   claudeModel: string;
   codexModel: string;
   opencodeModel: string;
+  grokModel: string;
   pollInterval: number;
   wsPollInterval: number;
   heartbeatInterval: number;
@@ -101,9 +103,11 @@ export function loadDaemonConfig(profile?: string): DaemonConfig {
     claudePath: process.env.PHNEAKNGAR_CLAUDE_PATH || "claude",
     codexPath: process.env.PHNEAKNGAR_CODEX_PATH || "codex",
     opencodePath: process.env.PHNEAKNGAR_OPENCODE_PATH || "opencode",
+    grokPath: process.env.PHNEAKNGAR_GROK_PATH || "grok",
     claudeModel: process.env.PHNEAKNGAR_CLAUDE_MODEL || "",
     codexModel: process.env.PHNEAKNGAR_CODEX_MODEL || "",
     opencodeModel: process.env.PHNEAKNGAR_OPENCODE_MODEL || "",
+    grokModel: process.env.PHNEAKNGAR_GROK_MODEL || "",
     pollInterval: parseDuration(
       process.env.PHNEAKNGAR_DAEMON_POLL_INTERVAL || "3s",
     ),

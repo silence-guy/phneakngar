@@ -1,5 +1,5 @@
 import Link from "next/link";
-import Image from "next/image";
+import { BrandMark } from "@/components/brand-mark";
 
 const footerLinks = [
   { href: "/templates", label: "Templates" },
@@ -37,7 +37,7 @@ export function PublicLayout({
           ) : (
             <div className="flex items-center gap-1.5">
               <Link href="/" className="flex items-center gap-1">
-                <Image src="/phneakngar.svg" alt="ភ្នាក់ងារ" width={22} height={22} />
+                <BrandMark size={22} />
                 <span
                   className="text-lg tracking-tight font-bold"
                   style={{ fontFamily: "var(--font-brand)" }}

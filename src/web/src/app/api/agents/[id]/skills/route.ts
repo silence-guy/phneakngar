@@ -17,7 +17,7 @@ export const GET = withAuth(async (req: NextRequest, ctx) => {
   const agent = await queries.agent.getAgent(db, agentId, ws.workspaceId, ctx.userId);
   if (!agent) return writeError("agent not found", 404);
 
-  const KNOWN_RUNTIMES = ["claude", "codex", "opencode"] as const;
+  const KNOWN_RUNTIMES = ["claude", "codex", "opencode", "grok"] as const;
 
   let runtime: string = "claude";
   if (agent.runtimeId) {

@@ -26,9 +26,11 @@ const DAEMON_ENV_KEYS = [
   "PHNEAKNGAR_KEEP_ENV_AFTER_TASK",
   "PHNEAKNGAR_CODEX_PATH",
   "PHNEAKNGAR_OPENCODE_PATH",
+  "PHNEAKNGAR_GROK_PATH",
   "PHNEAKNGAR_CLAUDE_MODEL",
   "PHNEAKNGAR_CODEX_MODEL",
   "PHNEAKNGAR_OPENCODE_MODEL",
+  "PHNEAKNGAR_GROK_MODEL",
   "PHNEAKNGAR_MESSAGE_INACTIVITY_TIMEOUT",
 ];
 
@@ -47,7 +49,17 @@ describe("loadDaemonConfig defaults", () => {
     expect(cfg.agentTimeout).toBe(43200000);
     expect(cfg.maxConcurrentTasks).toBe(20);
     expect(cfg.claudePath).toBe("claude");
+    expect(cfg.grokPath).toBe("grok");
+    expect(cfg.grokModel).toBe("");
     expect(cfg.messageInactivityTimeout).toBe(1200000);
+  });
+
+  it("PHNEAKNGAR_GROK_PATH and PHNEAKNGAR_GROK_MODEL override defaults", () => {
+    process.env.PHNEAKNGAR_GROK_PATH = "/opt/grok";
+    process.env.PHNEAKNGAR_GROK_MODEL = "grok-4.5";
+    const cfg = loadDaemonConfig();
+    expect(cfg.grokPath).toBe("/opt/grok");
+    expect(cfg.grokModel).toBe("grok-4.5");
   });
 });
 

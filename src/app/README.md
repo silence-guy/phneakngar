@@ -111,7 +111,8 @@ PHNEAKNGAR_PROJECT_ROOT=/path/to/phneakngar npx @phneakngar/app onboard
 ## Requirements
 
 - Node.js >= 20
-- One of: `claude`, `codex`, or `opencode` CLI installed
+- One of: `claude`, `codex`, `opencode`, or `grok` CLI installed
+  - For Grok: install the xAI Grok Build CLI and run `grok login` (subscription) or set `XAI_API_KEY`
 
 ## Limitations
 

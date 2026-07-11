@@ -6,6 +6,7 @@ describe("runtimeDisplayName", () => {
     expect(runtimeDisplayName("claude")).toBe("Claude Code");
     expect(runtimeDisplayName("codex")).toBe("Codex");
     expect(runtimeDisplayName("opencode")).toBe("OpenCode");
+    expect(runtimeDisplayName("grok")).toBe("Grok (xAI)");
   });
 
   it("falls back to the generic label for undefined / null", () => {

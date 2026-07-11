@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import { ClaudeBackend } from "../claude.js";
 import { CodexBackend } from "../codex.js";
 import { OpenCodeBackend } from "../opencode.js";
+import { GrokBackend } from "../grok.js";
 
 // Import createBackend after class definitions are available
 const { createBackend } = await import("../index.js");
@@ -23,6 +24,12 @@ describe("createBackend", () => {
     const backend = createBackend("opencode", "/usr/bin/opencode");
     expect(backend).toBeInstanceOf(OpenCodeBackend);
     expect(backend.name).toBe("opencode");
+  });
+
+  it('returns GrokBackend for "grok"', () => {
+    const backend = createBackend("grok", "/usr/bin/grok");
+    expect(backend).toBeInstanceOf(GrokBackend);
+    expect(backend.name).toBe("grok");
   });
 
   it("throws for unknown provider", () => {

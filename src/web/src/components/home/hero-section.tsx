@@ -1,13 +1,13 @@
 "use client";
 
 import { useRef, useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { SplitText } from "gsap/SplitText";
 import { TypewriterVisual } from "@/components/typewriter-visual";
+import { BrandMark } from "@/components/brand-mark";
 import { trackLandingCtaClicked } from "@/lib/analytics";
 
 gsap.registerPlugin(ScrollTrigger, SplitText);
@@ -79,7 +79,7 @@ export function HeroSection({ isLoggedIn }: { isLoggedIn: boolean }) {
       <div className="hero-content relative z-10 mx-auto flex w-full max-w-4xl flex-col items-center px-4 sm:px-6 py-8 max-h-full">
         {/* Brand */}
         <div className="hero-brand mb-6 flex shrink-0 items-center gap-1.5" style={{ opacity: 0 }}>
-          <Image src="/phneakngar.svg" alt="ភ្នាក់ងារ" width={32} height={32} />
+          <BrandMark size={32} priority />
           <span
             className="text-2xl tracking-tight"
             style={{

@@ -43,7 +43,7 @@ export async function activateAndSave(opts: {
   const runtimes = detectRuntimes();
   if (runtimes.length === 0) {
     console.error(
-      "Error: no runtimes found. Install claude, codex, or opencode first.",
+      "Error: no runtimes found. Install claude, codex, opencode, or grok first.",
     );
     process.exit(1);
   }

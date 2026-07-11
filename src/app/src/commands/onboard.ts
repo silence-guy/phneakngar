@@ -48,7 +48,7 @@ export function onboardCommand(): Command {
       const runtimes = checkAIRuntime();
       if (runtimes.length === 0) {
         console.error("Error: no AI runtimes found.");
-        console.error("Install one of: claude, codex, or opencode");
+        console.error("Install one of: claude, codex, opencode, or grok");
         process.exit(1);
       }
       console.log(`  Found: ${runtimes.map((r) => r.type).join(", ")}\n`);

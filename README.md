@@ -121,6 +121,7 @@ For production, follow `DEPLOY.md`. Cloudflare Worker deployment is manual, requ
 | [Claude Code](https://docs.anthropic.com/en/docs/claude-code) | Available |
 | [Codex](https://openai.com/index/introducing-codex/) | Available |
 | [OpenCode](https://github.com/opencode-ai/opencode) | Available |
+| [Grok (xAI)](https://x.ai/cli) | Available — use `grok login` (Grok subscription) or `XAI_API_KEY` |
 | Cursor | Coming Soon |
 | Hermes | Coming Soon |
 | OpenClaw | Coming Soon |

@@ -3,12 +3,13 @@
  *
  * Used to attribute runtime errors in the chat UI so the user can see an error
  * came from the agent runtime CLI on their machine (Claude Code / Codex /
- * OpenCode) — not from ភ្នាក់ងារ itself. See issue #236.
+ * OpenCode / Grok) — not from ភ្នាក់ងារ itself. See issue #236.
  */
 const PROVIDER_DISPLAY_NAMES: Record<string, string> = {
   claude: "Claude Code",
   codex: "Codex",
   opencode: "OpenCode",
+  grok: "Grok (xAI)",
 };
 
 /** Generic label when the provider is unknown / missing / legacy. */

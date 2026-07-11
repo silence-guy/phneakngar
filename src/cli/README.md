@@ -23,7 +23,14 @@ npx @phneakngar/cli register --token al_xxxxxxxxxxxxxxxxxxxxxxxx
 npx @phneakngar/cli daemon start
 ```
 
-The daemon runs in the background, polling for tasks and dispatching them to your local AI runtimes (Claude, Codex, or OpenCode).
+The daemon runs in the background, polling for tasks and dispatching them to your local AI runtimes (Claude, Codex, OpenCode, or Grok).
+
+### Grok (xAI)
+
+1. Install the [Grok Build CLI](https://x.ai/cli) and put `grok` on your `PATH`.
+2. Authenticate with a Grok subscription: `grok login` (or set `XAI_API_KEY` for API-key mode).
+3. Start the daemon — it auto-detects `grok` like other providers.
+4. Optional overrides: `PHNEAKNGAR_GROK_PATH`, `PHNEAKNGAR_GROK_MODEL`.
 
 ## Commands
 

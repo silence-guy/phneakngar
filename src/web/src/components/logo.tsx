@@ -2,9 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useTheme } from "next-themes";
-import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { appShellLabel } from "@/lib/locale";
+import { BrandMark } from "@/components/brand-mark";
 
 const sizes = {
   sm: { icon: 28, text: "text-2xl" },
@@ -42,22 +42,7 @@ export function Logo({
       )}
     >
       {mounted ? (
-        <>
-          <Image
-            src="/phneakngar.svg"
-            alt="ភ្នាក់ងារ"
-            width={icon}
-            height={icon}
-            className="dark:hidden"
-          />
-          <Image
-            src="/phneakngar-dark.svg"
-            alt="ភ្នាក់ងារ"
-            width={icon}
-            height={icon}
-            className="hidden dark:block"
-          />
-        </>
+        <BrandMark size={icon} />
       ) : (
         <span style={{ width: icon, height: icon }} />
       )}

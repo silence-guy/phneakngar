@@ -117,6 +117,26 @@ describe("prepareHeadroomForTask", () => {
     });
   });
 
+  it("does not enable Headroom for grok (xAI) in v1", async () => {
+    let ensureProxyCalled = false;
+    const result = await prepareHeadroomForTask(
+      makeTask({ headroom: { enabled: true, requireOptimization: false } }),
+      "grok",
+      {
+        ensureProxy: async () => {
+          ensureProxyCalled = true;
+          return { status: "ready", started: false };
+        },
+        resolvePaths: () => dummyPaths,
+      },
+    );
+
+    expect(ensureProxyCalled).toBe(false);
+    expect(result.status).toBe("failed");
+    expect(result.env).toEqual({});
+    expect(result.diagnostic).toMatch(/grok/i);
+  });
+
   it("preserves the required-optimization flag when the proxy is unavailable", async () => {
     const ensureProxy = () =>
       Promise.resolve({

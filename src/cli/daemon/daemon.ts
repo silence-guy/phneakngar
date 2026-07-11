@@ -303,6 +303,7 @@ export async function startDaemon(
     ["claude", config.claudePath],
     ["codex", config.codexPath],
     ["opencode", config.opencodePath],
+    ["grok", config.grokPath],
   ] as const) {
     if (isCommandAvailable(path)) {
       const version = await detectVersion(path);
@@ -702,7 +703,7 @@ export async function startDaemon(
       token: ws.token,
       agentIds: ws.agent_ids ?? [],
     })),
-    runtimes: providers.map((p) => p.type as "claude" | "codex" | "opencode"),
+    runtimes: providers.map((p) => p.type as "claude" | "codex" | "opencode" | "grok"),
     daemonId: config.daemonId,
   }, 60_000);
 
@@ -1254,18 +1255,20 @@ async function handleTask(
     }
   }
 
-  const cliPath =
-    provider === "claude"
-      ? config.claudePath
-      : provider === "codex"
-        ? config.codexPath
-        : config.opencodePath;
-  const configModel =
-    provider === "claude"
-      ? config.claudeModel
-      : provider === "codex"
-        ? config.codexModel
-        : config.opencodeModel;
+  const pathByProvider: Record<string, string> = {
+    claude: config.claudePath,
+    codex: config.codexPath,
+    opencode: config.opencodePath,
+    grok: config.grokPath,
+  };
+  const modelByProvider: Record<string, string> = {
+    claude: config.claudeModel,
+    codex: config.codexModel,
+    opencode: config.opencodeModel,
+    grok: config.grokModel,
+  };
+  const cliPath = pathByProvider[provider] ?? config.opencodePath;
+  const configModel = modelByProvider[provider] ?? config.opencodeModel;
   const agentModel = task.agent?.runtimeConfig?.model;
   const model = (typeof agentModel === "string" && agentModel) ? agentModel : configModel;
 

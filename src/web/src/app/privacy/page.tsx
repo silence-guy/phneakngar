@@ -15,7 +15,7 @@ export default function PrivacyPage() {
         គោលការណ៍ឯកជនភាព
       </h1>
       <p className="text-sm text-muted-foreground mb-12">
-        ធ្វើបច្ចុប្បន្នភាពចុងក្រោយ៖ May 22, 2026
+        ធ្វើបច្ចុប្បន្នភាពចុងក្រោយ៖ July 11, 2026
       </p>
 
       <div className="prose prose-neutral dark:prose-invert max-w-none space-y-8 text-[1.0625rem] leading-relaxed">
@@ -112,6 +112,42 @@ export default function PrivacyPage() {
         </section>
 
         <section>
+          <h2 className="text-xl font-semibold mt-10 mb-4">Data Location and Infrastructure</h2>
+          <p className="text-foreground/80">
+            Our hosted Service runs on{" "}
+            <a
+              href="https://www.cloudflare.com/"
+              className={linkClass}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Cloudflare
+            </a>
+            . Primary application data (accounts, workspaces, messages, and related control-plane
+            records) is stored in Cloudflare&apos;s{" "}
+            <strong>Asia-Pacific (APAC)</strong> region for our D1 database. That region serves
+            Asia and nearby areas and may include facilities such as Singapore; it is{" "}
+            <strong>not</strong> a guarantee that every byte is confined to a single city.
+          </p>
+          <p className="text-foreground/80 mt-4">
+            HTTP API and website requests are handled on Cloudflare&apos;s global edge network.
+            Users in Southeast Asia are often served from nearby points of presence (for example
+            Singapore or other regional data centers), which improves latency. Edge processing
+            is separate from where the primary database instance is placed.
+          </p>
+          <p className="text-foreground/80 mt-4">
+            <strong>Local agents:</strong> When You run the ភ្នាក់ងារ CLI and daemon on Your own
+            machine, agent code execution and local files stay on Your device. AI provider
+            traffic (for example Claude, Codex, Grok, or OpenCode) is governed by those
+            providers&apos; policies. We do not move Your codebase to Our servers for inference.
+          </p>
+          <p className="text-foreground/80 mt-4">
+            If You self-host the control plane, data location follows Your own infrastructure
+            instead of the hosted APAC database described above.
+          </p>
+        </section>
+
+        <section>
           <h2 className="text-xl font-semibold mt-10 mb-4">Security of Your Personal Data</h2>
           <p className="text-foreground/80">
             The security of Your Personal Data is important to Us. Your data is stored
@@ -157,8 +193,8 @@ export default function PrivacyPage() {
           <h2 className="text-xl font-semibold mt-10 mb-4">Contact Us</h2>
           <p className="text-foreground/80">
             If you have any questions about this Privacy Policy, You can contact us at{" "}
-            <a href="mailto:support@example.com" className={linkClass}>
-              support@example.com
+            <a href="mailto:support@phneakngar.ai" className={linkClass}>
+              support@phneakngar.ai
             </a>
             .
           </p>

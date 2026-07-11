@@ -11,7 +11,7 @@ export function checkNodeVersion(): void {
 
 export function checkAIRuntime(): { type: string; version: string }[] {
   const found: { type: string; version: string }[] = [];
-  for (const type of ["claude", "codex", "opencode"]) {
+  for (const type of ["claude", "codex", "opencode", "grok"]) {
     try {
       const check = process.platform === "win32" ? `where ${type}` : `which ${type}`;
       execSync(check, { stdio: "ignore" });

@@ -12,6 +12,7 @@ import type {
 import { ClaudeBackend } from "./claude.js";
 import { CodexBackend } from "./codex.js";
 import { OpenCodeBackend } from "./opencode.js";
+import { GrokBackend } from "./grok.js";
 import { execSync } from "child_process";
 
 export interface AgentSession {
@@ -54,6 +55,8 @@ export function createBackend(
       return new CodexBackend(cliPath);
     case "opencode":
       return new OpenCodeBackend(cliPath);
+    case "grok":
+      return new GrokBackend(cliPath);
     default:
       throw new Error(`Unknown provider: ${provider}`);
   }

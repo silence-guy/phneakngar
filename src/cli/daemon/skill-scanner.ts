@@ -221,7 +221,22 @@ function scanOpenCodeAgentSkills(workdir: string): SkillEntry[] {
   return skills;
 }
 
-type Runtime = "claude" | "codex" | "opencode";
+/** Grok Build skills use Claude-compatible SKILL.md packages under ~/.grok and ./.grok. */
+function scanGrokGlobalSkills(): SkillEntry[] {
+  const home = homedir();
+  const paths = findSkillFiles(join(home, ".grok", "skills"), "*/SKILL.md");
+  return scanFrontmatterSkills(paths);
+}
+
+function scanGrokAgentSkills(workdir: string): SkillEntry[] {
+  const paths = [
+    ...findSkillFiles(join(workdir, ".grok", "skills"), "*/SKILL.md"),
+    ...findSkillFiles(join(workdir, ".agents", "skills"), "*/SKILL.md"),
+  ];
+  return scanFrontmatterSkills(paths);
+}
+
+type Runtime = "claude" | "codex" | "opencode" | "grok";
 
 export interface SkillScannerConfig {
   workspacesRoot: string;
@@ -322,12 +337,14 @@ function discoverTargets(): { agentId: string; workdir: string | null; runtime: 
 function getGlobalScanner(runtime: Runtime): () => SkillEntry[] {
   if (runtime === "claude") return scanClaudeGlobalSkills;
   if (runtime === "codex") return scanCodexGlobalSkills;
+  if (runtime === "grok") return scanGrokGlobalSkills;
   return scanOpenCodeGlobalSkills;
 }
 
 function getAgentScanner(runtime: Runtime): (workdir: string) => SkillEntry[] {
   if (runtime === "claude") return scanClaudeAgentSkills;
   if (runtime === "codex") return scanCodexAgentSkills;
+  if (runtime === "grok") return scanGrokAgentSkills;
   return scanOpenCodeAgentSkills;
 }
 

@@ -6,6 +6,8 @@ const mockGetCloudflareContext = vi.hoisted(() => vi.fn());
 const mockGetDb = vi.hoisted(() => vi.fn());
 const mockCreateAuth = vi.hoisted(() => vi.fn());
 const mockBindCacheKV = vi.hoisted(() => vi.fn());
+const mockGetMachineTokenByToken = vi.hoisted(() => vi.fn());
+const mockUpdateMachineTokenLastUsed = vi.hoisted(() => vi.fn());
 
 vi.mock("@opennextjs/cloudflare", () => ({
   getCloudflareContext: mockGetCloudflareContext,
@@ -17,6 +19,15 @@ vi.mock("@/lib/db", () => ({
 
 vi.mock("@/lib/auth", () => ({
   createAuth: mockCreateAuth,
+}));
+
+vi.mock("@phneakngar/shared", () => ({
+  queries: {
+    machineToken: {
+      getMachineTokenByToken: mockGetMachineTokenByToken,
+      updateMachineTokenLastUsed: mockUpdateMachineTokenLastUsed,
+    },
+  },
 }));
 
 vi.mock("@/lib/cache", () => ({
@@ -33,8 +44,7 @@ import { withAuth, AuthContext } from "./auth";
 
 // Helper to create a mock env
 function createMockEnv(overrides: Record<string, unknown> = {}) {
-  const prepare = vi.fn();
-  const db = { prepare };
+  const db = { kind: "mock-db" };
   const env = {
     DB: db,
     CACHE_KV: null,
@@ -42,7 +52,7 @@ function createMockEnv(overrides: Record<string, unknown> = {}) {
     BETTER_AUTH_URL: "https://test.example.com",
     ...overrides,
   };
-  return { env, db, prepare };
+  return { env, db };
 }
 
 // Helper to create a mock machine token
@@ -85,7 +95,10 @@ describe("withAuth middleware", () => {
 
     // Default env
     mockEnv = createMockEnv();
-    mockGetCloudflareContext.mockReturnValue({ env: mockEnv.env });
+    mockGetCloudflareContext.mockResolvedValue({ env: mockEnv.env });
+    mockGetDb.mockReturnValue(mockEnv.db);
+    mockGetMachineTokenByToken.mockResolvedValue(null);
+    mockUpdateMachineTokenLastUsed.mockResolvedValue(undefined);
 
     // Default auth mock
     mockAuthApi = { getSession: vi.fn() };
@@ -110,7 +123,7 @@ describe("withAuth middleware", () => {
   describe("Machine token authentication", () => {
     it("returns context with workspaceId and authType='machine' for valid token", async () => {
       const machineToken = createMockMachineToken();
-      mockEnv.prepare.mockResolvedValueOnce(machineToken);
+      mockGetMachineTokenByToken.mockResolvedValueOnce(machineToken);
 
       const req = new NextRequest("http://localhost/api/test", {
         headers: { Authorization: "Bearer al_abc123token" },
@@ -136,10 +149,11 @@ describe("withAuth middleware", () => {
           workspaceId: machineToken.workspaceId,
         }),
       );
+      expect(mockGetMachineTokenByToken).toHaveBeenCalledWith(mockEnv.db, "al_abc123token");
     });
 
     it("returns 401 for invalid machine token (not found)", async () => {
-      mockEnv.prepare.mockResolvedValueOnce(null);
+      mockGetMachineTokenByToken.mockResolvedValueOnce(null);
 
       const req = new NextRequest("http://localhost/api/test", {
         headers: { Authorization: "Bearer al_invalid_token" },
@@ -156,7 +170,7 @@ describe("withAuth middleware", () => {
 
     it("returns 401 for inactive machine token", async () => {
       const machineToken = createMockMachineToken({ status: "inactive" });
-      mockEnv.prepare.mockResolvedValueOnce(machineToken);
+      mockGetMachineTokenByToken.mockResolvedValueOnce(machineToken);
 
       const req = new NextRequest("http://localhost/api/test", {
         headers: { Authorization: "Bearer al_abc123token" },
@@ -173,7 +187,7 @@ describe("withAuth middleware", () => {
 
     it("returns 401 for revoked machine token", async () => {
       const machineToken = createMockMachineToken({ status: "revoked" });
-      mockEnv.prepare.mockResolvedValueOnce(machineToken);
+      mockGetMachineTokenByToken.mockResolvedValueOnce(machineToken);
 
       const req = new NextRequest("http://localhost/api/test", {
         headers: { Authorization: "Bearer al_abc123token" },
@@ -188,7 +202,7 @@ describe("withAuth middleware", () => {
 
     it("returns 401 for machine token without workspaceId", async () => {
       const machineToken = createMockMachineToken({ workspaceId: "" });
-      mockEnv.prepare.mockResolvedValueOnce(machineToken);
+      mockGetMachineTokenByToken.mockResolvedValueOnce(machineToken);
 
       const req = new NextRequest("http://localhost/api/test", {
         headers: { Authorization: "Bearer al_abc123token" },
@@ -204,7 +218,7 @@ describe("withAuth middleware", () => {
     });
 
     it("returns 401 when token query throws an error", async () => {
-      mockEnv.prepare.mockRejectedValueOnce(new Error("DB error"));
+      mockGetMachineTokenByToken.mockRejectedValueOnce(new Error("DB error"));
 
       const req = new NextRequest("http://localhost/api/test", {
         headers: { Authorization: "Bearer al_abc123token" },
@@ -293,7 +307,10 @@ describe("withAuth middleware", () => {
     });
 
     it("returns 503 when session validation throws", async () => {
-      mockAuthApi.getSession.mockRejectedValueOnce(new Error("Session validation error"));
+      // withAuth retries getSession once; both attempts must fail for 503
+      mockAuthApi.getSession
+        .mockRejectedValueOnce(new Error("Session validation error"))
+        .mockRejectedValueOnce(new Error("Session validation error"));
 
       const req = new NextRequest("http://localhost/api/test");
 

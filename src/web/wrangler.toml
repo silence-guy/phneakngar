@@ -14,12 +14,11 @@ head_sampling_rate = 0.1
 [observability.logs]
 invocation_logs = true
 head_sampling_rate = 0.1
-destinations = ["grafana-logs"]
+# destinations require account-level Grafana Cloud sinks; omit for first-party deploy
 
 [observability.traces]
 enabled = true
 head_sampling_rate = 0.05
-destinations = ["grafana-traces"]
 
 # OpenNext required bindings
 [assets]
@@ -37,7 +36,7 @@ bucket_name = "phneakngar-next-cache"
 
 [[d1_databases]]
 binding = "NEXT_TAG_CACHE_D1"
-database_id = "f15ea77a-d5e9-460e-926b-532948e3ad1b"
+database_id = "834d4752-2d52-4f64-8064-71649ab7e056"
 database_name = "phneakngar-next-tags"
 
 [[durable_objects.bindings]]
@@ -51,7 +50,7 @@ new_sqlite_classes = ["DOQueueHandler"]
 # App bindings
 [[d1_databases]]
 binding = "DB"
-database_id = "1593b87c-d8a8-4cdf-b6c0-c80d94442654"
+database_id = "45d8f476-3631-47fb-abd1-49659a6234fe"
 database_name = "phneakngar-app"
 
 [[r2_buckets]]
@@ -69,12 +68,12 @@ service = "phneakngar-email-worker"
 
 [[kv_namespaces]]
 binding = "RATE_LIMIT_KV"
-id = "a3d035bea7bc49d99377b82ec21ce4c1"
+id = "585b65bc311a4e489692a42641e1319c"
 
 [[kv_namespaces]]
 binding = "CACHE_KV"
-id = "3aaa92b4c2c74185b888977e5552e9bf"
+id = "4bff39b5ff614c03812abeaf93308fd2"
 
 [vars]
-RUNTIME_MODEL_OPTIONS = '{"claude":["claude-opus-4-6","claude-sonnet-4-6","claude-haiku-4-5"],"codex":["gpt-5.4","gpt-5.3-codex"]}'
+RUNTIME_MODEL_OPTIONS = '{"claude":["claude-opus-4-6","claude-sonnet-4-6","claude-haiku-4-5"],"codex":["gpt-5.4","gpt-5.3-codex"],"grok":["grok-4.5","grok-composer-2.5-fast"]}'
 MIN_CLI_VERSION = "0.0.140"

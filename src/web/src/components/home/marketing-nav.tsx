@@ -1,7 +1,7 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
+import { BrandMark } from "@/components/brand-mark";
 
 export function MarketingNav({ isLoggedIn }: { isLoggedIn: boolean }) {
   return (
@@ -15,7 +15,7 @@ export function MarketingNav({ isLoggedIn }: { isLoggedIn: boolean }) {
     >
       <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-2.5">
         <Link href="/" className="flex items-center gap-1">
-          <Image src="/phneakngar.svg" alt="ភ្នាក់ងារ" width={22} height={22} />
+          <BrandMark size={22} />
           <span
             className="text-lg tracking-tight"
             style={{

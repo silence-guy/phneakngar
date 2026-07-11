@@ -67,6 +67,8 @@ describe("detectRuntimes", () => {
       if (cmd === "codex --version") return "2.0.0\n";
       if (cmd === "which opencode") return "";
       if (cmd === "opencode --version") return "3.0.0\n";
+      if (cmd === "which grok") return "";
+      if (cmd === "grok --version") return "0.2.93\n";
       throw new Error("not found");
     });
 
@@ -75,6 +77,7 @@ describe("detectRuntimes", () => {
       { type: "claude", version: "1.0.0" },
       { type: "codex", version: "2.0.0" },
       { type: "opencode", version: "3.0.0" },
+      { type: "grok", version: "0.2.93" },
     ]);
   });
 
@@ -106,7 +109,7 @@ describe("detectRuntimes", () => {
     expect(result).toEqual([{ type: "claude", version: "" }]);
   });
 
-  it("only checks claude, codex, opencode", () => {
+  it("only checks claude, codex, opencode, grok", () => {
     mocks.execSync.mockImplementation((cmd: string) => {
       if (cmd === "which claude") return "";
       if (cmd === "claude --version") return "1.0.0\n";
@@ -116,5 +119,10 @@ describe("detectRuntimes", () => {
     const result = detectRuntimes();
     expect(result).toHaveLength(1);
     expect(result[0].type).toBe("claude");
+    // Ensure we attempted which for each known runtime
+    expect(mocks.execSync).toHaveBeenCalledWith("which claude", { stdio: "ignore" });
+    expect(mocks.execSync).toHaveBeenCalledWith("which codex", { stdio: "ignore" });
+    expect(mocks.execSync).toHaveBeenCalledWith("which opencode", { stdio: "ignore" });
+    expect(mocks.execSync).toHaveBeenCalledWith("which grok", { stdio: "ignore" });
   });
 });

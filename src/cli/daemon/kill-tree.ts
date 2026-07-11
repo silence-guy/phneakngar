@@ -1,7 +1,7 @@
 /**
  * Process-tree termination with SIGKILL escalation.
  *
- * Inner agent CLIs (claude/codex/opencode) are spawned `detached:true` on POSIX
+ * Inner agent CLIs (claude/codex/opencode/grok) are spawned `detached:true` on POSIX
  * (see agent/*.ts), so each becomes the leader of its own process group whose id
  * equals its pid. Signalling the *negative* pid (`process.kill(-pid, ...)`) then
  * reaches the whole group — the CLI plus the MCP servers / tool subprocesses it
