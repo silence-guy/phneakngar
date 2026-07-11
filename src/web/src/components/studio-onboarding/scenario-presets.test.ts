@@ -14,13 +14,16 @@ describe("scenario preset localization", () => {
     expect(getScenarioPresets(Locale.EN)).toBe(SCENARIO_PRESETS);
   });
 
-  it("returns Khmer scenarios by default", () => {
+  it("returns Khmer scenarios by default with Khmer instruction bodies", () => {
     const presets = getScenarioPresets();
 
     expect(presets[0]?.label).toBe("អភិវឌ្ឍន៍កម្មវិធី");
-    expect(presets[0]?.members[0]?.instructions).toContain("Default user-facing language: Khmer (km-KH)");
+    expect(presets[0]?.members[0]?.instructions).toContain("ភាសាលំនាំសម្រាប់អ្នកប្រើ");
+    expect(presets[0]?.members[0]?.instructions).toContain("អ្នកជាអ្នកដឹកនាំ");
     expect(presets[0]?.members[0]?.instructions).toContain("CLI commands");
     expect(presets[0]?.members[0]?.instructions).toContain("JSON keys");
+    expect(presets[0]?.members[0]?.instructions).not.toContain("You are the lead coordinator");
+    expect(presets[0]?.members[0]?.instructions).not.toMatch(/match that recipient/i);
   });
 
   it("preserves stable scenario ids, icons, roles, and member counts", () => {
@@ -43,13 +46,24 @@ describe("scenario preset localization", () => {
     expect(preset?.members[0]?.instructions).not.toContain("km-KH");
   });
 
-  it("adds Khmer relationship policy without removing original acceptance guidance", () => {
+  it("uses full Khmer relationship and instruction text for engineer", () => {
     const preset = getScenarioPresetById("software-dev");
     const engineer = preset?.members.find((member) => member.role === "engineer");
 
-    expect(engineer?.relationship).toContain("Brief and report in Khmer by default");
+    expect(engineer?.relationship).toContain("ជាភាសាខ្មែរ");
     expect(engineer?.relationship).toContain("acceptance criteria");
-    expect(engineer?.relationship).toContain("status values exact");
+    expect(engineer?.instructions).toContain("អ្នកជាវិស្វករអនុវត្ត");
+    expect(engineer?.instructions).not.toContain("You are the engineering specialist");
+  });
+
+  it("localizes all default scenarios with Khmer instruction bodies", () => {
+    for (const preset of getScenarioPresets()) {
+      for (const member of preset.members) {
+        expect(member.instructions).toContain("ភាសាលំនាំសម្រាប់អ្នកប្រើ");
+        expect(member.instructions).not.toMatch(/^You are /m);
+        expect(member.description).toMatch(/[\u1780-\u17ff]/);
+      }
+    }
   });
 
   it("generates Khmer member names with valid ASCII email handles", () => {

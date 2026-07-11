@@ -1,6 +1,12 @@
 import { Locale, defaultLocale, resolveLocale } from "@phneakngar/shared";
 import type { Locale as SharedLocale } from "@phneakngar/shared";
 import { randomConfig, serializeAvatarConfig } from "@/components/avatar";
+import {
+  KHMER_ROLE_DESCRIPTIONS,
+  khmerInstructionsForRole,
+  khmerRelationshipForRole,
+  type AgentInstructionRole,
+} from "@/lib/agent-instruction-km";
 
 export type ScenarioId = "software-dev" | "content-research" | "personal-assistant" | "sales-outreach" | "customer-support" | "custom";
 
@@ -125,22 +131,6 @@ const ASSISTANT_SUPPORT = `You are the customer support specialist. You draft re
 - If you can't resolve immediately, set realistic expectations: what you'll do, by when.
 - Track open issues proactively. Escalate complex or sensitive cases with full context.`;
 
-const KHMER_AGENT_LANGUAGE_POLICY = `Default user-facing language: Khmer (km-KH).
-Write user-visible messages, emails, DM replies, issue comments, summaries, and follow-ups in natural Khmer.
-Keep CLI commands, JSON keys, status values, task type values, routes, file paths, code identifiers, package names, API names, logs, environment variables, and exact quotes in their original English form.
-When a technical English term is useful, write the Khmer phrase first and include the English term in parentheses on first mention.
-If the recipient clearly uses another language, match that recipient for that reply.`;
-
-const KHMER_RELATIONSHIP_NOTICE =
-  "Brief and report in Khmer by default. Keep acceptance criteria, CLI commands, file paths, and status values exact.";
-
-const KHMER_ROLE_DESCRIPTIONS: Record<MemberRole, string> = {
-  leader: "សម្របសម្រួលការងារ បែងចែកភារកិច្ច និងឆ្លើយតបជាភាសាខ្មែរ",
-  researcher: "ស្រាវជ្រាវ បញ្ជាក់ភស្តុតាង និងសង្ខេបអ្វីដែលបានរកឃើញជាភាសាខ្មែរ",
-  engineer: "សរសេរកូដ ដំណើរការតេស្ត និងពន្យល់ការអនុវត្តជាភាសាខ្មែរ",
-  assistant: "រៀបចំអ៊ីមែល កាលវិភាគ ការតាមដាន និងការងារប្រតិបត្តិការជាភាសាខ្មែរ",
-};
-
 const KHMER_SCENARIO_COPY: Record<ScenarioId, Pick<ScenarioPreset, "label" | "description">> = {
   "software-dev": {
     label: "អភិវឌ្ឍន៍កម្មវិធី",
@@ -168,24 +158,28 @@ const KHMER_SCENARIO_COPY: Record<ScenarioId, Pick<ScenarioPreset, "label" | "de
   },
 };
 
-function withKhmerAgentPolicy(instructions: string): string {
-  return `${KHMER_AGENT_LANGUAGE_POLICY}\n\n${instructions}`;
-}
-
 function localizeScenarioPreset(preset: ScenarioPreset, locale?: string | null): ScenarioPreset {
   if (resolveLocale(locale) !== Locale.KM) return preset;
   const copy = KHMER_SCENARIO_COPY[preset.id];
+  const personalAssistant = preset.id === "personal-assistant";
   return {
     ...preset,
     ...copy,
-    members: preset.members.map((member) => ({
-      ...member,
-      description: KHMER_ROLE_DESCRIPTIONS[member.role],
-      instructions: withKhmerAgentPolicy(member.instructions),
-      relationship: member.relationship
-        ? `${KHMER_RELATIONSHIP_NOTICE}\n\n${member.relationship}`
-        : undefined,
-    })),
+    members: preset.members.map((member) => {
+      const role = member.role as AgentInstructionRole;
+      return {
+        ...member,
+        description: KHMER_ROLE_DESCRIPTIONS[role],
+        instructions: khmerInstructionsForRole(role, {
+          personalAssistant: personalAssistant && role === "leader",
+        }),
+        relationship:
+          khmerRelationshipForRole(role) ??
+          (member.relationship
+            ? `រាយការណ៍ជាភាសាខ្មែរ។ រក្សា acceptance criteria, CLI commands, file paths, និង status values ឱ្យត្រឹមត្រូវ។\n\n${member.relationship}`
+            : undefined),
+      };
+    }),
   };
 }
 
