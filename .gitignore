@@ -23,3 +23,6 @@ plans/
 .playwright-mcp/
 .lighthouseci/
 src/cli/LICENSE
+
+# npm pack artifacts
+*.tgz

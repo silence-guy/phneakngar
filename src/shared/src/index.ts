@@ -314,5 +314,17 @@ export { isUniqueConstraintError } from "./utils/db-errors";
 export { generateWorkspaceSlug } from "./utils/slug";
 export { truncateTitle, truncateGraphemes, sliceGraphemes, toGraphemes } from "./utils/title";
 export { semverGte } from "./semver";
-export { resolveMode, cliCommand, cliPackageName, updateCommand, daemonCommand, getBaseUrl, isTauri, isDesktop, isMobile, tauriInvoke } from "./mode";
+export {
+  resolveMode,
+  cliCommand,
+  cliPackageName,
+  updateCommand,
+  daemonCommand,
+  getBaseUrl,
+  DEFAULT_BASE_URL,
+  isTauri,
+  isDesktop,
+  isMobile,
+  tauriInvoke,
+} from "./mode";
 export type { PhneakngarMode, ModeSignals, BaseUrlSignals } from "./mode";

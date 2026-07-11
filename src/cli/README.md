@@ -1,26 +1,54 @@
 # @phneakngar/cli
 
-ភ្នាក់ងារ CLI — register machines, run the daemon, and manage agents from the command line.
+ភ្នាក់ងារ CLI — register machines, run the agent daemon, and manage agents from the command line.
+
+Client install guide: [INSTALL.md](../../INSTALL.md)
 
 ## Install
+
+### Global (recommended on client machines)
+
+```bash
+npm install --global @phneakngar/cli
+phneakngar version
+```
+
+### Without global install
 
 ```bash
 npx @phneakngar/cli <command>
 ```
 
-## Quick Start
-
-1. Generate a machine token from the [ភ្នាក់ងារ dashboard](https://phneakngar.ai).
-2. Register this machine:
+### From a local pack (pre-publish / offline)
 
 ```bash
-npx @phneakngar/cli register --token al_xxxxxxxxxxxxxxxxxxxxxxxx
+# built by an operator from the monorepo
+npm install --global ./phneakngar-cli-0.0.149.tgz
 ```
 
-3. Start the daemon:
+## Quick Start
+
+1. Ensure Node.js `>= 20.19.0` and at least one AI runtime (`claude`, `codex`, `opencode`, or `grok`) is installed.
+2. Initialize and diagnose:
 
 ```bash
-npx @phneakngar/cli daemon start
+phneakngar init
+phneakngar doctor
+```
+
+3. Authenticate — either browser login or a machine token from the [dashboard](https://phneakngar-web.thatsilenceguy.workers.dev):
+
+```bash
+phneakngar login
+# or
+phneakngar register --token al_xxxxxxxxxxxxxxxxxxxxxxxx
+```
+
+4. Start the daemon:
+
+```bash
+phneakngar daemon start
+phneakngar status
 ```
 
 The daemon runs in the background, polling for tasks and dispatching them to your local AI runtimes (Claude, Codex, OpenCode, or Grok).
@@ -36,20 +64,27 @@ The daemon runs in the background, polling for tasks and dispatching them to you
 
 | Command | Description |
 | --- | --- |
+| `init` | Create local config (`~/.phneakngar`) and optional server URL |
+| `doctor` | Diagnose Node, registration, runtimes, daemon, and server health |
 | `register --token <token>` | Register this machine with your ភ្នាក់ងារ account |
-| `status` | Show registration status and linked workspace |
+| `login` | Browser device-code login |
+| `status` | Registration, daemon, and AI runtime summary |
 | `daemon start` | Start the background daemon |
 | `daemon stop` | Stop the daemon |
+| `daemon status` | Check if the daemon is running |
+| `logs` | Show daemon log path and recent lines |
 | `email pull` | Download agent emails |
 | `email send --to <addr> --subject "..." --body-file <path>` | Send an email |
 | `calendar set --event_title "..." --datetime <YYYY-MM-DDTHH:MM>` | Create a scheduled event |
 | `issue create --title "..."` | Create and dispatch an issue |
 | `sync upload-artifact --conversation_id <id> --file <path>` | Upload a file artifact |
 | `config show` | Show current configuration |
+| `config set-server <url>` | Persist control plane base URL |
+| `config path` | Show config file path |
 | `update` | Update CLI to the latest version |
 | `version` | Print CLI version |
 
-Run `npx @phneakngar/cli <command> --help` for all subcommand options.
+Run `phneakngar <command> --help` for all subcommand options.
 
 <details>
 <summary><strong>daemon</strong> — manage the background daemon</summary>
@@ -59,6 +94,18 @@ phneakngar daemon start               # Start in background
 phneakngar daemon start --foreground  # Start in foreground (for debugging)
 phneakngar daemon stop                # Stop the daemon
 phneakngar daemon status              # Check if the daemon is running
+```
+
+</details>
+
+<details>
+<summary><strong>logs</strong> — inspect daemon output</summary>
+
+```bash
+phneakngar logs                # path + last 50 lines
+phneakngar logs --lines 200    # more history
+phneakngar logs --path-only    # print path only
+phneakngar logs --list         # list log files
 ```
 
 </details>
@@ -127,8 +174,9 @@ Statuses: `todo`, `in_progress`, `review`, `done`, `closed`, `canceled`, `failed
 <summary><strong>config</strong> — manage CLI configuration</summary>
 
 ```bash
-phneakngar config show    # Show current config
-phneakngar config path    # Show config file path
+phneakngar config show              # Show current config
+phneakngar config path              # Show config file path
+phneakngar config set-server <url>  # Persist control plane URL
 ```
 
 Config is stored at `~/.phneakngar/config.json` and includes:
@@ -147,9 +195,20 @@ Config is stored at `~/.phneakngar/config.json` and includes:
 --agent_id <id>    Override agent ID (default: $PHNEAKNGAR_AGENT_ID env var)
 ```
 
+## Update / uninstall
+
+```bash
+phneakngar daemon stop
+npm install --global @phneakngar/cli@latest
+
+npm uninstall --global @phneakngar/cli
+# optional: rm -rf ~/.phneakngar
+```
+
 ## Requirements
 
-- Node.js >= 20
+- Node.js >= 20.19.0
+- At least one AI coding agent CLI on `PATH`
 
 ## License
 

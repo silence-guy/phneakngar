@@ -105,7 +105,13 @@ export interface BaseUrlSignals {
   nodeEnv?: string;
 }
 
-const DEFAULT_BASE_URL = "https://phneakngar.ai";
+/**
+ * Production control plane origin for this Cloudflare account.
+ * Live Worker: phneakngar-web → *.workers.dev
+ * Override per-machine with PHNEAKNGAR_SERVER_URL or `phneakngar config set-server`.
+ */
+export const DEFAULT_BASE_URL =
+  "https://phneakngar-web.thatsilenceguy.workers.dev";
 const DEV_BASE_URL = "http://localhost:3000";
 
 export function getBaseUrl(signals: BaseUrlSignals): string {

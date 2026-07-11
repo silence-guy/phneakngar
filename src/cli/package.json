@@ -1,28 +1,42 @@
 {
   "name": "@phneakngar/cli",
   "version": "0.0.149",
-  "description": "ភ្នាក់ងារ CLI — Enable Your Person Colleague",
+  "description": "ភ្នាក់ងារ CLI — install and run local AI agents on a client machine",
   "license": "Apache-2.0",
+  "author": "ភ្នាក់ងារ",
+  "homepage": "https://phneakngar-web.thatsilenceguy.workers.dev",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/silence-guy/phneakngar.git",
+    "directory": "src/cli"
+  },
+  "bugs": {
+    "url": "https://github.com/silence-guy/phneakngar/issues"
+  },
   "keywords": [
     "phneakngar",
     "cli",
     "ai",
     "agent",
     "daemon",
-    "email"
+    "email",
+    "local-agent"
   ],
   "type": "module",
   "bin": {
     "phneakngar": "dist/index.js"
   },
   "main": "./dist/index.js",
+  "exports": {
+    ".": "./dist/index.js"
+  },
   "files": [
     "dist",
     "README.md",
     "LICENSE"
   ],
   "engines": {
-    "node": ">=20"
+    "node": ">=20.19.0"
   },
   "publishConfig": {
     "access": "public"
@@ -31,6 +45,7 @@
     "dev": "bun run src/index.ts",
     "build": "bun build src/index.ts --outdir dist --target node --format esm --external citty --external commander --external postal-mime --external playwright-core --external sharp && bun build daemon/session-runner.ts --outdir dist --target node --format esm --external citty --external commander --external postal-mime && bun build daemon/meeting-runner.ts --outdir dist --target node --format esm --external playwright-core && node scripts/prepare-dist.mjs",
     "prepack": "pnpm run build",
+    "pack:check": "npm pack --dry-run",
     "knip": "knip",
     "test": "vitest run",
     "test:integration": "vitest run --config ../../tests/integration/cli/vitest.config.ts --passWithNoTests",

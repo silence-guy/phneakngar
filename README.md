@@ -27,9 +27,33 @@ Agents រត់លើម៉ាស៊ីនរបស់អ្នក ជាមួ
   <img src="./assets/phneakngar-org_rounded.png" alt="ភ្នាក់ងារ — ផ្ទាំងរចនាសម្ព័ន្ធភ្នាក់ងារ" width="700" />
 </p>
 
+## Client install (agent machines)
+
+**Guide:** **[INSTALL.md](INSTALL.md)**  
+**Control plane (Cloudflare):** `https://phneakngar-web.thatsilenceguy.workers.dev`
+
+On each machine that should run Agents (no monorepo clone required):
+
+```bash
+npm install --global @phneakngar/cli
+phneakngar init
+phneakngar doctor
+phneakngar login
+phneakngar daemon start
+phneakngar status
+```
+
+| Command | Purpose |
+| --- | --- |
+| `phneakngar doctor` | Diagnose install readiness |
+| `phneakngar daemon start` / `stop` / `status` | Control the always-on agent daemon |
+| `phneakngar logs` | View daemon logs |
+
+> If `@phneakngar/cli` is not yet on npm, install the operator-provided `.tgz` from `npm pack` (see INSTALL.md).
+
 ## ចាប់ផ្តើមរហ័ស
 
-### ដំឡើងលើ Mac
+### ដំឡើងលើ Mac (អ្នកអភិវឌ្ឍ / monorepo)
 
 **តម្រូវការ៖**
 

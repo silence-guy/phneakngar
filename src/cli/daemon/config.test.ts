@@ -44,7 +44,7 @@ describe("loadDaemonConfig defaults", () => {
   it("returns correct defaults when no env vars set", () => {
     const cfg = loadDaemonConfig();
 
-    expect(cfg.serverURL).toBe("https://phneakngar.ai");
+    expect(cfg.serverURL).toBe("https://phneakngar-web.thatsilenceguy.workers.dev");
     expect(cfg.pollInterval).toBe(3000);
     expect(cfg.agentTimeout).toBe(43200000);
     expect(cfg.maxConcurrentTasks).toBe(20);

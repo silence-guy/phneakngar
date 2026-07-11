@@ -13,19 +13,25 @@ import { versionCommand } from "../commands/version.js";
 import { updateCommand } from "../commands/update.js";
 import { syncCommand } from "../commands/sync.js";
 import { workspaceCommand } from "../commands/workspace.js";
+import { doctorCommand } from "../commands/doctor.js";
+import { logsCommand } from "../commands/logs.js";
+import { initCommand } from "../commands/init.js";
 
 const program = new Command();
 
 program
   .name("phneakngar")
-  .description("ភ្នាក់ងារ CLI")
+  .description("ភ្នាក់ងារ CLI — local agent runtime for client machines")
   .option("--server <url>", "Server URL")
   .option("--profile <name>", "Profile name");
 
+program.addCommand(initCommand());
+program.addCommand(doctorCommand());
 program.addCommand(registerCommand());
 program.addCommand(loginCommand());
 program.addCommand(statusCommand());
 program.addCommand(daemonCommand());
+program.addCommand(logsCommand());
 program.addCommand(emailCommand());
 program.addCommand(calendarCommand());
 program.addCommand(issueCommand());

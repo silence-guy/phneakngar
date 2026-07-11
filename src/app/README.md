@@ -2,6 +2,12 @@
 
 Run ភ្នាក់ងារ locally — one command, no clone needed.
 
+> **Agent-only machines:** if you only need to run Agents against an existing server
+> (hosted or already deployed), install `@phneakngar/cli` instead — see
+> [INSTALL.md](../../INSTALL.md).
+> Default control plane: `https://phneakngar-web.thatsilenceguy.workers.dev`
+> This package self-hosts the full control plane (web + workers) on the local machine.
+
 ## Quick Start
 
 ```bash

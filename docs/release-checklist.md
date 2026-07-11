@@ -17,7 +17,11 @@ pnpm test
 pnpm build
 pnpm db:reset
 pnpm db:migrate
+# Client package smoke (pack + clean install) — does not publish
+pnpm verify:cli-package
 ```
+
+Client install docs: [INSTALL.md](../INSTALL.md)
 
 Also verify:
 

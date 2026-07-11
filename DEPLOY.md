@@ -77,7 +77,7 @@ Set these on `phneakngar-web`:
 | `WS_SERVICE_SECRET` | Must exactly match the WebSocket Worker value |
 | `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` | Required when GitHub OAuth is enabled |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Required when Google OAuth is enabled |
-| `DEVICE_CLIENT_IDS` | Optional comma-separated device OAuth client IDs |
+| `DEVICE_CLIENT_IDS` | Comma-separated device OAuth client IDs allowed for CLI login. Must include `phneakngar-cli` for `phneakngar login` |
 | `AUTH_OTP_RATE_LIMIT_MAX` | Optional positive integer override |
 | `AUTH_OTP_RATE_LIMIT_WINDOW_SEC` | Optional positive integer override |
 | `MIN_CLI_VERSION` | Minimum CLI permitted to receive tasks |
@@ -95,6 +95,7 @@ pnpm exec wrangler secret put GITHUB_CLIENT_ID --config src/web/wrangler.toml
 pnpm exec wrangler secret put GITHUB_CLIENT_SECRET --config src/web/wrangler.toml
 pnpm exec wrangler secret put GOOGLE_CLIENT_ID --config src/web/wrangler.toml
 pnpm exec wrangler secret put GOOGLE_CLIENT_SECRET --config src/web/wrangler.toml
+printf '%s' 'phneakngar-cli' | pnpm exec wrangler secret put DEVICE_CLIENT_IDS --config src/web/wrangler.toml
 ```
 
 ### Email Worker

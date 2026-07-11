@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { resolveMode, cliCommand, cliPackageName, updateCommand, daemonCommand, getBaseUrl, isTauri, isDesktop, isMobile, tauriInvoke } from "../src/mode";
+import { resolveMode, cliCommand, cliPackageName, updateCommand, daemonCommand, getBaseUrl, DEFAULT_BASE_URL, isTauri, isDesktop, isMobile, tauriInvoke } from "../src/mode";
 
 describe("resolveMode", () => {
   it("production: no signals", () => {
@@ -338,11 +338,12 @@ describe("getBaseUrl", () => {
     expect(getBaseUrl({ nodeEnv: "development" })).toBe("http://localhost:3000");
   });
 
-  it("returns production URL when no signals", () => {
-    expect(getBaseUrl({})).toBe("https://phneakngar.ai");
+  it("returns Cloudflare production URL when no signals", () => {
+    expect(DEFAULT_BASE_URL).toBe("https://phneakngar-web.thatsilenceguy.workers.dev");
+    expect(getBaseUrl({})).toBe(DEFAULT_BASE_URL);
   });
 
   it("returns production URL in production mode with no URLs", () => {
-    expect(getBaseUrl({ nodeEnv: "production" })).toBe("https://phneakngar.ai");
+    expect(getBaseUrl({ nodeEnv: "production" })).toBe(DEFAULT_BASE_URL);
   });
 });

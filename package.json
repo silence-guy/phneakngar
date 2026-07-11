@@ -36,6 +36,8 @@
     "deploy:email": "cd src/email-worker && npx wrangler deploy",
     "db:migrate:remote": "pnpm --filter @phneakngar/web exec wrangler d1 migrations apply phneakngar-app --remote",
     "bump": "node scripts/bump-version.mjs",
+    "pack:cli": "pnpm --filter @phneakngar/cli run build && pnpm --filter @phneakngar/cli exec npm pack",
+    "verify:cli-package": "node scripts/verify-cli-package.mjs",
     "prepare": "simple-git-hooks",
     "check:project": "node scripts/check-project-guardrails.mjs"
   },
