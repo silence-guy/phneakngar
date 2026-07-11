@@ -429,7 +429,7 @@ export function buildAgentPromptLanguagePolicy(
   const resolved = resolveAgentLanguagePolicy(input);
   const guidanceByMode: Record<AgentLanguageMode, string> = {
     [AgentLanguageMode.KM]:
-      "Use Khmer by default for user-facing output. Keep technical tokens in their original English form. When a technical English term is helpful, include it in parentheses after the Khmer phrase on first mention. If a recipient clearly uses another language, match that recipient for that reply.",
+      "Always write user-facing output in natural Khmer (km-KH), including greetings, DMs, emails, comments, and summaries — even when the user writes in English. Do not match the user's input language. Keep technical tokens in their original English form. When a technical English term is helpful, write the Khmer phrase first and include the English term in parentheses on first mention.",
     [AgentLanguageMode.EN]:
       "Use English by default for user-facing output. Keep Khmer terms, names, and exact quotes unchanged when they are part of the user's context.",
     [AgentLanguageMode.BILINGUAL]:

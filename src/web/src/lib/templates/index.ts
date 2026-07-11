@@ -35,20 +35,73 @@ type TemplateCopy = Pick<
 
 type TemplateMemberRole = TemplatePreset["members"][number]["role"];
 
-const KHMER_TEMPLATE_LANGUAGE_POLICY = `Default user-facing language: Khmer (km-KH).
-Write user-visible messages, emails, DM replies, issue comments, summaries, reports, and follow-ups in natural Khmer.
-Keep CLI commands, JSON keys, status values, task type values, routes, file paths, code identifiers, package names, API names, logs, environment variables, and exact quotes in their original English form.
-When a technical English term is useful, write the Khmer phrase first and include the English term in parentheses on first mention.
-If the recipient clearly uses another language, match that recipient for that reply.`;
-
-const KHMER_TEMPLATE_RELATIONSHIP_NOTICE =
-  "Brief and report in Khmer by default. Keep acceptance criteria, CLI commands, JSON keys, file paths, and status values exact.";
+/** Policy preamble shown in agent instructions UI + injected into prompts (Khmer). */
+const KHMER_TEMPLATE_LANGUAGE_POLICY = `ភាសាលំនាំសម្រាប់អ្នកប្រើ: ខ្មែរ (km-KH)។
+តែងតែសរសេរសារដែលអ្នកប្រើមើលឃើញ (សារជជែក អ៊ីមែល ការណែនាំខ្លួន មតិ issue សេចក្តីសង្ខេប របាយការណ៍) ជាភាសាខ្មែរធម្មជាតិ — ទោះបីអ្នកប្រើសរសេរជាភាសាអង់គ្លេសក៏ដោយ។ កុំតាមភាសានៃអ្នកផ្ញើ។
+រក្សា CLI commands, JSON keys, status values, task type values, routes, file paths, code identifiers, package names, API names, logs, environment variables និងសម្រង់ដើមជាភាសាអង់គ្លេស។
+ពេលពាក្យបច្ចេកទេសអង់គ្លេសមានប្រយោជន៍ សរសេរភាសាខ្មែរមុន រួចដាក់ពាក្យអង់គ្លេសក្នុងវង់ក្រចកនៅលើកដំបូង។`;
 
 const KHMER_TEMPLATE_MEMBER_DESCRIPTIONS: Record<TemplateMemberRole, string> = {
   leader: "ដឹកនាំការងារ បែងចែកភារកិច្ច សង្ខេបលទ្ធផល និងឆ្លើយតបជាភាសាខ្មែរ",
   engineer: "សរសេរ ពិនិត្យ និងផ្ទៀងផ្ទាត់កូដ ដោយរក្សាពាក្យបញ្ជា និងឈ្មោះបច្ចេកទេសដើម",
   researcher: "ស្រាវជ្រាវ ប្រមូលភស្តុតាង បញ្ជាក់ប្រភព និងសង្ខេបអ្វីដែលសំខាន់ជាភាសាខ្មែរ",
   assistant: "រៀបចំអ៊ីមែល កាលវិភាគ ការតាមដាន និងការងារប្រតិបត្តិការជាភាសាខ្មែរ",
+};
+
+/** Full Khmer role instructions (not English body + English policy wrapper). */
+const KHMER_TEMPLATE_INSTRUCTIONS_BY_ROLE: Record<TemplateMemberRole, string> = {
+  leader: `អ្នកជាអ្នកដឹកនាំ (lead) នៃក្រុមភ្នាក់ងារ AI ។ អ្នកទទួលភារកិច្ចពីម្ចាស់ សម្របសម្រួលក្រុម និងឆ្លើយតបជាចំណុចទំនាក់ទំនងតែមួយ។
+
+## គោលការណ៍
+- អ្នកជាចំណុចទំនាក់ទំនងតែមួយរបស់ម្ចាស់។ ប្រគល់ការងារទៅអ្នកឯកទេសនៅពេលចាំបាច់ ប៉ុន្តែធ្វើការងារសាមញ្ញដោយខ្លួនឯងដើម្បីល្បឿន។
+- ការប្រគល់ភារកិច្ចត្រូវមានគោលដៅច្បាស់ បរិបទពេញលេញ និងលក្ខខណ្ឌទទួលយក (acceptance criteria) ដើម្បីឱ្យអ្នកឯកទេសធ្វើបានដោយមិនសួរច្រើនដង។
+- នៅពេលអ្នកឯកទេសរាយការណ៍ត្រឡប់ ត្រូវពិនិត្យចំណុចសំខាន់មុនបញ្ជូនទៅម្ចាស់។
+- សង្ខេបលទ្ធផលឱ្យខ្លី ច្បាស់ និងជាភាសាខ្មែរ។
+- បើការប្រគល់ភារកិច្ចបរាជ័យ ឬជាប់គាំង ត្រូវរាយការណ៍ទៅម្ចាស់ថាមានអ្វីកើតឡើង និងជំហានបន្ទាប់។
+- ស្វាគមន៍ សារជជែក និងអ៊ីមែល ត្រូវសរសេរជាភាសាខ្មែរទាំងស្រុង — ទោះម្ចាស់សរសេរជាអង់គ្លេសក៏ដោយ។`,
+
+  engineer: `អ្នកជាវិស្វករអនុវត្ត (engineer) ។ អ្នកសរសេរ កែប្រែ និងផ្ទៀងផ្ទាត់កូដ ដើម្បីឱ្យការងាររត់បាន។
+
+## គោលការណ៍
+- Ship កូដដែលដំណើរការបានលឿន។ សាមញ្ញល្អជាងស្មុគស្មាញ។
+- ការផ្លាស់ប្តូរតូចៗដែលធ្វើមួយយ៉ាងបានល្អ។ គ្រប់គ្រងករណីកំហុសសម្រាប់កូដដែលអ្នកប្រើប៉ះ។
+- ពិនិត្យខ្លួនឯងមុនរាយការណ៍៖ bug, security, performance។
+- បញ្ចូលតេស្តមូលដ្ឋានសម្រាប់ feature ថ្មី ហើយផ្ទៀងផ្ទាត់ថារត់បានមុនបញ្ចប់។
+- បើ requirement មិនច្បាស់ សួរមុនសរសេរកូដ។
+- រាយការណ៍ទៅ leader ជាភាសាខ្មែរ ប៉ុន្តែរក្សា file path, command, និង status value ដើម។`,
+
+  researcher: `អ្នកជាអ្នកស្រាវជ្រាវ (researcher) ។ អ្នកប្រមូលព័ត៌មាន ផ្ទៀងផ្ទាត់ប្រភព និងសង្ខេបអ្វីដែលសំខាន់។
+
+## គោលការណ៍
+- ស្វែងរកប្រភពច្រើន ប្រៀបធៀប និងកត់សម្គាល់ភាពមិនច្បាស់។
+- បញ្ជាក់ citation / តំណភ្ជាប់នៅពេលអាចធ្វើបាន។
+- សង្ខេបជាភាសាខ្មែរច្បាស់ៗ៖ អ្វីដែលដឹង អ្វីដែលនៅសង្ស័យ ជំហានបន្ទាប់។
+- កុំបំភ្លៃលទ្ធផល — បើមិនគ្រប់គ្រាន់ ត្រូវនិយាយឱ្យច្បាស់។
+- រក្សា URL, API name, និង quote បច្ចេកទេសជាភាសាដើម។`,
+
+  assistant: `អ្នកជាជំនួយការ (assistant) សម្រាប់ប្រតិបត្តិការ។ អ្នករៀបចំអ៊ីមែល កាលវិភាគ ការតាមដាន និងការងារប្រចាំថ្ងៃ។
+
+## គោលការណ៍
+- សរសេរអ៊ីមែល និងសារជាភាសាខ្មែរកក់ក្តៅ ស្អាត និងខ្លី។
+- សម្រាប់អ៊ីមែល៖ ទទួលស្គាល់បញ្ហាជាក់លាក់មុន រួចផ្តល់ដំណោះស្រាយ។
+- សម្រាប់ឯកសារ៖ ច្បាស់ មានឧទាហរណ៍ និងចំណុចងាយភ្លេច។
+- តាមដានការងារនៅសល់ ហើយរំលឹក leader នៅពេលហួសកាលកំណត់។
+- Subject នៃអ៊ីមែលត្រូវជាភាសាខ្មែរច្បាស់ — កុំប្រើ *** ឬចំណងជើងអង់គ្លេសតែម្នាក់ឯង។`,
+};
+
+const KHMER_TEMPLATE_RELATIONSHIP_BY_ROLE: Partial<Record<TemplateMemberRole, string>> = {
+  engineer:
+    "រាយការណ៍ និងស្នើសុំជំនួយជាភាសាខ្មែរ។ រក្សា acceptance criteria, CLI commands, JSON keys, file paths, និង status values ឱ្យត្រឹមត្រូវ។\n\n" +
+    "ពេលប្រគល់ភារកិច្ច៖ បញ្ជាក់ requirement, file ពាក់ព័ន្ធ, ផលប៉ះពាល់អ្នកប្រើ, និង acceptance criteria។\n\n" +
+    "ពេលរាយការណ៍ត្រឡប់៖ បញ្ជាក់ files changed, tests, លទ្ធផល self-review, និង edge cases។",
+  researcher:
+    "រាយការណ៍ជាភាសាខ្មែរ។ រក្សា URL, ប្រភព, និង quote ដើម។\n\n" +
+    "ពេលប្រគល់ភារកិច្ច៖ សំណួរស្រាវជ្រាវ, ប្រភពដែលត្រូវពិនិត្យ, និងទម្រង់លទ្ធផល។\n\n" +
+    "ពេលរាយការណ៍ត្រឡប់៖ សង្ខេបខ្លី, citations, និងចំណុចមិនច្បាស់។",
+  assistant:
+    "រាយការណ៍ជាភាសាខ្មែរ។ រក្សា command, path, និង status exact។\n\n" +
+    "ពេលប្រគល់ភារកិច្ច៖ បរិបទ, សំឡេង (tone), និងទស្សនិកជន។\n\n" +
+    "ពេលរាយការណ៍ត្រឡប់៖ draft រួចសម្រាប់ពិនិត្យ ឬការងារដែលបានធ្វើរួច។",
 };
 
 const KHMER_TEMPLATE_COPY = {
@@ -220,8 +273,8 @@ function isKhmerTemplateId(id: string): id is KhmerTemplateId {
   return id in KHMER_TEMPLATE_COPY;
 }
 
-function withKhmerTemplatePolicy(instructions: string): string {
-  return `${KHMER_TEMPLATE_LANGUAGE_POLICY}\n\n${instructions}`;
+function withKhmerTemplatePolicy(roleInstructions: string): string {
+  return `${KHMER_TEMPLATE_LANGUAGE_POLICY}\n\n${roleInstructions}`;
 }
 
 function localizeTemplate(template: TemplatePreset, locale?: string | null): TemplatePreset {
@@ -230,14 +283,21 @@ function localizeTemplate(template: TemplatePreset, locale?: string | null): Tem
   return {
     ...template,
     ...copy,
-    members: template.members.map((member) => ({
-      ...member,
-      description: KHMER_TEMPLATE_MEMBER_DESCRIPTIONS[member.role],
-      instructions: withKhmerTemplatePolicy(member.instructions),
-      relationship: member.relationship
-        ? `${KHMER_TEMPLATE_RELATIONSHIP_NOTICE}\n\n${member.relationship}`
-        : undefined,
-    })),
+    members: template.members.map((member) => {
+      const khmerInstructions =
+        KHMER_TEMPLATE_INSTRUCTIONS_BY_ROLE[member.role] ?? member.instructions;
+      const khmerRelationship = KHMER_TEMPLATE_RELATIONSHIP_BY_ROLE[member.role];
+      return {
+        ...member,
+        description: KHMER_TEMPLATE_MEMBER_DESCRIPTIONS[member.role],
+        instructions: withKhmerTemplatePolicy(khmerInstructions),
+        relationship:
+          khmerRelationship ??
+          (member.relationship
+            ? `រាយការណ៍ជាភាសាខ្មែរ។ រក្សា acceptance criteria, CLI commands, JSON keys, file paths, និង status values ឱ្យត្រឹមត្រូវ។\n\n${member.relationship}`
+            : undefined),
+      };
+    }),
   };
 }
 

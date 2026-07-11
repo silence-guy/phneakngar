@@ -19,7 +19,8 @@ describe("GET /templates/[id]/json", () => {
     expect(data.scenario).toBe("software-dev");
     expect(Array.isArray(data.members)).toBe(true);
     expect(data.members.length).toBeGreaterThanOrEqual(2);
-    expect(data.members[0]?.instructions).toContain("Default user-facing language: Khmer (km-KH)");
+    expect(data.members[0]?.instructions).toContain("ភាសាលំនាំសម្រាប់អ្នកប្រើ");
+    expect(data.members[0]?.instructions).toContain("km-KH");
   });
 
   it("returns English template JSON when locale=en", async () => {

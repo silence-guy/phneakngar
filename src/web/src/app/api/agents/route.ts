@@ -8,6 +8,7 @@ import { agentToResponse } from "@/lib/api/responses";
 import { TaskService } from "@/lib/services/task";
 import { invalidate, cached, cacheKeys } from "@/lib/cache";
 import { filterVisibleAgents } from "@/lib/agent-visibility";
+import { buildAgentWelcomeEmailPrompt } from "@/lib/welcome-prompts";
 
 export const GET = withAuth(async (req, ctx) => {
   const ws = await withWorkspaceMember(req, ctx);
@@ -101,7 +102,7 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
         newAgent.id,
         conv.id,
         ws.workspaceId,
-        `You have just been created by your owner (${ctx.email}). Please send them a welcome email introducing yourself as "${name}". In the email: 1) Introduce yourself warmly — your name, your email address, and what you can help with. 2) Briefly introduce the ភ្នាក់ងារ platform — a personal AI agent platform where agents can handle emails, schedule tasks, and work autonomously. 3) Let them know they can chat with you directly or email you anytime. Be warm, professional, and concise.`,
+        buildAgentWelcomeEmailPrompt({ ownerEmail: ctx.email, agentName: name }),
         TASK_TYPES.EMAIL_NOTIFICATION,
       );
       const dateStr = new Date().toISOString().slice(0, 10);

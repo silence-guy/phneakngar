@@ -283,6 +283,12 @@ describe("POST /api/studios", () => {
       expect.stringContaining("lead of a new AI studio"),
       expect.any(String),
     );
+    const welcomePrompts = mockEnqueueTask.mock.calls.map((c) => String(c[3]));
+    for (const prompt of welcomePrompts) {
+      expect(prompt).toContain("natural Khmer");
+      expect(prompt).not.toMatch(/same language as your owner/i);
+      expect(prompt).not.toMatch(/owner's name or email suggests/i);
+    }
   });
 
   it("adds owner email to whitelist for each agent", async () => {

@@ -5,6 +5,7 @@ import { withWorkspaceMember } from "@/lib/middleware/workspace"
 import { writeJSON, writeError, parseBody, formatTimestamp } from "@/lib/middleware/helpers"
 import { TaskService } from "@/lib/services/task"
 import { invalidate, cacheKeys } from "@/lib/cache"
+import { buildWhitelistWelcomeEmailPrompt } from "@/lib/welcome-prompts"
 
 export const GET = withAuth(async (req, ctx) => {
   const ws = await withWorkspaceMember(req, ctx);
@@ -61,7 +62,11 @@ export const POST = withAuth(async (req, ctx) => {
         agent.id,
         conv.id,
         ws.workspaceId,
-        `Your owner (${ctx.email}) has added a new contact to your whitelist: ${email}. Please compose and send them a welcome email introducing yourself as "${agent.name}". Be warm and professional. Let them know they can reach you at your email address and briefly describe how you can help them.`,
+        buildWhitelistWelcomeEmailPrompt({
+          ownerEmail: ctx.email,
+          agentName: agent.name,
+          contactEmail: email,
+        }),
         TASK_TYPES.EMAIL_NOTIFICATION,
       );
       const dateStr = new Date().toISOString().slice(0, 10);

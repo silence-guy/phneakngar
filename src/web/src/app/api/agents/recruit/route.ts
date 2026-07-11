@@ -118,8 +118,11 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
       const cfEnv = ctx.env;
       const fromAddress = toPhneakngarAddress(callingAgent.emailHandle);
       const toAddress = toPhneakngarAddress(handle);
-      const subject = "Welcome aboard";
-      const htmlBody = `<p>Hi, I just recruited you. Your instructions are already set. Please reply confirming you're ready to work — tell me your name and email address.</p>`;
+      const subject = "សូមស្វាគមន៍ — អ្នកត្រូវបានជ្រើសរើសចូលក្រុម";
+      const htmlBody =
+        `<p>សួស្តី</p>` +
+        `<p>ខ្ញុំទើបជ្រើសរើសអ្នកចូលក្រុម។ សេចក្តីណែនាំរបស់អ្នកត្រូវបានកំណត់រួចហើយ។ ` +
+        `សូមឆ្លើយតបដើម្បីបញ្ជាក់ថាអ្នករួចរាល់ធ្វើការ — ប្រាប់ឈ្មោះ និងអាសយដ្ឋានអ៊ីមែលរបស់អ្នក។</p>`;
       const messageId = `<${nanoid()}@${process.env.PHNEAKNGAR_DOMAIN || "cieee.xyz"}>`;
       const traceId = "tr_" + nanoid();
 

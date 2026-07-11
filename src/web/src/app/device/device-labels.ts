@@ -11,6 +11,7 @@ export const DEVICE_LABELS = {
   approve: "អនុម័ត",
   deviceAuthorized: "✓ ឧបករណ៍ត្រូវបានអនុញ្ញាត",
   doneCli: "អ្នកអាចបិទផ្ទាំងនេះបាន។ CLI នឹងបន្តដោយស្វ័យប្រវត្តិ។",
+  openDashboard: "បើកផ្ទាំងគ្រប់គ្រង",
   accessDenied: "ការចូលប្រើឧបករណ៍ត្រូវបានបដិសេធ។ អ្នកអាចបិទផ្ទាំងនេះបាន។",
   errors: {
     invalidOrExpired: "លេខកូដមិនត្រឹមត្រូវ ឬផុតកំណត់",

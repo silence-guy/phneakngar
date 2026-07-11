@@ -10,6 +10,10 @@ import { agentToResponse, workspaceToResponse, agentLinkToResponse } from "@/lib
 import { randomConfig, serializeAvatarConfig } from "@/components/avatar";
 import { TaskService } from "@/lib/services/task";
 import { invalidate, cached, cacheKeys } from "@/lib/cache";
+import {
+  buildStudioWelcomeChatPrompt,
+  buildStudioWelcomeEmailPrompt,
+} from "@/lib/welcome-prompts";
 
 function slugify(name: string): string {
   return name
@@ -209,9 +213,11 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
         .map((a) => `- ${a.name} (${a.emailHandle ? toPhneakngarAddress(a.emailHandle) : a.name}), role: ${a.role}`)
         .join("\n");
 
-      const welcomePrompt = createdAgents.length === 1
-        ? `You have just been created by your owner (${ctx.email}). Please send them a welcome email introducing yourself as "${leaderAgent.name}". In the email: 1) Introduce yourself warmly — your name, your email address, and what you can help with. 2) Briefly introduce the ភ្នាក់ងារ platform. 3) Let them know they can chat with you directly or email you anytime. Be warm, professional, and concise.`
-        : `You have just been created as the lead of a new AI studio by your owner (${ctx.email}). Your teammates are:\n${teammatesList}\n\nPlease send a welcome email to your owner introducing yourself and all your teammates. Include: 1) Your name and email address. 2) Each teammate's name, email, and what they handle. 3) How the team works together — you coordinate and delegate to specialists. 4) Let them know they can email you directly to assign work. Be warm, professional, and concise.`;
+      const welcomePrompt = buildStudioWelcomeEmailPrompt({
+        ownerEmail: ctx.email,
+        leaderName: leaderAgent.name,
+        teammatesList: createdAgents.length === 1 ? undefined : teammatesList,
+      });
 
       const conv = await queries.conversation.createConversation(db, {
         workspaceId: ws.workspaceId,
@@ -241,9 +247,11 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
         .map((a) => `- ${a.name} (${a.emailHandle ? toPhneakngarAddress(a.emailHandle) : a.name}), role: ${a.role}`)
         .join("\n");
 
-      const welcomeChatPrompt = createdAgents.length === 1
-        ? `You have just been created by your owner (${ctx.email}). Please introduce yourself as "${leaderAgent.name}" in this chat. 1) Introduce yourself warmly — your name and what you can help with. 2) Briefly introduce the ភ្នាក់ងារ platform. 3) Let them know they can chat with you directly or email you anytime. Be warm, professional, and concise. Reply in the same language as your owner's name or email suggests.`
-        : `You have just been created as the lead of a new AI studio by your owner (${ctx.email}). Your teammates are:\n${teammatesList}\n\nPlease introduce yourself and all your teammates in this chat. Include: 1) Your name. 2) Each teammate's name and what they handle. 3) How the team works together — you coordinate and delegate to specialists. 4) Let them know they can chat with you directly to assign work. Be warm, professional, and concise. Reply in the same language as your owner's name or email suggests.`;
+      const welcomeChatPrompt = buildStudioWelcomeChatPrompt({
+        ownerEmail: ctx.email,
+        leaderName: leaderAgent.name,
+        teammatesList: createdAgents.length === 1 ? undefined : teammatesList,
+      });
 
       const dmConv = await queries.conversation.createConversation(db, {
         workspaceId: ws.workspaceId,

@@ -13,14 +13,18 @@ describe("template localization", () => {
     expect(getTemplates(Locale.EN)).toBe(TEMPLATES);
   });
 
-  it("returns Khmer templates by default", () => {
+  it("returns Khmer templates by default with Khmer instruction body", () => {
     const template = getTemplateById("open-source-maintainer");
 
     expect(template?.name).toBe("អ្នកថែទាំគម្រោង Open Source");
     expect(template?.description).toContain("PR");
-    expect(template?.members[0]?.instructions).toContain("Default user-facing language: Khmer (km-KH)");
+    expect(template?.members[0]?.instructions).toContain("ភាសាលំនាំសម្រាប់អ្នកប្រើ");
+    expect(template?.members[0]?.instructions).toContain("អ្នកជាអ្នកដឹកនាំ");
     expect(template?.members[0]?.instructions).toContain("CLI commands");
     expect(template?.members[0]?.instructions).toContain("JSON keys");
+    // Must not keep English preset body as the main instructions
+    expect(template?.members[0]?.instructions).not.toContain("You are the lead maintainer coordinator");
+    expect(template?.members[0]?.instructions).not.toMatch(/match that recipient/i);
   });
 
   it("preserves stable template ids, scenarios, roles, and member counts", () => {
@@ -44,12 +48,13 @@ describe("template localization", () => {
     expect(template?.members[0]?.instructions).not.toContain("km-KH");
   });
 
-  it("adds Khmer relationship policy without changing original technical guidance", () => {
+  it("uses Khmer relationship guidance for engineer role", () => {
     const template = getTemplateById("open-source-maintainer");
     const engineer = template?.members.find((member) => member.role === "engineer");
 
-    expect(engineer?.relationship).toContain("Brief and report in Khmer by default");
-    expect(engineer?.relationship).toContain("PR/issue link");
-    expect(engineer?.relationship).toContain("status values exact");
+    expect(engineer?.relationship).toContain("ជាភាសាខ្មែរ");
+    expect(engineer?.relationship).toContain("acceptance criteria");
+    expect(engineer?.relationship).toContain("files changed");
+    expect(engineer?.instructions).toContain("អ្នកជាវិស្វករអនុវត្ត");
   });
 });

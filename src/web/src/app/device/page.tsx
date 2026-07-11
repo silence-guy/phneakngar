@@ -186,11 +186,19 @@ function DeviceAuthPageInner() {
               )}
 
               {step === "done" && (
-                <div className="text-center space-y-2">
-                  <p className="text-sm font-medium text-green-600">{DEVICE_LABELS.deviceAuthorized}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {DEVICE_LABELS.doneCli}
-                  </p>
+                <div className="text-center space-y-4">
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-green-600">{DEVICE_LABELS.deviceAuthorized}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {DEVICE_LABELS.doneCli}
+                    </p>
+                  </div>
+                  <Button
+                    className="w-full"
+                    onClick={() => router.push("/workspaces")}
+                  >
+                    {DEVICE_LABELS.openDashboard}
+                  </Button>
                 </div>
               )}
 

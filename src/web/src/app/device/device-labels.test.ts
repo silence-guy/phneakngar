@@ -15,6 +15,7 @@ describe("device labels", () => {
     expect(DEVICE_LABELS.verifying).toMatch(KHMER);
     expect(DEVICE_LABELS.approving).toMatch(KHMER);
     expect(DEVICE_LABELS.deviceAuthorized).toMatch(KHMER);
+    expect(DEVICE_LABELS.openDashboard).toMatch(KHMER);
     expect(DEVICE_LABELS.accessDenied).toMatch(KHMER);
   });
 

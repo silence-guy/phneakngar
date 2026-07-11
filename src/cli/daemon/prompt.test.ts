@@ -35,7 +35,8 @@ describe("buildPrompt", () => {
     expect(parsed.language_policy.apply_to).toContain("User-facing");
 
     const policyText = JSON.stringify(parsed.language_policy);
-    expect(policyText).toContain("Use Khmer by default");
+    expect(policyText).toContain("Always write user-facing output in natural Khmer");
+    expect(policyText).toContain("even when the user writes in English");
     expect(policyText).toContain("phneakngar sync send-dm");
     expect(policyText).toContain("phneakngar issue update");
     expect(policyText).toContain("JSON keys");
