@@ -1,5 +1,6 @@
-import { sql } from "drizzle-orm";
+import { eq, and, desc, inArray, sql } from "drizzle-orm";
 import { nanoid } from "nanoid";
+import { inboxUnread, conversationReadState, conversation, message, agent } from "../schema";
 import type { Database } from "../index";
 
 const UNREAD_ELIGIBLE_TYPES = ["user_dm_message", "email_notification", "calendar_event"];
@@ -14,6 +15,13 @@ export function isUnreadEligible(
   return true;
 }
 
+/**
+ * upsertUnreadEntry - SQL required
+ *
+ * Reason: Drizzle ORM's onConflictDoUpdate() does not support conditional WHERE clauses
+ * on the excluded values (e.g., "WHERE excluded.completed_at >= inbox_unread.completed_at").
+ * This conditional upsert is necessary to only update if the new entry is more recent.
+ */
 export async function upsertUnreadEntry(
   db: Database,
   entry: {
@@ -30,6 +38,7 @@ export async function upsertUnreadEntry(
   },
 ) {
   const id = nanoid();
+  // SQL required: conditional upsert with WHERE on excluded values
   await db.run(sql`
     INSERT INTO inbox_unread (id, conversation_id, user_id, workspace_id, agent_id, task_id, task_type, task_status, task_prompt, completed_at, latest_message_id)
     VALUES (${id}, ${entry.conversationId}, ${entry.userId}, ${entry.workspaceId}, ${entry.agentId}, ${entry.taskId}, ${entry.taskType}, ${entry.taskStatus}, ${entry.taskPrompt}, ${entry.completedAt}, ${entry.latestMessageId})
@@ -45,45 +54,65 @@ export async function upsertUnreadEntry(
   `);
 }
 
+/**
+ * updateUnreadLatestMessage - ORM refactored
+ *
+ * Simple UPDATE with equality conditions - uses Drizzle ORM operators.
+ */
 export async function updateUnreadLatestMessage(
   db: Database,
   conversationId: string,
   userId: string,
   messageId: string,
 ) {
-  await db.run(sql`
-    UPDATE inbox_unread
-    SET latest_message_id = ${messageId}
-    WHERE conversation_id = ${conversationId} AND user_id = ${userId}
-  `);
+  await db
+    .update(inboxUnread)
+    .set({ latestMessageId: messageId })
+    .where(and(eq(inboxUnread.conversationId, conversationId), eq(inboxUnread.userId, userId)));
 }
 
+/**
+ * deleteUnreadEntry - ORM refactored
+ *
+ * Simple DELETE with equality conditions - uses Drizzle ORM operators.
+ */
 export async function deleteUnreadEntry(
   db: Database,
   conversationId: string,
   userId: string,
 ) {
-  await db.run(sql`
-    DELETE FROM inbox_unread
-    WHERE conversation_id = ${conversationId} AND user_id = ${userId}
-  `);
+  await db
+    .delete(inboxUnread)
+    .where(and(eq(inboxUnread.conversationId, conversationId), eq(inboxUnread.userId, userId)));
 }
 
+/**
+ * deleteUnreadByConversation - ORM refactored
+ *
+ * Simple DELETE with equality condition - uses Drizzle ORM operators.
+ */
 export async function deleteUnreadByConversation(
   db: Database,
   conversationId: string,
 ) {
-  await db.run(sql`
-    DELETE FROM inbox_unread
-    WHERE conversation_id = ${conversationId}
-  `);
+  await db
+    .delete(inboxUnread)
+    .where(eq(inboxUnread.conversationId, conversationId));
 }
 
+/**
+ * deleteUnreadByChannel - SQL required
+ *
+ * Reason: The subquery requires joining with the conversation table to filter by channel.
+ * While Drizzle supports subqueries, the correlated subquery pattern here is more
+ * idiomatic in raw SQL and avoids complex ORM subquery construction.
+ */
 export async function deleteUnreadByChannel(
   db: Database,
   workspaceId: string,
   channelName: string,
 ) {
+  // SQL required: correlated subquery for channel-based deletion
   await db.run(sql`
     DELETE FROM inbox_unread
     WHERE conversation_id IN (
@@ -93,32 +122,51 @@ export async function deleteUnreadByChannel(
   `);
 }
 
+/**
+ * deleteAllUnreadEntries - ORM refactored
+ *
+ * Simple DELETE with equality conditions - uses Drizzle ORM operators.
+ */
 export async function deleteAllUnreadEntries(
   db: Database,
   userId: string,
   workspaceId: string,
 ) {
-  await db.run(sql`
-    DELETE FROM inbox_unread
-    WHERE user_id = ${userId} AND workspace_id = ${workspaceId}
-  `);
+  await db
+    .delete(inboxUnread)
+    .where(and(eq(inboxUnread.userId, userId), eq(inboxUnread.workspaceId, workspaceId)));
 }
 
+/**
+ * findLatestAssistantMessageId - ORM refactored
+ *
+ * SELECT with conditions, ORDER BY, and LIMIT - uses Drizzle ORM operators.
+ */
 export async function findLatestAssistantMessageId(
   db: Database,
   conversationId: string,
 ): Promise<string | null> {
-  const rows = await db.all<{ id: string }>(sql`
-    SELECT id FROM message
-    WHERE conversation_id = ${conversationId}
-      AND role = 'assistant'
-      AND status = 'active'
-    ORDER BY created_at DESC
-    LIMIT 1
-  `);
+  const rows = await db
+    .select({ id: message.id })
+    .from(message)
+    .where(and(
+      eq(message.conversationId, conversationId),
+      eq(message.role, "assistant"),
+      eq(message.status, "active")
+    ))
+    .orderBy(desc(message.createdAt))
+    .limit(1);
   return rows[0]?.id ?? null;
 }
 
+/**
+ * listUnreadConversations - SQL required
+ *
+ * Reason: Complex multi-table JOIN (inbox_unread -> conversation -> message -> agent)
+ * with column aliases and dynamic IN clause for types. The dynamic type filtering
+ * with sql.join() is cleaner in raw SQL. ORM could handle this but would require
+ * multiple query builders and more complex TypeScript code.
+ */
 export async function listUnreadConversations(
   db: Database,
   userId: string,
@@ -133,6 +181,7 @@ export async function listUnreadConversations(
   const types = opts?.types?.length ? opts.types : ["user_dm_message"];
   const typePlaceholders = sql.join(types.map(t => sql`${t}`), sql`, `);
 
+  // SQL required: complex multi-table JOIN with column aliases
   const rows = await db.all<{
     id: string;
     agent_id: string;
@@ -175,6 +224,12 @@ export async function listUnreadConversations(
   return { items, hasMore };
 }
 
+/**
+ * getUnreadCount - SQL required
+ *
+ * Reason: COUNT with JOIN and dynamic IN clause. The sql.join() pattern for
+ * building dynamic type filters is cleaner in raw SQL.
+ */
 export async function getUnreadCount(
   db: Database,
   userId: string,
@@ -184,6 +239,7 @@ export async function getUnreadCount(
   const validTypes = types?.length ? types : ["user_dm_message"];
   const typePlaceholders = sql.join(validTypes.map(t => sql`${t}`), sql`, `);
 
+  // SQL required: COUNT with JOIN and dynamic type IN clause
   const rows = await db.all<{ count: number }>(sql`
     SELECT COUNT(*) AS count
     FROM inbox_unread u
@@ -196,12 +252,20 @@ export async function getUnreadCount(
   return rows[0]?.count ?? 0;
 }
 
+/**
+ * markConversationRead - SQL required
+ *
+ * Reason: UPSERT with ON CONFLICT - Drizzle's onConflictDoUpdate() doesn't support
+ * the WHERE clause variant needed here. Also, we need to set last_read_at to the
+ * current timestamp on conflict.
+ */
 export async function markConversationRead(
   db: Database,
   userId: string,
   conversationId: string,
 ) {
   const now = new Date().toISOString();
+  // SQL required: UPSERT with ON CONFLICT
   await db.run(sql`
     INSERT INTO conversation_read_state (id, conversation_id, user_id, last_read_at, created_at)
     VALUES (${nanoid()}, ${conversationId}, ${userId}, ${now}, ${now})
@@ -211,12 +275,20 @@ export async function markConversationRead(
   await deleteUnreadEntry(db, conversationId, userId);
 }
 
+/**
+ * markAllConversationsRead - SQL required
+ *
+ * Reason: INSERT with SELECT subquery - bulk insert derived from a SELECT statement.
+ * This is a SQLite-specific pattern that cannot be expressed cleanly in Drizzle ORM
+ * without multiple queries or raw SQL.
+ */
 export async function markAllConversationsRead(
   db: Database,
   userId: string,
   workspaceId: string,
 ) {
   const now = new Date().toISOString();
+  // SQL required: INSERT with SELECT subquery for bulk upsert
   await db.run(sql`
     INSERT INTO conversation_read_state (id, conversation_id, user_id, last_read_at, created_at)
     SELECT lower(hex(randomblob(11))), c.id, ${userId}, ${now}, ${now}

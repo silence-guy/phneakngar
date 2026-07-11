@@ -1,11 +1,38 @@
 import { describe, it, expect, vi } from "vitest";
 import * as inboxQueries from "../../src/db/queries/inbox";
 
-function createMockDb(rows: any[]) {
-  const chain: any = {};
-  chain.all = vi.fn(() => Promise.resolve(rows));
-  chain.run = vi.fn(() => Promise.resolve());
+// Mock chain for Drizzle ORM-style queries
+function createQueryChain(returnRows: any[] = []) {
+  // For SELECT queries, limit() returns the awaitable
+  const selectResult = Promise.resolve(returnRows);
+  
+  const chain: any = {
+    // ORM-style methods return chain for method chaining
+    update: vi.fn(() => chain),
+    delete: vi.fn(() => chain),
+    select: vi.fn(() => chain),
+    set: vi.fn(() => chain),
+    from: vi.fn(() => chain),
+    where: vi.fn(() => chain),
+    orderBy: vi.fn(() => chain),
+    // For SELECT queries: limit() is the final method, returns awaitable
+    limit: vi.fn(() => selectResult),
+    // For INSERT/UPDATE/DELETE: returning() returns awaitable
+    returning: vi.fn(() => Promise.resolve(returnRows)),
+    // Backward compatibility for SQL-style queries
+    all: vi.fn(() => Promise.resolve(returnRows)),
+    run: vi.fn(() => Promise.resolve()),
+  };
   return chain;
+}
+
+function createMockDb(rows: any[] = []) {
+  const chain = createQueryChain(rows);
+  // Make db callable like drizzle instance
+  const db: any = chain;
+  db.all = chain.all;
+  db.run = chain.run;
+  return db;
 }
 
 // ---------------------------------------------------------------------------
@@ -116,47 +143,47 @@ describe("upsertUnreadEntry", () => {
 });
 
 // ---------------------------------------------------------------------------
-// TC2: updateUnreadLatestMessage
+// TC2: updateUnreadLatestMessage (refactored to ORM)
 // ---------------------------------------------------------------------------
 
 describe("updateUnreadLatestMessage", () => {
-  it("calls db.run for UPDATE when row exists", async () => {
+  it("calls db.update for UPDATE when row exists", async () => {
     const mockDb = createMockDb([]);
     await inboxQueries.updateUnreadLatestMessage(mockDb, "c1", "u1", "m_new");
-    expect(mockDb.run).toHaveBeenCalled();
+    expect(mockDb.update).toHaveBeenCalled();
   });
 
   it("is a no-op when no row exists (UPDATE affects 0 rows)", async () => {
     const mockDb = createMockDb([]);
     await inboxQueries.updateUnreadLatestMessage(mockDb, "c_nonexistent", "u1", "m1");
-    expect(mockDb.run).toHaveBeenCalled();
+    expect(mockDb.update).toHaveBeenCalled();
   });
 });
 
 // ---------------------------------------------------------------------------
-// TC3: deleteUnreadEntry / deleteAllUnreadEntries
+// TC3: deleteUnreadEntry / deleteAllUnreadEntries (refactored to ORM)
 // ---------------------------------------------------------------------------
 
 describe("deleteUnreadEntry", () => {
-  it("calls db.run for DELETE", async () => {
+  it("calls db.delete for DELETE", async () => {
     const mockDb = createMockDb([]);
     await inboxQueries.deleteUnreadEntry(mockDb, "c1", "u1");
-    expect(mockDb.run).toHaveBeenCalled();
+    expect(mockDb.delete).toHaveBeenCalled();
   });
 
   it("second call is a no-op (DELETE of non-existent row)", async () => {
     const mockDb = createMockDb([]);
     await inboxQueries.deleteUnreadEntry(mockDb, "c1", "u1");
     await inboxQueries.deleteUnreadEntry(mockDb, "c1", "u1");
-    expect(mockDb.run).toHaveBeenCalledTimes(2);
+    expect(mockDb.delete).toHaveBeenCalledTimes(2);
   });
 });
 
 describe("deleteAllUnreadEntries", () => {
-  it("calls db.run for DELETE", async () => {
+  it("calls db.delete for DELETE", async () => {
     const mockDb = createMockDb([]);
     await inboxQueries.deleteAllUnreadEntries(mockDb, "u1", "w1");
-    expect(mockDb.run).toHaveBeenCalled();
+    expect(mockDb.delete).toHaveBeenCalled();
   });
 });
 
@@ -229,33 +256,42 @@ describe("getUnreadCount", () => {
 // ---------------------------------------------------------------------------
 
 describe("markConversationRead", () => {
-  it("calls db.run twice (read_state + delete unread)", async () => {
+  it("calls db operations for read_state upsert + delete", async () => {
     const mockDb = createMockDb([]);
     await inboxQueries.markConversationRead(mockDb, "u", "c");
-    expect(mockDb.run).toHaveBeenCalledTimes(2);
+    // 1 call for UPSERT (db.run) + 1 call for deleteUnreadEntry (db.delete)
+    expect(mockDb.run).toHaveBeenCalledTimes(1);
+    expect(mockDb.delete).toHaveBeenCalledTimes(1);
   });
 });
 
 describe("markAllConversationsRead", () => {
-  it("calls db.run twice (read_state + delete all unread)", async () => {
+  it("calls db operations for read_state upsert + delete all", async () => {
     const mockDb = createMockDb([]);
     await inboxQueries.markAllConversationsRead(mockDb, "u", "w");
-    expect(mockDb.run).toHaveBeenCalledTimes(2);
+    // 1 call for UPSERT (db.run) + 1 call for deleteAllUnreadEntries (db.delete)
+    expect(mockDb.run).toHaveBeenCalledTimes(1);
+    expect(mockDb.delete).toHaveBeenCalledTimes(1);
   });
 });
 
 // ---------------------------------------------------------------------------
-// findLatestAssistantMessageId
+// findLatestAssistantMessageId (refactored to ORM)
 // ---------------------------------------------------------------------------
 
 describe("findLatestAssistantMessageId", () => {
   it("returns message id when found", async () => {
-    const result = await inboxQueries.findLatestAssistantMessageId(createMockDb([{ id: "m_123" }]), "c1");
+    // Create a mock that returns the expected rows for ORM select
+    const rows = [{ id: "m_123" }];
+    const mockDb = createMockDb(rows);
+    const result = await inboxQueries.findLatestAssistantMessageId(mockDb, "c1");
     expect(result).toBe("m_123");
   });
 
   it("returns null when no assistant message exists", async () => {
-    const result = await inboxQueries.findLatestAssistantMessageId(createMockDb([]), "c1");
+    // Create a mock that returns empty rows
+    const mockDb = createMockDb([]);
+    const result = await inboxQueries.findLatestAssistantMessageId(mockDb, "c1");
     expect(result).toBeNull();
   });
 });
