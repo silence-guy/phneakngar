@@ -639,11 +639,13 @@ export const SendEmailRequestSchema = z.object({
   conversationId: z.string().optional(),
   traceId: z.string().optional(),
   sourceTaskId: z.string().optional(),
+  /** Client-stable key for at-most-once outbound delivery. Prefer also sending Idempotency-Key. */
+  idempotencyKey: z.string().min(1).max(128).optional(),
 });
 export type SendEmailRequest = z.infer<typeof SendEmailRequestSchema>;
 
 export const UpdateEmailStatusRequestSchema = z.object({
-  status: z.enum(["unread", "read", "archived", "sent"]),
+  status: z.enum(["unread", "read", "archived", "sent", "pending", "sending", "failed", "ambiguous"]),
 });
 export type UpdateEmailStatusRequest = z.infer<
   typeof UpdateEmailStatusRequestSchema

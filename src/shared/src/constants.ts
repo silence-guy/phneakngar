@@ -123,3 +123,20 @@ export const DEV_EMAIL_WORKER_URL = process.env.DEV_EMAIL_WORKER_URL || "http://
 export const EMAIL_NOTIFY_SECRET_HEADER = "X-Phneakngar-Email-Notify-Secret";
 export const EMAIL_DOMAIN_EXPECTATION_HEADER = "X-Phneakngar-Expected-Email-Domain";
 export const WS_SERVICE_SECRET_HEADER = "X-Phneakngar-WS-Service-Secret";
+export const IDEMPOTENCY_KEY_HEADER = "Idempotency-Key";
+
+/** Durable outbound send claim states on `emails.status` (direction=outbound). */
+export const OutboundEmailDeliveryStatus = {
+  PENDING: "pending",
+  SENDING: "sending",
+  SENT: "sent",
+  FAILED: "failed",
+  AMBIGUOUS: "ambiguous",
+} as const;
+
+export type OutboundEmailDeliveryStatusType =
+  (typeof OutboundEmailDeliveryStatus)[keyof typeof OutboundEmailDeliveryStatus];
+
+export function buildOutboundDeliveryKey(agentId: string, idempotencyKey: string): string {
+  return `outbound:${agentId}:${idempotencyKey}`;
+}

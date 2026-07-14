@@ -150,16 +150,24 @@ export default {
       references?: string
       attachmentKeys?: { key: string; filename: string; contentType: string }[]
       customAccountId?: string
+      /** Durable claim identities from web (preferred for idempotent retries). */
+      messageId?: string
+      r2Key?: string
     }
 
+    const preSendError = (error: string, status: number) =>
+      Response.json({ error, phase: "pre_send" as const }, { status })
+    const sendError = (error: string, status: number) =>
+      Response.json({ error, phase: "send" as const }, { status })
+
     if (!body.agentId || !body.workspaceId || !body.to || !body.subject) {
-      return Response.json({ error: "agentId, workspaceId, to, and subject are required" }, { status: 400 })
+      return preSendError("agentId, workspaceId, to, and subject are required", 400)
     }
 
     const db = createDb(env.DB)
     const agent = await queries.agent.getAgent(db, body.agentId, body.workspaceId)
     if (!agent) {
-      return Response.json({ error: "agent not found in workspace" }, { status: 404 })
+      return preSendError("agent not found in workspace", 404)
     }
 
     let fromAddress: string
@@ -169,7 +177,7 @@ export default {
     if (body.customAccountId) {
       customAccount = await queries.emailAccount.getEmailAccount(db, body.customAccountId, body.workspaceId)
       if (!customAccount) {
-        return Response.json({ error: "custom email account not found" }, { status: 404 })
+        return preSendError("custom email account not found", 404)
       }
       fromAddress = customAccount.displayName
         ? `${customAccount.displayName} <${customAccount.emailAddress}>`
@@ -177,7 +185,7 @@ export default {
       useCustomSmtp = true
     } else {
       if (!agent.emailHandle) {
-        return Response.json({ error: "agent has no email handle configured" }, { status: 400 })
+        return preSendError("agent has no email handle configured", 400)
       }
       fromAddress = toPhneakngarAddress(agent.emailHandle, emailDomain)
     }
@@ -185,11 +193,11 @@ export default {
     const htmlBody = body.htmlBody ?? ""
     const attachmentKeys = body.attachmentKeys ?? []
     if (attachmentKeys.length > MAX_ATTACHMENT_COUNT) {
-      return Response.json({ error: `at most ${MAX_ATTACHMENT_COUNT} attachments are allowed` }, { status: 413 })
+      return preSendError(`at most ${MAX_ATTACHMENT_COUNT} attachments are allowed`, 413)
     }
     for (const attachment of attachmentKeys) {
       if (!isEmailDraftAttachmentKeyForScope(attachment.key, body.workspaceId)) {
-        return Response.json({ error: "invalid attachment key" }, { status: 400 })
+        return preSendError("invalid attachment key", 400)
       }
     }
 
@@ -207,11 +215,11 @@ export default {
       const obj = await env.EMAIL_BUCKET.get(att.key)
       if (!obj) continue
       if (obj.size > MAX_ATTACHMENT_BYTES) {
-        return Response.json({ error: "attachment is too large" }, { status: 413 })
+        return preSendError("attachment is too large", 413)
       }
       totalAttachmentBytes += obj.size
       if (totalAttachmentBytes > MAX_TOTAL_ATTACHMENT_BYTES) {
-        return Response.json({ error: "attachments are too large in total" }, { status: 413 })
+        return preSendError("attachments are too large in total", 413)
       }
       const raw = await obj.arrayBuffer()
       attachments.push({
@@ -223,15 +231,18 @@ export default {
       })
     }
 
-    // Generate the outbound Message-ID ONCE, before sending. This same id is placed
-    // on the wire, returned to the caller (for conversation-map registration), and
-    // stored in the R2 archive — so a human's reply (In-Reply-To = this id) threads
-    // back into the originating conversation. Domain must match the sending path:
-    // PHNEAKNGAR_DOMAIN for CF Email Service, or the custom SMTP account domain.
+    // Prefer caller-provided durable identities (web claim). Otherwise generate once.
+    // Domain must match the sending path: PHNEAKNGAR_DOMAIN for CF Email Service, or
+    // the custom SMTP account domain.
     const fromDomain = useCustomSmtp && customAccount
       ? customAccount.emailAddress.split("@").pop()
       : emailDomain
-    const outMessageId = `<${nanoid()}@${fromDomain}>`
+    const outMessageId = body.messageId?.trim()
+      ? body.messageId.trim()
+      : `<${nanoid()}@${fromDomain}>`
+    const r2Key = body.r2Key?.trim()
+      ? body.r2Key.trim()
+      : `emails/${nanoid()}/raw`
 
     // Build the raw MIME once — used both as the wire message (CF path) and as the
     // R2 archive (both paths). buildMimeMessage emits From + Message-ID + threading
@@ -248,22 +259,41 @@ export default {
       attachments: attachments.map(a => ({ filename: a.filename, contentType: a.type, base64: a.base64 })),
     })
 
+    // Archive before external send so retries with the same claim overwrite the same key
+    // and wire/archive Message-ID stay identical even if the provider call fails.
+    try {
+      await env.EMAIL_BUCKET.put(r2Key, rawMime, {
+        httpMetadata: { contentType: "message/rfc822" },
+      })
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err)
+      log.error("R2 archive before send failed", { error: msg, r2Key })
+      return preSendError(`R2 archive failed: ${msg}`, 500)
+    }
+
     if (useCustomSmtp && customAccount) {
       const secret = env.ENCRYPTION_KEY
       if (!secret) {
-        return Response.json({ error: "encryption key not configured" }, { status: 500 })
+        return preSendError("encryption key not configured", 500)
       }
+      let smtpUsername: string
+      let smtpPassword: string
       try {
-        const smtpUsername = decrypt(customAccount.smtpUsername, secret)
-        const smtpPassword = decrypt(customAccount.smtpPassword, secret)
-        const smtpTls = customAccount.smtpTls as number
+        smtpUsername = decrypt(customAccount.smtpUsername, secret)
+        smtpPassword = decrypt(customAccount.smtpPassword, secret)
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err)
+        return preSendError(`SMTP credential decrypt failed: ${msg}`, 500)
+      }
+      const smtpTls = customAccount.smtpTls as number
 
-        // Control the wire Message-ID so it equals the registered/archived id.
-        // WorkerMailer respects a provided Message-ID and only auto-generates if absent.
-        const threadingHeaders: Record<string, string> = { "Message-ID": outMessageId }
-        if (body.inReplyTo) threadingHeaders["In-Reply-To"] = body.inReplyTo
-        if (body.references) threadingHeaders["References"] = body.references
+      // Control the wire Message-ID so it equals the registered/archived id.
+      // WorkerMailer respects a provided Message-ID and only auto-generates if absent.
+      const threadingHeaders: Record<string, string> = { "Message-ID": outMessageId }
+      if (body.inReplyTo) threadingHeaders["In-Reply-To"] = body.inReplyTo
+      if (body.references) threadingHeaders["References"] = body.references
 
+      try {
         await WorkerMailer.send(
           {
             host: customAccount.smtpHost,
@@ -291,21 +321,21 @@ export default {
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : String(err)
         log.error("custom SMTP send failed", { error: msg, accountId: body.customAccountId })
-        return Response.json({ error: `SMTP send failed: ${msg}` }, { status: 500 })
+        // Provider attempt started — outcome may be unknown to the client.
+        return sendError(`SMTP send failed: ${msg}`, 500)
       }
     } else {
       // Send the raw MIME so the wire Message-ID (and threading headers) are the ones
       // we control. The CF structured builder has no reliable Message-ID field — its
       // MTA assigns its own — so we use the raw-MIME overload instead.
-      await env.SEND_EMAIL.send(new EmailMessage(fromAddress, body.to, rawMime))
+      try {
+        await env.SEND_EMAIL.send(new EmailMessage(fromAddress, body.to, rawMime))
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err)
+        log.error("CF SEND_EMAIL failed", { error: msg, from: fromAddress, to: body.to })
+        return sendError(`email send failed: ${msg}`, 502)
+      }
     }
-
-    // Store the SAME MIME archive in R2 (wire id == archived id).
-    const r2Id = nanoid()
-    const r2Key = `emails/${r2Id}/raw`
-    await env.EMAIL_BUCKET.put(r2Key, rawMime, {
-      httpMetadata: { contentType: "message/rfc822" },
-    })
 
     return Response.json({ ok: true, r2Key, messageId: outMessageId })
   },

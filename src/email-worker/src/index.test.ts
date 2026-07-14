@@ -1011,8 +1011,165 @@ describe("POST /send/agent with custom SMTP", () => {
     )
 
     expect(res.status).toBe(500)
-    const json = await res.json() as { error: string }
+    const json = await res.json() as { error: string; phase?: string }
     expect(json.error).toContain("SMTP send failed")
+    expect(json.phase).toBe("send")
+  })
+
+  it("honors claimed messageId and r2Key for custom SMTP", async () => {
+    mockGetAgent.mockResolvedValue({ id: "agent-1", workspaceId: "ws-1", emailHandle: "jarvis" })
+    mockGetEmailAccount.mockResolvedValue(CUSTOM_ACCOUNT)
+    const { env, put } = customSmtpEnv()
+    const messageId = "<stable-smtp@gmail.com>"
+    const r2Key = "emails/stable-smtp/raw"
+
+    const res = await handler.fetch(
+      makeRequest({
+        agentId: "agent-1",
+        workspaceId: "ws-1",
+        to: "recipient@example.com",
+        subject: "Stable",
+        htmlBody: "<p>Hi</p>",
+        customAccountId: "aea_1",
+        messageId,
+        r2Key,
+      }),
+      env,
+    )
+
+    expect(res.status).toBe(200)
+    const json = await res.json() as { messageId: string; r2Key: string }
+    expect(json.messageId).toBe(messageId)
+    expect(json.r2Key).toBe(r2Key)
+    expect(put).toHaveBeenCalledWith(r2Key, expect.any(String), expect.any(Object))
+    const [, emailOpts] = mockWorkerMailerSend.mock.calls[0]
+    expect(emailOpts.headers["Message-ID"]).toBe(messageId)
+  })
+})
+
+describe("POST /send/agent claimed identities", () => {
+  function makeAgentSendRequest(body: Record<string, unknown>) {
+    return new Request("http://localhost/send/agent", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    })
+  }
+
+  it("reuses claimed messageId and r2Key on CF path and archives before send", async () => {
+    mockGetAgent.mockResolvedValue({ id: "agent-1", workspaceId: "ws-1", emailHandle: "jarvis" })
+    const { bucket, put } = createMockR2()
+    const { fetcher } = createMockFetcher()
+    const { sendEmail, send } = createMockSendEmail()
+    const env = {
+      DB: {} as D1Database,
+      EMAIL_BUCKET: bucket,
+      WEB_SERVICE: fetcher,
+      SEND_EMAIL: sendEmail,
+      IMAP_POLLER: {} as DurableObjectNamespace,
+      ENCRYPTION_KEY: "test-secret",
+      EMAIL_NOTIFY_SECRET: "notify-secret",
+      PHNEAKNGAR_DOMAIN: "agents.example",
+    }
+    const messageId = "<stable-cf@agents.example>"
+    const r2Key = "emails/stable-cf/raw"
+
+    const callOrder: string[] = []
+    put.mockImplementation(async (...args: unknown[]) => {
+      callOrder.push("put")
+      return undefined
+    })
+    send.mockImplementation(async (...args: unknown[]) => {
+      callOrder.push("send")
+      return { messageId: "ignored" }
+    })
+
+    const res = await handler.fetch(
+      makeAgentSendRequest({
+        agentId: "agent-1",
+        workspaceId: "ws-1",
+        to: "user@example.com",
+        subject: "Stable CF",
+        htmlBody: "<p>Hi</p>",
+        messageId,
+        r2Key,
+      }),
+      env,
+    )
+
+    expect(res.status).toBe(200)
+    const json = await res.json() as { ok: boolean; r2Key: string; messageId: string }
+    expect(json.messageId).toBe(messageId)
+    expect(json.r2Key).toBe(r2Key)
+    expect(callOrder).toEqual(["put", "send"])
+    const sendArg = send.mock.calls[0][0] as { raw: string }
+    expect(sendArg.raw).toContain("Message-ID: " + messageId)
+    expect(put.mock.calls[0][0]).toBe(r2Key)
+  })
+
+  it("marks CF provider failures as phase=send", async () => {
+    mockGetAgent.mockResolvedValue({ id: "agent-1", workspaceId: "ws-1", emailHandle: "jarvis" })
+    const { bucket } = createMockR2()
+    const { fetcher } = createMockFetcher()
+    const { sendEmail, send } = createMockSendEmail()
+    send.mockRejectedValueOnce(new Error("MTA unavailable"))
+    const env = {
+      DB: {} as D1Database,
+      EMAIL_BUCKET: bucket,
+      WEB_SERVICE: fetcher,
+      SEND_EMAIL: sendEmail,
+      IMAP_POLLER: {} as DurableObjectNamespace,
+      ENCRYPTION_KEY: "test-secret",
+      EMAIL_NOTIFY_SECRET: "notify-secret",
+      PHNEAKNGAR_DOMAIN: "agents.example",
+    }
+
+    const res = await handler.fetch(
+      makeAgentSendRequest({
+        agentId: "agent-1",
+        workspaceId: "ws-1",
+        to: "user@example.com",
+        subject: "Fail",
+        htmlBody: "<p>Hi</p>",
+      }),
+      env,
+    )
+
+    expect(res.status).toBe(502)
+    const json = await res.json() as { error: string; phase: string }
+    expect(json.phase).toBe("send")
+    expect(json.error).toContain("email send failed")
+  })
+
+  it("marks validation failures as phase=pre_send", async () => {
+    mockGetAgent.mockResolvedValue(null)
+    const { bucket } = createMockR2()
+    const { fetcher } = createMockFetcher()
+    const { sendEmail } = createMockSendEmail()
+    const env = {
+      DB: {} as D1Database,
+      EMAIL_BUCKET: bucket,
+      WEB_SERVICE: fetcher,
+      SEND_EMAIL: sendEmail,
+      IMAP_POLLER: {} as DurableObjectNamespace,
+      ENCRYPTION_KEY: "test-secret",
+      EMAIL_NOTIFY_SECRET: "notify-secret",
+      PHNEAKNGAR_DOMAIN: "agents.example",
+    }
+
+    const res = await handler.fetch(
+      makeAgentSendRequest({
+        agentId: "missing",
+        workspaceId: "ws-1",
+        to: "user@example.com",
+        subject: "Fail",
+      }),
+      env,
+    )
+
+    expect(res.status).toBe(404)
+    const json = await res.json() as { error: string; phase: string }
+    expect(json.phase).toBe("pre_send")
   })
 })
 

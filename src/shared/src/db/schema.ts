@@ -523,6 +523,8 @@ export const emails = sqliteTable(
     index("idx_emails_from_direction").on(t.fromEmail, t.direction),
     index("idx_emails_message_id").on(t.messageId),
     unique("emails_workspace_delivery_key").on(t.workspaceId, t.deliveryKey),
+    // Outbound claim recovery: workspace + agent + delivery_key lookups
+    index("idx_emails_outbound_claim").on(t.workspaceId, t.agentId, t.deliveryKey),
     index("idx_emails_created_at").on(t.createdAt),
   ]
 );

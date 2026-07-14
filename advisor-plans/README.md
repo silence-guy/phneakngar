@@ -16,9 +16,9 @@ User clarification: **`cieee.xyz` is a live-testing identity only. It must not b
 | 006 | Propagate meeting notification failures | P1 | S | 001 | DONE |
 | 007 | Scope artifact reads to conversation owners | P1 | M | 001 | DONE |
 | 008 | Make task-message ingestion idempotent | P1 | M | 001 | DONE |
-| 009 | Replace WebSocket session tokens with connection tickets | P1 | L | 001 | TODO |
-| 010 | Bound and scope chhlat polling | P2 | M | 001 | TODO |
-| 011 | Make outbound email submission idempotent | P2 | L | 004, 012 | TODO |
+| 009 | Replace WebSocket session tokens with connection tickets | P1 | L | 001 | DONE |
+| 010 | Bound and scope chhlat polling | P2 | M | 001 | DONE |
+| 011 | Make outbound email submission idempotent | P2 | L | 004, 012 | DONE |
 | 012 | Centralize environment-specific email identity | P1 | M | 001 | DONE |
 | 013 | Redeem workspace invites atomically | P2 | M | 001 | DONE |
 | 014 | Claim machine-token activation atomically | P2 | M | 002 | DONE |

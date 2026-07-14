@@ -5,6 +5,12 @@ import * as sharedMock from "@/test/shared-mock";
 const mockGetAgent = vi.fn();
 const mockGetAgentByHandle = vi.fn();
 const mockCreateEmail = vi.fn();
+const mockClaimOutbound = vi.fn();
+const mockMarkSending = vi.fn();
+const mockMarkSent = vi.fn();
+const mockMarkFailed = vi.fn();
+const mockMarkAmbiguous = vi.fn();
+const mockGetEmailById = vi.fn();
 const mockIsWhitelisted = vi.fn();
 const mockGetEmailAccountsByAgent = vi.fn();
 const mockGetEmailAccountScoped = vi.fn();
@@ -15,6 +21,31 @@ const mockWorkerSelfRefFetch = vi.fn();
 const mockCreateMapping = vi.fn();
 const mockGetConversationForAgent = vi.fn();
 const mockCreateMessage = vi.fn();
+
+function claimedEmail(overrides: Record<string, unknown> = {}) {
+  return {
+    id: "e1",
+    agentId: "a1",
+    workspaceId: "ws1",
+    fromEmail: "test-agent@agents.example",
+    toEmail: "user@example.com",
+    subject: "Hello",
+    r2Key: "emails/claim-r2/raw",
+    messageId: "<claim-msg@agents.example>",
+    status: "pending",
+    direction: "outbound",
+    ...overrides,
+  };
+}
+
+function mockFreshClaim(overrides: Record<string, unknown> = {}) {
+  const email = claimedEmail(overrides);
+  mockClaimOutbound.mockResolvedValue({ outcome: "claimed", email });
+  mockMarkSending.mockResolvedValue({ ...email, status: "sending" });
+  mockMarkSent.mockResolvedValue({ ...email, status: "sent" });
+  mockGetEmailById.mockResolvedValue({ ...email, status: "sent" });
+  return email;
+}
 
 vi.mock("@opennextjs/cloudflare", () => ({
   getCloudflareContext: vi.fn(() => ({
@@ -50,6 +81,12 @@ vi.mock("@phneakngar/shared", async (importOriginal) => {
   queries: {
     email: {
       createEmail: (...args: unknown[]) => mockCreateEmail(...args),
+      claimOutboundEmailDelivery: (...args: unknown[]) => mockClaimOutbound(...args),
+      markOutboundEmailSending: (...args: unknown[]) => mockMarkSending(...args),
+      markOutboundEmailSent: (...args: unknown[]) => mockMarkSent(...args),
+      markOutboundEmailFailed: (...args: unknown[]) => mockMarkFailed(...args),
+      markOutboundEmailAmbiguous: (...args: unknown[]) => mockMarkAmbiguous(...args),
+      getEmailById: (...args: unknown[]) => mockGetEmailById(...args),
     },
     agent: {
       getAgent: (...args: unknown[]) => mockGetAgent(...args),
@@ -120,29 +157,41 @@ function makeReq(body: Record<string, unknown>) {
 }
 
 describe("POST /api/email/send", () => {
-  beforeEach(() => vi.clearAllMocks());
-
-  it("sends email via EMAIL_WORKER and returns the created record", async () => {
-    mockGetAgent.mockResolvedValue({ id: "a1", emailHandle: "test-agent" });
-    mockEmailWorkerFetch.mockResolvedValue(
-      Response.json({ ok: true, r2Key: "emails/abc/raw" }),
-    );
-    mockCreateEmail.mockResolvedValue({
-      id: "e1", agentId: "a1", fromEmail: "test-agent@agents.example",
-      toEmail: "user@example.com", subject: "Hello",
+  beforeEach(() => {
+    vi.clearAllMocks();
+    // Echo claimed identities so route identity-contract checks pass by default.
+    mockEmailWorkerFetch.mockImplementation(async (_url: string, init?: { body?: string }) => {
+      const body = init?.body ? JSON.parse(init.body) : {};
+      return Response.json({
+        ok: true,
+        r2Key: body.r2Key ?? "emails/echo/raw",
+        messageId: body.messageId ?? "<echo@agents.example>",
+      });
     });
+  });
+
+  it("sends email via EMAIL_WORKER and returns the claimed sent record", async () => {
+    mockGetAgent.mockResolvedValue({ id: "a1", emailHandle: "test-agent" });
+    const claim = mockFreshClaim();
+    mockEmailWorkerFetch.mockResolvedValue(
+      Response.json({ ok: true, r2Key: claim.r2Key, messageId: claim.messageId }),
+    );
 
     const req = makeReq({
       agentId: "a1",
       to: "user@example.com",
       subject: "Hello",
       htmlBody: "<p>Hi there</p>",
+      idempotencyKey: "key-1",
     });
 
     const res = await POST(req, {} as any);
     expect(res.status).toBe(200);
 
-    // Verify EMAIL_WORKER was called
+    expect(mockClaimOutbound).toHaveBeenCalledOnce();
+    const claimArgs = mockClaimOutbound.mock.calls[0]![1] as any;
+    expect(claimArgs.idempotencyKey).toBe("key-1");
+
     expect(mockEmailWorkerFetch).toHaveBeenCalledOnce();
     const [url, init] = mockEmailWorkerFetch.mock.calls[0];
     expect(url).toBe("http://internal/send/agent");
@@ -152,20 +201,20 @@ describe("POST /api/email/send", () => {
     expect(fetchBody.to).toBe("user@example.com");
     expect(fetchBody.subject).toBe("Hello");
     expect(fetchBody.htmlBody).toBe("<p>Hi there</p>");
+    expect(fetchBody.messageId).toBe(claim.messageId);
+    expect(fetchBody.r2Key).toBe(claim.r2Key);
     expect(fetchBody.attachmentKeys).toBeUndefined();
 
-    // Verify DB record created with r2Key from email worker
-    expect(mockCreateEmail).toHaveBeenCalledOnce();
-    const createArgs = mockCreateEmail.mock.calls[0]![1] as any;
-    expect(createArgs.r2Key).toBe("emails/abc/raw");
+    expect(mockMarkSent).toHaveBeenCalledOnce();
+    expect(mockCreateEmail).not.toHaveBeenCalled();
   });
 
   it("sends email with attachments via EMAIL_WORKER", async () => {
     mockGetAgent.mockResolvedValue({ id: "a1", emailHandle: "test-agent" });
+    const claim = mockFreshClaim();
     mockEmailWorkerFetch.mockResolvedValue(
-      Response.json({ ok: true, r2Key: "emails/def/raw" }),
+      Response.json({ ok: true, r2Key: claim.r2Key, messageId: claim.messageId }),
     );
-    mockCreateEmail.mockResolvedValue({ id: "e1" });
 
     const attachments = [
       { key: "emails/drafts/ws1/u1/x/doc.txt", filename: "doc.txt", size: 12, contentType: "text/plain" },
@@ -177,20 +226,21 @@ describe("POST /api/email/send", () => {
       subject: "With attachment",
       htmlBody: "<p>See attached</p>",
       attachments,
+      idempotencyKey: "key-att",
     });
 
     const res = await POST(req, {} as any);
     expect(res.status).toBe(200);
 
-    // Verify attachmentKeys sent to email worker
     const fetchBody = JSON.parse(mockEmailWorkerFetch.mock.calls[0][1].body);
     expect(fetchBody.attachmentKeys).toEqual([
       { key: "emails/drafts/ws1/u1/x/doc.txt", filename: "doc.txt", contentType: "text/plain" },
     ]);
+    expect(fetchBody.messageId).toBe(claim.messageId);
+    expect(fetchBody.r2Key).toBe(claim.r2Key);
 
-    // Verify full attachments stored in DB record
-    const createArgs = mockCreateEmail.mock.calls[0]![1] as any;
-    expect(createArgs.attachments).toBe(JSON.stringify(attachments));
+    const claimArgs = mockClaimOutbound.mock.calls[0]![1] as any;
+    expect(claimArgs.attachments).toBe(JSON.stringify(attachments));
   });
 
   it("rejects attachment keys outside the authenticated user's draft scope", async () => {
@@ -212,13 +262,14 @@ describe("POST /api/email/send", () => {
     expect(body.error).toBe("invalid attachment key");
     expect(mockEmailWorkerFetch).not.toHaveBeenCalled();
     expect(mockEmailBucketGet).not.toHaveBeenCalled();
-    expect(mockCreateEmail).not.toHaveBeenCalled();
+    expect(mockClaimOutbound).not.toHaveBeenCalled();
   });
 
-  it("returns error when EMAIL_WORKER fails", async () => {
+  it("returns error when EMAIL_WORKER fails pre-send", async () => {
     mockGetAgent.mockResolvedValue({ id: "a1", emailHandle: "test-agent" });
+    mockFreshClaim();
     mockEmailWorkerFetch.mockResolvedValue(
-      new Response(JSON.stringify({ error: "agent not found" }), { status: 404 }),
+      new Response(JSON.stringify({ error: "agent not found", phase: "pre_send" }), { status: 404 }),
     );
 
     const req = makeReq({
@@ -226,10 +277,91 @@ describe("POST /api/email/send", () => {
       to: "user@example.com",
       subject: "Hello",
       htmlBody: "<p>Hi</p>",
+      idempotencyKey: "fail-pre",
     });
 
     const res = await POST(req, {} as any);
     expect(res.status).toBe(404);
+    expect(mockMarkFailed).toHaveBeenCalledOnce();
+    expect(mockMarkAmbiguous).not.toHaveBeenCalled();
+  });
+
+  it("exact retry returns sent claim without second provider send", async () => {
+    mockGetAgent.mockResolvedValue({ id: "a1", emailHandle: "test-agent" });
+    const email = claimedEmail({ status: "sent" });
+    mockClaimOutbound.mockResolvedValue({ outcome: "replay", email });
+
+    const req = makeReq({
+      agentId: "a1",
+      to: "user@example.com",
+      subject: "Hello",
+      htmlBody: "<p>Hi</p>",
+      idempotencyKey: "replay-1",
+    });
+
+    const res = await POST(req, {} as any);
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.messageId).toBe(email.messageId);
+    expect(body.r2Key).toBe(email.r2Key);
+    expect(mockEmailWorkerFetch).not.toHaveBeenCalled();
+    expect(mockMarkSending).not.toHaveBeenCalled();
+  });
+
+  it("ambiguous claim does not resend", async () => {
+    mockGetAgent.mockResolvedValue({ id: "a1", emailHandle: "test-agent" });
+    const email = claimedEmail({ status: "ambiguous" });
+    mockClaimOutbound.mockResolvedValue({ outcome: "ambiguous", email });
+
+    const res = await POST(makeReq({
+      agentId: "a1",
+      to: "user@example.com",
+      subject: "Hello",
+      htmlBody: "<p>Hi</p>",
+      idempotencyKey: "amb-1",
+    }), {} as any);
+
+    expect(res.status).toBe(409);
+    const body = await res.json();
+    expect(body.status).toBe("ambiguous");
+    expect(mockEmailWorkerFetch).not.toHaveBeenCalled();
+  });
+
+  it("marks ambiguous when worker reports post-send failure", async () => {
+    mockGetAgent.mockResolvedValue({ id: "a1", emailHandle: "test-agent" });
+    mockFreshClaim();
+    mockEmailWorkerFetch.mockResolvedValue(
+      new Response(JSON.stringify({ error: "SMTP send failed", phase: "send" }), { status: 500 }),
+    );
+
+    const res = await POST(makeReq({
+      agentId: "a1",
+      to: "user@example.com",
+      subject: "Hello",
+      htmlBody: "<p>Hi</p>",
+      idempotencyKey: "amb-send",
+    }), {} as any);
+
+    expect(res.status).toBe(502);
+    expect(mockMarkAmbiguous).toHaveBeenCalledOnce();
+    expect(mockMarkFailed).not.toHaveBeenCalled();
+  });
+
+  it("concurrent in-progress claim does not double-send", async () => {
+    mockGetAgent.mockResolvedValue({ id: "a1", emailHandle: "test-agent" });
+    const email = claimedEmail({ status: "sending" });
+    mockClaimOutbound.mockResolvedValue({ outcome: "in_progress", email });
+
+    const res = await POST(makeReq({
+      agentId: "a1",
+      to: "user@example.com",
+      subject: "Hello",
+      htmlBody: "<p>Hi</p>",
+      idempotencyKey: "concurrent",
+    }), {} as any);
+
+    expect(res.status).toBe(409);
+    expect(mockEmailWorkerFetch).not.toHaveBeenCalled();
   });
 
   it("returns 400 when agent has no emailHandle", async () => {
@@ -275,13 +407,19 @@ describe("POST /api/email/send", () => {
       mockGetAgentByHandle.mockResolvedValue({ id: "a2", emailHandle: "agent-b", workspaceId: "ws1" });
       mockIsWhitelisted.mockResolvedValue(true);
       mockWorkerSelfRefFetch.mockResolvedValue(Response.json({ ok: true }));
-      mockCreateEmail.mockResolvedValue({ id: "e1", direction: "outbound" });
+      const claim = mockFreshClaim({
+        fromEmail: "sender-agent@agents.example",
+        toEmail: "agent-b@agents.example",
+        subject: "Hello local",
+        direction: "outbound",
+      });
 
       const req = makeReq({
         agentId: "a1",
         to: "agent-b@agents.example",
         subject: "Hello local",
         htmlBody: "<p>Internal</p>",
+        idempotencyKey: "local-1",
       });
 
       const res = await POST(req, {} as any);
@@ -300,25 +438,25 @@ describe("POST /api/email/send", () => {
       expect(payload.to).toBe("agent-b@agents.example");
       expect(payload.subject).toBe("Hello local");
       expect(payload.forwarded).toBe(false);
-      expect(payload.r2Key).toMatch(/^emails\/.+\/raw$/);
+      expect(payload.r2Key).toBe(claim.r2Key);
+      expect(payload.messageId).toBe(claim.messageId);
 
-      expect(mockCreateEmail).toHaveBeenCalledOnce();
-      const createArgs = mockCreateEmail.mock.calls[0]![1] as any;
-      expect(createArgs.direction).toBe("outbound");
-      expect(createArgs.toEmail).toBe("agent-b@agents.example");
+      expect(mockClaimOutbound).toHaveBeenCalledOnce();
+      expect(mockMarkSent).toHaveBeenCalledOnce();
     });
 
     it("falls through to EMAIL_WORKER when recipient is in different workspace", async () => {
       mockGetAgent.mockResolvedValue({ id: "a1", emailHandle: "sender-agent", workspaceId: "ws1" });
       mockGetAgentByHandle.mockResolvedValue({ id: "a2", emailHandle: "agent-b", workspaceId: "ws-other" });
-      mockEmailWorkerFetch.mockResolvedValue(Response.json({ ok: true, r2Key: "emails/x/raw" }));
-      mockCreateEmail.mockResolvedValue({ id: "e1" });
+      const claim = mockFreshClaim({ fromEmail: "sender-agent@agents.example" });
+      mockEmailWorkerFetch.mockResolvedValue(Response.json({ ok: true, r2Key: claim.r2Key, messageId: claim.messageId }));
 
       const req = makeReq({
         agentId: "a1",
         to: "agent-b@agents.example",
         subject: "Cross workspace",
         htmlBody: "<p>Hi</p>",
+        idempotencyKey: "cross-ws",
       });
 
       const res = await POST(req, {} as any);
@@ -331,14 +469,15 @@ describe("POST /api/email/send", () => {
     it("falls through to EMAIL_WORKER when handle doesn't resolve to any agent", async () => {
       mockGetAgent.mockResolvedValue({ id: "a1", emailHandle: "sender-agent", workspaceId: "ws1" });
       mockGetAgentByHandle.mockResolvedValue(null);
-      mockEmailWorkerFetch.mockResolvedValue(Response.json({ ok: true, r2Key: "emails/x/raw" }));
-      mockCreateEmail.mockResolvedValue({ id: "e1" });
+      const claim = mockFreshClaim({ fromEmail: "sender-agent@agents.example" });
+      mockEmailWorkerFetch.mockResolvedValue(Response.json({ ok: true, r2Key: claim.r2Key, messageId: claim.messageId }));
 
       const req = makeReq({
         agentId: "a1",
         to: "nonexistent@agents.example",
         subject: "No agent",
         htmlBody: "<p>Hi</p>",
+        idempotencyKey: "no-agent",
       });
 
       const res = await POST(req, {} as any);
@@ -350,14 +489,15 @@ describe("POST /api/email/send", () => {
 
     it("falls through to EMAIL_WORKER when recipient is not @agents.example", async () => {
       mockGetAgent.mockResolvedValue({ id: "a1", emailHandle: "sender-agent", workspaceId: "ws1" });
-      mockEmailWorkerFetch.mockResolvedValue(Response.json({ ok: true, r2Key: "emails/x/raw" }));
-      mockCreateEmail.mockResolvedValue({ id: "e1" });
+      const claim = mockFreshClaim({ fromEmail: "sender-agent@agents.example" });
+      mockEmailWorkerFetch.mockResolvedValue(Response.json({ ok: true, r2Key: claim.r2Key, messageId: claim.messageId }));
 
       const req = makeReq({
         agentId: "a1",
         to: "user@gmail.com",
         subject: "External",
         htmlBody: "<p>Hi</p>",
+        idempotencyKey: "external",
       });
 
       const res = await POST(req, {} as any);
@@ -373,13 +513,14 @@ describe("POST /api/email/send", () => {
       mockGetAgentByHandle.mockResolvedValue({ id: "a1", emailHandle: "sender-agent", workspaceId: "ws1" });
       mockIsWhitelisted.mockResolvedValue(false);
       mockWorkerSelfRefFetch.mockResolvedValue(Response.json({ ok: true }));
-      mockCreateEmail.mockResolvedValue({ id: "e1" });
+      mockFreshClaim({ fromEmail: "sender-agent@agents.example", toEmail: "sender-agent@agents.example" });
 
       const req = makeReq({
         agentId: "a1",
         to: "sender-agent@agents.example",
         subject: "Self",
         htmlBody: "<p>Self</p>",
+        idempotencyKey: "self",
       });
 
       const res = await POST(req, {} as any);
@@ -394,7 +535,7 @@ describe("POST /api/email/send", () => {
       mockGetAgentByHandle.mockResolvedValue({ id: "a2", emailHandle: "agent-b", workspaceId: "ws1" });
       mockIsWhitelisted.mockResolvedValue(false);
       mockWorkerSelfRefFetch.mockResolvedValue(Response.json({ ok: true }));
-      mockCreateEmail.mockResolvedValue({ id: "e1" });
+      mockFreshClaim({ fromEmail: "sender-agent@agents.example", toEmail: "agent-b@agents.example" });
 
       const fileContent = new TextEncoder().encode("hello file");
       mockEmailBucketGet.mockResolvedValue({
@@ -431,7 +572,7 @@ describe("POST /api/email/send", () => {
       mockGetAgentByHandle.mockResolvedValue({ id: "a2", emailHandle: "agent-b", workspaceId: "ws1" });
       mockIsWhitelisted.mockResolvedValue(false);
       mockWorkerSelfRefFetch.mockResolvedValue(Response.json({ ok: true }));
-      mockCreateEmail.mockResolvedValue({ id: "e1" });
+      mockFreshClaim({ fromEmail: "sender-agent@agents.example", toEmail: "agent-b@agents.example" });
 
       const file1 = new TextEncoder().encode("file one");
       const file2 = new TextEncoder().encode("file two");
@@ -475,7 +616,7 @@ describe("POST /api/email/send", () => {
       mockGetAgentByHandle.mockResolvedValue({ id: "a2", emailHandle: "agent-b", workspaceId: "ws1" });
       mockIsWhitelisted.mockResolvedValue(false);
       mockWorkerSelfRefFetch.mockResolvedValue(Response.json({ ok: true }));
-      mockCreateEmail.mockResolvedValue({ id: "e1" });
+      mockFreshClaim();
 
       // Create a 100KB buffer — larger than the ~65,536 arg limit that caused the stack overflow
       const largeBuffer = new Uint8Array(100 * 1024);
@@ -510,7 +651,7 @@ describe("POST /api/email/send", () => {
       mockGetAgentByHandle.mockResolvedValue({ id: "a2", emailHandle: "agent-b", workspaceId: "ws1" });
       mockIsWhitelisted.mockResolvedValue(false);
       mockWorkerSelfRefFetch.mockResolvedValue(Response.json({ ok: true }));
-      mockCreateEmail.mockResolvedValue({ id: "e1" });
+      mockFreshClaim();
 
       const file1 = new TextEncoder().encode("file one");
       mockEmailBucketGet
@@ -545,7 +686,7 @@ describe("POST /api/email/send", () => {
       mockGetAgentByHandle.mockResolvedValue({ id: "a2", emailHandle: "agent-b", workspaceId: "ws1" });
       mockIsWhitelisted.mockResolvedValue(true);
       mockWorkerSelfRefFetch.mockResolvedValue(Response.json({ ok: true }));
-      mockCreateEmail.mockResolvedValue({ id: "e1" });
+      mockFreshClaim();
 
       const req = makeReq({
         agentId: "a1",
@@ -568,7 +709,7 @@ describe("POST /api/email/send", () => {
       mockGetAgentByHandle.mockResolvedValue({ id: "a2", emailHandle: "agent-b", workspaceId: "ws1" });
       mockIsWhitelisted.mockResolvedValue(false);
       mockWorkerSelfRefFetch.mockResolvedValue(Response.json({ ok: true }));
-      mockCreateEmail.mockResolvedValue({ id: "e1" });
+      mockFreshClaim();
 
       const req = makeReq({
         agentId: "a1",
@@ -600,7 +741,7 @@ describe("POST /api/email/send", () => {
       mockGetAgentByHandle.mockResolvedValue({ id: "a2", emailHandle: "agent-b", workspaceId: "ws1" });
       mockIsWhitelisted.mockResolvedValue(false);
       mockWorkerSelfRefFetch.mockResolvedValue(Response.json({ ok: true }));
-      mockCreateEmail.mockResolvedValue({ id: "e1" });
+      mockFreshClaim();
 
       const req = makeReq({
         agentId: "a1",
@@ -611,9 +752,9 @@ describe("POST /api/email/send", () => {
 
       await POST(req, {} as any);
 
-      const createArgs = mockCreateEmail.mock.calls[0]![1] as any;
-      expect(createArgs.messageId).toMatch(/^<.+@agents\.example>$/);
-      expect(createArgs.r2Key).toMatch(/^emails\/.+\/raw$/);
+      const claimArgs = mockClaimOutbound.mock.calls[0]![1] as any;
+      expect(claimArgs.messageId).toMatch(/^<.+@agents\.example>$/);
+      expect(claimArgs.r2Key).toMatch(/^emails\/.+\/raw$/);
     });
 
     it("skips local delivery when sender uses custom SMTP account", async () => {
@@ -621,8 +762,8 @@ describe("POST /api/email/send", () => {
       mockGetEmailAccountsByAgent.mockResolvedValue([
         { id: "acct1", agentId: "a1", emailAddress: "agent@company.com" },
       ]);
-      mockEmailWorkerFetch.mockResolvedValue(Response.json({ ok: true, r2Key: "emails/x/raw" }));
-      mockCreateEmail.mockResolvedValue({ id: "e1" });
+
+      mockFreshClaim();
 
       const req = makeReq({
         agentId: "a1",
@@ -640,11 +781,12 @@ describe("POST /api/email/send", () => {
       expect(mockEmailWorkerFetch).toHaveBeenCalledOnce();
     });
 
-    it("returns error when notify endpoint fails and does NOT create outbound record", async () => {
+    it("returns ambiguous when notify endpoint fails after local provider attempt", async () => {
       mockGetAgent.mockResolvedValue({ id: "a1", emailHandle: "sender-agent", workspaceId: "ws1" });
       mockGetAgentByHandle.mockResolvedValue({ id: "a2", emailHandle: "agent-b", workspaceId: "ws1" });
       mockIsWhitelisted.mockResolvedValue(false);
       mockEmailBucketPut.mockResolvedValue(undefined);
+      mockFreshClaim({ fromEmail: "sender-agent@agents.example", toEmail: "agent-b@agents.example" });
       mockWorkerSelfRefFetch.mockResolvedValue(
         new Response("notify validation error", { status: 400 }),
       );
@@ -654,14 +796,63 @@ describe("POST /api/email/send", () => {
         to: "agent-b@agents.example",
         subject: "Fail notify",
         htmlBody: "<p>Fail</p>",
+        idempotencyKey: "fail-notify",
       });
 
       const res = await POST(req, {} as any);
-      expect(res.status).toBe(400);
+      expect(res.status).toBe(502);
 
       const body = await res.json();
-      expect(body.error).toContain("local delivery failed");
-      expect(mockCreateEmail).not.toHaveBeenCalled();
+      expect(body.error).toContain("local delivery ambiguous");
+      expect(body.status).toBe("ambiguous");
+      expect(mockMarkAmbiguous).toHaveBeenCalledOnce();
+      expect(mockMarkSent).not.toHaveBeenCalled();
+    });
+
+    it("marks failed (retryable) when R2 archive fails before local notify", async () => {
+      mockGetAgent.mockResolvedValue({ id: "a1", emailHandle: "sender-agent", workspaceId: "ws1" });
+      mockGetAgentByHandle.mockResolvedValue({ id: "a2", emailHandle: "agent-b", workspaceId: "ws1" });
+      mockFreshClaim({ fromEmail: "sender-agent@agents.example", toEmail: "agent-b@agents.example" });
+      mockEmailBucketPut.mockRejectedValue(new Error("R2 unavailable"));
+
+      const res = await POST(makeReq({
+        agentId: "a1",
+        to: "agent-b@agents.example",
+        subject: "Fail R2",
+        htmlBody: "<p>x</p>",
+        idempotencyKey: "fail-r2",
+      }), {} as any);
+
+      expect(res.status).toBe(500);
+      const body = await res.json();
+      expect(body.status).toBe("failed");
+      expect(mockMarkFailed).toHaveBeenCalledOnce();
+      expect(mockMarkAmbiguous).not.toHaveBeenCalled();
+      expect(mockWorkerSelfRefFetch).not.toHaveBeenCalled();
+    });
+
+    it("marks ambiguous (not failed) when finalize fails after successful notify", async () => {
+      mockGetAgent.mockResolvedValue({ id: "a1", emailHandle: "sender-agent", workspaceId: "ws1", ownerId: "u1" });
+      mockGetAgentByHandle.mockResolvedValue({ id: "a2", emailHandle: "agent-b", workspaceId: "ws1" });
+      mockIsWhitelisted.mockResolvedValue(false);
+      mockEmailBucketPut.mockResolvedValue(undefined);
+      mockFreshClaim({ fromEmail: "sender-agent@agents.example", toEmail: "agent-b@agents.example" });
+      mockWorkerSelfRefFetch.mockResolvedValue(Response.json({ ok: true }));
+      mockMarkSent.mockRejectedValue(new Error("d1 write failed after notify"));
+
+      const res = await POST(makeReq({
+        agentId: "a1",
+        to: "agent-b@agents.example",
+        subject: "Post-notify fail",
+        htmlBody: "<p>x</p>",
+        idempotencyKey: "post-notify-fail",
+      }), {} as any);
+
+      expect(res.status).toBe(502);
+      const body = await res.json();
+      expect(body.status).toBe("ambiguous");
+      expect(mockMarkAmbiguous).toHaveBeenCalledOnce();
+      expect(mockMarkFailed).not.toHaveBeenCalled();
     });
   });
 
@@ -671,7 +862,7 @@ describe("POST /api/email/send", () => {
       mockGetAgentByHandle.mockResolvedValue({ id: "a2", emailHandle: "agent-b", workspaceId: "ws1" });
       mockIsWhitelisted.mockResolvedValue(false);
       mockWorkerSelfRefFetch.mockResolvedValue(Response.json({ ok: true }));
-      mockCreateEmail.mockResolvedValue({ id: "e1" });
+      mockFreshClaim();
       mockGetConversationForAgent.mockResolvedValue({ id: "conv_123" });
 
       const req = makeReq({
@@ -703,7 +894,7 @@ describe("POST /api/email/send", () => {
       mockGetAgentByHandle.mockResolvedValue({ id: "a2", emailHandle: "agent-b", workspaceId: "ws1" });
       mockIsWhitelisted.mockResolvedValue(false);
       mockWorkerSelfRefFetch.mockResolvedValue(Response.json({ ok: true }));
-      mockCreateEmail.mockResolvedValue({ id: "e1" });
+      mockFreshClaim();
 
       const req = makeReq({
         agentId: "a1",
@@ -717,12 +908,10 @@ describe("POST /api/email/send", () => {
       expect(mockCreateMapping).not.toHaveBeenCalled();
     });
 
-    it("creates mapping on remote delivery when conversationId and messageId are provided", async () => {
+    it("creates mapping on remote delivery from claimed messageId when conversationId is provided", async () => {
       mockGetAgent.mockResolvedValue({ id: "a1", emailHandle: "test-agent" });
-      mockEmailWorkerFetch.mockResolvedValue(
-        Response.json({ ok: true, r2Key: "emails/abc/raw", messageId: "<msg1@worker.com>" }),
-      );
-      mockCreateEmail.mockResolvedValue({ id: "e1" });
+
+      const claim = mockFreshClaim({ messageId: "<claim-msg@agents.example>" });
       mockGetConversationForAgent.mockResolvedValue({ id: "conv_456" });
 
       const req = makeReq({
@@ -731,6 +920,7 @@ describe("POST /api/email/send", () => {
         subject: "Remote map",
         htmlBody: "<p>Remote</p>",
         conversationId: "conv_456",
+        idempotencyKey: "remote-map",
       });
 
       const res = await POST(req, {} as any);
@@ -739,7 +929,7 @@ describe("POST /api/email/send", () => {
       const args = mockCreateMapping.mock.calls[0]![1] as any;
       expect(args.workspaceId).toBe("ws1");
       expect(args.conversationId).toBe("conv_456");
-      expect(args.key).toBe("email:a1:<msg1@worker.com>");
+      expect(args.key).toBe(`email:a1:${claim.messageId}`);
     });
 
     it("does NOT create mapping when conversationId does not belong to workspace", async () => {
@@ -747,7 +937,7 @@ describe("POST /api/email/send", () => {
       mockGetAgentByHandle.mockResolvedValue({ id: "a2", emailHandle: "agent-b", workspaceId: "ws1" });
       mockIsWhitelisted.mockResolvedValue(false);
       mockWorkerSelfRefFetch.mockResolvedValue(Response.json({ ok: true }));
-      mockCreateEmail.mockResolvedValue({ id: "e1" });
+      mockFreshClaim();
       mockGetConversationForAgent.mockResolvedValue(null);
 
       const req = makeReq({
@@ -773,7 +963,7 @@ describe("POST /api/email/send", () => {
       mockGetAgentByHandle.mockResolvedValue({ id: "a2", emailHandle: "agent-b", workspaceId: "ws1" });
       mockIsWhitelisted.mockResolvedValue(false);
       mockWorkerSelfRefFetch.mockResolvedValue(Response.json({ ok: true, conversationId: "conv_b" }));
-      mockCreateEmail.mockResolvedValue({ id: "e1" });
+      mockFreshClaim();
       mockGetConversationForAgent.mockResolvedValue(null);
 
       const res = await POST(makeReq({
@@ -809,7 +999,7 @@ describe("POST /api/email/send", () => {
       mockGetAgentByHandle.mockResolvedValue({ id: "a2", emailHandle: "agent-b", workspaceId: "ws1" });
       mockIsWhitelisted.mockResolvedValue(false);
       mockWorkerSelfRefFetch.mockResolvedValue(Response.json({ ok: true, conversationId: "conv_b" }));
-      mockCreateEmail.mockResolvedValue({ id: "e1" });
+      mockFreshClaim();
       mockGetConversationForAgent.mockResolvedValue(null);
 
       const res = await POST(makeReq({
@@ -835,20 +1025,17 @@ describe("POST /api/email/send", () => {
       expect(payload.senderAgentId).toBeUndefined();
     });
 
-    it("does NOT create mapping on remote delivery when messageId is undefined", async () => {
+    it("does NOT create mapping on remote delivery when conversationId is omitted", async () => {
       mockGetAgent.mockResolvedValue({ id: "a1", emailHandle: "test-agent" });
-      mockEmailWorkerFetch.mockResolvedValue(
-        Response.json({ ok: true, r2Key: "emails/abc/raw" }),
-      );
-      mockCreateEmail.mockResolvedValue({ id: "e1" });
-      mockGetConversationForAgent.mockResolvedValue({ id: "conv_456" });
+
+      mockFreshClaim();
 
       const req = makeReq({
         agentId: "a1",
         to: "user@example.com",
-        subject: "Remote no msgid",
-        htmlBody: "<p>No id</p>",
-        conversationId: "conv_456",
+        subject: "Remote no conv",
+        htmlBody: "<p>No conv</p>",
+        idempotencyKey: "remote-no-conv",
       });
 
       const res = await POST(req, {} as any);
@@ -863,7 +1050,7 @@ describe("POST /api/email/send", () => {
       mockGetAgentByHandle.mockResolvedValue({ id: "a2", emailHandle: "agent-b", workspaceId: "ws1" });
       mockIsWhitelisted.mockResolvedValue(true);
       mockWorkerSelfRefFetch.mockResolvedValue(Response.json({ ok: true, conversationId: "conv_b" }));
-      mockCreateEmail.mockResolvedValue({ id: "e1" });
+      mockFreshClaim();
       mockGetConversationForAgent.mockResolvedValue({ id: "conv_a" });
       mockCreateMessage.mockResolvedValue({ id: "m1", conversationId: "conv_a", role: "event", content: "", taskId: null, createdAt: "2026-01-01" });
 
@@ -888,7 +1075,7 @@ describe("POST /api/email/send", () => {
       mockGetAgentByHandle.mockResolvedValue({ id: "a2", emailHandle: "agent-b", workspaceId: "ws1" });
       mockIsWhitelisted.mockResolvedValue(true);
       mockWorkerSelfRefFetch.mockResolvedValue(Response.json({ ok: true, conversationId: "conv_b" }));
-      mockCreateEmail.mockResolvedValue({ id: "e1" });
+      mockFreshClaim();
       mockGetConversationForAgent.mockResolvedValue({ id: "conv_a" });
       mockCreateMessage.mockResolvedValue({ id: "m1", conversationId: "conv_a", role: "event", content: "", taskId: null, createdAt: "2026-01-01" });
 
@@ -911,10 +1098,8 @@ describe("POST /api/email/send", () => {
 
     it("does NOT include cross-link metadata for external emails (TC3)", async () => {
       mockGetAgent.mockResolvedValue({ id: "a1", emailHandle: "test-agent", ownerId: "u1" });
-      mockEmailWorkerFetch.mockResolvedValue(
-        Response.json({ ok: true, r2Key: "emails/abc/raw", messageId: "<msg1@ext.com>" }),
-      );
-      mockCreateEmail.mockResolvedValue({ id: "e1" });
+
+      mockFreshClaim();
       mockGetConversationForAgent.mockResolvedValue({ id: "conv_a" });
       mockCreateMessage.mockResolvedValue({ id: "m1", conversationId: "conv_a", role: "event", content: "", taskId: null, createdAt: "2026-01-01" });
 
@@ -939,7 +1124,7 @@ describe("POST /api/email/send", () => {
       mockGetAgentByHandle.mockResolvedValue({ id: "a1", emailHandle: "sender-agent", workspaceId: "ws1" });
       mockIsWhitelisted.mockResolvedValue(false);
       mockWorkerSelfRefFetch.mockResolvedValue(Response.json({ ok: true }));
-      mockCreateEmail.mockResolvedValue({ id: "e1" });
+      mockFreshClaim();
       mockGetConversationForAgent.mockResolvedValue({ id: "conv_a" });
 
       const req = makeReq({
@@ -962,6 +1147,7 @@ describe("POST /api/email/send", () => {
       mockGetAgentByHandle.mockResolvedValue({ id: "a2", emailHandle: "agent-b", workspaceId: "ws1" });
       mockIsWhitelisted.mockResolvedValue(false);
       mockEmailBucketPut.mockResolvedValue(undefined);
+      mockFreshClaim({ fromEmail: "sender-agent@agents.example", toEmail: "agent-b@agents.example" });
       mockWorkerSelfRefFetch.mockResolvedValue(
         new Response("notify failed", { status: 500 }),
       );
@@ -973,11 +1159,14 @@ describe("POST /api/email/send", () => {
         subject: "Fail notify map",
         htmlBody: "<p>Fail</p>",
         conversationId: "conv_a",
+        idempotencyKey: "fail-notify-map",
       });
 
       const res = await POST(req, {} as any);
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(502);
       expect(mockCreateMapping).not.toHaveBeenCalled();
+      expect(mockMarkAmbiguous).toHaveBeenCalledOnce();
+      expect(mockMarkSent).not.toHaveBeenCalled();
     });
   });
 });

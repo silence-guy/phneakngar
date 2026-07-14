@@ -39,7 +39,13 @@ describe("WebSocket connection tickets", () => {
   it("rejects tampered tickets", async () => {
     const { ticket } = await issueWsConnectionTicket("secret", { userId: "u1" });
     const [payload, signature] = ticket.split(".");
-    const tampered = `${payload}.${signature === "a" ? "b" : "a"}${signature?.slice(1) ?? ""}`;
+    expect(signature && signature.length > 0).toBe(true);
+    // Always mutate the first signature character (previous `signature === "a"` only
+    // matched the entire string, so signatures starting with "a" were left unchanged).
+    const first = signature![0]!;
+    const flipped = first === "A" ? "B" : "A";
+    const tampered = `${payload}.${flipped}${signature!.slice(1)}`;
+    expect(tampered).not.toBe(ticket);
 
     const result = await validateWsConnectionTicket("secret", tampered);
 

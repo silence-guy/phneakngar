@@ -96,8 +96,11 @@ export {
   EMAIL_NOTIFY_SECRET_HEADER,
   EMAIL_DOMAIN_EXPECTATION_HEADER,
   WS_SERVICE_SECRET_HEADER,
+  IDEMPOTENCY_KEY_HEADER,
   MeetingStatus,
   TERMINAL_MEETING_STATUSES,
+  OutboundEmailDeliveryStatus,
+  buildOutboundDeliveryKey,
 } from "./constants";
 
 export type {
@@ -108,6 +111,7 @@ export type {
   IssueStatusType,
   MessageRoleType,
   MeetingStatusType,
+  OutboundEmailDeliveryStatusType,
 } from "./constants";
 
 // Locale

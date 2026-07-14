@@ -76,6 +76,7 @@ The production-readiness audit validated the complete chain from an empty local 
 - `0045_email_delivery_idempotency.sql`, which adds a nullable workspace-scoped unique delivery key for retry-safe inbound email.
 - `0046_machine_token_hash.sql`, which adds the token digest index used for lazy migration away from active plaintext machine tokens.
 - `0048_task_message_idempotency.sql`, which removes only byte-identical duplicate task-message deliveries and then installs unique `(task_id, seq)` enforcement.
+- `0049_outbound_email_claim_index.sql`, which indexes `(workspace_id, agent_id, delivery_key)` for outbound send claim recovery. Outbound claims reuse the 0045 unique delivery key with statuses `pending|sending|sent|failed|ambiguous`.
 
 Before applying `0048_task_message_idempotency.sql` to production, run this read-only preflight against the target D1 database and review any rows it returns:
 
