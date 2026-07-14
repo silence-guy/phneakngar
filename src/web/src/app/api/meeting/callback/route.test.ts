@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { NextRequest } from "next/server";
 import * as sharedMock from "@/test/shared-mock";
 
@@ -15,7 +15,7 @@ vi.mock("@opennextjs/cloudflare", () => ({
       DB: {},
       EMAIL_BUCKET: { put: (...args: unknown[]) => mockBucketPut(...args) },
       WORKER_SELF_REFERENCE: { fetch: (...args: unknown[]) => mockSelfRefFetch(...args) },
-      EMAIL_NOTIFY_SECRET: "notify-secret",
+      EMAIL_NOTIFY_SECRET: "notify-secret", PHNEAKNGAR_DOMAIN: "agents.example",
     },
   })),
 }));
@@ -44,7 +44,7 @@ vi.mock("@phneakngar/shared", async (importOriginal) => {
 vi.mock("@/lib/middleware/auth", () => ({
   withAuth: vi.fn((handler: any) => async (req: any, ctx?: any) => {
     const params = ctx?.params instanceof Promise ? await ctx.params : ctx?.params;
-    return handler(req, { env: { DB: {}, EMAIL_BUCKET: { put: (...args: unknown[]) => mockBucketPut(...args) }, WORKER_SELF_REFERENCE: { fetch: (...args: unknown[]) => mockSelfRefFetch(...args) }, EMAIL_NOTIFY_SECRET: "notify-secret" }, userId: "u1", email: "u@t.com", workspaceId: "w1", params });
+    return handler(req, { env: { DB: {}, EMAIL_BUCKET: { put: (...args: unknown[]) => mockBucketPut(...args) }, WORKER_SELF_REFERENCE: { fetch: (...args: unknown[]) => mockSelfRefFetch(...args) }, EMAIL_NOTIFY_SECRET: "notify-secret", PHNEAKNGAR_DOMAIN: "agents.example" }, userId: "u1", email: "u@t.com", workspaceId: "w1", params });
   }),
 }));
 
@@ -69,6 +69,10 @@ function postReq(body: unknown) {
 }
 
 describe("POST /api/meeting/callback", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
     mockBucketPut.mockResolvedValue(undefined);
@@ -113,8 +117,8 @@ describe("POST /api/meeting/callback", () => {
     expect(mimeCall).toBeDefined();
     expect(mimeCall![0]).toBe("emails/meetings/w1/ms1/summary/raw");
     const mimeContent = mimeCall![1] as string;
-    expect(mimeContent).toContain("From: no-reply@phneakngar.ai");
-    expect(mimeContent).toContain("To: jarvis@phneakngar.ai");
+    expect(mimeContent).toContain("From: no-reply@agents.example");
+    expect(mimeContent).toContain("To: jarvis@agents.example");
     expect(mimeContent).toContain("Subject: Meeting completed: Weekly");
     expect(mimeContent).toContain("MIME-Version: 1.0");
     expect(mimeContent).toContain("Content-Type: text/plain; charset=utf-8");
@@ -131,11 +135,98 @@ describe("POST /api/meeting/callback", () => {
     );
     expect(notifyBody.r2Key).toBe("emails/meetings/w1/ms1/summary/raw");
     expect(notifyBody.deliveryKey).toBe("meeting:w1:ms1");
-    expect(notifyBody.from).toBe("no-reply@phneakngar.ai");
-    expect(notifyBody.to).toBe("jarvis@phneakngar.ai");
+    expect(notifyBody.from).toBe("no-reply@agents.example");
+    expect(notifyBody.to).toBe("jarvis@agents.example");
     expect(notifyBody.subject).toContain("Meeting completed: Weekly");
     expect(notifyBody.isWhitelisted).toBe(true);
-    expect(notifyBody.messageId).toBe("<meeting-ms1@phneakngar.ai>");
+    expect(notifyBody.messageId).toBe("<meeting-ms1@agents.example>");
+  });
+
+  it.each([400, 401, 500])("returns retryable failure when service-binding notify returns HTTP %s", async (status) => {
+    mockGetMeetingSession.mockResolvedValue({
+      id: "ms1", agentId: "a1", workspaceId: "w1", title: "Weekly",
+    });
+    mockUpdateMeetingSession.mockResolvedValue({ id: "ms1", status: "completed" });
+    mockGetAgent.mockResolvedValue({ id: "a1", emailHandle: "jarvis", workspaceId: "w1" });
+    mockGetEmailByMessageId.mockResolvedValue(null);
+    mockSelfRefFetch.mockResolvedValue(new Response("failed", { status }));
+    const fallbackFetch = vi.fn();
+    vi.stubGlobal("fetch", fallbackFetch);
+
+    const res = await POST(postReq({
+      meetingId: "ms1",
+      workspaceId: "w1",
+      status: "completed",
+      transcript: "transcript",
+    }));
+
+    expect(res.status).toBe(502);
+    expect(await res.json()).toEqual({ error: "email notify failed" });
+    expect(fallbackFetch).not.toHaveBeenCalled();
+  });
+
+  it("uses local fallback only after service-binding transport failure", async () => {
+    mockGetMeetingSession.mockResolvedValue({
+      id: "ms1", agentId: "a1", workspaceId: "w1", title: "Weekly",
+    });
+    mockUpdateMeetingSession.mockResolvedValue({ id: "ms1", status: "completed" });
+    mockGetAgent.mockResolvedValue({ id: "a1", emailHandle: "jarvis", workspaceId: "w1" });
+    mockGetEmailByMessageId.mockResolvedValue(null);
+    mockSelfRefFetch.mockRejectedValue(new TypeError("service unavailable"));
+    const fallbackFetch = vi.fn().mockResolvedValue(new Response(JSON.stringify({ ok: true })));
+    vi.stubGlobal("fetch", fallbackFetch);
+
+    const res = await POST(postReq({
+      meetingId: "ms1",
+      workspaceId: "w1",
+      status: "completed",
+      transcript: "transcript",
+    }));
+
+    expect(res.status).toBe(200);
+    expect(fallbackFetch).toHaveBeenCalledOnce();
+  });
+
+  it("returns retryable failure when local fallback returns non-2xx", async () => {
+    mockGetMeetingSession.mockResolvedValue({
+      id: "ms1", agentId: "a1", workspaceId: "w1", title: "Weekly",
+    });
+    mockUpdateMeetingSession.mockResolvedValue({ id: "ms1", status: "completed" });
+    mockGetAgent.mockResolvedValue({ id: "a1", emailHandle: "jarvis", workspaceId: "w1" });
+    mockGetEmailByMessageId.mockResolvedValue(null);
+    mockSelfRefFetch.mockRejectedValue(new TypeError("service unavailable"));
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("failed", { status: 503 })));
+
+    const res = await POST(postReq({
+      meetingId: "ms1",
+      workspaceId: "w1",
+      status: "completed",
+      transcript: "transcript",
+    }));
+
+    expect(res.status).toBe(502);
+    expect(await res.json()).toEqual({ error: "email notify failed" });
+  });
+
+  it("returns retryable failure when both notify transports throw", async () => {
+    mockGetMeetingSession.mockResolvedValue({
+      id: "ms1", agentId: "a1", workspaceId: "w1", title: "Weekly",
+    });
+    mockUpdateMeetingSession.mockResolvedValue({ id: "ms1", status: "completed" });
+    mockGetAgent.mockResolvedValue({ id: "a1", emailHandle: "jarvis", workspaceId: "w1" });
+    mockGetEmailByMessageId.mockResolvedValue(null);
+    mockSelfRefFetch.mockRejectedValue(new TypeError("service unavailable"));
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("fallback unavailable")));
+
+    const res = await POST(postReq({
+      meetingId: "ms1",
+      workspaceId: "w1",
+      status: "completed",
+      transcript: "transcript",
+    }));
+
+    expect(res.status).toBe(502);
+    expect(await res.json()).toEqual({ error: "email notify failed" });
   });
 
   it("skips email notify when agent has no emailHandle", async () => {

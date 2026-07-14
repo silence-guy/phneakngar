@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { queries, PollRequestSchema, semverGte, type FileRequestItem, type PollMeetingItem } from "@phneakngar/shared";
+import { queries, PollRequestSchema, semverGte, MAX_POLL_FILE_REQUESTS, MAX_POLL_MEETINGS, type FileRequestItem, type PollMeetingItem } from "@phneakngar/shared";
 import { getDb, withD1Retry } from "@/lib/db"
 import { withAuth } from "@/lib/middleware/auth";
 import { withChhlatMachine } from "@/lib/middleware/chhlat";
@@ -8,8 +8,10 @@ import { TaskService } from "@/lib/services/task";
 import { TaskPayloadBuilder } from "@/lib/services/task-payload-builder";
 import { broadcastToUser } from "@/lib/broadcast";
 import { log } from "@/lib/logger";
+import { resolveServerEmailDomain } from "@/lib/email-domain";
 
 export const POST = withAuth(async (req: NextRequest, ctx) => {
+  const emailDomain = resolveServerEmailDomain(ctx.env);
   const db = getDb(ctx.env.DB);
   const { cached, cacheKeys, throttled } = await import("@/lib/cache");
 
@@ -44,14 +46,14 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
   }
 
   // 2. Task claiming
-  const taskService = new TaskService(db);
+  const taskService = new TaskService(db, emailDomain);
   const claimed = await withD1Retry(() => taskService.claimTasksForRuntimes(
     runtimeIds,
     body.max_tasks,
     ctx.workspaceId!,
   ));
 
-  const payloadBuilder = new TaskPayloadBuilder(db);
+  const payloadBuilder = new TaskPayloadBuilder(db, emailDomain);
   const tasks = await payloadBuilder.buildFullPayloads(claimed, ctx.workspaceId!);
 
   // Patch user_email (only available in poll context via auth)
@@ -76,7 +78,7 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
 
     const [machineResult, meetingResult] = await Promise.allSettled([
       queries.machine.getMachineByChhlat(db, body.chhlat_id, ctx.workspaceId),
-      queries.meetingSession.listScheduledMeetings(db, ctx.workspaceId, windowEnd.toISOString()),
+      queries.meetingSession.listScheduledMeetings(db, ctx.workspaceId, windowEnd.toISOString(), MAX_POLL_MEETINGS),
     ]);
 
     if (machineResult.status === "fulfilled") {
@@ -126,7 +128,12 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
           );
           if (claimedRows.length > 0) {
             const scheduledMap = new Map(scheduled.map((m) => [m.id, m]));
-            meetings = claimedRows.map((row) => {
+            const scheduledOrder = new Map(scheduled.map((m, index) => [m.id, index]));
+            const orderedClaimedRows = [...claimedRows].sort((left, right) =>
+              (scheduledOrder.get(left.id) ?? Number.MAX_SAFE_INTEGER)
+              - (scheduledOrder.get(right.id) ?? Number.MAX_SAFE_INTEGER)
+            );
+            meetings = orderedClaimedRows.map((row) => {
               const sched = scheduledMap.get(row.id);
               return {
                 id: row.id,
@@ -157,15 +164,14 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
     const kv = ctx.env.CACHE_KV ?? null;
     const frFlag = kv ? await kv.get(cacheKeys.hasPendingFileRequest(ctx.workspaceId!)) : null;
     if (frFlag !== "0") {
-      const pending = await queries.workspaceFileRequest.getPendingByWorkspace(db, ctx.workspaceId);
-      if (pending.length > 0) {
-        fileRequests = pending.map((r) => ({
+      const claimedRequests = await queries.workspaceFileRequest.claimPendingByWorkspace(db, ctx.workspaceId, MAX_POLL_FILE_REQUESTS);
+      if (claimedRequests.length > 0) {
+        fileRequests = claimedRequests.map((r) => ({
           id: r.id,
           agent_id: r.agentId,
           request_type: r.requestType as "tree" | "read",
           path: r.path,
         }));
-        await queries.workspaceFileRequest.markDispatched(db, pending.map((r) => r.id));
       } else if (kv) {
         kv.put(cacheKeys.hasPendingFileRequest(ctx.workspaceId!), "0", { expirationTtl: 60 }).catch(() => {});
       }

@@ -1,11 +1,9 @@
-/**
- * Default email domain when env is unset.
- * This Cloudflare account uses cieee.xyz (Email Routing + Sending onboarded).
- * Override with PHNEAKNGAR_DOMAIN Worker var / process env when needed.
- */
-export const DEFAULT_EMAIL_DOMAIN = "cieee.xyz";
+export const NON_PRODUCTION_EMAIL_DOMAIN = "phneakngar.invalid";
+
+export type EmailDomainEnvironment = "development" | "test" | "production";
 
 const HANDLE_RE = /^[a-zA-Z0-9-]{3,}$/;
+const DOMAIN_LABEL_RE = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
 
 const RESERVED_HANDLES = new Set([
   "no-reply",
@@ -26,23 +24,64 @@ const RESERVED_HANDLES = new Set([
   "phneakngar",
 ]);
 
-/**
- * Resolve the email domain for this process/environment.
- * On Cloudflare Workers, pass `env.PHNEAKNGAR_DOMAIN` — do not rely on process.env alone.
- */
-export function getEmailDomain(domain?: string | null): string {
-  const raw =
-    (domain && domain.trim()) ||
-    process.env.PHNEAKNGAR_DOMAIN?.trim() ||
-    DEFAULT_EMAIL_DOMAIN;
-  return raw.replace(/^@/, "").toLowerCase();
+function invalidDomain(): never {
+  throw new Error("Invalid email domain configuration");
 }
 
-export function emailDomainSuffix(domain?: string | null): string {
+/** Normalize and validate an explicitly configured DNS email domain. */
+export function getEmailDomain(domain: string): string {
+  if (typeof domain !== "string") return invalidDomain();
+
+  const normalized = domain.trim().replace(/^@/, "").toLowerCase();
+  if (
+    !normalized ||
+    normalized.length > 253 ||
+    normalized.includes("@") ||
+    normalized.includes(":") ||
+    normalized.includes("/") ||
+    normalized.endsWith(".")
+  ) {
+    return invalidDomain();
+  }
+
+  const labels = normalized.split(".");
+  if (labels.length < 2 || labels.some((label) => !DOMAIN_LABEL_RE.test(label))) {
+    return invalidDomain();
+  }
+
+  return normalized;
+}
+
+/**
+ * Resolve an environment-provided domain. Only development and tests may use
+ * the visibly non-production fallback. Production always requires an explicit,
+ * valid, non-fallback domain.
+ */
+export function resolveEmailDomain(
+  domain: string | null | undefined,
+  environment: EmailDomainEnvironment,
+): string {
+  if (environment !== "development" && environment !== "test" && environment !== "production") {
+    return invalidDomain();
+  }
+
+  if (!domain?.trim()) {
+    if (environment === "production") return invalidDomain();
+    return NON_PRODUCTION_EMAIL_DOMAIN;
+  }
+
+  const normalized = getEmailDomain(domain);
+  if (environment === "production" && normalized === NON_PRODUCTION_EMAIL_DOMAIN) {
+    return invalidDomain();
+  }
+  return normalized;
+}
+
+export function emailDomainSuffix(domain: string): string {
   return `@${getEmailDomain(domain)}`;
 }
 
-export function parseEmailHandle(address: string, domain?: string | null): string {
+export function parseEmailHandle(address: string, domain: string): string {
   const suffix = emailDomainSuffix(domain);
   const lower = address.toLowerCase();
   // Accept optional display-name wrappers: Name <handle@domain>
@@ -52,7 +91,7 @@ export function parseEmailHandle(address: string, domain?: string | null): strin
   return addr.slice(0, -suffix.length);
 }
 
-export function toPhneakngarAddress(handle: string, domain?: string | null): string {
+export function toPhneakngarAddress(handle: string, domain: string): string {
   return `${handle}${emailDomainSuffix(domain)}`;
 }
 

@@ -73,11 +73,11 @@ export function broadcastToUser(userId: string, message: WsMessage): Promise<voi
 }
 
 
-export function broadcastToChhlat(chhlatId: string, message: ChhlatPushMessage): Promise<{ sent: number }> {
+export function broadcastToChhlat(workspaceId: string, chhlatId: string, message: ChhlatPushMessage): Promise<{ sent: number }> {
   const promise = doSend(
-    `/broadcast/chhlat/${chhlatId}`,
+    `/broadcast/chhlat/${encodeURIComponent(workspaceId)}/${encodeURIComponent(chhlatId)}`,
     JSON.stringify(message),
-    { chhlatId, type: message.type },
+    { workspaceId, chhlatId, type: message.type },
   )
   try {
     // CF worker may terminate before the fetch completes if the response is sent early;

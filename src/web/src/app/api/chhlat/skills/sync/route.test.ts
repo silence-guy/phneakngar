@@ -34,7 +34,15 @@ let injectWorkspaceId: string | undefined = "w1";
 vi.mock("@/lib/middleware/auth", () => ({
   withAuth: vi.fn((handler: any) => async (req: any, ctx?: any) => {
     const params = ctx?.params instanceof Promise ? await ctx.params : ctx?.params;
-    return handler(req, { env: {}, userId: "u1", email: "u@t.com", authType: injectWorkspaceId ? "machine" as const : "user" as const, workspaceId: injectWorkspaceId, params });
+    return handler(req, {
+      env: {},
+      userId: "u1",
+      email: "u@t.com",
+      authType: injectWorkspaceId ? "machine" as const : "user" as const,
+      workspaceId: injectWorkspaceId,
+      machineTokenHostname: injectWorkspaceId ? "d1" : undefined,
+      params,
+    });
   }),
 }));
 

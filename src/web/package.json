@@ -5,6 +5,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "tsx scripts/validate-blog-assets.ts && next build",
+    "build:worker": "tsx scripts/validate-blog-assets.ts && opennextjs-cloudflare build",
+    "verify:email-domain-build": "node scripts/assert-email-domain-build.mjs",
     "validate:blog": "tsx scripts/validate-blog-assets.ts",
     "start": "next start",
     "lint": "eslint src/",

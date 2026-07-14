@@ -25,7 +25,7 @@ describe("GET /onboard.md", () => {
     expect(response.headers.get("Content-Type")).toBe("text/markdown; charset=utf-8");
   });
 
-  it("uses npx @phneakngar/cli and phneakngar.ai URLs in production mode", async () => {
+  it("uses npx @phneakngar/cli and the configured production origin", async () => {
     delete process.env.NEXT_PUBLIC_APP_URL;
     delete process.env.PHNEAKNGAR_SERVER_URL;
     delete process.env.PHNEAKNGAR_CMD_PREFIX;
@@ -33,8 +33,8 @@ describe("GET /onboard.md", () => {
     const response = await GET();
     const body = await response.text();
     expect(body).toContain("npx @phneakngar/cli login");
-    expect(body).toContain("https://phneakngar.ai/templates");
-    expect(body).toContain("https://phneakngar.ai/w/{slug}/home");
+    expect(body).toContain("https://phneakngar-web.thatsilenceguy.workers.dev/templates");
+    expect(body).toContain("https://phneakngar-web.thatsilenceguy.workers.dev/w/{slug}/home");
   });
 
   it("uses localhost in development mode when no URLs are set", async () => {

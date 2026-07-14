@@ -126,7 +126,7 @@ describe("POST /api/chhlat/register", () => {
     ],
   };
 
-  const authCtx = { env: {}, userId: "u1", email: "u@t.com", authType: "machine" as const, workspaceId: "w1" };
+  const authCtx = { env: {}, userId: "u1", email: "u@t.com", authType: "machine" as const, workspaceId: "w1", machineTokenHostname: "d1" };
 
   it("upserts machine + runtimes and returns 200", async () => {
     const POST = await loadRoute(authCtx);

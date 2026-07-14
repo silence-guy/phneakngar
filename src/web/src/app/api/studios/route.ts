@@ -14,6 +14,7 @@ import {
   buildStudioWelcomeChatPrompt,
   buildStudioWelcomeEmailPrompt,
 } from "@/lib/welcome-prompts";
+import { resolveServerEmailDomain } from "@/lib/email-domain";
 
 function slugify(name: string): string {
   return name
@@ -51,6 +52,7 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
   const ws = await withWorkspaceMember(req, ctx);
   if (ws instanceof Response) return ws;
 
+  const emailDomain = resolveServerEmailDomain(ctx.env);
   const db = getDb(ctx.env.DB);
 
   const [body, valErr] = await parseBody(req, CreateStudioRequestSchema);
@@ -210,7 +212,7 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
     try {
       const teammatesList = createdAgents
         .filter((a) => a.id !== leaderAgent.id)
-        .map((a) => `- ${a.name} (${a.emailHandle ? toPhneakngarAddress(a.emailHandle) : a.name}), role: ${a.role}`)
+        .map((a) => `- ${a.name} (${a.emailHandle ? toPhneakngarAddress(a.emailHandle, emailDomain) : a.name}), role: ${a.role}`)
         .join("\n");
 
       const welcomePrompt = buildStudioWelcomeEmailPrompt({
@@ -226,7 +228,7 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
         title: `Welcome: ${ctx.email}`.slice(0, 50),
         type: TASK_TYPES.EMAIL_NOTIFICATION,
       });
-      const taskService = new TaskService(db);
+      const taskService = new TaskService(db, emailDomain);
       await taskService.enqueueTask(
         leaderAgent.id,
         conv.id,
@@ -244,7 +246,7 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
     try {
       const teammatesList = createdAgents
         .filter((a) => a.id !== leaderAgent.id)
-        .map((a) => `- ${a.name} (${a.emailHandle ? toPhneakngarAddress(a.emailHandle) : a.name}), role: ${a.role}`)
+        .map((a) => `- ${a.name} (${a.emailHandle ? toPhneakngarAddress(a.emailHandle, emailDomain) : a.name}), role: ${a.role}`)
         .join("\n");
 
       const welcomeChatPrompt = buildStudioWelcomeChatPrompt({
@@ -260,7 +262,7 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
         title: `Welcome`,
         type: TASK_TYPES.USER_DM_MESSAGE,
       });
-      const taskService2 = new TaskService(db);
+      const taskService2 = new TaskService(db, emailDomain);
       await taskService2.enqueueTask(
         leaderAgent.id,
         dmConv.id,
@@ -283,7 +285,10 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
     studio: { name: finalWorkspace?.name || body.name || "" },
     workspace: workspaceToResponse(finalWorkspace || updatedWorkspace),
     leader_agent_id: leaderAgent.id,
-    agents: studioAgents.map(agentToResponse),
+    agents: studioAgents.map((agent) => ({
+      ...agentToResponse(agent),
+      email: agent.emailHandle ? toPhneakngarAddress(agent.emailHandle, emailDomain) : null,
+    })),
     links: createdLinks.map(agentLinkToResponse),
   }, 201);
 });

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { IssueStatus, TASK_TYPES } from "./constants";
+import { IssueStatus, MAX_POLL_TASKS, TASK_TYPES } from "./constants";
 import { isPublicNetworkHost } from "./network-host";
 import { withChhlatIdFields } from "./chhlat-id";
 
@@ -87,6 +87,7 @@ export const TaskAgentDataApiSchema = z.object({
   name: z.string(),
   runtime_config: z.record(z.string(), z.unknown()).default({}),
   email_handle: z.string().nullable().optional(),
+  email_address: z.string().nullable().optional(),
   email_addresses: z.array(z.string()).default([]),
   user_email: z.string().nullable().optional(),
   user_name: z.string().nullable().optional(),
@@ -160,7 +161,7 @@ export type SweepRequest = HeartbeatRequest;
 // ---------------------------------------------------------------------------
 
 export const PollRequestSchema = withChhlatIdFields({
-  max_tasks: z.number().int().min(1).default(1),
+  max_tasks: z.number().int().min(1).default(1).transform((value) => Math.min(value, MAX_POLL_TASKS)),
   cli_version: z.string().optional(),
 });
 export type PollRequest = z.infer<typeof PollRequestSchema>;

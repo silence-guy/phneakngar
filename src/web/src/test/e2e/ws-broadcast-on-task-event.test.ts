@@ -65,7 +65,7 @@ describe("regression: WS broadcast HTTP endpoint on task events", () => {
   it("chhlat broadcast endpoint delivers to chhlat WS clients", async () => {
     if (!wsAvailable) return
 
-    const res = await fetch(`${WS_DO_HTTP}/broadcast/chhlat/${seed.chhlatId}`, {
+    const res = await fetch(`${WS_DO_HTTP}/broadcast/chhlat/${seed.workspaceId}/${seed.chhlatId}`, {
       method: "POST",
       body: JSON.stringify({ type: "chhlat.tasks", tasks: [] }),
     })

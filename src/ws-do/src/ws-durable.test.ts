@@ -68,6 +68,7 @@ const mockGetLatestTokenForUser = vi.fn()
 const mockGetRuntimeIdsByChhlat = vi.fn()
 const mockGetMachineByChhlat = vi.fn()
 const mockCreateDb = vi.fn().mockReturnValue({})
+const mockValidateWsConnectionTicket = vi.fn()
 
 vi.mock("@phneakngar/shared", () => {
   const noopLogger = {
@@ -80,6 +81,10 @@ vi.mock("@phneakngar/shared", () => {
   return {
     createDb: (d1: unknown) => mockCreateDb(d1),
     createLogger: () => noopLogger,
+    validateWsConnectionTicket: (...a: any[]) => mockValidateWsConnectionTicket(...a),
+    WS_CHHLAT_TICKET_AUDIENCE: "chhlat-ws",
+    WS_TICKET_TTL_SECONDS: 60,
+    WS_USER_TICKET_AUDIENCE: "user-ws",
     queries: {
       session: { getValidSession: (db: unknown, token: string) => mockGetValidSession(db, token) },
       machineToken: {
@@ -99,7 +104,7 @@ const mockStubFetch = vi.fn().mockResolvedValue(new (globalThis.Response as any)
 const mockCheckAliveFetch = vi.fn().mockResolvedValue(new (globalThis.Response as any)(JSON.stringify({ alive: true })))
 
 function createDO() {
-  const { ctx, getWebSockets } = createMockCtx()
+  const { ctx, getWebSockets, storage, storageMap } = createMockCtx()
   const stubGet = vi.fn().mockReturnValue({ fetch: mockStubFetch })
   const env = {
     DB: {} as D1Database,
@@ -107,21 +112,26 @@ function createDO() {
       idFromName: vi.fn().mockReturnValue("mock-do-id"),
       get: stubGet,
     } as unknown as DurableObjectNamespace,
+    WS_SERVICE_SECRET: "ws-service-secret",
   }
   const durable = new WebSocketDurableObject(ctx, env)
-  return { durable, ctx, getWebSockets, env, stubGet }
+  return { durable, ctx, getWebSockets, env, stubGet, storage, storageMap }
 }
 
 describe("WebSocketDurableObject", () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockGetMachineByChhlat.mockResolvedValue({ ownerId: "u1" })
+    mockValidateWsConnectionTicket.mockResolvedValue({
+      ok: true,
+      payload: { aud: "user-ws", sub: "u1", nonce: "nonce-1", exp: Math.floor(Date.now() / 1000) + 60 },
+    })
   })
 
   describe("fetch — WebSocket upgrade", () => {
     it("returns 101 for valid WebSocket upgrade", async () => {
       const { durable } = createDO()
-      const req = new Request("http://internal/?userId=u1", {
+      const req = new Request("http://internal/?userId=u1&ticket=t1", {
         headers: { Upgrade: "websocket" },
       })
 
@@ -140,9 +150,9 @@ describe("WebSocketDurableObject", () => {
       expect(res.status).toBe(426)
     })
 
-    it("attaches an unauthenticated user ConnectionState on upgrade", async () => {
+    it("attaches an authenticated user ConnectionState on upgrade", async () => {
       const { durable, ctx } = createDO()
-      const req = new Request("http://internal/?userId=u1", {
+      const req = new Request("http://internal/?userId=u1&ticket=t1", {
         headers: { Upgrade: "websocket" },
       })
 
@@ -150,20 +160,67 @@ describe("WebSocketDurableObject", () => {
 
       const acceptCall = (ctx.acceptWebSocket as ReturnType<typeof vi.fn>).mock.calls[0]
       const serverWs = acceptCall[0]
-      expect(serverWs.deserializeAttachment()).toEqual({ type: "user", userId: "u1", authenticated: false })
+      expect(serverWs.deserializeAttachment()).toEqual({ type: "user", userId: "u1", authenticated: true })
+      expect(serverWs.send).toHaveBeenCalledWith(JSON.stringify({ type: "auth.ok" }))
     })
 
-    it("attaches an unauthenticated chhlat ConnectionState on chhlat upgrade", async () => {
+    it("rejects user upgrade when the ticket does not match routed user", async () => {
       const { durable, ctx } = createDO()
-      const req = new Request("http://internal/?chhlatId=my-chhlat", {
+      mockValidateWsConnectionTicket.mockResolvedValue({ ok: false, reason: "wrong-subject" })
+      const req = new Request("http://internal/?userId=u1&ticket=t1", {
         headers: { Upgrade: "websocket" },
       })
 
-      await durable.fetch(req)
+      const res = await durable.fetch(req)
 
+      expect(res.status).toBe(401)
+      expect(ctx.acceptWebSocket).not.toHaveBeenCalled()
+    })
+
+    it("attaches an authenticated chhlat ConnectionState on chhlat ticket upgrade", async () => {
+      const { durable, ctx } = createDO()
+      mockValidateWsConnectionTicket.mockResolvedValue({
+        ok: true,
+        payload: { aud: "chhlat-ws", sub: "u1", workspaceId: "w1", chhlatId: "my-chhlat", nonce: "nonce-chhlat-1", exp: Math.floor(Date.now() / 1000) + 60 },
+      })
+      const req = new Request("http://internal/?chhlatId=my-chhlat&workspaceId=w1&userId=u1&ticket=t1", {
+        headers: { Upgrade: "websocket" },
+      })
+
+      const res = await durable.fetch(req)
+
+      expect(res.status).toBe(101)
       const acceptCall = (ctx.acceptWebSocket as ReturnType<typeof vi.fn>).mock.calls[0]
       const serverWs = acceptCall[0]
-      expect(serverWs.deserializeAttachment()).toEqual({ type: "chhlat", chhlatId: "my-chhlat", userId: "", authenticated: false })
+      expect(serverWs.deserializeAttachment()).toEqual({ type: "chhlat", workspaceId: "w1", chhlatId: "my-chhlat", userId: "u1", authenticated: true })
+      expect(serverWs.send).toHaveBeenCalledWith(JSON.stringify({ type: "auth.ok" }))
+    })
+
+    it("rejects a replayed ticket nonce before accepting a second socket", async () => {
+      const { durable, ctx } = createDO()
+      const req = new Request("http://internal/?userId=u1&ticket=t1", {
+        headers: { Upgrade: "websocket" },
+      })
+
+      expect((await durable.fetch(req)).status).toBe(101)
+      expect((await durable.fetch(req)).status).toBe(401)
+      expect(ctx.acceptWebSocket).toHaveBeenCalledTimes(1)
+    })
+
+    it("cleans expired consumed ticket nonces with a bounded durable storage listing", async () => {
+      const { durable, storage, storageMap } = createDO()
+      storageMap.set("ws-ticket-nonce:user-ws:expired-1", { expiresAt: Math.floor(Date.now() / 1000) - 10 })
+      storageMap.set("ws-ticket-nonce:user-ws:active-1", { expiresAt: Math.floor(Date.now() / 1000) + 100 })
+      const req = new Request("http://internal/?userId=u1&ticket=t1", {
+        headers: { Upgrade: "websocket" },
+      })
+
+      const res = await durable.fetch(req)
+
+      expect(res.status).toBe(101)
+      expect(storage.list).toHaveBeenCalledWith({ prefix: "ws-ticket-nonce:", limit: 64 })
+      expect(storageMap.has("ws-ticket-nonce:user-ws:expired-1")).toBe(false)
+      expect(storageMap.has("ws-ticket-nonce:user-ws:active-1")).toBe(true)
     })
   })
 
@@ -354,7 +411,7 @@ describe("WebSocketDurableObject", () => {
       })
 
       const ws = createMockWebSocket()
-      ws.serializeAttachment({ type: "chhlat", chhlatId: "my-chhlat", userId: "", authenticated: false })
+      ws.serializeAttachment({ type: "chhlat", workspaceId: "sp_ws1", chhlatId: "my-chhlat", userId: "", authenticated: false })
 
       await durable.webSocketMessage(
         ws as any,
@@ -368,12 +425,12 @@ describe("WebSocketDurableObject", () => {
     it("authenticates chhlat with active token and runtimes", async () => {
       const { durable } = createDO()
       mockGetMachineTokenByToken.mockResolvedValue({
-        id: "mt_1", userId: "u1", status: "active", workspaceId: "sp_ws1",
+        id: "mt_1", userId: "u1", status: "active", workspaceId: "sp_ws1", hostname: "my-chhlat",
       })
       mockGetRuntimeIdsByChhlat.mockResolvedValue(["rt_1"])
 
       const ws = createMockWebSocket()
-      ws.serializeAttachment({ type: "chhlat", chhlatId: "my-chhlat", userId: "", authenticated: false })
+      ws.serializeAttachment({ type: "chhlat", workspaceId: "sp_ws1", chhlatId: "my-chhlat", userId: "", authenticated: false })
 
       await durable.webSocketMessage(
         ws as any,
@@ -383,18 +440,18 @@ describe("WebSocketDurableObject", () => {
       expect(ws.send).toHaveBeenCalledWith(JSON.stringify({ type: "auth.ok" }))
       expect(mockGetMachineByChhlat).toHaveBeenCalledWith({}, "my-chhlat", "sp_ws1")
       expect(mockGetRuntimeIdsByChhlat).toHaveBeenCalledWith({}, "my-chhlat", "sp_ws1")
-      expect(ws.deserializeAttachment()).toEqual({ type: "chhlat", chhlatId: "my-chhlat", userId: "u1", authenticated: true })
+      expect(ws.deserializeAttachment()).toEqual({ type: "chhlat", workspaceId: "sp_ws1", chhlatId: "my-chhlat", userId: "u1", authenticated: true })
     })
 
     it("rejects chhlat auth when the routed chhlat id does not match the auth message", async () => {
       const { durable } = createDO()
       mockGetMachineTokenByToken.mockResolvedValue({
-        id: "mt_1", userId: "u1", status: "active", workspaceId: "sp_ws1",
+        id: "mt_1", userId: "u1", status: "active", workspaceId: "sp_ws1", hostname: "my-chhlat",
       })
       mockGetRuntimeIdsByChhlat.mockResolvedValue(["rt_1"])
 
       const ws = createMockWebSocket()
-      ws.serializeAttachment({ type: "chhlat", chhlatId: "other-chhlat", userId: "", authenticated: false })
+      ws.serializeAttachment({ type: "chhlat", workspaceId: "sp_ws1", chhlatId: "other-chhlat", userId: "", authenticated: false })
 
       await durable.webSocketMessage(
         ws as any,
@@ -410,12 +467,12 @@ describe("WebSocketDurableObject", () => {
     it("rejects chhlat token when the machine record belongs to another user", async () => {
       const { durable } = createDO()
       mockGetMachineTokenByToken.mockResolvedValue({
-        id: "mt_1", userId: "u1", status: "active", workspaceId: "sp_ws1",
+        id: "mt_1", userId: "u1", status: "active", workspaceId: "sp_ws1", hostname: "my-chhlat",
       })
       mockGetMachineByChhlat.mockResolvedValue({ ownerId: "other-user" })
 
       const ws = createMockWebSocket()
-      ws.serializeAttachment({ type: "chhlat", chhlatId: "my-chhlat", userId: "", authenticated: false })
+      ws.serializeAttachment({ type: "chhlat", workspaceId: "sp_ws1", chhlatId: "my-chhlat", userId: "", authenticated: false })
 
       await durable.webSocketMessage(
         ws as any,
@@ -428,15 +485,56 @@ describe("WebSocketDurableObject", () => {
       expect(ws.send).not.toHaveBeenCalled()
     })
 
+    it("rejects same-user/workspace token when its recorded hostname differs from the routed chhlat", async () => {
+      const { durable } = createDO()
+      mockGetMachineTokenByToken.mockResolvedValue({
+        id: "mt_1", userId: "u1", status: "active", workspaceId: "sp_ws1", hostname: "other-chhlat",
+      })
+      mockGetMachineByChhlat.mockResolvedValue({ ownerId: "u1" })
+
+      const ws = createMockWebSocket()
+      ws.serializeAttachment({ type: "chhlat", workspaceId: "sp_ws1", chhlatId: "my-chhlat", userId: "", authenticated: false })
+
+      await durable.webSocketMessage(
+        ws as any,
+        JSON.stringify({ type: "auth", machineToken: "al_active123", chhlatId: "my-chhlat" }),
+      )
+
+      expect(ws.close).toHaveBeenCalledWith(1008, "Unauthorized")
+      expect(mockGetMachineByChhlat).not.toHaveBeenCalled()
+      expect(mockGetRuntimeIdsByChhlat).not.toHaveBeenCalled()
+    })
+
+    it("rejects same-hostname token from another workspace before broadcasting status", async () => {
+      const { durable } = createDO()
+      mockGetMachineTokenByToken.mockResolvedValue({
+        id: "mt_1", userId: "u1", status: "active", workspaceId: "workspace-other", hostname: "shared-host",
+      })
+      mockGetMachineByChhlat.mockResolvedValue({ ownerId: "u1" })
+
+      const ws = createMockWebSocket()
+      ws.serializeAttachment({ type: "chhlat", workspaceId: "workspace-routed", chhlatId: "shared-host", userId: "", authenticated: false })
+
+      await durable.webSocketMessage(
+        ws as any,
+        JSON.stringify({ type: "auth", machineToken: "al_active123", workspaceId: "workspace-routed", chhlatId: "shared-host" }),
+      )
+
+      expect(ws.close).toHaveBeenCalledWith(1008, "Unauthorized")
+      expect(mockGetMachineByChhlat).not.toHaveBeenCalled()
+      expect(mockGetRuntimeIdsByChhlat).not.toHaveBeenCalled()
+      expect(mockStubFetch).not.toHaveBeenCalled()
+    })
+
     it("rejects chhlat with active token but no runtimes", async () => {
       const { durable } = createDO()
       mockGetMachineTokenByToken.mockResolvedValue({
-        id: "mt_1", userId: "u1", status: "active", workspaceId: "sp_ws1",
+        id: "mt_1", userId: "u1", status: "active", workspaceId: "sp_ws1", hostname: "my-chhlat",
       })
       mockGetRuntimeIdsByChhlat.mockResolvedValue([])
 
       const ws = createMockWebSocket()
-      ws.serializeAttachment({ type: "chhlat", chhlatId: "my-chhlat", userId: "", authenticated: false })
+      ws.serializeAttachment({ type: "chhlat", workspaceId: "sp_ws1", chhlatId: "my-chhlat", userId: "", authenticated: false })
 
       await durable.webSocketMessage(
         ws as any,
@@ -452,7 +550,7 @@ describe("WebSocketDurableObject", () => {
       mockGetMachineTokenByToken.mockResolvedValue(null)
 
       const ws = createMockWebSocket()
-      ws.serializeAttachment({ type: "chhlat", chhlatId: "my-chhlat", userId: "", authenticated: false })
+      ws.serializeAttachment({ type: "chhlat", workspaceId: "sp_ws1", chhlatId: "my-chhlat", userId: "", authenticated: false })
 
       await durable.webSocketMessage(
         ws as any,
@@ -466,7 +564,7 @@ describe("WebSocketDurableObject", () => {
       const { durable } = createDO()
 
       const ws = createMockWebSocket()
-      ws.serializeAttachment({ type: "chhlat", chhlatId: "my-chhlat", userId: "", authenticated: false })
+      ws.serializeAttachment({ type: "chhlat", workspaceId: "sp_ws1", chhlatId: "my-chhlat", userId: "", authenticated: false })
 
       await durable.webSocketMessage(
         ws as any,
@@ -489,11 +587,12 @@ describe("WebSocketDurableObject", () => {
       const ws = createMockWebSocket()
       ws.serializeAttachment({ type: "user", userId: "user-42", authenticated: true })
 
-      await durable.webSocketMessage(ws as any, JSON.stringify({ type: "check_chhlat_status" }))
+      await durable.webSocketMessage(ws as any, JSON.stringify({ type: "check_chhlat_status", workspaceId: "workspace-1" }))
 
-      expect((env.WS_DO as any).idFromName).toHaveBeenCalledWith("chhlat:MyMachine.local")
+      expect(mockGetLatestTokenForUser).toHaveBeenCalledWith({}, "user-42", "workspace-1")
+      expect((env.WS_DO as any).idFromName).toHaveBeenCalledWith("chhlat:workspace-1:MyMachine.local")
       expect(ws.send).toHaveBeenCalledWith(
-        JSON.stringify({ type: "runtime.status", status: "online", chhlatId: "MyMachine.local" }),
+        JSON.stringify({ type: "runtime.status", workspaceId: "workspace-1", status: "online", chhlatId: "MyMachine.local" }),
       )
     })
 
@@ -507,7 +606,7 @@ describe("WebSocketDurableObject", () => {
       const ws = createMockWebSocket()
       ws.serializeAttachment({ type: "user", userId: "user-42", authenticated: true })
 
-      await durable.webSocketMessage(ws as any, JSON.stringify({ type: "check_chhlat_status" }))
+      await durable.webSocketMessage(ws as any, JSON.stringify({ type: "check_chhlat_status", workspaceId: "workspace-1" }))
 
       expect(ws.send).not.toHaveBeenCalled()
     })
@@ -519,7 +618,7 @@ describe("WebSocketDurableObject", () => {
       const ws = createMockWebSocket()
       ws.serializeAttachment({ type: "user", userId: "user-42", authenticated: true })
 
-      await durable.webSocketMessage(ws as any, JSON.stringify({ type: "check_chhlat_status" }))
+      await durable.webSocketMessage(ws as any, JSON.stringify({ type: "check_chhlat_status", workspaceId: "workspace-1" }))
 
       expect(ws.send).not.toHaveBeenCalled()
     })

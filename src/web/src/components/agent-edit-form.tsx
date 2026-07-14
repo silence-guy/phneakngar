@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Agent } from "@phneakngar/shared";
 import type { AgentRuntime as Runtime } from "@phneakngar/shared";
-import { toPhneakngarAddress } from "@phneakngar/shared";
+import { toPublicPhneakngarAddress } from "@/lib/email-domain";
 import { cn } from "@/lib/utils";
 import { LockIcon } from "lucide-react";
 import { CustomEmailForm } from "@/components/custom-email-form";
@@ -409,7 +409,7 @@ export function AgentEditForm({
                         </span>
                         <span className="text-xs text-muted-foreground">
                           {agent.email_handle
-                            ? toPhneakngarAddress(agent.email_handle)
+                            ? toPublicPhneakngarAddress(agent.email_handle)
                             : agentFormLabel("notConfigured")}
                         </span>
                       </div>

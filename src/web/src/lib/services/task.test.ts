@@ -79,7 +79,7 @@ vi.mock("@/lib/api/responses", () => ({
   taskToResponse: (t: unknown) => t,
 }));
 
-import { TaskService } from "./task";
+import { TaskAlreadyTerminalError, TaskService } from "./task";
 import { queries } from "@phneakngar/shared";
 import { broadcastToUser, broadcastToChhlat } from "@/lib/broadcast";
 import { log } from "@/lib/logger";
@@ -275,6 +275,68 @@ describe("TaskService", () => {
       expect(result).toHaveLength(2);
     });
 
+    it("clamps requested task count and asks for one DB-scoped candidate per remaining slot", async () => {
+      taskQ.listPendingTasksByRuntimes.mockResolvedValue([
+        { agentId: "a1", workspaceId: "w1", id: "t1", runtimeId: "r1" },
+      ]);
+      agentQ.getAgentsByIds.mockResolvedValue([{ id: "a1", maxConcurrentTasks: 5 }]);
+      taskQ.countRunningTasks.mockResolvedValue(0);
+      taskQ.claimTask.mockResolvedValue({ id: "t1", agentId: "a1", runtimeId: "r1" });
+
+      await service.claimTasksForRuntimes(["r1"], 999, "w1");
+
+      expect(taskQ.claimKillTasks).toHaveBeenCalledWith({}, ["r1"], "w1", 8);
+      expect(taskQ.listPendingTasksByRuntimes).toHaveBeenCalledWith({}, ["r1"], "w1", 8);
+    });
+
+    it("can claim another eligible agent even when one agent has a larger backlog", async () => {
+      taskQ.listPendingTasksByRuntimes.mockResolvedValue([
+        { agentId: "busy", workspaceId: "w1" },
+        { agentId: "other", workspaceId: "w1" },
+      ]);
+      agentQ.getAgentsByIds.mockResolvedValue([
+        { id: "busy", maxConcurrentTasks: 5 },
+        { id: "other", maxConcurrentTasks: 5 },
+      ]);
+      taskQ.countRunningTasks.mockResolvedValue(0);
+      taskQ.claimTask.mockImplementation(async (_db, agentId: string) => ({
+        id: `task-${agentId}`,
+        agentId,
+        runtimeId: "r1",
+      }));
+
+      const result = await service.claimTasksForRuntimes(["r1"], 2, "w1");
+
+      expect(taskQ.listPendingTasksByRuntimes).toHaveBeenCalledWith({}, ["r1"], "w1", 2);
+      expect(taskQ.claimTask).toHaveBeenCalledWith({}, "busy", "w1");
+      expect(taskQ.claimTask).toHaveBeenCalledWith({}, "other", "w1");
+      expect(result.map((task) => task.agentId)).toEqual(["busy", "other"]);
+    });
+
+    it("does not let a raced ineligible higher-ranked candidate hide a later eligible agent", async () => {
+      taskQ.listPendingTasksByRuntimes.mockResolvedValue([
+        { agentId: "dispatched-only-raced", workspaceId: "w1" },
+        { agentId: "eligible", workspaceId: "w1" },
+      ]);
+      agentQ.getAgentsByIds.mockResolvedValue([
+        { id: "dispatched-only-raced", maxConcurrentTasks: 1 },
+        { id: "eligible", maxConcurrentTasks: 1 },
+      ]);
+      taskQ.countRunningTasks.mockResolvedValue(0);
+      taskQ.claimTask.mockImplementation(async (_db, agentId: string) => (
+        agentId === "eligible"
+          ? { id: "task-eligible", agentId, runtimeId: "r1" }
+          : null
+      ));
+
+      const result = await service.claimTasksForRuntimes(["r1"], 2, "w1");
+
+      expect(taskQ.listPendingTasksByRuntimes).toHaveBeenCalledWith({}, ["r1"], "w1", 2);
+      expect(taskQ.claimTask).toHaveBeenCalledWith({}, "dispatched-only-raced", "w1");
+      expect(taskQ.claimTask).toHaveBeenCalledWith({}, "eligible", "w1");
+      expect(result).toEqual([{ id: "task-eligible", agentId: "eligible", runtimeId: "r1" }]);
+    });
+
     it("skips claimed task whose runtimeId is not in the provided set", async () => {
       taskQ.listPendingTasksByRuntimes.mockResolvedValue([
         { agentId: "a1", workspaceId: "w1", id: "t1", runtimeId: "r1" },
@@ -435,6 +497,28 @@ describe("TaskService", () => {
       );
     });
 
+    it("throws a typed terminal error after a lost completion transition race", async () => {
+      taskQ.completeTask.mockResolvedValue(null);
+      taskQ.getTask.mockResolvedValue({ id: "t1", status: "completed" });
+
+      const promise = service.completeTask("t1", "w1", JSON.stringify({}), "sess-1");
+
+      await expect(promise).rejects.toBeInstanceOf(TaskAlreadyTerminalError);
+      await expect(promise).rejects.toMatchObject({
+        code: "TASK_ALREADY_TERMINAL",
+        taskStatus: "completed",
+      });
+    });
+
+    it("does not classify a non-terminal transition mismatch as already terminal", async () => {
+      taskQ.completeTask.mockResolvedValue(null);
+      taskQ.getTask.mockResolvedValue({ id: "t1", status: "queued" });
+
+      await expect(
+        service.completeTask("t1", "w1", JSON.stringify({}), "sess-1"),
+      ).rejects.toThrow("cannot complete task in 'queued' status");
+    });
+
     it("moves issue tasks to done when they complete", async () => {
       const task = {
         id: "t1",
@@ -459,6 +543,27 @@ describe("TaskService", () => {
   // ── failTask ─────────────────────────────────────────────────────
 
   describe("failTask", () => {
+    it("throws a typed terminal error after a lost failure transition race", async () => {
+      taskQ.failTask.mockResolvedValue(null);
+      taskQ.getTask.mockResolvedValue({ id: "t1", status: "failed" });
+
+      const promise = service.failTask("t1", "w1", "boom");
+
+      await expect(promise).rejects.toBeInstanceOf(TaskAlreadyTerminalError);
+      await expect(promise).rejects.toMatchObject({
+        code: "TASK_ALREADY_TERMINAL",
+        taskStatus: "failed",
+      });
+    });
+
+    it("does not classify a non-terminal failure mismatch as already terminal", async () => {
+      taskQ.failTask.mockResolvedValue(null);
+      taskQ.getTask.mockResolvedValue({ id: "t1", status: "queued" });
+
+      await expect(service.failTask("t1", "w1", "boom"))
+        .rejects.toThrow("cannot fail task in 'queued' status");
+    });
+
     it("creates a runtime-attributed error message with the resolved provider (TC6)", async () => {
       const task = {
         id: "t1",
@@ -764,7 +869,7 @@ describe("TaskService", () => {
 
       await service.cancelActiveTask("c1", "w1");
 
-      expect(broadcastToChhlat).toHaveBeenCalledWith("d1", {
+      expect(broadcastToChhlat).toHaveBeenCalledWith("w1", "d1", {
         type: "chhlat.kill",
         workspaceId: "w1",
         agentId: "a1",
@@ -783,7 +888,7 @@ describe("TaskService", () => {
 
       await service.cancelActiveTask("c1", "w1");
 
-      expect(broadcastToChhlat).toHaveBeenCalledWith("d1", expect.objectContaining({
+      expect(broadcastToChhlat).toHaveBeenCalledWith("w1", "d1", expect.objectContaining({
         type: "chhlat.kill",
         targetTaskId: "t1",
       }));
@@ -826,7 +931,7 @@ describe("TaskService", () => {
 
       await service.cancelActiveTask("c1", "w1");
 
-      expect(broadcastToChhlat).toHaveBeenCalledWith("d1", expect.objectContaining({
+      expect(broadcastToChhlat).toHaveBeenCalledWith("w1", "d1", expect.objectContaining({
         agentId: "agent_xyz",
       }));
     });

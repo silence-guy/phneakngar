@@ -28,8 +28,13 @@ describe("highlightMentions", () => {
   })
 
   it("wraps only name portion of enriched form", () => {
-    const result = highlightMentions("Hey @TestBot (testbot@phneakngar.ai) do this", [agent("TestBot", "testbot")])
-    expect(result).toBe('Hey <mention data-agent-id="ag_testbot">@TestBot</mention> (testbot@phneakngar.ai) do this')
+    const result = highlightMentions("Hey @TestBot (testbot@agents.example) do this", [agent("TestBot", "testbot")])
+    expect(result).toBe('Hey <mention data-agent-id="ag_testbot">@TestBot</mention> (testbot@agents.example) do this')
+  })
+
+  it("recognizes enriched mentions for a second valid domain", () => {
+    const result = highlightMentions("Hey @TestBot (testbot@robots.example)", [agent("TestBot", "testbot")])
+    expect(result).toBe('Hey <mention data-agent-id="ag_testbot">@TestBot</mention> (testbot@robots.example)')
   })
 
   it("leaves non-matching @ as plain text", () => {

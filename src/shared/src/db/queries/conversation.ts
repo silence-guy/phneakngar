@@ -73,6 +73,27 @@ export async function getConversation(db: Database, id: string, workspaceId: str
   return rows[0] ?? null;
 }
 
+export async function getConversationForAgent(
+  db: Database,
+  id: string,
+  workspaceId: string,
+  userId: string,
+  agentId: string,
+) {
+  const rows = await db
+    .select()
+    .from(conversation)
+    .where(
+      and(
+        eq(conversation.id, id),
+        eq(conversation.workspaceId, workspaceId),
+        eq(conversation.userId, userId),
+        eq(conversation.agentId, agentId),
+      ),
+    );
+  return rows[0] ?? null;
+}
+
 export async function getConversationsByIds(db: Database, ids: string[], workspaceId: string) {
   if (ids.length === 0) return [];
   return db

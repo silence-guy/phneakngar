@@ -12,6 +12,7 @@ import { parseBody, writeError, writeJSON } from "@/lib/middleware/helpers";
 import { broadcastToUser } from "@/lib/broadcast";
 import { TaskService } from "@/lib/services/task";
 import { invalidate, cacheKeys } from "@/lib/cache";
+import { resolveServerEmailDomain } from "@/lib/email-domain";
 
 export const GET = withAuth(async (req: NextRequest, ctx) => {
   const ws = await withWorkspaceMember(req, ctx);
@@ -32,6 +33,7 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
   const ws = await withWorkspaceMember(req, ctx);
   if (ws instanceof Response) return ws;
 
+  const emailDomain = resolveServerEmailDomain(ctx.env);
   const db = getDb(ctx.env.DB);
   const id = ctx.params?.id;
   if (!id) return writeError("issue id is required", 400);
@@ -72,7 +74,7 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
       db, issue.conversationId, ws.workspaceId
     );
     if (!activeTask) {
-      const taskService = new TaskService(db);
+      const taskService = new TaskService(db, emailDomain);
       const prompt = `${issue.title}\n\nUser feedback: "${body.content}"`;
 
 

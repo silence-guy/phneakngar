@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { toPhneakngarAddress } from "@phneakngar/shared";
+import { toPublicPhneakngarAddress } from "@/lib/email-domain";
 import type { Agent } from "@phneakngar/shared";
 import { Check, Copy } from "lucide-react";
 import { toast } from "sonner";
@@ -26,7 +26,7 @@ export function AgentPreviewCard({
   isHovered,
 }: AgentPreviewCardProps) {
   const [copied, setCopied] = useState(false);
-  const email = agent.email_handle ? toPhneakngarAddress(agent.email_handle) : null;
+  const email = agent.email_handle ? toPublicPhneakngarAddress(agent.email_handle) : null;
   const isCompact = variant === "compact";
 
   const handleCopy = useCallback(async () => {

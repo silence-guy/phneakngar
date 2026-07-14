@@ -38,7 +38,7 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
   if (agent.runtimeId) {
     const runtime = await queries.runtime.getAgentRuntime(db, agent.runtimeId);
     if (runtime) {
-      broadcastToChhlat(runtime.chhlatId, {
+      broadcastToChhlat(ws.workspaceId, runtime.chhlatId, {
         type: "chhlat.file_requests",
         workspaceId: ws.workspaceId,
         requests: [{ id: row.id, agent_id: agentId, request_type: body.request_type, path: body.path }],

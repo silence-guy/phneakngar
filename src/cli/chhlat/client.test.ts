@@ -2,7 +2,11 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 import { fromApiTask } from "./types.js";
 import type { TaskApi } from "@phneakngar/shared";
 import { PollResponseSchema } from "@phneakngar/shared";
-import { ChhlatClient } from "./client.js";
+import {
+  ChhlatClient,
+  ChhlatHttpError,
+  isTaskAlreadyTerminalError,
+} from "./client.js";
 
 // ---------------------------------------------------------------------------
 // Schema-level validation tests
@@ -259,6 +263,34 @@ describe("ChhlatClient.poll() with mocked fetch", () => {
   });
 });
 
+describe("ChhlatClient.wsTicket() with mocked fetch", () => {
+  const originalFetch = globalThis.fetch;
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+  });
+
+  it("fetches a chhlat WebSocket ticket over authenticated HTTP", async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve({ ticket: "ticket-1", workspaceId: "workspace-1", expiresAt: "2026-07-14T00:00:00.000Z", wsPort: 8789 }),
+    }) as unknown as typeof fetch;
+
+    const client = new ChhlatClient("http://localhost:8080");
+    const result = await client.wsTicket("al_machine", "host-1");
+
+    expect(result).toEqual({ ticket: "ticket-1", workspaceId: "workspace-1", expiresAt: "2026-07-14T00:00:00.000Z", wsPort: 8789 });
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      "http://localhost:8080/api/ws/token?chhlat_id=host-1",
+      expect.objectContaining({
+        method: "GET",
+        headers: expect.objectContaining({ Authorization: "Bearer al_machine" }),
+      }),
+    );
+  });
+});
+
 // ---------------------------------------------------------------------------
 // ChhlatClient.register() tests
 // ---------------------------------------------------------------------------
@@ -398,6 +430,43 @@ describe("ChhlatClient retries on TypeError (network failure)", () => {
     await expect(client.completeTask("tok", "t1", { output: "done" })).rejects.toThrow("HTTP 500");
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("preserves HTTP status and machine-readable server error code", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      error: "task is already in a terminal state",
+      code: "TASK_ALREADY_TERMINAL",
+    }), {
+      status: 409,
+      headers: { "Content-Type": "application/json" },
+    }));
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+    const client = new ChhlatClient("http://localhost:8080");
+    const error = await client.completeTask("secret-token", "t1", { output: "done" })
+      .catch((caught) => caught);
+
+    expect(error).toBeInstanceOf(ChhlatHttpError);
+    expect(error).toMatchObject({
+      status: 409,
+      code: "TASK_ALREADY_TERMINAL",
+      message: "HTTP 409: task is already in a terminal state",
+    });
+    expect(isTaskAlreadyTerminalError(error)).toBe(true);
+    expect(error.message).not.toContain("secret-token");
+  });
+
+  it("preserves plain-text HTTP errors without classifying them as terminal", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response("Forbidden", { status: 403 }));
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+    const client = new ChhlatClient("http://localhost:8080");
+    const error = await client.completeTask("secret-token", "t1", { output: "done" })
+      .catch((caught) => caught);
+
+    expect(error).toBeInstanceOf(ChhlatHttpError);
+    expect(error).toMatchObject({ status: 403, code: undefined, message: "HTTP 403: Forbidden" });
+    expect(isTaskAlreadyTerminalError(error)).toBe(false);
   });
 
   it("retries downloadArtifact on TypeError", async () => {

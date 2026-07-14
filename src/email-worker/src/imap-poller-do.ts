@@ -6,6 +6,7 @@ import type { MeetingInfo } from "@phneakngar/shared"
 import { decrypt } from "@phneakngar/shared/crypto"
 import { ImapClient, ImapAuthError } from "./lib/imap-client"
 import type { EmailEnv } from "./types"
+import { resolveEmailWorkerDomain } from "./email-domain"
 
 const log = createLogger({ service: "imap-poller" })
 
@@ -152,6 +153,7 @@ export class ImapPollerDO extends DurableObject<EmailEnv> {
     try {
       const secret = this.env.ENCRYPTION_KEY
       if (!secret) throw new Error("ENCRYPTION_KEY not configured")
+      const emailDomain = resolveEmailWorkerDomain(this.env)
 
       const imapUsername = decrypt(account.imapUsername, secret)
       const imapPassword = decrypt(account.imapPassword, secret)
@@ -200,7 +202,7 @@ export class ImapPollerDO extends DurableObject<EmailEnv> {
       const batch = sorted.slice(0, MAX_EMAILS_PER_POLL)
 
       const whitelist = await queries.whitelist.buildWhitelistSet(
-        db, account.agentId, account.workspaceId
+        db, account.agentId, account.workspaceId, emailDomain
       )
 
       let maxUid = lastUid

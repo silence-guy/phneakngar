@@ -3,10 +3,8 @@ name: CI
 on:
   push:
     branches: [main]
-    paths-ignore: ['**/*.md']
   pull_request:
     branches: [main]
-    paths-ignore: ['**/*.md']
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -17,7 +15,7 @@ permissions:
 
 jobs:
   quality:
-    name: Typecheck & Lint
+    name: Project Guardrails, Typecheck & Lint
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -31,6 +29,7 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - run: pnpm check:project
       - run: pnpm typecheck
       - run: pnpm lint
 
@@ -145,6 +144,10 @@ jobs:
     name: Build
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      PHNEAKNGAR_DOMAIN: agents.ci.example
+      NEXT_PUBLIC_PHNEAKNGAR_DOMAIN: agents.ci.example
+      NEXT_PUBLIC_PHNEAKNGAR_ENVIRONMENT: production
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
@@ -157,11 +160,15 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm build --filter=@phneakngar/shared --filter=@phneakngar/web --filter=@phneakngar/cli --filter=@phneakngar/email-worker --filter=@phneakngar/ws-do --filter=@phneakngar/app
+      - name: Build web Worker bundle
+        run: pnpm --filter @phneakngar/web run build:worker
+      - name: Verify browser email-domain configuration
+        run: pnpm --filter @phneakngar/web run verify:email-domain-build
       - name: Validate Cloudflare Worker bundles
         run: |
           pnpm --filter @phneakngar/ws-do exec wrangler deploy --dry-run --outdir /tmp/ws-do
-          pnpm --filter @phneakngar/email-worker exec wrangler deploy --dry-run --outdir /tmp/email-worker
-          pnpm --filter @phneakngar/web exec wrangler deploy --dry-run --outdir /tmp/web-worker
+          pnpm --filter @phneakngar/email-worker exec wrangler deploy --dry-run --outdir /tmp/email-worker --var PHNEAKNGAR_DOMAIN:$PHNEAKNGAR_DOMAIN
+          pnpm --filter @phneakngar/web exec wrangler deploy --dry-run --outdir /tmp/web-worker --var PHNEAKNGAR_DOMAIN:$PHNEAKNGAR_DOMAIN --var NEXT_PUBLIC_PHNEAKNGAR_DOMAIN:$NEXT_PUBLIC_PHNEAKNGAR_DOMAIN --var NEXT_PUBLIC_PHNEAKNGAR_ENVIRONMENT:$NEXT_PUBLIC_PHNEAKNGAR_ENVIRONMENT
 
   coverage:
     name: Coverage

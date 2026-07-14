@@ -196,7 +196,7 @@ describe("DELETE /api/runtimes/machine", () => {
 
     await DELETE(makeReq({ chhlat_id: "d1", workspace_id: "w1" }));
 
-    expect(broadcastToChhlat).toHaveBeenCalledWith("d1", {
+    expect(broadcastToChhlat).toHaveBeenCalledWith("w1", "d1", {
       type: "chhlat.evict",
       workspaceId: "w1",
     });

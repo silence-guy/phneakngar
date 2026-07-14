@@ -9,6 +9,7 @@ import { emailToResponse } from "@/lib/api/responses";
 import { broadcastToUser } from "@/lib/broadcast";
 import { cached, invalidate, cacheKeys } from "@/lib/cache";
 import { fetchEmailWorker } from "@/lib/email-worker";
+import { resolveServerEmailDomain } from "@/lib/email-domain";
 
 async function broadcastEmailSentEvent(
   db: Parameters<typeof queries.message.createMessage>[0],
@@ -56,6 +57,7 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
   if (ws instanceof Response) return ws;
 
   const cfEnv = ctx.env;
+  const emailDomain = resolveServerEmailDomain(cfEnv);
   const db = getDb(cfEnv.DB);
 
   const [body, valErr] = await parseBody(req, SendEmailRequestSchema);
@@ -68,7 +70,7 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
   let fromAddress: string;
 
   if (body.from && !customAccountId) {
-    const phneakngarAddr = agent.emailHandle ? toPhneakngarAddress(agent.emailHandle) : null;
+    const phneakngarAddr = agent.emailHandle ? toPhneakngarAddress(agent.emailHandle, emailDomain) : null;
     if (body.from === phneakngarAddr) {
       fromAddress = phneakngarAddr;
     } else {
@@ -90,12 +92,18 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
     if (!agent.emailHandle) {
       return writeError("agent has no email handle configured", 400);
     }
-    fromAddress = toPhneakngarAddress(agent.emailHandle);
+    fromAddress = toPhneakngarAddress(agent.emailHandle, emailDomain);
   }
 
   let validatedConversationId: string | undefined;
   if (body.conversationId) {
-    const conv = await queries.conversation.getConversation(db, body.conversationId, ws.workspaceId);
+    const conv = await queries.conversation.getConversationForAgent(
+      db,
+      body.conversationId,
+      ws.workspaceId,
+      ctx.userId,
+      body.agentId,
+    );
     if (conv) validatedConversationId = body.conversationId;
   }
 
@@ -106,13 +114,13 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
     }
   }
 
-  // Local delivery shortcut: same-workspace @phneakngar.ai → @phneakngar.ai
-  const senderHandle = parseEmailHandle(fromAddress);
-  const recipientHandle = parseEmailHandle(body.to);
+  // Local delivery shortcut: both addresses use this deployment's configured domain.
+  const senderHandle = parseEmailHandle(fromAddress, emailDomain);
+  const recipientHandle = parseEmailHandle(body.to, emailDomain);
   if (senderHandle && recipientHandle) {
     const recipientAgent = await queries.agent.getAgentByHandle(db, recipientHandle);
     if (recipientAgent && recipientAgent.workspaceId === ws.workspaceId) {
-      const messageId = `<${nanoid()}@phneakngar.ai>`;
+      const messageId = `<${nanoid()}@${emailDomain}>`;
       const htmlBody = body.htmlBody || "";
 
       const fetchedAttachments = (await Promise.all(
@@ -146,7 +154,7 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
         httpMetadata: { contentType: "message/rfc822" },
       });
 
-      const isWhitelisted = await queries.whitelist.isWhitelisted(db, recipientAgent.id, recipientAgent.workspaceId, fromAddress);
+      const isWhitelisted = await queries.whitelist.isWhitelisted(db, recipientAgent.id, recipientAgent.workspaceId, fromAddress, emailDomain);
 
       const isSelfSend = body.agentId === recipientAgent.id;
       const notifyPayload = JSON.stringify({

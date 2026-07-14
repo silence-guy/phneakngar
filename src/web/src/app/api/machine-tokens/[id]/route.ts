@@ -1,9 +1,10 @@
 import { queries } from "@phneakngar/shared"
+import { hashSecret } from "@phneakngar/shared/secrets"
 import { getDb } from "@/lib/db"
 import { withAuth } from "@/lib/middleware/auth";
 import { withWorkspaceMember } from "@/lib/middleware/workspace";
 import { writeError } from "@/lib/middleware/helpers";
-import { invalidate, cacheKeys } from "@/lib/cache";
+import { invalidateMany, cacheKeys } from "@/lib/cache";
 
 export const DELETE = withAuth(async (req, ctx) => {
   const ws = await withWorkspaceMember(req, ctx);
@@ -22,7 +23,11 @@ export const DELETE = withAuth(async (req, ctx) => {
   await queries.machineToken.deleteMachineToken(db, id, ctx.userId, ws.workspaceId);
 
   if (target) {
-    await invalidate(cacheKeys.machineToken(target.token));
+    const tokenHash = target.tokenHash ?? hashSecret(target.token);
+    await invalidateMany([
+      cacheKeys.machineTokenByHash(tokenHash),
+      cacheKeys.machineTokenLastUsedByHash(tokenHash),
+    ]);
   }
 
   return new Response(null, { status: 204 });

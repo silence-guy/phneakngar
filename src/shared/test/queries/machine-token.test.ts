@@ -5,7 +5,8 @@ function createSelectMock(rows: any[]) {
   const chain: any = {};
   chain.select = vi.fn(() => chain);
   chain.from = vi.fn(() => chain);
-  chain.where = vi.fn(() => Promise.resolve(rows));
+  chain.where = vi.fn(() => chain);
+  chain.then = (resolve: (value: unknown) => unknown) => Promise.resolve(rows).then(resolve);
   chain.innerJoin = vi.fn(() => chain);
   chain.insert = vi.fn(() => chain);
   chain.update = vi.fn(() => chain);
@@ -21,6 +22,8 @@ describe("machine-token exports", () => {
   it("exports getMachineTokenByToken", () => { expect(typeof mt.getMachineTokenByToken).toBe("function"); });
   it("exports getPendingMachineToken", () => { expect(typeof mt.getPendingMachineToken).toBe("function"); });
   it("exports activateMachineToken", () => { expect(typeof mt.activateMachineToken).toBe("function"); });
+  it("exports claimMachineTokenActivation", () => { expect(typeof mt.claimMachineTokenActivation).toBe("function"); });
+  it("exports finalizeMachineTokenActivation", () => { expect(typeof mt.finalizeMachineTokenActivation).toBe("function"); });
   it("exports getLatestTokenForUser", () => { expect(typeof mt.getLatestTokenForUser).toBe("function"); });
   it("exports listMachineTokens", () => { expect(typeof mt.listMachineTokens).toBe("function"); });
   it("exports deleteMachineToken", () => { expect(typeof mt.deleteMachineToken).toBe("function"); });
@@ -97,6 +100,37 @@ describe("activateMachineToken", () => {
       status: "active",
       hostname: "host.local",
     }));
+  });
+});
+
+describe("activation claim queries", () => {
+  it("claims only through a guarded update and returns the claimed row", async () => {
+    const claimed = { id: "mt_1", hostname: "host.local", runtimesJson: "[]" };
+    const db = createSelectMock([claimed]);
+
+    await expect(mt.claimMachineTokenActivation(db, "mt_1", "host.local", "[]"))
+      .resolves.toEqual(claimed);
+    expect(db.set).toHaveBeenCalledWith({ hostname: "host.local", runtimesJson: "[]" });
+    expect(db.where).toHaveBeenCalledOnce();
+  });
+
+  it("returns null when another request already owns the claim", async () => {
+    await expect(mt.claimMachineTokenActivation(
+      createSelectMock([]),
+      "mt_1",
+      "other.local",
+      "[]",
+    )).resolves.toBeNull();
+  });
+
+  it("finalizes only the matching durable claim", async () => {
+    const finalized = { id: "mt_1", status: "active" };
+    const db = createSelectMock([finalized]);
+
+    await expect(mt.finalizeMachineTokenActivation(db, "mt_1", "host.local", "[]"))
+      .resolves.toEqual(finalized);
+    expect(db.set).toHaveBeenCalledWith({ status: "active", token: "redacted:mt_1" });
+    expect(db.where).toHaveBeenCalledOnce();
   });
 });
 

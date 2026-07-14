@@ -74,6 +74,7 @@ vi.mock("@phneakngar/shared", async () => {
     createLogger: () => noopLogger,
     parseIcs: real.parseIcs,
     extractAttachmentMeta: real.extractAttachmentMeta,
+    resolveEmailDomain: real.resolveEmailDomain,
     DEV_WEB_URL: "http://localhost:3000",
     EMAIL_NOTIFY_SECRET_HEADER: real.EMAIL_NOTIFY_SECRET_HEADER,
     queries: {
@@ -144,6 +145,8 @@ function createMockEnv() {
       IMAP_POLLER: {} as DurableObjectNamespace,
       ENCRYPTION_KEY: "test-secret",
       EMAIL_NOTIFY_SECRET: "notify-secret",
+      PHNEAKNGAR_DOMAIN: "agents.example",
+      NODE_ENV: "test",
     },
     putR2,
     webFetch,
@@ -250,6 +253,22 @@ describe("alarm — normal UID-based flow", () => {
 
     // Only 101 and 102 should be fetched, not 100
     expect(putR2).toHaveBeenCalledTimes(2)
+  })
+
+  it("refuses to connect when production uses the non-production fallback", async () => {
+    const { durable, ctx, env } = createDO()
+    env.NODE_ENV = "production"
+    env.PHNEAKNGAR_DOMAIN = "phneakngar.invalid"
+    await ctx.storage.put("accountId", "aea_test1")
+
+    await durable.alarm()
+
+    expect(mockConnect).not.toHaveBeenCalled()
+    expect(mockBuildWhitelistSet).not.toHaveBeenCalled()
+    expect(mockUpdateEmailAccount).toHaveBeenCalledWith(
+      expect.anything(), "aea_test1", "ws_test1",
+      expect.objectContaining({ status: "error" }),
+    )
   })
 })
 

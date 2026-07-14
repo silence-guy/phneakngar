@@ -14,7 +14,8 @@ import {
   formatTranscript,
 } from "@phneakngar/shared/browser"
 import type { TranscriptEntry } from "@phneakngar/shared/browser"
-import { join } from "path"
+import { join, resolve } from "path"
+import { fileURLToPath } from "url"
 import { mkdirSync } from "fs"
 import { tempDir } from "../lib/platform.js"
 import { createLogger } from "../lib/logger.js"
@@ -26,6 +27,7 @@ const SCRAPE_INTERVAL_MS = 3_000
 const DEFAULT_BOT_NAME = "ភ្នាក់ងារ Meeting Bot"
 const MAX_RETRY_DURATION_MS = 30 * 60 * 1000
 const RETRY_BACKOFF = [30_000, 60_000, 120_000, 300_000]
+const CALLBACK_RETRY_DELAYS_MS = [1_000, 2_000, 5_000]
 
 export interface MeetingRunnerInput {
   meetingId: string
@@ -40,7 +42,11 @@ export interface MeetingRunnerInput {
   title?: string
 }
 
-async function callbackWeb(
+function isRetryableCallbackStatus(status: number): boolean {
+  return status === 408 || status === 429 || status >= 500
+}
+
+export async function callbackWeb(
   input: MeetingRunnerInput,
   status: "completed" | "failed",
   transcript?: string,
@@ -54,18 +60,48 @@ async function callbackWeb(
     error: error || undefined,
   })
 
-  try {
-    const res = await fetch(`${input.callbackUrl}/api/meeting/callback`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${input.authToken}`,
-      },
-      body: payload,
+  for (let attempt = 0; attempt <= CALLBACK_RETRY_DELAYS_MS.length; attempt++) {
+    let res: Response
+    try {
+      res = await fetch(`${input.callbackUrl}/api/meeting/callback`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${input.authToken}`,
+        },
+        body: payload,
+      })
+    } catch (err) {
+      if (attempt === CALLBACK_RETRY_DELAYS_MS.length) {
+        throw err
+      }
+      log.warn("callback transport failed, retrying", {
+        meeting: input.meetingId,
+        attempt: attempt + 1,
+      })
+      await new Promise((resolveDelay) => setTimeout(
+        resolveDelay,
+        CALLBACK_RETRY_DELAYS_MS[attempt],
+      ))
+      continue
+    }
+
+    if (res.ok) {
+      log.info(`callback ${status} → HTTP ${res.status}`, { meeting: input.meetingId })
+      return
+    }
+    if (!isRetryableCallbackStatus(res.status) || attempt === CALLBACK_RETRY_DELAYS_MS.length) {
+      throw new Error(`callback returned HTTP ${res.status}`)
+    }
+
+    log.warn(`callback returned HTTP ${res.status}, retrying`, {
+      meeting: input.meetingId,
+      attempt: attempt + 1,
     })
-    log.info(`callback ${status} → HTTP ${res.status}`, { meeting: input.meetingId })
-  } catch (err) {
-    log.error(`callback failed: ${err instanceof Error ? err.message : err}`, { meeting: input.meetingId })
+    await new Promise((resolveDelay) => setTimeout(
+      resolveDelay,
+      CALLBACK_RETRY_DELAYS_MS[attempt],
+    ))
   }
 }
 
@@ -265,17 +301,19 @@ async function run(input: MeetingRunnerInput): Promise<void> {
   }
 }
 
-const encoded = process.argv[2]
-if (!encoded) {
-  console.error("Usage: meeting-runner <base64-encoded-input>")
-  process.exit(1)
+if (process.argv[1] && resolve(process.argv[1]) === resolve(fileURLToPath(import.meta.url))) {
+  const encoded = process.argv[2]
+  if (!encoded) {
+    console.error("Usage: meeting-runner <base64-encoded-input>")
+    process.exit(1)
+  } else {
+    const input: MeetingRunnerInput = JSON.parse(
+      Buffer.from(encoded, "base64").toString("utf-8"),
+    )
+
+    run(input).then(() => process.exit(0)).catch((err) => {
+      log.error(`fatal: ${err instanceof Error ? err.message : err}`)
+      process.exit(1)
+    })
+  }
 }
-
-const input: MeetingRunnerInput = JSON.parse(
-  Buffer.from(encoded, "base64").toString("utf-8"),
-)
-
-run(input).then(() => process.exit(0)).catch((err) => {
-  log.error(`fatal: ${err instanceof Error ? err.message : err}`)
-  process.exit(1)
-})

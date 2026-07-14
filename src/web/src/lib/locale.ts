@@ -337,8 +337,8 @@ export const agentFormCopy = {
     [Locale.KM]: "អ្នកផ្ញើដែលអនុញ្ញាត",
   },
   allowedSendersDescription: {
-    [Locale.EN]: "Only emails from these addresses will trigger this agent. Applies to all configured email addresses (phneakngar.ai handle and custom email).",
-    [Locale.KM]: "មានតែអ៊ីមែលពីអាសយដ្ឋានទាំងនេះប៉ុណ្ណោះដែលនឹងបើកដំណើរការភ្នាក់ងារនេះ។ អនុវត្តចំពោះអាសយដ្ឋានអ៊ីមែលដែលបានកំណត់ទាំងអស់ (phneakngar.ai handle និង custom email)។",
+    [Locale.EN]: "Only emails from these addresses will trigger this agent. Applies to the platform address and every configured custom email address.",
+    [Locale.KM]: "មានតែអ៊ីមែលពីអាសយដ្ឋានទាំងនេះប៉ុណ្ណោះដែលនឹងបើកដំណើរការភ្នាក់ងារនេះ។ អនុវត្តចំពោះអាសយដ្ឋាន platform និង custom email ទាំងអស់ដែលបានកំណត់។",
   },
   agentsCanEmailEachOther: {
     [Locale.EN]: "Agents in this workspace can already email each other - no whitelist entry needed.",

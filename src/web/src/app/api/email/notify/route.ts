@@ -7,6 +7,7 @@ import { writeJSON, writeError, parseBody } from "@/lib/middleware/helpers"
 import { broadcastToUser } from "@/lib/broadcast"
 import { invalidate, cacheKeys } from "@/lib/cache"
 import { dispatchEmailToAgent } from "@/lib/services/email-dispatch"
+import { resolveServerEmailDomain } from "@/lib/email-domain"
 
 export const POST = withEnv(async (req: NextRequest, ctx) => {
   const secret = ctx.env.EMAIL_NOTIFY_SECRET
@@ -15,6 +16,7 @@ export const POST = withEnv(async (req: NextRequest, ctx) => {
     return writeError("unauthorized", 401)
   }
 
+  const emailDomain = resolveServerEmailDomain(ctx.env)
   const db = getDb(ctx.env.DB)
 
   const [body, valErr] = await parseBody(req, EmailNotifyRequestSchema);
@@ -70,7 +72,7 @@ export const POST = withEnv(async (req: NextRequest, ctx) => {
   let dispatchCreated = false
 
   if (body.isWhitelisted && agent && agent.runtimeId && agent.ownerId) {
-    const result = await dispatchEmailToAgent(db, email, agent, {
+    const result = await dispatchEmailToAgent(db, email, agent, emailDomain, {
       isInternal: body.isInternal,
       senderConversationId: body.senderConversationId,
       senderAgentId: body.senderAgentId,

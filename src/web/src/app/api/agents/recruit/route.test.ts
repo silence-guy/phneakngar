@@ -3,7 +3,7 @@ import { NextRequest } from "next/server";
 import * as sharedMock from "@/test/shared-mock";
 
 vi.mock("@opennextjs/cloudflare", () => ({
-  getCloudflareContext: vi.fn(() => ({ env: { DB: {}, EMAIL_BUCKET: { put: vi.fn() }, WORKER_SELF_REFERENCE: { fetch: vi.fn() }, EMAIL_NOTIFY_SECRET: "notify-secret" } })),
+  getCloudflareContext: vi.fn(() => ({ env: { DB: {}, EMAIL_BUCKET: { put: vi.fn() }, WORKER_SELF_REFERENCE: { fetch: vi.fn() }, EMAIL_NOTIFY_SECRET: "notify-secret", PHNEAKNGAR_DOMAIN: "agents.example" } })),
 }));
 vi.mock("@/lib/db", () => ({ getDb: vi.fn(() => ({})) }));
 vi.mock("nanoid", () => ({ nanoid: vi.fn(() => "id123") }));
@@ -43,7 +43,7 @@ vi.mock("@phneakngar/shared", async (importOriginal) => {
 vi.mock("@/lib/middleware/auth", () => ({
   withAuth: vi.fn((handler: any) => async (req: any, ctx?: any) => {
     const params = ctx?.params instanceof Promise ? await ctx.params : ctx?.params;
-    return handler(req, { env: { DB: {}, EMAIL_BUCKET: { put: vi.fn() }, WORKER_SELF_REFERENCE: { fetch: vi.fn() }, EMAIL_NOTIFY_SECRET: "notify-secret" }, userId: "u1", email: "u@t.com", params });
+    return handler(req, { env: { DB: {}, EMAIL_BUCKET: { put: vi.fn() }, WORKER_SELF_REFERENCE: { fetch: vi.fn() }, EMAIL_NOTIFY_SECRET: "notify-secret", PHNEAKNGAR_DOMAIN: "agents.example" }, userId: "u1", email: "u@t.com", params });
   }),
 }));
 vi.mock("@/lib/middleware/workspace", () => ({
@@ -117,7 +117,7 @@ describe("POST /api/agents/recruit", () => {
     const body = await res.json();
     expect(res.status).toBe(201);
     expect(body.agent.id).toBe("new1");
-    expect(body.agent.email).toBe("robin@phneakngar.ai");
+    expect(body.agent.email).toBe("robin@agents.example");
     expect(body.link.id).toBe("link1");
     expect(mockCreateAgent.mock.calls[0]![1]).toMatchObject({ workspaceId: "w1", ownerId: "u1" });
     expect(mockLinkCreate.mock.calls[0]![1]).toMatchObject({

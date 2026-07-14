@@ -1,6 +1,5 @@
 import { Command } from "commander";
 import { readFileSync } from "fs";
-import { toPhneakngarAddress } from "@phneakngar/shared";
 import { APIClient } from "../lib/client.js";
 import { cmdPrefix } from "../lib/env.js";
 import { printJSON } from "../lib/output.js";
@@ -29,7 +28,7 @@ function slugify(name: string): string {
 interface StudioResponse {
   studio: { name: string };
   workspace: { id: string; name: string; slug: string };
-  agents: Array<{ id: string; name: string; email_handle: string | null }>;
+  agents: Array<{ id: string; name: string; email_handle: string | null; email: string | null }>;
 }
 
 function sleep(ms: number): Promise<void> {
@@ -175,7 +174,7 @@ export function workspaceCommand(): Command {
           console.log(`\nWorkspace initialized: ${res.studio.name || res.workspace.name}`);
           console.log("Agents created:");
           for (const agent of res.agents) {
-            const email = agent.email_handle ? toPhneakngarAddress(agent.email_handle) : "no email";
+            const email = agent.email || "no email";
             console.log(`  - ${agent.name} (${email})`);
           }
           console.log(`\n  Open: ${serverUrl}/w/${res.workspace.slug}`);
@@ -266,7 +265,7 @@ export function workspaceCommand(): Command {
         console.log(`\nWorkspace initialized: ${res.studio.name || res.workspace.name}`);
         console.log("Agents created:");
         for (const agent of res.agents) {
-          const email = agent.email_handle ? toPhneakngarAddress(agent.email_handle) : "no email";
+          const email = agent.email || "no email";
           console.log(`  - ${agent.name} (${email})`);
         }
         console.log(`\n  Open: ${serverUrl}/w/${res.workspace.slug}`);

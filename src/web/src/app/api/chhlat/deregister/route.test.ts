@@ -73,7 +73,7 @@ describe("POST /api/chhlat/deregister", () => {
     return POST;
   }
 
-  const chhlatAuth = { env: {}, userId: "u1", email: "u@t.com", authType: "machine" as const, workspaceId: "w1" };
+  const chhlatAuth = { env: {}, userId: "u1", email: "u@t.com", authType: "machine" as const, workspaceId: "w1", machineTokenHostname: "d1" };
   const jwtAuth = { env: {}, userId: "u1", email: "u@t.com" };
 
   it("sets machine last_seen_at to null", async () => {

@@ -69,11 +69,24 @@ describe("workspace invite flow", () => {
     expect(data.workspace_id).toBe(seed.workspaceId)
   })
 
-  it("POST /api/invite/:token again returns 410 (already used)", async () => {
+  it("POST /api/invite/:token again converges for the same user", async () => {
     const res = await sessionRequest(`/api/invite/${inviteToken}`, inviteeCookie, {
       method: "POST",
     })
-    expect(res.status).toBe(410)
+    expect(res.status).toBe(200)
+    const data = await res.json() as Record<string, unknown>
+    expect(data.workspace_id).toBe(seed.workspaceId)
+
+    const inviteeUserId = sqlQuery<{ id: string }>(
+      `SELECT id FROM "user" WHERE email = ?`,
+      inviteeEmail,
+    )[0].id
+    const memberships = sqlQuery<{ count: number }>(
+      `SELECT COUNT(*) AS count FROM member WHERE workspace_id = ? AND user_id = ?`,
+      seed.workspaceId,
+      inviteeUserId,
+    )
+    expect(memberships[0].count).toBe(1)
   })
 
   it("GET /api/workspaces/:id/members includes the new member", async () => {

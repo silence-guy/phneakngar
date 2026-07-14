@@ -15,12 +15,15 @@ vi.mock("@phneakngar/shared", async () => {
     ...real,
     queries: {
       agent: {
+        getAgentsByIds: (...args: unknown[]) => mockGetAllAgentsForWorkspace(...args),
         getAllAgentsForWorkspace: (...args: unknown[]) => mockGetAllAgentsForWorkspace(...args),
       },
       emailAccount: {
+        getEmailAccountsByAgents: (...args: unknown[]) => mockGetAllEmailAccountsForWorkspace(...args),
         getAllEmailAccountsForWorkspace: (...args: unknown[]) => mockGetAllEmailAccountsForWorkspace(...args),
       },
       agentLink: {
+        getColleaguesForAgents: (...args: unknown[]) => mockGetAllColleaguesForWorkspace(...args),
         getAllColleaguesForWorkspace: (...args: unknown[]) => mockGetAllColleaguesForWorkspace(...args),
       },
       member: {
@@ -98,7 +101,7 @@ describe("TaskPayloadBuilder", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    builder = new TaskPayloadBuilder(db);
+    builder = new TaskPayloadBuilder(db, "agents.example");
     mockGetAllAgentsForWorkspace.mockResolvedValue([]);
     mockGetAllEmailAccountsForWorkspace.mockResolvedValue([]);
     mockGetAllColleaguesForWorkspace.mockResolvedValue([]);
@@ -149,8 +152,9 @@ describe("TaskPayloadBuilder", () => {
       name: "Bot",
       runtime_config: { model: "gpt-4" },
       email_handle: "bot",
-      email_addresses: ["bot@phneakngar.ai", "custom@company.com"],
-      colleagues: [{ name: "Helper", email: "helper@phneakngar.ai", description: "helps", instruction: "be nice" }],
+      email_address: "bot@agents.example",
+      email_addresses: ["bot@agents.example", "custom@company.com"],
+      colleagues: [{ name: "Helper", email: "helper@agents.example", description: "helps", instruction: "be nice" }],
     });
     expect(result[0].channel).toBe("slack");
     expect(result[0].sender).toMatchObject({ name: "Sender", email: "sender@ex.com" });
@@ -295,8 +299,11 @@ describe("TaskPayloadBuilder", () => {
     expect(result[0].agent!.name).toBe("Bot");
     expect(result[1].agent!.name).toBe("Bot");
     expect(mockGetAllAgentsForWorkspace).toHaveBeenCalledTimes(1);
+    expect(mockGetAllAgentsForWorkspace).toHaveBeenCalledWith(db, ["a1"], "w1");
     expect(mockGetAllEmailAccountsForWorkspace).toHaveBeenCalledTimes(1);
+    expect(mockGetAllEmailAccountsForWorkspace).toHaveBeenCalledWith(db, ["a1"], "w1");
     expect(mockGetAllColleaguesForWorkspace).toHaveBeenCalledTimes(1);
+    expect(mockGetAllColleaguesForWorkspace).toHaveBeenCalledWith(db, ["a1"], "w1");
     expect(mockGetMemberByUserAndWorkspace).toHaveBeenCalledTimes(1);
   });
 });

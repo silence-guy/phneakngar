@@ -5,7 +5,11 @@ import { withAuth } from "@/lib/middleware/auth";
 import { withChhlatTaskAccess } from "@/lib/middleware/chhlat";
 import { writeJSON, writeError, parseBody } from "@/lib/middleware/helpers";
 import { taskToResponse } from "@/lib/api/responses";
-import { TaskService } from "@/lib/services/task";
+import {
+  TaskAlreadyTerminalError,
+  TaskService,
+  TASK_ALREADY_TERMINAL_CODE,
+} from "@/lib/services/task";
 import { CompleteTaskRequestSchema } from "@phneakngar/shared";
 import { broadcastToUser } from "@/lib/broadcast";
 import { invalidate, invalidateInboxCounts, cacheKeys } from "@/lib/cache";
@@ -48,6 +52,12 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
     }
     return writeJSON(taskToResponse(task));
   } catch (e: unknown) {
+    if (e instanceof TaskAlreadyTerminalError) {
+      return writeJSON({
+        error: e.message,
+        code: TASK_ALREADY_TERMINAL_CODE,
+      }, 409);
+    }
     return writeError(e instanceof Error ? e.message : "Unknown error", 400);
   }
 });

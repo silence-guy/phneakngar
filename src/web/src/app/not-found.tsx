@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { TypewriterVisual } from "@/components/typewriter-visual";
 import { ERROR_PAGE_LABELS } from "@/app/error-page-labels";
+import { toPublicPhneakngarAddress } from "@/lib/email-domain";
 
 export const metadata: Metadata = {
   title: "Page Not Found",
@@ -34,7 +35,7 @@ export default function NotFound() {
               >
                 <div className="tw-email-line">
                   <span style={{ color: "var(--landing-text)" }}>{ERROR_PAGE_LABELS.fromLabel}</span>{" "}
-                  postmaster@phneakngar.ai
+                  {toPublicPhneakngarAddress("postmaster")}
                 </div>
                 <div className="tw-email-line">
                   <span style={{ color: "var(--landing-text)" }}>{ERROR_PAGE_LABELS.toLabel}</span>{" "}

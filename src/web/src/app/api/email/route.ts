@@ -5,6 +5,7 @@ import { withAuth } from "@/lib/middleware/auth";
 import { withWorkspaceMember } from "@/lib/middleware/workspace";
 import { writeJSON, writeError } from "@/lib/middleware/helpers";
 import { emailToResponse } from "@/lib/api/responses";
+import { resolveServerEmailDomain } from "@/lib/email-domain";
 
 const VALID_STATUSES = ["unread", "read", "archived", "sent"];
 
@@ -12,6 +13,7 @@ export const GET = withAuth(async (req: NextRequest, ctx) => {
   const ws = await withWorkspaceMember(req, ctx);
   if (ws instanceof Response) return ws;
 
+  const emailDomain = resolveServerEmailDomain(ctx.env);
   const db = getDb(ctx.env.DB);
 
   const agentId = req.nextUrl.searchParams.get("agentId");
@@ -27,7 +29,7 @@ export const GET = withAuth(async (req: NextRequest, ctx) => {
 
   const folder = req.nextUrl.searchParams.get("folder");
   const address = req.nextUrl.searchParams.get("address");
-  const agentEmail = address || (agent.emailHandle ? toPhneakngarAddress(agent.emailHandle) : "");
+  const agentEmail = address || (agent.emailHandle ? toPhneakngarAddress(agent.emailHandle, emailDomain) : "");
 
   const limitParam = req.nextUrl.searchParams.get("limit");
   const offsetParam = req.nextUrl.searchParams.get("offset");

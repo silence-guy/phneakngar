@@ -15,6 +15,10 @@ jobs:
     if: "${{ startsWith(github.event.head_commit.message, 'release: v') }}"
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      PHNEAKNGAR_DOMAIN: phneakngar.invalid
+      NEXT_PUBLIC_PHNEAKNGAR_DOMAIN: phneakngar.invalid
+      NEXT_PUBLIC_PHNEAKNGAR_ENVIRONMENT: development
     permissions:
       contents: read
       id-token: write

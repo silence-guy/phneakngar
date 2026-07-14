@@ -10,10 +10,14 @@ export const GET = withAuth(async (req: NextRequest, ctx) => {
 
   const db = getDb(ctx.env.DB);
 
-  const invite = await queries.workspaceInvite.getInviteByToken(db, token);
+  const invite = await queries.workspaceInvite.getInviteByTokenForUser(db, token, ctx.userId);
   if (!invite) return writeError("invite not found", 404);
-  if (invite.usedBy) return writeError("invite already used", 410);
-  if (new Date(invite.expiresAt) < new Date()) return writeError("invite expired", 410);
+  if (invite.usedBy && invite.usedBy !== ctx.userId) {
+    return writeError("invite already used", 410);
+  }
+  if (!invite.usedBy && new Date(invite.expiresAt) < new Date()) {
+    return writeError("invite expired", 410);
+  }
 
   return writeJSON({
     workspace_name: invite.workspaceName,
@@ -26,25 +30,29 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
   const { token } = ctx.params!;
 
   const db = getDb(ctx.env.DB);
+  let result: Awaited<ReturnType<typeof queries.workspaceInvite.redeemInviteForUser>>;
+  try {
+    result = await queries.workspaceInvite.redeemInviteForUser(db, token, ctx.userId);
+  } catch {
+    return writeError("invite redemption temporarily unavailable", 503);
+  }
 
-  const invite = await queries.workspaceInvite.getInviteByToken(db, token);
-  if (!invite) return writeError("invite not found", 404);
-  if (invite.usedBy) return writeError("invite already used", 410);
-  if (new Date(invite.expiresAt) < new Date()) return writeError("invite expired", 410);
+  if (result.status === "not_found") return writeError("invite not found", 404);
+  if (result.status === "expired") return writeError("invite expired", 410);
+  if (result.status === "already_member") {
+    return writeError("already a member of this workspace", 409);
+  }
+  if (result.status === "capacity_full") {
+    return writeError("workspace capacity reached", 409);
+  }
+  if (result.status === "used" || result.status === "inconsistent") {
+    return writeError("invite already used", 410);
+  }
 
-  const existing = await queries.member.getMemberByUserAndWorkspace(db, ctx.userId, invite.workspaceId);
-  if (existing) return writeError("already a member of this workspace", 409);
+  await invalidate(cacheKeys.allMembers(result.workspaceId));
 
-  const redeemed = await queries.workspaceInvite.redeemInvite(db, token, ctx.userId);
-  if (!redeemed) return writeError("invite already used", 410);
-
-  await queries.member.createMember(db, {
-    workspaceId: invite.workspaceId,
-    userId: ctx.userId,
-    role: "member",
+  return writeJSON({
+    workspace_id: result.workspaceId,
+    workspace_slug: result.workspaceSlug,
   });
-
-  await invalidate(cacheKeys.allMembers(invite.workspaceId));
-
-  return writeJSON({ workspace_id: invite.workspaceId, workspace_slug: invite.workspaceSlug });
 });

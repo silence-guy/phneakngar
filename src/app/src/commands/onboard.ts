@@ -125,7 +125,7 @@ export function onboardCommand(): Command {
       // 11. Print summary
       console.log("\n" + "─".repeat(50));
       console.log("\n⚠️  Local mode: email send/receive is not available.");
-      console.log("   To enable email, connect to phneakngar.ai cloud.\n");
+      console.log("   To enable email, connect to a configured hosted deployment.\n");
       console.log("─".repeat(50));
       console.log(`\n🎉 ភ្នាក់ងារ is running!`);
       console.log(`   Dashboard: ${baseURL}`);

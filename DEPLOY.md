@@ -4,15 +4,15 @@ This runbook covers the Cloudflare deployment of ភ្នាក់ងារ. Cl
 
 ## 1. Supported Toolchain
 
-Use these repository-supported versions or newer compatible patch releases:
+Use the repository pins and lockfile. Do not substitute an arbitrary newer tool during a release or deployment validation:
 
-| Tool | Required version |
+| Tool | Repository contract |
 |---|---|
-| Node.js | `>=20.19.0` |
-| pnpm | `10.33.0` from `packageManager` |
-| Bun | `1.3.14` |
-| Wrangler | `4.103.x` |
-| OpenNext Cloudflare adapter | `1.19.x` |
+| Node.js | `>=20.19.0` from `engines` (CI uses Node.js 22) |
+| pnpm | Exact `10.33.0` from `packageManager` |
+| Bun | Exact `1.3.14` in CI and contributor docs |
+| Wrangler | Manifest range `^4.103.0`; install the lockfile-resolved version |
+| OpenNext Cloudflare adapter | Manifest range `^1.19.11`; install the lockfile-resolved version |
 
 For desktop and mobile releases, also install the Rust, Tauri, Xcode, Android SDK, Java, and store-signing prerequisites documented by their official toolchains. They are not required for a Cloudflare-only deployment.
 
@@ -47,7 +47,7 @@ The resource names and IDs in the three `wrangler.toml` files must belong to the
 
 ### Email domain (required for OTP + agent mail)
 
-This account uses zone **`cieee.xyz`** for Cloudflare Email Routing and Email Sending.
+The current live-testing account uses zone **`cieee.xyz`** for Cloudflare Email Routing and Email Sending. This is environment-specific test infrastructure, not a permanent canonical product identity; other deployments must configure their own onboarded domain.
 
 ```bash
 # Enable once per zone
@@ -114,6 +114,11 @@ Set these on `phneakngar-web`:
 | `AUTH_OTP_RATE_LIMIT_WINDOW_SEC` | Optional positive integer override |
 | `MIN_CLI_VERSION` | Minimum CLI permitted to receive tasks |
 | `RUNTIME_MODEL_OPTIONS` | JSON model allowlist; currently committed as a non-secret Wrangler variable |
+| `PHNEAKNGAR_DOMAIN` | Explicit Cloudflare-onboarded email domain for server/runtime code |
+| `NEXT_PUBLIC_PHNEAKNGAR_DOMAIN` | The same domain, supplied both to the OpenNext build and the Worker runtime |
+| `NEXT_PUBLIC_PHNEAKNGAR_ENVIRONMENT` | `production` for hosted deployments; local app bundles explicitly use `development` |
+
+`NEXT_PUBLIC_PHNEAKNGAR_DOMAIN` and its environment marker are embedded into browser JavaScript at build time. A Wrangler runtime variable cannot retrofit an already-built client bundle, so export both domain variables before `build:worker` and verify the generated browser assets before deployment.
 
 Example secret commands:
 
@@ -139,6 +144,7 @@ Set these on `phneakngar-email-worker`:
 | `ENCRYPTION_KEY` | Same value as the web Worker |
 | `EMAIL_NOTIFY_SECRET` | Same value as the web Worker |
 | `WEB_ORIGIN` | Exact public HTTPS origin of the web Worker, for authenticated `/api/email/notify` callbacks |
+| `PHNEAKNGAR_DOMAIN` | Same explicit Cloudflare-onboarded domain as the web Worker |
 
 ```bash
 pnpm exec wrangler secret put ENCRYPTION_KEY --config src/email-worker/wrangler.toml
@@ -186,19 +192,21 @@ pnpm check:project
 pnpm typecheck
 pnpm lint
 pnpm test
-pnpm build
+PHNEAKNGAR_DOMAIN=mail.example NEXT_PUBLIC_PHNEAKNGAR_DOMAIN=mail.example NEXT_PUBLIC_PHNEAKNGAR_ENVIRONMENT=production pnpm build
 pnpm db:reset
 pnpm db:migrate
 ```
 
-`pnpm predev` creates local-only variable files for web, email, and WebSocket Workers, synchronizes cross-Worker secrets, and refuses mismatched existing values. It does not create production secrets or OAuth credentials.
+`pnpm predev` creates local-only variable files for web, email, and WebSocket Workers, synchronizes cross-Worker secrets, and refuses mismatched existing values. It does not create production secrets or OAuth credentials. `mail.example` above is a non-canonical validation value; use the target environment's onboarded domain for a release candidate.
 
-Validate Worker bundles without deploying:
+Build OpenNext, verify the configured browser domain, and validate all Worker bundles without deploying:
 
 ```bash
+PHNEAKNGAR_DOMAIN=mail.example NEXT_PUBLIC_PHNEAKNGAR_DOMAIN=mail.example NEXT_PUBLIC_PHNEAKNGAR_ENVIRONMENT=production pnpm --filter @phneakngar/web run build:worker
+NEXT_PUBLIC_PHNEAKNGAR_DOMAIN=mail.example pnpm --filter @phneakngar/web run verify:email-domain-build
 pnpm --filter @phneakngar/ws-do exec wrangler deploy --dry-run --outdir /tmp/phneakngar-ws-do
-pnpm --filter @phneakngar/email-worker exec wrangler deploy --dry-run --outdir /tmp/phneakngar-email-worker
-pnpm --filter @phneakngar/web exec wrangler deploy --dry-run --outdir /tmp/phneakngar-web
+pnpm --filter @phneakngar/email-worker exec wrangler deploy --dry-run --outdir /tmp/phneakngar-email-worker --var PHNEAKNGAR_DOMAIN:mail.example
+pnpm --filter @phneakngar/web exec wrangler deploy --dry-run --outdir /tmp/phneakngar-web --var PHNEAKNGAR_DOMAIN:mail.example --var NEXT_PUBLIC_PHNEAKNGAR_DOMAIN:mail.example --var NEXT_PUBLIC_PHNEAKNGAR_ENVIRONMENT:production
 ```
 
 Run E2E only against an explicitly selected, healthy local stack. The global preflight rejects a missing URL, an unrelated service, or a degraded dependency:
@@ -249,6 +257,25 @@ pnpm deploy:email
 ```
 
 This avoids temporarily placing the new WebSocket and Email Workers behind an old web Worker that does not send the required authentication headers. Future releases may return to dependency-first order only when the old and new cross-service protocols are demonstrably compatible.
+
+The WebSocket connection-ticket protocol has no safe browser rolling overlap with the pre-ticket WebSocket Worker. The new browser bundle opens sockets with a short-lived `user-ws` ticket and does not send a Better Auth session token as a WebSocket auth message; the previous WebSocket Worker does not understand that ticket. The stricter WebSocket Worker also cannot be deployed before the ticket-capable web Worker because old browser bundles would enter the now-rejected post-upgrade auth path.
+
+Deploy the ticket-capable web Worker and stricter WebSocket Worker as one coordinated protocol-pair cutover, and keep their previous versions available for pair rollback:
+
+```bash
+pnpm deploy:web
+pnpm deploy:ws-do
+```
+
+Run browser and chhlat WebSocket smoke tests immediately after both deployments complete. During the short cutover gap between these two commands, new browser socket attempts may fail and reconnect; this is the supported behavior for this security boundary. If either deployment or smoke test fails, roll back both `phneakngar-web` and `phneakngar-ws-do` to their previous versions rather than mixing old and new protocol halves.
+
+The web Worker issues short-lived `user-ws` and `chhlat-ws` tickets from authenticated HTTP requests. Browser bundles never receive Better Auth session tokens for WebSockets, and chhlat obtains a fresh machine-authenticated ticket before each socket connect. The WebSocket Worker validates ticket signature, audience, subject, workspace, and chhlat hostname before `idFromName/get`; the Durable Object then consumes the ticket nonce in DO storage so the same ticket cannot be reused. Older CLIs that do not fetch tickets lose WebSocket push after the stricter `ws-do` cutover and continue normal HTTP polling until upgraded.
+
+Deploy `phneakngar-email-worker` after the web/ws-do protocol pair unless the release notes identify an email-worker-only compatibility boundary:
+
+```bash
+pnpm deploy:email
+```
 
 Keep the previous Worker versions available in Cloudflare deployment history until post-deployment smoke tests pass.
 

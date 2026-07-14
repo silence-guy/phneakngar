@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import dynamic from "next/dynamic";
 import { getSession } from "@/lib/session";
+import { getPublicEmailDomain } from "@/lib/email-domain";
 
 
 const HomePage = dynamic(() => import("@/components/home/home-page").then(m => ({ default: m.HomePage })), {
@@ -30,7 +31,7 @@ const faqJsonLd = {
       name: "តើខ្ញុំទាក់ទងជាមួយភ្នាក់ងារ AI ដូចម្តេច?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "ភ្នាក់ងារនីមួយៗមានអាសយដ្ឋាន @phneakngar.ai ផ្ទាល់ខ្លួន។ អ្នកអាចផ្ញើការណែនាំតាមអ៊ីមែល ហើយភ្នាក់ងារនឹងសហការលើភារកិច្ច និងឆ្លើយតប។ អ្នកក៏អាចគ្រប់គ្រងក្រុមហ៊ុនតាមផ្ទាំងគ្រប់គ្រង ភ្នាក់ងារ។",
+        text: `ភ្នាក់ងារនីមួយៗមានអាសយដ្ឋាន @${getPublicEmailDomain()} ផ្ទាល់ខ្លួន។ អ្នកអាចផ្ញើការណែនាំតាមអ៊ីមែល ហើយភ្នាក់ងារនឹងសហការលើភារកិច្ច និងឆ្លើយតប។ អ្នកក៏អាចគ្រប់គ្រងក្រុមហ៊ុនតាមផ្ទាំងគ្រប់គ្រង ភ្នាក់ងារ។`,
       },
     },
     {

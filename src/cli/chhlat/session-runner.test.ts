@@ -119,9 +119,24 @@ const { mocks, clientInstance, prepare, initEntryAsync, updateEntry, createTimel
 });
 
 // Mocks - using vi.hoisted values
-vi.mock("./client.js", () => ({
-  ChhlatClient: function() { return clientInstance; },
-}));
+vi.mock("./client.js", () => {
+  class ChhlatHttpError extends Error {
+    constructor(
+      public readonly status: number,
+      message: string,
+      public readonly code?: string,
+    ) {
+      super(`HTTP ${status}: ${message}`);
+    }
+  }
+  return {
+    ChhlatClient: function() { return clientInstance; },
+    ChhlatHttpError,
+    isTaskAlreadyTerminalError: (error: unknown) => error instanceof ChhlatHttpError
+      && error.status === 409
+      && error.code === "TASK_ALREADY_TERMINAL",
+  };
+});
 
 vi.mock("./execenv/index.js", () => ({
   prepare,
@@ -176,6 +191,7 @@ vi.mock("fs/promises", () => ({
 }));
 
 import { runSession, writeMarkerFile, reportToServer, type MarkerData } from "./session-runner.js";
+import { ChhlatHttpError } from "./client.js";
 import { createBackend } from "./agent/index.js";
 import { buildPrompt } from "./prompt.js";
 import type { SessionRunnerInput } from "./types.js";
@@ -802,6 +818,36 @@ describe("reportToServer", () => {
     );
 
     expect(fn).toHaveBeenCalledTimes(1);
+    expect(writeFile).not.toHaveBeenCalled();
+  });
+
+  it.each([400, 401, 403, 404])("preserves a marker after non-terminal HTTP %s", async (status) => {
+    const fn = vi.fn().mockRejectedValue(new ChhlatHttpError(status, "request rejected"));
+
+    await reportToServer(
+      fn,
+      { taskId: "t1", type: "complete", payload: { output: "Done!" }, token: "test_token", serverURL: "http://localhost:8080", createdAt: new Date().toISOString() },
+      "/tmp/ws",
+    );
+
+    expect(fn).toHaveBeenCalledOnce();
+    expect(writeFile).toHaveBeenCalled();
+  });
+
+  it("treats only the explicit terminal conflict as idempotent success", async () => {
+    const fn = vi.fn().mockRejectedValue(new ChhlatHttpError(
+      409,
+      "task is already in a terminal state",
+      "TASK_ALREADY_TERMINAL",
+    ));
+
+    await reportToServer(
+      fn,
+      { taskId: "t1", type: "complete", payload: { output: "Done!" }, token: "test_token", serverURL: "http://localhost:8080", createdAt: new Date().toISOString() },
+      "/tmp/ws",
+    );
+
+    expect(fn).toHaveBeenCalledOnce();
     expect(writeFile).not.toHaveBeenCalled();
   });
 

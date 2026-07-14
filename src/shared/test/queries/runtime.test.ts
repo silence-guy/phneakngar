@@ -6,7 +6,9 @@ function createMockDb(rows: any[]) {
   chain.select = vi.fn(() => chain);
   chain.from = vi.fn(() => chain);
   chain.leftJoin = vi.fn(() => chain);
-  chain.where = vi.fn(() => Promise.resolve(rows));
+  chain.where = vi.fn(() => chain);
+  chain.orderBy = vi.fn(() => Promise.resolve(rows));
+  chain.then = (resolve: (value: unknown) => unknown) => Promise.resolve(rows).then(resolve);
   return chain;
 }
 
@@ -29,6 +31,23 @@ describe("runtime query module exports", () => {
 
   it("exports getAgentRuntime", () => {
     expect(typeof runtimeQueries.getAgentRuntime).toBe("function");
+  });
+
+  it("exports listAgentRuntimesByChhlat", () => {
+    expect(typeof runtimeQueries.listAgentRuntimesByChhlat).toBe("function");
+  });
+});
+
+describe("listAgentRuntimesByChhlat", () => {
+  it("returns the persisted runtime identities for one workspace machine", async () => {
+    const rows = [{ id: "rt1", workspaceId: "ws1", chhlatId: "host.local", provider: "claude" }];
+    const db = createMockDb(rows);
+
+    await expect(runtimeQueries.listAgentRuntimesByChhlat(db, "ws1", "host.local"))
+      .resolves.toEqual(rows);
+    expect(db.leftJoin).toHaveBeenCalledOnce();
+    expect(db.where).toHaveBeenCalledOnce();
+    expect(db.orderBy).toHaveBeenCalledOnce();
   });
 });
 

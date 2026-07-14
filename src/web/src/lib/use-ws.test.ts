@@ -65,7 +65,7 @@ vi.mock("react", () => ({
 function setupTokenFetch() {
   mockFetch.mockResolvedValue({
     ok: true,
-    json: () => Promise.resolve({ token: "tok-456" }),
+    json: () => Promise.resolve({ ticket: "ticket-456" }),
   })
 }
 
@@ -186,6 +186,19 @@ describe("useAgentWs", () => {
     ws.simulateMessage({ type: "test", data: "world" })
     expect(cb2).toHaveBeenCalledWith({ type: "test", data: "world" })
     expect(cb1).toHaveBeenCalledTimes(1)
+  })
+
+  it("uses connection ticket in the URL and does not send a session auth message", async () => {
+    setupTokenFetch()
+
+    const onMsg = vi.fn()
+    await mountHook("agent-1", onMsg)
+    await vi.runAllTimersAsync()
+
+    const ws = MockWebSocket.instances[0]
+    expect(ws.url).toBe("ws://localhost:8789/?ticket=ticket-456&agentId=agent-1")
+    ws.simulateOpen()
+    expect(ws.sent).toEqual([])
   })
 
   it("server-initiated close triggers reconnect with backoff", async () => {

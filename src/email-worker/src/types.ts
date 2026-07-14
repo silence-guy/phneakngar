@@ -3,8 +3,10 @@ export interface EmailEnv {
   EMAIL_BUCKET: R2Bucket
   WEB_SERVICE?: Fetcher
   WEB_ORIGIN?: string
-  /** Public email domain for agent/OTP addresses, e.g. cieee.xyz */
+  /** Explicit public email domain for this environment. cieee.xyz is live-testing only. */
   PHNEAKNGAR_DOMAIN?: string
+  /** Runtime mode. Missing or unknown values are treated as production-safe. */
+  NODE_ENV?: string
   SEND_EMAIL: SendEmail
   IMAP_POLLER: DurableObjectNamespace
   ENCRYPTION_KEY: string

@@ -229,8 +229,11 @@ describe("cache", () => {
       const rawToken = "al_1234567890abcdefghij_rest";
       const tokenKey = cacheKeys.machineToken(rawToken);
       const lastUsedKey = cacheKeys.machineTokenLastUsed(rawToken);
+      const tokenHash = tokenKey.slice(3);
       expect(tokenKey).toMatch(/^mt:[a-f0-9]{64}$/);
       expect(lastUsedKey).toMatch(/^mt_lu:[a-f0-9]{64}$/);
+      expect(cacheKeys.machineTokenByHash(tokenHash)).toBe(tokenKey);
+      expect(cacheKeys.machineTokenLastUsedByHash(tokenHash)).toBe(lastUsedKey);
       expect(tokenKey).not.toContain(rawToken.slice(0, 20));
       expect(lastUsedKey).not.toContain(rawToken.slice(0, 20));
       expect(cacheKeys.runtimeIds("ws1", "d1")).toBe("rt:ws1:d1");

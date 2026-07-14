@@ -17,8 +17,23 @@ const mockClientInstance = {
   sweep: vi.fn(async () => ({})),
 };
 vi.mock("./client.js", () => {
+  class ChhlatHttpError extends Error {
+    constructor(
+      public readonly status: number,
+      message: string,
+      public readonly code?: string,
+    ) {
+      super(`HTTP ${status}: ${message}`);
+    }
+  }
   function MockChhlatClient() { return mockClientInstance; }
-  return { ChhlatClient: MockChhlatClient };
+  return {
+    ChhlatClient: MockChhlatClient,
+    ChhlatHttpError,
+    isTaskAlreadyTerminalError: (error: unknown) => error instanceof ChhlatHttpError
+      && error.status === 409
+      && error.code === "TASK_ALREADY_TERMINAL",
+  };
 });
 
 vi.mock("./config.js", () => ({
@@ -291,6 +306,7 @@ import { loadCLIConfigForProfile, saveCLIConfigForProfile } from "../lib/config.
 import { releaseChhlatPid } from "./pidfile.js";
 import { handleCliUpdate, readUpdateMarker, clearUpdateMarker } from "./update-handler.js";
 import { startChhlat, spawnSessionRunner, pruneSessionRunnerLogs, isClientError, reconcilePendingCompletions } from "./chhlat.js";
+import { ChhlatHttpError } from "./client.js";
 
 const mockReleaseChhlatPid = vi.mocked(releaseChhlatPid);
 
@@ -2138,28 +2154,23 @@ describe("chhlat kill_task handling", () => {
 });
 
 describe("isClientError", () => {
-  it("HTTP 400: bad request → true", () => {
-    expect(isClientError(new Error("HTTP 400: bad request"))).toBe(true);
+  it.each([400, 401, 403, 404, 408, 429, 500, 503])(
+    "HTTP %s without the terminal code → false",
+    (status) => {
+      expect(isClientError(new ChhlatHttpError(status, "request failed"))).toBe(false);
+    },
+  );
+
+  it("explicit terminal conflict → true", () => {
+    expect(isClientError(new ChhlatHttpError(
+      409,
+      "task is already in a terminal state",
+      "TASK_ALREADY_TERMINAL",
+    ))).toBe(true);
   });
 
-  it("HTTP 404: not found → true", () => {
-    expect(isClientError(new Error("HTTP 404: not found"))).toBe(true);
-  });
-
-  it("HTTP 408: request timeout → false (transient)", () => {
-    expect(isClientError(new Error("HTTP 408: request timeout"))).toBe(false);
-  });
-
-  it("HTTP 429: too many requests → false (transient)", () => {
-    expect(isClientError(new Error("HTTP 429: too many requests"))).toBe(false);
-  });
-
-  it("HTTP 500: internal server error → false", () => {
-    expect(isClientError(new Error("HTTP 500: internal server error"))).toBe(false);
-  });
-
-  it("HTTP 503: service unavailable → false", () => {
-    expect(isClientError(new Error("HTTP 503: service unavailable"))).toBe(false);
+  it("wrong code on a 409 → false", () => {
+    expect(isClientError(new ChhlatHttpError(409, "conflict", "OTHER_CONFLICT"))).toBe(false);
   });
 
   it("Network error (no HTTP prefix) → false", () => {
@@ -2212,10 +2223,24 @@ describe("reconcilePendingCompletions", () => {
     expect(mockUnlink).toHaveBeenCalled();
   });
 
-  it("deletes marker on 4xx", async () => {
+  it.each([400, 401, 403, 404])("retains marker on non-terminal HTTP %s", async (status) => {
     mockReaddir.mockResolvedValueOnce(["t1.json"] as any);
     mockReadFile.mockResolvedValueOnce(makeMarker());
-    mockClientInstance.completeTask.mockRejectedValueOnce(new Error("HTTP 400: bad request"));
+    mockClientInstance.completeTask.mockRejectedValueOnce(new ChhlatHttpError(status, "request rejected"));
+
+    await reconcilePendingCompletions("/tmp/ws");
+
+    expect(mockUnlink).not.toHaveBeenCalled();
+  });
+
+  it("deletes marker on explicit terminal conflict", async () => {
+    mockReaddir.mockResolvedValueOnce(["t1.json"] as any);
+    mockReadFile.mockResolvedValueOnce(makeMarker());
+    mockClientInstance.completeTask.mockRejectedValueOnce(new ChhlatHttpError(
+      409,
+      "task is already in a terminal state",
+      "TASK_ALREADY_TERMINAL",
+    ));
 
     await reconcilePendingCompletions("/tmp/ws");
 

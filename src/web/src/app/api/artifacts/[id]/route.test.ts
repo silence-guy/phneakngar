@@ -2,8 +2,7 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 import * as sharedMock from "@/test/shared-mock";
 
-const mockGetArtifact = vi.fn();
-const mockGetAgent = vi.fn();
+const mockGetArtifactForOwner = vi.fn();
 
 vi.mock("@opennextjs/cloudflare", () => ({
   getCloudflareContext: vi.fn(() => ({ env: { DB: {} } })),
@@ -17,10 +16,9 @@ vi.mock("@phneakngar/shared", async (importOriginal) => {
     ...actual,
     queries: {
     artifact: {
-      getArtifact: (...a: unknown[]) => mockGetArtifact(...a),
+      getArtifactForOwner: (...a: unknown[]) => mockGetArtifactForOwner(...a),
       artifactToResponse: (row: any) => ({ id: row.id, filename: row.filename }),
     },
-    agent: { getAgent: (...a: unknown[]) => mockGetAgent(...a) },
   },
   };
 });
@@ -42,11 +40,23 @@ beforeEach(() => vi.clearAllMocks());
 
 describe("GET /api/artifacts/[id]", () => {
   it("returns artifact metadata for machine-token workspace access", async () => {
-    mockGetArtifact.mockResolvedValue({ id: "art_1", agentId: "ag1", filename: "brief.md" });
-    mockGetAgent.mockResolvedValue({ id: "ag1" });
+    mockGetArtifactForOwner.mockResolvedValue({ id: "art_1", agentId: "ag1", filename: "brief.md" });
     const res = await GET(new NextRequest("http://localhost/api/artifacts/art_1?workspace_id=w1"), { params: { id: "art_1" } } as any);
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ id: "art_1", filename: "brief.md" });
-    expect(mockGetArtifact).toHaveBeenCalledWith({}, "art_1", "w1");
+    expect(mockGetArtifactForOwner).toHaveBeenCalledWith({}, "art_1", "w1", "u1");
+  });
+
+  it("returns the same 404 for a same-workspace artifact owned by another user", async () => {
+    mockGetArtifactForOwner.mockResolvedValue(null);
+
+    const res = await GET(
+      new NextRequest("http://localhost/api/artifacts/art_other?workspace_id=w1"),
+      { params: { id: "art_other" } } as any,
+    );
+
+    expect(res.status).toBe(404);
+    expect(await res.json()).toEqual({ error: "not found" });
+    expect(mockGetArtifactForOwner).toHaveBeenCalledWith({}, "art_other", "w1", "u1");
   });
 });

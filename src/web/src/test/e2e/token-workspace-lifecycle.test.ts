@@ -10,6 +10,7 @@ describe("token/workspace lifecycle — simplified activate flow", () => {
   let sessionCookie: string
   let workspaceId: string
   let firstToken: string
+  let firstRuntimeId: string
 
   beforeAll(async () => {
     await signUp(email, password, "E2E Token User")
@@ -65,15 +66,31 @@ describe("token/workspace lifecycle — simplified activate flow", () => {
       expect(body.chhlat_id).toBe("TestMachine.local")
       expect(body.workspace_id).toBe(workspaceId)
       expect(body.runtimes.length).toBeGreaterThan(0)
+      firstRuntimeId = body.runtimes[0].id
     })
 
-    it("activate rejects already-active token", async () => {
+    it("activate returns the same identity for an exact retry", async () => {
       const res = await fetch(`${APP_URL}/api/machine-tokens/activate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           token: firstToken,
           hostname: "TestMachine.local",
+          runtimes: [{ type: "claude", version: "4.0.0" }],
+        }),
+      })
+      expect(res.status).toBe(200)
+      const body = await res.json() as { runtimes: Array<{ id: string }> }
+      expect(body.runtimes[0].id).toBe(firstRuntimeId)
+    })
+
+    it("activate rejects a conflicting retry", async () => {
+      const res = await fetch(`${APP_URL}/api/machine-tokens/activate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          token: firstToken,
+          hostname: "OtherMachine.local",
           runtimes: [{ type: "claude", version: "4.0.0" }],
         }),
       })

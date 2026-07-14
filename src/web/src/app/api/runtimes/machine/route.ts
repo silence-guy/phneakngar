@@ -36,7 +36,7 @@ export const DELETE = withAuth(async (req: NextRequest, ctx) => {
     return writeJSON({ error: "Failed to remove machine" }, 500);
   }
 
-  broadcastToChhlat(chhlatId, {
+  broadcastToChhlat(ws.workspaceId, chhlatId, {
     type: "chhlat.evict",
     workspaceId: ws.workspaceId,
   }).catch(() => {});

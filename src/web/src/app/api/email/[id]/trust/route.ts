@@ -7,11 +7,13 @@ import { emailToResponse } from "@/lib/api/responses"
 import { broadcastToUser } from "@/lib/broadcast"
 import { invalidate, cacheKeys } from "@/lib/cache"
 import { dispatchEmailToAgent } from "@/lib/services/email-dispatch"
+import { resolveServerEmailDomain } from "@/lib/email-domain"
 
 export const POST = withAuth(async (req, ctx) => {
   const ws = await withWorkspaceMember(req, ctx)
   if (ws instanceof Response) return ws
 
+  const emailDomain = resolveServerEmailDomain(ctx.env)
   const db = getDb(ctx.env.DB)
 
   const id = ctx.params?.id
@@ -29,7 +31,7 @@ export const POST = withAuth(async (req, ctx) => {
   const updatedEmail = await queries.email.updateEmailWhitelisted(db, id, ws.workspaceId, true)
   if (!updatedEmail) return writeError("failed to update email", 500)
 
-  const { conversationId } = await dispatchEmailToAgent(db, updatedEmail, agent)
+  const { conversationId } = await dispatchEmailToAgent(db, updatedEmail, agent, emailDomain)
 
   const dateStr = new Date().toISOString().slice(0, 10)
   await Promise.all([

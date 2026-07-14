@@ -40,7 +40,8 @@ import { mermaid, cjk } from "@/lib/streamdown-plugins";
 import type { Agent, Artifact, Issue, IssueComment, Message, TaskApi } from "@phneakngar/shared";
 import { isPreviewable, getArtifactUrl } from "@/components/artifact-content-renderer";
 import { formatSize } from "@/components/agent-chat/artifact-sheet";
-import { isTerminalIssueStatus, toPhneakngarAddress } from "@phneakngar/shared";
+import { isTerminalIssueStatus } from "@phneakngar/shared";
+import { toPublicPhneakngarAddress } from "@/lib/email-domain";
 import type { TraceTask } from "@/lib/api";
 import { updateIssue } from "@/lib/api";
 import { AvatarRenderer, parseAvatarUrl } from "@/components/avatar";
@@ -78,7 +79,7 @@ function AgentAvatar({ agent, size = 24 }: { agent?: Agent | null; size?: number
 }
 
 function AgentIdentity({ agent, size = 24 }: { agent: Agent; size?: number }) {
-  const email = agent.email_handle ? toPhneakngarAddress(agent.email_handle) : "";
+  const email = agent.email_handle ? toPublicPhneakngarAddress(agent.email_handle) : "";
   return (
     <div className="flex min-w-0 items-center gap-2">
       <AgentAvatar agent={agent} size={size} />

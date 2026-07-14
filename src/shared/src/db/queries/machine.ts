@@ -1,4 +1,4 @@
-import { eq, and, sql } from "drizzle-orm";
+import { eq, and, sql, or, isNull } from "drizzle-orm";
 import { machine } from "../schema";
 import type { Database } from "../index";
 
@@ -36,6 +36,41 @@ export async function upsertMachine(
     })
     .returning();
   return rows[0]!;
+}
+
+export async function upsertMachineForActivation(
+  db: Database,
+  data: {
+    chhlatId: string;
+    workspaceId: string;
+    deviceInfo: string;
+    ownerId: string;
+  },
+) {
+  const now = new Date().toISOString();
+  const rows = await db
+    .insert(machine)
+    .values({
+      chhlatId: data.chhlatId,
+      workspaceId: data.workspaceId,
+      deviceInfo: data.deviceInfo,
+      lastSeenAt: null,
+      createdAt: now,
+      updatedAt: now,
+      ownerId: data.ownerId,
+    })
+    .onConflictDoUpdate({
+      target: [machine.workspaceId, machine.chhlatId],
+      set: {
+        deviceInfo: data.deviceInfo,
+        lastSeenAt: null,
+        updatedAt: now,
+        ownerId: data.ownerId,
+      },
+      setWhere: or(eq(machine.ownerId, data.ownerId), isNull(machine.ownerId)),
+    })
+    .returning();
+  return rows[0] ?? null;
 }
 
 export async function updateMachineLastSeen(

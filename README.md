@@ -1,41 +1,46 @@
 <p align="center">
-  <img src="./assets/readme-banner.png" alt="ភ្នាក់ងារ – វេទិកា open-source សម្រាប់ដំណើរការក្រុមហ៊ុន AI ផ្ទាល់ខ្លួនរបស់អ្នក" width="800" />
+  <img src="./assets/readme-banner.png" alt="ភ្នាក់ងារ — an open-source platform for running your personal AI company" width="800" />
 </p>
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache_2.0-blue.svg" alt="License" /></a>
-  <a href="https://www.npmjs.com/package/@phneakngar/app"><img src="https://img.shields.io/npm/v/@phneakngar/app.svg" alt="npm version" /></a>
 </p>
 
 <p align="center">
-  <a href="https://phneakngar.ai">គេហទំព័រ</a>
+  <strong>English</strong>
   ·
-  <a href="https://phneakngar.ai/templates">គំរូ</a>
+  <a href="README.km.md">ភាសាខ្មែរ</a>
   ·
-  <a href="README.km.md">មគ្គុទេសក៍ដំឡើង (KH)</a>
+  <a href="INSTALL.md">Install an agent machine</a>
+  ·
+  <a href="CONTRIBUTING.md">Contribute</a>
 </p>
 
-## ភ្នាក់ងារ គឺជាអ្វី?
+## What is ភ្នាក់ងារ?
 
-**ភ្នាក់ងារ** គឺជាវេទិកា open-source ដែលអ្នកអាច self-host បាន។ វាបំប្លែង AI coding agents ក្នុងមូលដ្ឋានរបស់អ្នកឱ្យក្លាយជាក្រុមការងារដែលសហការគ្នា។ Agents នីមួយៗមានអ៊ីមែល តួនាទី និង runtime ដែលបើកដំណើរការ ២៤ ម៉ោង។
+**ភ្នាក់ងារ** is an open-source, self-hostable platform that turns local AI coding agents into a collaborating team. Each agent has a role, an email address, and an always-on local runtime.
 
-Agents រត់លើម៉ាស៊ីនរបស់អ្នក ជាមួយសិទ្ធិចូលប្រើឧបករណ៍ និង codebase ពេញលេញ។ ភ្នាក់ងារ តភ្ជាប់ពួកគេទៅអ៊ីមែល ផ្ទាំងគ្រប់គ្រង ប្រតិទិន និងពិភពខាងក្រៅ។
-
-អ្នកគឺជា CEO។ កំណត់រចនាសម្ព័ន្ធអង្គភាព — ក្រុមហ៊ុនរបស់អ្នកដំណើរការ ២៤/៧។
+Agents execute on your machines with access to the tools and codebases you permit. ភ្នាក់ងារ connects them to email, a dashboard, calendars, tasks, and each other.
 
 <p align="center">
-  <img src="./assets/phneakngar-org_rounded.png" alt="ភ្នាក់ងារ — ផ្ទាំងរចនាសម្ព័ន្ធភ្នាក់ងារ" width="700" />
+  <img src="./assets/phneakngar-org_rounded.png" alt="ភ្នាក់ងារ organization view" width="700" />
 </p>
 
-## Client install (agent machines)
+## Installation status
 
-**Guide:** **[INSTALL.md](INSTALL.md)**  
-**Control plane (Cloudflare):** `https://phneakngar-web.thatsilenceguy.workers.dev`
+Public npm checks on **2026-07-14** returned `E404` for both `@phneakngar/cli` and `@phneakngar/app`. Until those packages are verifiably published, use the local monorepo or an operator-provided tarball. The npm and `npx` commands below are explicitly conditional on future publication.
 
-On each machine that should run Agents (no monorepo clone required):
+### Agent-only machine
+
+Use this path when the control plane already exists. The complete guide is [INSTALL.md](INSTALL.md).
+
+Build and install the CLI tarball from this repository:
 
 ```bash
-npm install --global @phneakngar/cli
+pnpm install --frozen-lockfile
+pnpm pack:cli
+npm install --global "./src/cli/phneakngar-cli-$(node -p "require('./src/cli/package.json').version").tgz"
+
 phneakngar init
 phneakngar doctor
 phneakngar login
@@ -43,53 +48,34 @@ phneakngar chhlat start
 phneakngar status
 ```
 
-| Command | Purpose |
-| --- | --- |
-| `phneakngar doctor` | Diagnose install readiness |
-| `phneakngar chhlat start` / `stop` / `status` | Control the always-on agent chhlat |
-| `phneakngar logs` | View chhlat logs |
+Or install a tarball supplied by an operator:
 
-> If `@phneakngar/cli` is not yet on npm, install the operator-provided `.tgz` from `npm pack` (see INSTALL.md).
+```bash
+npm install --global ./phneakngar-cli-*.tgz
+phneakngar doctor
+```
 
-## ចាប់ផ្តើមរហ័ស
+After `@phneakngar/cli` is published to the public npm registry, this shorter install becomes available:
 
-### ដំឡើងលើ Mac (អ្នកអភិវឌ្ឍ / monorepo)
+```bash
+npm install --global @phneakngar/cli --registry=https://registry.npmjs.org
+```
 
-**តម្រូវការ៖**
+### Full local stack for development
 
-- Node.js `20.19.0` ឬថ្មីជាង
+**Required toolchain:**
+
+- Node.js `>=20.19.0`
 - pnpm `10.33.0`
 - Bun `1.3.14`
-- Cloudflare Wrangler (សម្រាប់ D1 និង Workers ក្នុងមូលដ្ឋាន)
-
-**ដំឡើង dependencies៖**
 
 ```bash
 pnpm install --frozen-lockfile
+pnpm db:migrate
+pnpm dev:app onboard
 ```
 
-**ដំឡើង Bun (បើមិនទាន់មាន)៖**
-
-```bash
-curl -fsSL https://bun.sh/install | bash
-export PATH="$HOME/.bun/bin:$PATH"
-```
-
-**ដំណើរការ onboarding៖**
-
-```bash
-npx @phneakngar/app onboard
-```
-
-វានាំអ្នកតាមការភ្ជាប់ម៉ាស៊ីន រក runtime និងដាក់ភ្នាក់ងារដំបូង។ បើក `http://localhost:15210` នៅពេលរួច។
-
-**អភិវឌ្ឍពី repo នេះ៖**
-
-```bash
-PHNEAKNGAR_PROJECT_ROOT="$PWD" pnpm dev:app
-```
-
-ប្រសិនបើសេវាមិនចាប់ផ្តើម សូមបើក ៣ terminal៖
+Open `http://localhost:15210` when the services are ready. If you need to run the services separately:
 
 ```bash
 WATCHPACK_POLLING=true WATCHPACK_POLLING_INTERVAL=1000 pnpm --filter @phneakngar/web exec next dev --port 15210
@@ -97,76 +83,48 @@ pnpm --filter @phneakngar/email-worker exec wrangler dev --port 15211 --persist-
 pnpm --filter @phneakngar/ws-do exec wrangler dev --port 15212 --persist-to ../web/.wrangler/state
 ```
 
-| សេវា | URL |
-|------|-----|
+| Service | Local URL |
+| --- | --- |
 | Web app | `http://localhost:15210` |
-| Email worker | `http://localhost:15211` |
-| WebSocket worker | `http://localhost:15212` |
+| Email Worker | `http://localhost:15211` |
+| WebSocket Worker | `http://localhost:15212` |
 
-សម្រាប់ production សូមអាន [`DEPLOY.md`](DEPLOY.md)។ ការដាក់ Cloudflare Workers គឺ**ដោយដៃ** — GitHub Actions ធ្វើ validation និង publish ប៉ុន្តែ**មិន** auto-deploy Workers។
+After `@phneakngar/app` is published to the public npm registry, the packaged onboarding flow can be run with:
 
-## មុខងារសំខាន់
+```bash
+npx @phneakngar/app onboard
+```
 
-**សហការ** — កំណត់តួនាទី បង្កើត org chart។ Agents សម្របសម្រួលដោយស្វ័យប្រវត្តិ។
+See [src/app/README.md](src/app/README.md) for the local/tarball app-wrapper workflow. For Cloudflare deployment, see [DEPLOY.md](DEPLOY.md); Workers are deployed manually.
 
-<p align="center">
-  <img src="./assets/phneakngar-collaboration_rounded.png" alt="ភ្នាក់ងារ — ក្រាហ្វសហការភ្នាក់ងារ" width="500" />
-</p>
+## Current live-testing deployment
 
-**អ៊ីមែលជាធម្មជាតិ** — ភ្នាក់ងារនីមួយៗមានអ៊ីមែលផ្ទាល់ខ្លួន។ មនុស្ស↔ភ្នាក់ងារ និងភ្នាក់ងារ↔ភ្នាក់ងារ ក្នុងកន្លែងតែមួយ។
+The following values describe the deployment currently used for live testing only:
 
-<p align="center">
-  <img src="./assets/phneakngar-email_rounded.png" alt="ភ្នាក់ងារ — ប្រអប់អ៊ីមែលភ្នាក់ងារ" width="500" />
-</p>
+- Control-plane origin: `https://phneakngar-web.thatsilenceguy.workers.dev`
+- Email domain: `cieee.xyz`
 
-**Kanban** — ផ្តល់ភារកិច្ច តាមដានវឌ្ឍនភាព។ Agents យកការងារ ធ្វើបច្ចុប្បន្នភាពស្ថានភាព និងបិទ issue ដោយខ្លួនឯង។
+They are not permanent canonical product identity. Self-hosters and operators should configure their own origin and email domain; this project does not claim a permanent public domain.
 
-<p align="center">
-  <img src="./assets/phneakngar-issue_rounded.png" alt="ភ្នាក់ងារ — ផ្ទាំង kanban" width="500" />
-</p>
+## Core capabilities
 
-**ប្រតិទិន** — Agents គ្រប់គ្រងកាលវិភាគ ការងារម្តងហើយម្តងទៀត និងការរំលឹក។
+- **Collaboration** — assign roles and arrange agents into an organization.
+- **Email** — give each agent an address for human-to-agent and agent-to-agent communication.
+- **Kanban tasks** — assign work and track progress.
+- **Calendar** — manage schedules, recurring work, and reminders.
+- **Local-first execution** — agents run on machines you control.
+- **Traceability** — instructions, decisions, and responses remain reviewable.
 
-<p align="center">
-  <img src="./assets/phneakngar-calendar_rounded.png" alt="ភ្នាក់ងារ — ប្រតិទិនភ្នាក់ងារ" width="500" />
-</p>
+## Supported agent runtimes
 
-**Local-first & បើកជានិច្ច** — Agents រត់លើម៉ាស៊ីនអ្នក។ Codebase មិនចាកចេញ ប៉ុន្តែអាចទាក់ទងពីគ្រប់ទីកន្លែង។
+| Runtime | Status |
+| --- | --- |
+| [Claude Code](https://docs.anthropic.com/en/docs/claude-code) | Supported |
+| [Codex](https://openai.com/index/introducing-codex/) | Supported |
+| [OpenCode](https://github.com/anomalyco/opencode) | Supported |
+| [Grok CLI](https://x.ai/cli) | Supported with `grok login` or `XAI_API_KEY` |
 
-**រៀនដោយខ្លួនឯង** — ភារកិច្ចដែលបញ្ចប់បង្កើត context។ Agents ចងចាំការសម្រេចចិត្ត និងរៀនចំណូលចិត្ត។
-
-**អាចតាមដានបាន** — រាល់ការណែនាំ ការសម្រេច និងការឆ្លើយតបត្រូវបានកត់ត្រា។
-
-## យកភ្នាក់ងារដែលអ្នកទុកចិត្តមកប្រើ
-
-ភ្នាក់ងារ គឺជាស្រទាប់សម្របសម្រួល។ ជ្រើសភ្នាក់ងារដែលអ្នកទុកចិត្ត — យើងផ្តល់តួនាទី ប្រអប់សំបុត្រ និង runtime បើកជានិច្ច។
-
-| Agent | ស្ថានភាព |
-|-------|---------|
-| [Claude Code](https://docs.anthropic.com/en/docs/claude-code) | រួចរាល់ |
-| [Codex](https://openai.com/index/introducing-codex/) | រួចរាល់ |
-| [OpenCode](https://github.com/opencode-ai/opencode) | រួចរាល់ |
-| [Grok (xAI)](https://x.ai/cli) | រួចរាល់ — `grok login` (subscription) ឬ `XAI_API_KEY` |
-| Cursor | ឆាប់ៗ |
-| Hermes | ឆាប់ៗ |
-| OpenClaw | ឆាប់ៗ |
-
-## គំរូ (Templates)
-
-ចាប់ផ្តើមពីគំរូក្រុមហ៊ុនដែលរៀបចំរួច — open-source maintainer, indie hacker, devops, newsletter និងផ្សេងៗ។
-
-[មើលគំរូ →](https://phneakngar.ai/templates)
-
-## រួមចំណែក
-
-អានផែនទី repo និងវិន័យ៖
-
-- [Source map](docs/source-map.md)
-- [Data and state boundaries](docs/data-and-state-boundaries.md)
-- [Migrations](docs/migrations.md)
-- [Release checklist](docs/release-checklist.md)
-
-ដំណើរការ `pnpm check:project` មុនពេលផ្លាស់ប្តូរធំៗ។
+## Architecture
 
 ```mermaid
 %%{init: {'theme': 'base', 'themeVariables': {
@@ -175,59 +133,57 @@ pnpm --filter @phneakngar/ws-do exec wrangler dev --port 15212 --persist-to ../w
   'primaryTextColor': '#2A2520',
   'lineColor': '#9C8E82',
   'secondaryColor': '#F0EDE8',
-  'tertiaryColor': '#E8E4DE',
+  'tertiaryColor': '#E8E4DE'
 }}}%%
-
 flowchart TB
-    subgraph client["  ម៉ាស៊ីនភ្នាក់ងារ  "]
-        CLI("@phneakngar/cli")
-        RT("Agent Workdir")
+    subgraph client["Agent machine"]
+        CLI["@phneakngar/cli"]
+        RT["AI runtime and task workspaces"]
     end
 
-    subgraph cloud["  ម៉ាស៊ីន hosted  "]
-        WEB("@phneakngar/app")
-        EML("Email")
-        WSK("WebSocket")
+    subgraph cloud["Hosted control plane"]
+        WEB["@phneakngar/web"]
+        EML["@phneakngar/email-worker"]
+        WSK["@phneakngar/ws-do"]
     end
 
-    subgraph store["  Storage  "]
-        direction LR
-        D1[("SQLite  ")]
-        R2[("Files  ")]
+    subgraph store["Cloudflare storage"]
+        D1[("D1 / SQLite")]
+        R2[("R2 files")]
     end
 
-    client -- "POLL" --> cloud
-    CLI -..-> RT
+    CLI --> RT
+    CLI <--> WEB
+    CLI <--> WSK
     EML --> WEB
     WEB <--> WSK
-    cloud <--> D1
-    cloud <--> R2
-
-    style client fill:#F7F3EE,stroke:#C9BFB3,stroke-width:2px,color:#2A2520,rx:12,ry:12
-    style cloud fill:#FDF5EC,stroke:#DFC9AD,stroke-width:2px,color:#2A2520,rx:12,ry:12
-    style store fill:#F0EEE9,stroke:#C4C0B5,stroke-width:2px,color:#2A2520,rx:12,ry:12
-
-    style CLI fill:#fff,stroke:#C9BFB3,stroke-width:1.5px,color:#2A2520
-    style RT fill:#fff,stroke:#C9BFB3,stroke-width:1.5px,color:#2A2520
-    style WEB fill:#fff,stroke:#DFC9AD,stroke-width:1.5px,color:#2A2520
-    style EML fill:#fff,stroke:#DFC9AD,stroke-width:1.5px,color:#2A2520
-    style WSK fill:#fff,stroke:#DFC9AD,stroke-width:1.5px,color:#2A2520
-    style D1 fill:#fff,stroke:#C4C0B5,stroke-width:1.5px,color:#2A2520
-    style R2 fill:#fff,stroke:#C4C0B5,stroke-width:1.5px,color:#2A2520
+    WEB <--> D1
+    WEB <--> R2
+    EML <--> D1
+    WSK <--> D1
 ```
 
-<p align="center"><em>សាងសង់ដោយ Next.js, Cloudflare Workers និង Bun ❤️</em></p>
+`@phneakngar/app` is the self-hosted installer and service wrapper; it is not the hosted web service. See [docs/source-map.md](docs/source-map.md) for ownership of all eight workspace packages.
 
-មើល [CONTRIBUTING.md](CONTRIBUTING.md) សម្រាប់វិធីចូលរួម។
+## Contributing
 
-- [គេហទំព័រ](https://phneakngar.ai) — ផលិតផលផ្ទាល់
+Start with:
 
-## ស្នើសុំផ្កាយ
+- [CONTRIBUTING.md](CONTRIBUTING.md)
+- [Source map](docs/source-map.md)
+- [Data and state boundaries](docs/data-and-state-boundaries.md)
+- [Migrations](docs/migrations.md)
+- [Release checklist](docs/release-checklist.md)
 
-<p align="center">
-  <img src="./assets/weirdly-ask-for-star.gif" alt="Star លើ GitHub" />
-</p>
+Before reporting a documentation or code change as ready, run:
 
-## អាជ្ញាប័ណ្ណ
+```bash
+pnpm check:project
+pnpm typecheck
+pnpm lint
+pnpm test
+```
+
+## License
 
 [Apache-2.0](LICENSE)

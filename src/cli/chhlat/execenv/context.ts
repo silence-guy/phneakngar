@@ -1,5 +1,4 @@
 import { createHash } from "crypto";
-import { toPhneakngarAddress } from "@phneakngar/shared";
 import { tempDir } from "../../lib/platform.js";
 import { cmdPrefix } from "../../lib/env.js";
 import {
@@ -88,7 +87,7 @@ export function resolveInstruction(text: string, selfAgentId: string): string {
 
 export function buildInstructionContent(task: Task): string {
   const displayName = task.agent?.name || "ភ្នាក់ងារ Agent";
-  const phneakngarAddr = task.agent?.emailHandle ? toPhneakngarAddress(task.agent.emailHandle) : null;
+  const phneakngarAddr = task.agent?.emailAddress ?? null;
   const customAddrs = (task.agent?.emailAddresses ?? []).filter((a) => a !== phneakngarAddr);
   const primaryEmail = phneakngarAddr ?? customAddrs[0] ?? null;
 
@@ -263,12 +262,12 @@ Recruit new colleague agents directly from the CLI. The server auto-generates a 
   - '--relationship-file <path>' — alternative: read relationship from a file (mutually exclusive with --relationship)
   - '--json' — output full JSON response
 - Example: '${cmdPrefix()} agent recruit --instructions "You are a QA engineer..." --relationship "DELEGATE when: code is ready for review"'
-- Output: 'Recruited Felix (felix@phneakngar.ai) — ag_xK9mPq2z'
+- Output: 'Recruited Felix (felix@example.invalid) — ag_xK9mPq2z'
 - The new agent shares your runtime, is automatically linked as your colleague, and receives a welcome task.
 
 Set or update the relationship with an EXISTING colleague (create-or-replace):
 - Run '${cmdPrefix()} agent link --to <handleOrId> --relationship "<DELEGATION_CRITERIA>"'
-  - '--to <handleOrId>' — target agent by email handle ('coder' or 'coder@phneakngar.ai') or agent id ('ag_...')
+  - '--to <handleOrId>' — target agent by email handle ('coder' or 'coder@example.invalid') or agent id ('ag_...')
   - '--relationship <text>' — the delegation criteria both of you see (replaces it if a link already exists)
   - '--relationship-file <path>' — alternative: read relationship from a file (mutually exclusive with --relationship)
   - '--json' — output the link object incl. a 'created' boolean

@@ -23,6 +23,8 @@ function createEnv(overrides: Record<string, unknown> = {}) {
     ENCRYPTION_KEY: "encryption-key",
     EMAIL_NOTIFY_SECRET: "email-secret",
     WS_SERVICE_SECRET: "ws-secret",
+    PHNEAKNGAR_DOMAIN: "agents.example",
+    NEXT_PUBLIC_PHNEAKNGAR_DOMAIN: "agents.example",
     ...overrides,
   };
   return { env, first, prepare, emailFetch, wsFetch };
@@ -55,7 +57,10 @@ describe("GET /api/health", () => {
     expect(fixture.prepare).toHaveBeenCalledWith("SELECT 1 AS ok");
     expect(fixture.emailFetch).toHaveBeenCalledWith(
       "http://internal/health",
-      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+      expect.objectContaining({
+        headers: { "X-Phneakngar-Expected-Email-Domain": "agents.example" },
+        signal: expect.any(AbortSignal),
+      }),
     );
   });
 
@@ -72,6 +77,40 @@ describe("GET /api/health", () => {
     expect(body.checks.configuration.status).toBe("error");
     expect(text).not.toContain("WS_SERVICE_SECRET");
     expect(text).not.toContain("ws-secret");
+  });
+
+  it.each([
+    { PHNEAKNGAR_DOMAIN: undefined, NEXT_PUBLIC_PHNEAKNGAR_DOMAIN: "agents.example" },
+    { PHNEAKNGAR_DOMAIN: "https://private.example/path", NEXT_PUBLIC_PHNEAKNGAR_DOMAIN: "agents.example" },
+    { PHNEAKNGAR_DOMAIN: "agents.example", NEXT_PUBLIC_PHNEAKNGAR_DOMAIN: "other.example" },
+    { PHNEAKNGAR_DOMAIN: "phneakngar.invalid", NEXT_PUBLIC_PHNEAKNGAR_DOMAIN: "phneakngar.invalid" },
+  ])("returns a generic 503 for invalid production domain configuration", async (overrides) => {
+    vi.stubEnv("NODE_ENV", "production");
+    const fixture = createEnv(overrides);
+    mockGetCloudflareContext.mockReturnValue({ env: fixture.env });
+
+    const response = await GET();
+    const text = await response.text();
+    const body = JSON.parse(text);
+
+    expect(response.status).toBe(503);
+    expect(body.checks.configuration.status).toBe("error");
+    expect(text).not.toContain("PHNEAKNGAR_DOMAIN");
+    expect(text).not.toContain("private.example");
+    expect(text).not.toContain("other.example");
+    expect(text).not.toContain("phneakngar.invalid");
+  });
+
+  it("returns 503 when the email Worker rejects the expected domain", async () => {
+    const fixture = createEnv();
+    fixture.emailFetch.mockResolvedValueOnce(new Response("mismatch", { status: 503 }));
+    mockGetCloudflareContext.mockReturnValue({ env: fixture.env });
+
+    const response = await GET();
+    const body = await response.json() as any;
+
+    expect(response.status).toBe(503);
+    expect(body.checks.email_worker.status).toBe("error");
   });
 
   it("returns 503 when a dependency is unavailable", async () => {

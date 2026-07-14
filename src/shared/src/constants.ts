@@ -91,6 +91,10 @@ export const OFFLINE_THRESHOLD_MS = Number(process.env.OFFLINE_THRESHOLD_MS) || 
 export const EVENT_POLL_INTERVAL_MS = Number(process.env.EVENT_POLL_INTERVAL_MS) || 2_000;
 export const AGENT_HANDLE_MIN_LENGTH = 4;
 export const MAX_TASKS_PER_TRACE = 256;
+export const MAX_POLL_TASKS = 8;
+export const MAX_PENDING_TASK_CANDIDATES_PER_POLL = 64;
+export const MAX_POLL_FILE_REQUESTS = 16;
+export const MAX_POLL_MEETINGS = 4;
 
 export const MeetingStatus = {
   PENDING: "pending",
@@ -117,4 +121,5 @@ export const DEV_WS_DO_URL = process.env.DEV_WS_DO_URL || "http://localhost:8789
 export const DEV_EMAIL_WORKER_URL = process.env.DEV_EMAIL_WORKER_URL || "http://localhost:8787";
 
 export const EMAIL_NOTIFY_SECRET_HEADER = "X-Phneakngar-Email-Notify-Secret";
+export const EMAIL_DOMAIN_EXPECTATION_HEADER = "X-Phneakngar-Expected-Email-Domain";
 export const WS_SERVICE_SECRET_HEADER = "X-Phneakngar-WS-Service-Secret";

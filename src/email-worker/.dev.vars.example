@@ -18,5 +18,9 @@ EMAIL_NOTIFY_SECRET=
 # Production example: https://app.example.com
 WEB_ORIGIN=http://localhost:3000
 
-# Public agent/OTP email domain (must match Cloudflare Email Sending zone)
-PHNEAKNGAR_DOMAIN=cieee.xyz
+# Local runtime mode keeps the visibly non-production fallback available.
+NODE_ENV=development
+
+# Local agent/OTP email domain. cieee.xyz is the current live-testing deployment only.
+# Must match both domain values in src/web/.dev.vars.
+PHNEAKNGAR_DOMAIN=phneakngar.invalid

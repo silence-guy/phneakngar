@@ -9,11 +9,13 @@ import { TaskService } from "@/lib/services/task";
 import { log } from "@/lib/logger";
 import { broadcastToUser } from "@/lib/broadcast";
 import { invalidate, cacheKeys } from "@/lib/cache";
+import { resolveServerEmailDomain } from "@/lib/email-domain";
 
 export const POST = withAuth(async (req, ctx) => {
   const ws = await withWorkspaceMember(req, ctx);
   if (ws instanceof Response) return ws;
 
+  const emailDomain = resolveServerEmailDomain(ctx.env);
   const db = getDb(ctx.env.DB);
 
   const conversationId = ctx.params?.id;
@@ -73,7 +75,7 @@ export const POST = withAuth(async (req, ctx) => {
       };
     }
 
-    const taskService = new TaskService(db);
+    const taskService = new TaskService(db, emailDomain);
     const traceId = "tr_" + nanoid();
     try {
       const task = await taskService.enqueueTask(
@@ -169,7 +171,7 @@ export const POST = withAuth(async (req, ctx) => {
   };
 
   const traceId = "tr_" + nanoid();
-  const taskService = new TaskService(db);
+  const taskService = new TaskService(db, emailDomain);
   try {
     const task = await taskService.enqueueTask(
       parentConv.agentId,

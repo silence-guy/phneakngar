@@ -73,6 +73,83 @@ export async function listAgentRuntimes(db: Database, workspaceId: string, userI
     .orderBy(asc(agentRuntime.createdAt));
 }
 
+export async function listAgentRuntimesByChhlat(
+  db: Database,
+  workspaceId: string,
+  chhlatId: string,
+) {
+  return db
+    .select({
+      id: agentRuntime.id,
+      workspaceId: agentRuntime.workspaceId,
+      chhlatId: agentRuntime.chhlatId,
+      runtimeMode: agentRuntime.runtimeMode,
+      provider: agentRuntime.provider,
+      deviceInfo: agentRuntime.deviceInfo,
+      metadata: agentRuntime.metadata,
+      createdAt: agentRuntime.createdAt,
+      updatedAt: agentRuntime.updatedAt,
+      machineLastSeenAt: machine.lastSeenAt,
+      pendingUpdateVersion: machine.pendingUpdateVersion,
+      pendingRescan: machine.pendingRescan,
+    })
+    .from(agentRuntime)
+    .leftJoin(
+      machine,
+      and(
+        eq(machine.chhlatId, agentRuntime.chhlatId),
+        eq(machine.workspaceId, agentRuntime.workspaceId),
+      ),
+    )
+    .where(
+      and(
+        eq(agentRuntime.workspaceId, workspaceId),
+        eq(agentRuntime.chhlatId, chhlatId),
+      ),
+    )
+    .orderBy(asc(agentRuntime.createdAt));
+}
+
+export async function listAgentRuntimesByChhlatProviders(
+  db: Database,
+  workspaceId: string,
+  chhlatId: string,
+  providers: string[],
+) {
+  if (providers.length === 0) return [];
+  return db
+    .select({
+      id: agentRuntime.id,
+      workspaceId: agentRuntime.workspaceId,
+      chhlatId: agentRuntime.chhlatId,
+      runtimeMode: agentRuntime.runtimeMode,
+      provider: agentRuntime.provider,
+      deviceInfo: agentRuntime.deviceInfo,
+      metadata: agentRuntime.metadata,
+      createdAt: agentRuntime.createdAt,
+      updatedAt: agentRuntime.updatedAt,
+      machineLastSeenAt: machine.lastSeenAt,
+      pendingUpdateVersion: machine.pendingUpdateVersion,
+      pendingRescan: machine.pendingRescan,
+    })
+    .from(agentRuntime)
+    .leftJoin(
+      machine,
+      and(
+        eq(machine.chhlatId, agentRuntime.chhlatId),
+        eq(machine.workspaceId, agentRuntime.workspaceId),
+      ),
+    )
+    .where(
+      and(
+        eq(agentRuntime.workspaceId, workspaceId),
+        eq(agentRuntime.chhlatId, chhlatId),
+        inArray(agentRuntime.provider, providers),
+      ),
+    )
+    .orderBy(asc(agentRuntime.createdAt));
+}
+
 export async function getAgentRuntime(db: Database, id: string) {
   const rows = await db
     .select()

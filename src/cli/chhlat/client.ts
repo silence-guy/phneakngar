@@ -13,6 +13,41 @@ import {
   type WorkspaceFileReport,
 } from "@phneakngar/shared";
 
+export const TASK_ALREADY_TERMINAL_CODE = "TASK_ALREADY_TERMINAL";
+
+export class ChhlatHttpError extends Error {
+  constructor(
+    public readonly status: number,
+    message: string,
+    public readonly code?: string,
+  ) {
+    super(`HTTP ${status}: ${message}`);
+    this.name = "ChhlatHttpError";
+  }
+}
+
+export function isTaskAlreadyTerminalError(error: unknown): boolean {
+  return error instanceof ChhlatHttpError
+    && error.status === 409
+    && error.code === TASK_ALREADY_TERMINAL_CODE;
+}
+
+async function createHttpError(response: Response): Promise<ChhlatHttpError> {
+  const raw = await response.text();
+  let message = raw || response.statusText || "request failed";
+  let code: string | undefined;
+
+  try {
+    const body = JSON.parse(raw) as { error?: unknown; code?: unknown };
+    if (typeof body.error === "string") message = body.error;
+    if (typeof body.code === "string") code = body.code;
+  } catch {
+    // Preserve plain-text response bodies for actionable diagnostics.
+  }
+
+  return new ChhlatHttpError(response.status, message, code);
+}
+
 export class ChhlatClient {
   constructor(private baseURL: string) {}
 
@@ -36,7 +71,7 @@ export class ChhlatClient {
           headers,
           body: body ? JSON.stringify(body) : undefined,
         });
-        if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`);
+        if (!res.ok) throw await createHttpError(res);
         if (res.status === 204) return undefined as T;
         return res.json();
       } catch (e) {
@@ -64,6 +99,27 @@ export class ChhlatClient {
       body,
     );
     return RegisterResponseSchema.parse(raw);
+  }
+
+  async wsTicket(
+    token: string,
+    chhlatId: string,
+  ): Promise<{ ticket: string; expiresAt: string; workspaceId: string; wsPort?: number }> {
+    const raw = await this.request<unknown>(
+      "GET",
+      `/api/ws/token?chhlat_id=${encodeURIComponent(chhlatId)}`,
+      token,
+    );
+    if (
+      typeof raw !== "object" ||
+      raw === null ||
+      typeof (raw as { ticket?: unknown }).ticket !== "string" ||
+      typeof (raw as { workspaceId?: unknown }).workspaceId !== "string" ||
+      typeof (raw as { expiresAt?: unknown }).expiresAt !== "string"
+    ) {
+      throw new Error("invalid websocket ticket response");
+    }
+    return raw as { ticket: string; expiresAt: string; workspaceId: string; wsPort?: number };
   }
 
   heartbeat(token: string, chhlatId: string): Promise<unknown> {

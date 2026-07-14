@@ -5,6 +5,7 @@ function createMockDb(rows: any[]) {
   const chain: any = {};
   chain.select = vi.fn(() => chain);
   chain.from = vi.fn(() => chain);
+  chain.innerJoin = vi.fn(() => chain);
   chain.where = vi.fn(() => chain);
   chain.orderBy = vi.fn(() => chain);
   chain.limit = vi.fn(() => Promise.resolve(rows));
@@ -25,6 +26,10 @@ describe("artifact query module exports", () => {
 
   it("exports getArtifact", () => {
     expect(typeof artifactQueries.getArtifact).toBe("function");
+  });
+
+  it("exports getArtifactForOwner", () => {
+    expect(typeof artifactQueries.getArtifactForOwner).toBe("function");
   });
 
   it("exports artifactToResponse", () => {
@@ -131,6 +136,38 @@ describe("getArtifact", () => {
     mockDb.limit = vi.fn(() => Promise.resolve([]));
     mockDb.where = vi.fn(() => Promise.resolve([]));
     const result = await artifactQueries.getArtifact(mockDb, "art_missing", "ws_1");
+    expect(result).toBeNull();
+  });
+});
+
+describe("getArtifactForOwner", () => {
+  it("joins the conversation and returns its owner-scoped artifact", async () => {
+    const row = { id: "art_1", conversationId: "conv_1", workspaceId: "ws_1" };
+    const mockDb = createMockDb([]);
+    mockDb.where = vi.fn(() => Promise.resolve([{ artifact: row }]));
+
+    const result = await artifactQueries.getArtifactForOwner(
+      mockDb,
+      "art_1",
+      "ws_1",
+      "user_1",
+    );
+
+    expect(result).toBe(row);
+    expect(mockDb.innerJoin).toHaveBeenCalledOnce();
+  });
+
+  it("returns null when the conversation owner does not match", async () => {
+    const mockDb = createMockDb([]);
+    mockDb.where = vi.fn(() => Promise.resolve([]));
+
+    const result = await artifactQueries.getArtifactForOwner(
+      mockDb,
+      "art_1",
+      "ws_1",
+      "other-user",
+    );
+
     expect(result).toBeNull();
   });
 });

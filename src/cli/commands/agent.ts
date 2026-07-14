@@ -80,7 +80,7 @@ export function agentCommand(): Command {
     .command("link")
     .description("Set (create-or-replace) the relationship with an existing colleague agent")
     .option("--agent_id <id>", "Calling agent ID (or set PHNEAKNGAR_AGENT_ID env var)")
-    .option("--to <handleOrId>", "Target agent: email handle (coder / coder@phneakngar.ai) or agent id (ag_...)")
+    .option("--to <handleOrId>", "Target agent: email handle (coder / coder@example.invalid) or agent id (ag_...)")
     .option("--relationship <text>", "Relationship/delegation instruction for the link")
     .option("--relationship-file <path>", "Read relationship from a file")
     .option("--json", "Output as JSON")

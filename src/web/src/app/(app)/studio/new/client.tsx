@@ -81,7 +81,7 @@ export function StudioOnboardingClient({
     }
   }, [workspaceId]);
 
-  useUserWs(handleWsMessage);
+  useUserWs(handleWsMessage, { workspaceId });
 
   const handleGenerateToken = useCallback(async () => {
     setGeneratingToken(true);

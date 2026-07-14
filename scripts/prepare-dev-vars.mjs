@@ -46,9 +46,26 @@ let web = await ensureFile(files.web, files.webExample);
 for (const key of ["BETTER_AUTH_SECRET", "ENCRYPTION_KEY", "EMAIL_NOTIFY_SECRET", "WS_SERVICE_SECRET"]) {
   if (!readValue(web, key)) web = setValue(web, key, randomSecret());
 }
-await writeFile(files.web, web, { mode: 0o600 });
 
 let email = await ensureFile(files.email, files.emailExample);
+const configuredDomains = [
+  readValue(web, "PHNEAKNGAR_DOMAIN"),
+  readValue(web, "NEXT_PUBLIC_PHNEAKNGAR_DOMAIN"),
+  readValue(email, "PHNEAKNGAR_DOMAIN"),
+].filter(Boolean);
+const emailDomain = configuredDomains[0] || "phneakngar.invalid";
+if (configuredDomains.some((value) => value !== emailDomain)) {
+  throw new Error("Local web, browser, and email Worker domains must match");
+}
+web = setValue(web, "NODE_ENV", "development");
+web = setValue(web, "PHNEAKNGAR_DOMAIN", emailDomain);
+web = setValue(web, "NEXT_PUBLIC_PHNEAKNGAR_DOMAIN", emailDomain);
+web = setValue(web, "NEXT_PUBLIC_PHNEAKNGAR_ENVIRONMENT", "development");
+email = setValue(email, "NODE_ENV", "development");
+email = setValue(email, "PHNEAKNGAR_DOMAIN", emailDomain);
+
+await writeFile(files.web, web, { mode: 0o600 });
+
 email = synchronizeSecret(email, "ENCRYPTION_KEY", readValue(web, "ENCRYPTION_KEY"), "email-worker");
 email = synchronizeSecret(email, "EMAIL_NOTIFY_SECRET", readValue(web, "EMAIL_NOTIFY_SECRET"), "email-worker");
 if (!readValue(email, "WEB_ORIGIN")) email = setValue(email, "WEB_ORIGIN", "http://localhost:3000");

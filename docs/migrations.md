@@ -75,6 +75,34 @@ The production-readiness audit validated the complete chain from an empty local 
 
 - `0045_email_delivery_idempotency.sql`, which adds a nullable workspace-scoped unique delivery key for retry-safe inbound email.
 - `0046_machine_token_hash.sql`, which adds the token digest index used for lazy migration away from active plaintext machine tokens.
+- `0048_task_message_idempotency.sql`, which removes only byte-identical duplicate task-message deliveries and then installs unique `(task_id, seq)` enforcement.
+
+Before applying `0048_task_message_idempotency.sql` to production, run this read-only preflight against the target D1 database and review any rows it returns:
+
+```sql
+SELECT DISTINCT
+  candidate.task_id,
+  candidate.seq
+FROM task_message AS candidate
+WHERE EXISTS (
+  SELECT 1
+  FROM task_message AS conflicting
+  WHERE conflicting.task_id = candidate.task_id
+    AND conflicting.seq = candidate.seq
+    AND conflicting.id <> candidate.id
+    AND (
+      conflicting.type IS NOT candidate.type
+      OR conflicting.tool IS NOT candidate.tool
+      OR conflicting.call_id IS NOT candidate.call_id
+      OR conflicting.content IS NOT candidate.content
+      OR conflicting.input IS NOT candidate.input
+      OR conflicting.output IS NOT candidate.output
+    )
+)
+ORDER BY candidate.task_id, candidate.seq;
+```
+
+An empty result means the migration can deterministically clean identical duplicates. Any returned row is a conflicting historical duplicate; stop and inspect a production-safe export before applying the migration because the unique index is designed to fail closed rather than choose a winner.
 
 
 ## Identity column (`chhlat_id`)

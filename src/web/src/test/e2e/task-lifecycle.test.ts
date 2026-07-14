@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest"
-import { seedTestData, cleanupTestData, type TestSeed, tokenRequest, emailWorkerHeaders } from "@phneakngar/test-utils"
+import { seedTestData, cleanupTestData, type TestSeed, tokenRequest, emailWorkerHeaders, sqlQuery } from "@phneakngar/test-utils"
 
 let seed: TestSeed
 let conversationId: string
@@ -99,6 +99,46 @@ describe("task lifecycle", () => {
     expect(res.status).toBe(200)
     const data = await res.json() as { status: string }
     expect(data.status).toBe("ok")
+  })
+
+  it("replaying the same task messages is idempotent", async () => {
+    const res = await tokenRequest(
+      `/api/chhlat/tasks/${taskId}/messages`,
+      seed.machineToken,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: [
+            { seq: 1, type: "text", content: "Running tests..." },
+            { seq: 2, type: "tool", tool: "bash", content: "pnpm test", output: "All tests passed" },
+          ],
+        }),
+      },
+    )
+
+    expect(res.status).toBe(200)
+    const rows = sqlQuery<{ count: number }>(
+      `SELECT COUNT(*) AS count FROM task_message WHERE task_id = ?`,
+      taskId,
+    )
+    expect(rows[0].count).toBe(2)
+  })
+
+  it("rejects a conflicting replay for the same task sequence", async () => {
+    const res = await tokenRequest(
+      `/api/chhlat/tasks/${taskId}/messages`,
+      seed.machineToken,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: [{ seq: 1, type: "text", content: "Conflicting content" }],
+        }),
+      },
+    )
+
+    expect(res.status).toBe(409)
   })
 
   it("GET /api/chhlat/tasks/:id/messages returns stored messages", async () => {

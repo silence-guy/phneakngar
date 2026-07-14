@@ -10,6 +10,7 @@ import { TaskService } from "@/lib/services/task";
 import { log } from "@/lib/logger";
 import { broadcastToUser } from "@/lib/broadcast";
 import { invalidate, cacheKeys } from "@/lib/cache";
+import { resolveServerEmailDomain } from "@/lib/email-domain";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
 const MAX_FILES = 10;
@@ -55,6 +56,7 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
   const ws = await withWorkspaceMember(req, ctx);
   if (ws instanceof Response) return ws;
 
+  const emailDomain = resolveServerEmailDomain(ctx.env);
   const db = getDb(ctx.env.DB)
   const bucket = ctx.env.EMAIL_BUCKET;
 
@@ -191,7 +193,7 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
   if (content.includes("@")) {
     try {
       const agentList = await queries.agent.listAgents(db, ws.workspaceId, ctx.userId);
-      const { enrichedPrompt, mentions } = parsePromptMentions(content, agentList);
+      const { enrichedPrompt, mentions } = parsePromptMentions(content, agentList, emailDomain);
       enrichedContent = enrichedPrompt;
       if (mentions.length > 0) {
         const seen = new Set<string>();
@@ -222,7 +224,7 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
     ...(quote ? { quoted_message: { message_id: quote.messageId, excerpt: quote.excerpt } } : {}),
   };
   const traceId = "tr_" + nanoid();
-  const taskService = new TaskService(db);
+  const taskService = new TaskService(db, emailDomain);
   try {
     const task = await taskService.enqueueTask(
       conversation.agentId,

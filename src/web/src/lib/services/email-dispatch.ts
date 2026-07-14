@@ -35,6 +35,7 @@ export async function dispatchEmailToAgent(
   db: Database,
   email: EmailRow,
   agent: AgentRow,
+  emailDomain: string,
   opts: DispatchOpts = {},
 ): Promise<{ conversationId: string; taskId: string; created: boolean }> {
   const ownerId = agent.ownerId!
@@ -127,7 +128,7 @@ export async function dispatchEmailToAgent(
     }).catch(() => {})
   }
 
-  const taskService = new TaskService(db)
+  const taskService = new TaskService(db, emailDomain)
   const context: Record<string, unknown> = { conversationType }
   if (dmUser) context.dmUser = dmUser
   if (opts.isInternal) context.isInternal = true

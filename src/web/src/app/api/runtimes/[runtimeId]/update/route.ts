@@ -29,7 +29,7 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
 
   await queries.machine.setPendingUpdateVersion(db, runtime.chhlatId, ws.workspaceId, result.version);
 
-  broadcastToChhlat(runtime.chhlatId, { type: "chhlat.update", version: result.version }).catch(() => {});
+  broadcastToChhlat(ws.workspaceId, runtime.chhlatId, { type: "chhlat.update", version: result.version }).catch(() => {});
 
   return writeJSON({ pending_update_version: result.version });
 });

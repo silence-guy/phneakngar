@@ -38,6 +38,7 @@ export async function getMachineTokenByToken(db: Database, token: string) {
       name: machineToken.name,
       status: machineToken.status,
       hostname: machineToken.hostname,
+      runtimesJson: machineToken.runtimesJson,
       lastUsedAt: machineToken.lastUsedAt,
       createdAt: machineToken.createdAt,
       userEmail: user.email,
@@ -94,7 +95,51 @@ export async function activateMachineToken(
     .where(eq(machineToken.id, id));
 }
 
-export async function getLatestTokenForUser(db: Database, userId: string) {
+export async function claimMachineTokenActivation(
+  db: Database,
+  id: string,
+  hostname: string,
+  runtimesJson: string,
+) {
+  const rows = await db
+    .update(machineToken)
+    .set({ hostname, runtimesJson })
+    .where(
+      and(
+        eq(machineToken.id, id),
+        eq(machineToken.status, "pending"),
+        isNull(machineToken.hostname),
+        isNull(machineToken.runtimesJson),
+      ),
+    )
+    .returning();
+  return rows[0] ?? null;
+}
+
+export async function finalizeMachineTokenActivation(
+  db: Database,
+  id: string,
+  hostname: string,
+  runtimesJson: string,
+) {
+  const rows = await db
+    .update(machineToken)
+    .set({ status: "active", token: `redacted:${id}` })
+    .where(
+      and(
+        eq(machineToken.id, id),
+        eq(machineToken.status, "pending"),
+        eq(machineToken.hostname, hostname),
+        eq(machineToken.runtimesJson, runtimesJson),
+      ),
+    )
+    .returning();
+  return rows[0] ?? null;
+}
+
+export async function getLatestTokenForUser(db: Database, userId: string, workspaceId?: string) {
+  const conditions = [eq(machineToken.userId, userId)];
+  if (workspaceId) conditions.push(eq(machineToken.workspaceId, workspaceId));
   const rows = await db
     .select({
       id: machineToken.id,
@@ -102,10 +147,11 @@ export async function getLatestTokenForUser(db: Database, userId: string) {
       workspaceId: machineToken.workspaceId,
       token: machineToken.token,
       hostname: machineToken.hostname,
+      runtimesJson: machineToken.runtimesJson,
       lastUsedAt: machineToken.lastUsedAt,
     })
     .from(machineToken)
-    .where(eq(machineToken.userId, userId))
+    .where(and(...conditions))
     .orderBy(desc(machineToken.createdAt))
     .limit(1);
   return rows[0] ?? null;

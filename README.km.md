@@ -1,204 +1,148 @@
 <p align="center">
-  <img src="./assets/readme-banner.png" alt="ភ្នាក់ងារ – វេទិកា Open-source សម្រាប់ដំណើរការក្រុមហ៊ុន AI ផ្ទាល់ខ្លួនរបស់អ្នក" width="800" />
+  <img src="./assets/readme-banner.png" alt="ភ្នាក់ងារ — វេទិកា open-source សម្រាប់ដំណើរការក្រុមហ៊ុន AI ផ្ទាល់ខ្លួន" width="800" />
 </p>
 
-# ភ្នាក់ងារ — មគ្គុទេសក៍ដំឡើង (Installation Guide)
+<p align="center">
+  <a href="README.md">English</a>
+  ·
+  <strong>ភាសាខ្មែរ</strong>
+  ·
+  <a href="INSTALL.md">ដំឡើងម៉ាស៊ីនភ្នាក់ងារ</a>
+  ·
+  <a href="CONTRIBUTING.md">រួមចំណែក</a>
+</p>
 
-ឯកសារនេះពន្យល់ពីរបៀបដំឡើងគម្រោង **ភ្នាក់ងារ** ទៅក្នុងម៉ាស៊ីនរបស់អ្នក ដើម្បីដំណើរការក្នុងមូលដ្ឋាន (local development)។
+# ភ្នាក់ងារ — មគ្គុទេសក៍ដំឡើងក្នុងមូលដ្ឋាន
 
-> អ្នកប្រើជាភាសាអង់គ្លេស សូមមើល [README.md](README.md)។
+**ភ្នាក់ងារ** គឺជាវេទិកា open-source ដែលអាច self-host បាន។ វាភ្ជាប់ AI coding agents ដែលដំណើរការលើម៉ាស៊ីនរបស់អ្នកទៅកាន់អ៊ីមែល ផ្ទាំងគ្រប់គ្រង ភារកិច្ច ប្រតិទិន និងភ្នាក់ងារផ្សេងទៀត។
 
-## ភ្នាក់ងារ គឺជាអ្វី?
+## ស្ថានភាព package
 
-ភ្នាក់ងារ គឺជាវេទិកា open-source ដែលអ្នកអាច self-host ដោយខ្លួនឯង។ វាបំប្លែង AI coding agents ក្នុងមូលដ្ឋានរបស់អ្នកឱ្យក្លាយជាក្រុមការងារ ដែលធ្វើការសហការគ្នា។ Agents នីមួយៗមាន អ៊ីមែល (email), តួនាទី (role), និង runtime ដែលដំណើរការ ២៤ម៉ោង។
+ការពិនិត្យ public npm នៅថ្ងៃទី **2026-07-14** បានត្រឡប់ `E404` សម្រាប់ `@phneakngar/cli` និង `@phneakngar/app`។ រហូតដល់ package ទាំងនេះត្រូវបាន publish ជាសាធារណៈ សូមប្រើ repository ក្នុងមូលដ្ឋាន ឬ tarball ដែល operator ផ្តល់ឱ្យ។ ពាក្យបញ្ជា npm/`npx` ត្រូវបានបង្ហាញតែក្នុងផ្នែកដែលសម្គាល់ថា package បាន publish រួចប៉ុណ្ណោះ។
 
----
+## ១. តម្រូវការ
 
-## ១. តម្រូវការមុនពេលដំឡើង (Prerequisites)
+| កម្មវិធី | កំណែ | គោលបំណង |
+| --- | --- | --- |
+| **Node.js** | `>=20.19.0` | Web, Workers និង CLI runtime |
+| **pnpm** | `10.33.0` | Workspace package manager |
+| **Bun** | `1.3.14` | Build និង CLI development |
 
-សូមដំឡើងកម្មវិធីខាងក្រោមជាមុនសិន៖
-
-| កម្មវិធី | កំណែ (Version) | គោលបំណង |
-|---------|----------------|---------|
-| **Node.js** | `20` ឬថ្មីជាង | ដំណើរការ runtime សម្រាប់ web និង workers |
-| **pnpm** | `10.33.0` ឬថ្មីជាង | កម្មវិធីគ្រប់គ្រង package (package manager) |
-| **Bun** | `1.3` ឬថ្មីជាង | ត្រូវការសម្រាប់ CLI chhlat |
-| **Cloudflare Wrangler** | ចុងក្រោយ | សម្រាប់ដំណើរការ D1 (SQLite) និង Workers ក្នុងមូលដ្ឋាន |
-
-### ពិនិត្យកំណែ Node.js
-
-```bash
-node --version   # គួរបង្ហាញ v20.x.x ឬខ្ពស់ជាង
-```
-
-### ដំឡើង pnpm (បើមិនទាន់មាន)
+ដំឡើង pnpm និង Bun ប្រសិនបើមិនទាន់មាន៖
 
 ```bash
-npm install -g pnpm@10.33.0
-```
-
-### ដំឡើង Bun (បើមិនទាន់មាន)
-
-```bash
-curl -fsSL https://bun.sh/install | bash
+npm install --global pnpm@10.33.0
+curl -fsSL https://bun.sh/install | bash -s "bun-v1.3.14"
 export PATH="$HOME/.bun/bin:$PATH"
+bun --version
 ```
 
-> បន្ថែម `export PATH="$HOME/.bun/bin:$PATH"` ទៅក្នុង `~/.zshrc` ឬ `~/.bashrc` ដើម្បីឱ្យ Bun ដំណើរការគ្រប់ពេល។
-
----
-
-## ២. ទាញយកប្រភពកូដ (Clone the Repository)
+## ២. ដំណើរការ full local stack
 
 ```bash
 git clone https://github.com/silence-guy/phneakngar.git
 cd phneakngar
-```
-
----
-
-## ៣. ដំឡើង Dependencies
-
-ដំណើរការពាក្យបញ្ជានេះនៅ root នៃគម្រោង។ វាដំឡើង packages ទាំងអស់ក្នុង monorepo៖
-
-```bash
-pnpm install
-```
-
-> ការដំឡើងលើកដំបូងបង្កើតឯកសារ `.dev.vars` ដោយស្វ័យប្រវត្តិ (តាមរយៈ `predev` script) ដែលរួមមាន `BETTER_AUTH_SECRET` និង `ENCRYPTION_KEY` ដែលបង្កើតដោយចៃដន្យ (random)។ បំពេញ OAuth keys ប្រសិនបើអ្នកត្រូវការ។
-
----
-
-## ៤. រៀបចំ Database (D1 Migrations)
-
-ភ្នាក់ងារ ប្រើ Cloudflare D1 (SQLite)។ ដំណើរការ migrations ក្នុងមូលដ្ឋាន៖
-
-```bash
+pnpm install --frozen-lockfile
 pnpm db:migrate
+pnpm dev:app onboard
 ```
 
-ដើម្បីលុប database ក្នុងមូលដ្ឋាន ហើយ migrate ឡើងវិញ៖
+បើក `http://localhost:15210` នៅពេល services រួចរាល់។
 
-```bash
-pnpm db:reset
-```
-
----
-
-## ៥. ដំណើរការគម្រោង (Run the App)
-
-### វិធីសាមញ្ញ — ប្រើ onboarding wrapper
-
-```bash
-npx @phneakngar/app onboard
-```
-
-ពាក្យបញ្ជានេះនឹងណែនាំអ្នកពេញលេញ — ភ្ជាប់ម៉ាស៊ីន, រកឃើញ runtimes, និង deploy agent company ដំបូងរបស់អ្នក។ បន្ទាប់ពីបញ្ចប់ បើក `http://localhost:15210`។
-
-### វិធីសម្រាប់ការអភិវឌ្ឍន៍ក្នុងមូលដ្ឋាន (Local Development)
-
-ពី repository នេះផ្ទាល់៖
-
-```bash
-PHNEAKNGAR_PROJECT_ROOT="$PWD" pnpm dev:app
-```
-
-ឬដំណើរការ web app និង workers ទាំងអស់ជាមួយគ្នា៖
-
-```bash
-pnpm dev
-```
-
-ដើម្បីដំណើរការ CLI chhlat ដាច់ដោយឡែក៖
-
-```bash
-pnpm dev:cli
-```
-
-### ដំណើរការ Services ដោយដៃ (បើ wrapper មិនដំណើរការ)
-
-បើ wrapper មិនអាចចាប់ផ្ដើម service ណាមួយ សូមបើក terminal ៣ ផ្សេងគ្នា៖
+បើ wrapper មិនអាចចាប់ផ្តើម service សូមប្រើ terminal ៣៖
 
 ```bash
 # Terminal 1 — Web app
 WATCHPACK_POLLING=true WATCHPACK_POLLING_INTERVAL=1000 pnpm --filter @phneakngar/web exec next dev --port 15210
 
-# Terminal 2 — Email worker
+# Terminal 2 — Email Worker
 pnpm --filter @phneakngar/email-worker exec wrangler dev --port 15211 --persist-to ../web/.wrangler/state
 
-# Terminal 3 — WebSocket worker
+# Terminal 3 — WebSocket Worker
 pnpm --filter @phneakngar/ws-do exec wrangler dev --port 15212 --persist-to ../web/.wrangler/state
 ```
 
----
-
-## ៦. URLs ក្នុងមូលដ្ឋាន (Expected Local URLs)
-
-| Service | URL |
-|---------|-----|
+| Service | URL ក្នុងមូលដ្ឋាន |
+| --- | --- |
 | Web app | `http://localhost:15210` |
-| Email worker | `http://localhost:15211` |
-| WebSocket worker | `http://localhost:15212` |
+| Email Worker | `http://localhost:15211` |
+| WebSocket Worker | `http://localhost:15212` |
 
-បើក `http://localhost:15210` បន្ទាប់ពី web app ត្រឡប់ `HTTP 200`។
-
----
-
-## ៧. ផ្ទៀងផ្ទាត់ការដំឡើង (Verify Installation)
-
-ដំណើរការការត្រួតពិនិត្យទាំងនេះ ដើម្បីបញ្ជាក់ថាអ្វីៗដំណើរការត្រឹមត្រូវ៖
+ពាក្យបញ្ជាខ្លីខាងក្រោមអាចប្រើបានតែបន្ទាប់ពី `@phneakngar/app` ត្រូវបាន publish ទៅ public npm registry៖
 
 ```bash
-pnpm check:project   # ពិនិត្យ guardrails នៃគម្រោង
-pnpm typecheck       # ពិនិត្យ types
-pnpm lint            # ពិនិត្យ code style
-pnpm test            # ដំណើរការ tests ទាំងអស់
+npx @phneakngar/app onboard
 ```
 
----
+សម្រាប់ tarball និង app wrapper សូមមើល [src/app/README.md](src/app/README.md)។
 
-## ៨. ការដោះស្រាយបញ្ហា (Troubleshooting)
+## ៣. ដំឡើង CLI សម្រាប់ម៉ាស៊ីនភ្នាក់ងារ
 
-### ដំឡើងឡើងវិញពីដំបូង (Clean Reinstall)
-
-បើមានបញ្ហាជាមួយ dependencies ឬ build artifacts៖
+បង្កើត និងដំឡើង tarball ពី repository នេះ៖
 
 ```bash
-pnpm reinstall   # លុប node_modules និង artifacts រួចដំឡើងឡើងវិញ
+pnpm pack:cli
+npm install --global "./src/cli/phneakngar-cli-$(node -p "require('./src/cli/package.json').version").tgz"
+
+phneakngar init
+phneakngar doctor
+phneakngar login
+phneakngar chhlat start
+phneakngar status
 ```
 
-ដើម្បីលុបតែ build artifacts៖
+ឬដំឡើង tarball ដែល operator បានផ្តល់៖
 
 ```bash
-pnpm clean:builds
+npm install --global ./phneakngar-cli-*.tgz
+phneakngar doctor
 ```
 
-### Bun រកមិនឃើញ
-
-ប្រាកដថា Bun មាននៅក្នុង `PATH` របស់អ្នក៖
+បន្ទាប់ពី `@phneakngar/cli` ត្រូវបាន publish ទៅ public npm registry អ្នកអាចប្រើ៖
 
 ```bash
-export PATH="$HOME/.bun/bin:$PATH"
-bun --version
+npm install --global @phneakngar/cli --registry=https://registry.npmjs.org
 ```
 
-### Port កំពុងប្រើ (Port already in use)
+សម្រាប់ការដំឡើងម៉ាស៊ីនភ្នាក់ងារពេញលេញ សូមអាន [INSTALL.md](INSTALL.md)។
 
-ប្រសិនបើ port `15210`, `15211`, ឬ `15212` កំពុងប្រើ សូមបិទ process ដែលប្រើ port នោះ ឬកំណត់ port ផ្សេង។
+## ៤. តម្លៃ live-testing បច្ចុប្បន្ន
 
----
+តម្លៃខាងក្រោមប្រើសម្រាប់ deployment ដែលកំពុងសាកល្បងបច្ចុប្បន្នតែប៉ុណ្ណោះ៖
 
-## ឯកសារពាក់ព័ន្ធ (Related Docs)
+- Control-plane origin: `https://phneakngar-web.thatsilenceguy.workers.dev`
+- Email domain: `cieee.xyz`
 
-- [Source map](docs/source-map.md) — ផែនទី packages
+តម្លៃទាំងនេះ **មិនមែន** ជាអត្តសញ្ញាណ canonical អចិន្ត្រៃយ៍របស់ផលិតផលទេ។ Operator និងអ្នក self-host ត្រូវកំណត់ origin និង email domain របស់ខ្លួន។ គម្រោងនេះមិនកំណត់ permanent public domain ថ្មីទេ។
+
+## ៥. ពាក្យបញ្ជាអភិវឌ្ឍន៍
+
+```bash
+pnpm dev          # web + Email Worker + WebSocket Worker + shared watch
+pnpm dev:cli      # CLI/chhlat development
+pnpm db:migrate   # local D1 migrations
+pnpm db:reset     # លុប local D1 state ហើយ migrate ឡើងវិញ
+```
+
+## ៦. ផ្ទៀងផ្ទាត់
+
+```bash
+pnpm check:project
+pnpm typecheck
+pnpm lint
+pnpm test
+```
+
+## ឯកសារពាក់ព័ន្ធ
+
+- [English README](README.md)
+- [Client install guide](INSTALL.md)
+- [Contributor guide](CONTRIBUTING.md)
+- [Source map](docs/source-map.md)
 - [Data and state boundaries](docs/data-and-state-boundaries.md)
 - [Migrations](docs/migrations.md)
-- [CONTRIBUTING.md](CONTRIBUTING.md) — មគ្គុទេសក៍សម្រាប់អ្នករួមចំណែក
+- [Deployment](DEPLOY.md)
 
----
-
-<p align="center"><em>បង្កើតឡើងដោយ Next.js, Cloudflare Workers, និង Bun ❤️</em></p>
-
-## អាជ្ញាប័ណ្ណ (License)
+## អាជ្ញាប័ណ្ណ
 
 [Apache-2.0](LICENSE)

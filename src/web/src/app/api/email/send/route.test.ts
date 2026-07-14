@@ -13,7 +13,7 @@ const mockEmailBucketGet = vi.fn();
 const mockEmailBucketPut = vi.fn();
 const mockWorkerSelfRefFetch = vi.fn();
 const mockCreateMapping = vi.fn();
-const mockGetConversation = vi.fn();
+const mockGetConversationForAgent = vi.fn();
 const mockCreateMessage = vi.fn();
 
 vi.mock("@opennextjs/cloudflare", () => ({
@@ -26,7 +26,7 @@ vi.mock("@opennextjs/cloudflare", () => ({
         put: (...args: unknown[]) => mockEmailBucketPut(...args),
       },
       WORKER_SELF_REFERENCE: { fetch: (...args: unknown[]) => mockWorkerSelfRefFetch(...args) },
-      EMAIL_NOTIFY_SECRET: "notify-secret",
+      EMAIL_NOTIFY_SECRET: "notify-secret", PHNEAKNGAR_DOMAIN: "agents.example",
     },
   })),
 }));
@@ -64,7 +64,7 @@ vi.mock("@phneakngar/shared", async (importOriginal) => {
       getAllEmailAccountsForWorkspace: (...args: unknown[]) => mockGetEmailAccountsByAgent(...args),
     },
     conversation: {
-      getConversation: (...args: unknown[]) => mockGetConversation(...args),
+      getConversationForAgent: (...args: unknown[]) => mockGetConversationForAgent(...args),
     },
     conversationMap: {
       createMapping: (...args: unknown[]) => mockCreateMapping(...args),
@@ -79,7 +79,7 @@ vi.mock("@phneakngar/shared", async (importOriginal) => {
 vi.mock("@/lib/middleware/auth", () => ({
   withAuth: vi.fn((handler: any) => async (req: any, ctx?: any) => {
     const params = ctx?.params instanceof Promise ? await ctx.params : ctx?.params;
-    return handler(req, { env: { DB: {}, EMAIL_WORKER: { fetch: (...args: unknown[]) => mockEmailWorkerFetch(...args) }, EMAIL_BUCKET: { get: (...args: unknown[]) => mockEmailBucketGet(...args), put: (...args: unknown[]) => mockEmailBucketPut(...args) }, WORKER_SELF_REFERENCE: { fetch: (...args: unknown[]) => mockWorkerSelfRefFetch(...args) }, EMAIL_NOTIFY_SECRET: "notify-secret" }, userId: "u1", email: "u@t.com", params });
+    return handler(req, { env: { DB: {}, EMAIL_WORKER: { fetch: (...args: unknown[]) => mockEmailWorkerFetch(...args) }, EMAIL_BUCKET: { get: (...args: unknown[]) => mockEmailBucketGet(...args), put: (...args: unknown[]) => mockEmailBucketPut(...args) }, WORKER_SELF_REFERENCE: { fetch: (...args: unknown[]) => mockWorkerSelfRefFetch(...args) }, EMAIL_NOTIFY_SECRET: "notify-secret", PHNEAKNGAR_DOMAIN: "agents.example" }, userId: "u1", email: "u@t.com", params });
   }),
 }));
 
@@ -128,7 +128,7 @@ describe("POST /api/email/send", () => {
       Response.json({ ok: true, r2Key: "emails/abc/raw" }),
     );
     mockCreateEmail.mockResolvedValue({
-      id: "e1", agentId: "a1", fromEmail: "test-agent@phneakngar.ai",
+      id: "e1", agentId: "a1", fromEmail: "test-agent@agents.example",
       toEmail: "user@example.com", subject: "Hello",
     });
 
@@ -270,7 +270,7 @@ describe("POST /api/email/send", () => {
   // --- Local delivery tests ---
 
   describe("local delivery shortcut", () => {
-    it("delivers locally when recipient is same-workspace @phneakngar.ai agent", async () => {
+    it("delivers locally when recipient is same-workspace @agents.example agent", async () => {
       mockGetAgent.mockResolvedValue({ id: "a1", emailHandle: "sender-agent", workspaceId: "ws1" });
       mockGetAgentByHandle.mockResolvedValue({ id: "a2", emailHandle: "agent-b", workspaceId: "ws1" });
       mockIsWhitelisted.mockResolvedValue(true);
@@ -279,7 +279,7 @@ describe("POST /api/email/send", () => {
 
       const req = makeReq({
         agentId: "a1",
-        to: "agent-b@phneakngar.ai",
+        to: "agent-b@agents.example",
         subject: "Hello local",
         htmlBody: "<p>Internal</p>",
       });
@@ -296,8 +296,8 @@ describe("POST /api/email/send", () => {
       const payload = JSON.parse(init.body);
       expect(payload.agentId).toBe("a2");
       expect(payload.workspaceId).toBe("ws1");
-      expect(payload.from).toBe("sender-agent@phneakngar.ai");
-      expect(payload.to).toBe("agent-b@phneakngar.ai");
+      expect(payload.from).toBe("sender-agent@agents.example");
+      expect(payload.to).toBe("agent-b@agents.example");
       expect(payload.subject).toBe("Hello local");
       expect(payload.forwarded).toBe(false);
       expect(payload.r2Key).toMatch(/^emails\/.+\/raw$/);
@@ -305,7 +305,7 @@ describe("POST /api/email/send", () => {
       expect(mockCreateEmail).toHaveBeenCalledOnce();
       const createArgs = mockCreateEmail.mock.calls[0]![1] as any;
       expect(createArgs.direction).toBe("outbound");
-      expect(createArgs.toEmail).toBe("agent-b@phneakngar.ai");
+      expect(createArgs.toEmail).toBe("agent-b@agents.example");
     });
 
     it("falls through to EMAIL_WORKER when recipient is in different workspace", async () => {
@@ -316,7 +316,7 @@ describe("POST /api/email/send", () => {
 
       const req = makeReq({
         agentId: "a1",
-        to: "agent-b@phneakngar.ai",
+        to: "agent-b@agents.example",
         subject: "Cross workspace",
         htmlBody: "<p>Hi</p>",
       });
@@ -336,7 +336,7 @@ describe("POST /api/email/send", () => {
 
       const req = makeReq({
         agentId: "a1",
-        to: "nonexistent@phneakngar.ai",
+        to: "nonexistent@agents.example",
         subject: "No agent",
         htmlBody: "<p>Hi</p>",
       });
@@ -348,7 +348,7 @@ describe("POST /api/email/send", () => {
       expect(mockEmailWorkerFetch).toHaveBeenCalledOnce();
     });
 
-    it("falls through to EMAIL_WORKER when recipient is not @phneakngar.ai", async () => {
+    it("falls through to EMAIL_WORKER when recipient is not @agents.example", async () => {
       mockGetAgent.mockResolvedValue({ id: "a1", emailHandle: "sender-agent", workspaceId: "ws1" });
       mockEmailWorkerFetch.mockResolvedValue(Response.json({ ok: true, r2Key: "emails/x/raw" }));
       mockCreateEmail.mockResolvedValue({ id: "e1" });
@@ -377,7 +377,7 @@ describe("POST /api/email/send", () => {
 
       const req = makeReq({
         agentId: "a1",
-        to: "sender-agent@phneakngar.ai",
+        to: "sender-agent@agents.example",
         subject: "Self",
         htmlBody: "<p>Self</p>",
       });
@@ -408,7 +408,7 @@ describe("POST /api/email/send", () => {
 
       const req = makeReq({
         agentId: "a1",
-        to: "agent-b@phneakngar.ai",
+        to: "agent-b@agents.example",
         subject: "With file",
         htmlBody: "<p>See attached</p>",
         attachments,
@@ -450,7 +450,7 @@ describe("POST /api/email/send", () => {
 
       const req = makeReq({
         agentId: "a1",
-        to: "agent-b@phneakngar.ai",
+        to: "agent-b@agents.example",
         subject: "Multi attach",
         htmlBody: "<p>See files</p>",
         attachments,
@@ -491,7 +491,7 @@ describe("POST /api/email/send", () => {
 
       const req = makeReq({
         agentId: "a1",
-        to: "agent-b@phneakngar.ai",
+        to: "agent-b@agents.example",
         subject: "Large attachment",
         htmlBody: "<p>Big file</p>",
         attachments,
@@ -525,7 +525,7 @@ describe("POST /api/email/send", () => {
 
       const req = makeReq({
         agentId: "a1",
-        to: "agent-b@phneakngar.ai",
+        to: "agent-b@agents.example",
         subject: "Partial attach",
         htmlBody: "<p>Partial</p>",
         attachments,
@@ -549,7 +549,7 @@ describe("POST /api/email/send", () => {
 
       const req = makeReq({
         agentId: "a1",
-        to: "agent-b@phneakngar.ai",
+        to: "agent-b@agents.example",
         subject: "Whitelist test",
         htmlBody: "<p>Check</p>",
       });
@@ -557,7 +557,7 @@ describe("POST /api/email/send", () => {
       await POST(req, {} as any);
 
       expect(mockIsWhitelisted).toHaveBeenCalledWith(
-        expect.anything(), "a2", "ws1", "sender-agent@phneakngar.ai"
+        expect.anything(), "a2", "ws1", "sender-agent@agents.example", "agents.example"
       );
       const payload = JSON.parse(mockWorkerSelfRefFetch.mock.calls[0][1].body);
       expect(payload.isWhitelisted).toBe(true);
@@ -572,11 +572,11 @@ describe("POST /api/email/send", () => {
 
       const req = makeReq({
         agentId: "a1",
-        to: "agent-b@phneakngar.ai",
+        to: "agent-b@agents.example",
         subject: "Schema test",
         htmlBody: "<p>Schema</p>",
-        inReplyTo: "<orig@phneakngar.ai>",
-        references: "<ref1@phneakngar.ai> <ref2@phneakngar.ai>",
+        inReplyTo: "<orig@agents.example>",
+        references: "<ref1@agents.example> <ref2@agents.example>",
       });
 
       await POST(req, {} as any);
@@ -584,15 +584,15 @@ describe("POST /api/email/send", () => {
       const payload = JSON.parse(mockWorkerSelfRefFetch.mock.calls[0][1].body);
       expect(payload.agentId).toBe("a2");
       expect(payload.workspaceId).toBe("ws1");
-      expect(payload.from).toBe("sender-agent@phneakngar.ai");
-      expect(payload.to).toBe("agent-b@phneakngar.ai");
+      expect(payload.from).toBe("sender-agent@agents.example");
+      expect(payload.to).toBe("agent-b@agents.example");
       expect(payload.subject).toBe("Schema test");
       expect(payload.forwarded).toBe(false);
       expect(payload.isWhitelisted).toBe(false);
       expect(payload.r2Key).toMatch(/^emails\/.+\/raw$/);
-      expect(payload.messageId).toMatch(/^<.+@phneakngar\.ai>$/);
-      expect(payload.inReplyTo).toBe("<orig@phneakngar.ai>");
-      expect(payload.references).toBe("<ref1@phneakngar.ai> <ref2@phneakngar.ai>");
+      expect(payload.messageId).toMatch(/^<.+@agents\.example>$/);
+      expect(payload.inReplyTo).toBe("<orig@agents.example>");
+      expect(payload.references).toBe("<ref1@agents.example> <ref2@agents.example>");
     });
 
     it("generates correct messageId and r2Key in outbound record", async () => {
@@ -604,7 +604,7 @@ describe("POST /api/email/send", () => {
 
       const req = makeReq({
         agentId: "a1",
-        to: "agent-b@phneakngar.ai",
+        to: "agent-b@agents.example",
         subject: "IDs test",
         htmlBody: "<p>IDs</p>",
       });
@@ -612,7 +612,7 @@ describe("POST /api/email/send", () => {
       await POST(req, {} as any);
 
       const createArgs = mockCreateEmail.mock.calls[0]![1] as any;
-      expect(createArgs.messageId).toMatch(/^<.+@phneakngar\.ai>$/);
+      expect(createArgs.messageId).toMatch(/^<.+@agents\.example>$/);
       expect(createArgs.r2Key).toMatch(/^emails\/.+\/raw$/);
     });
 
@@ -627,7 +627,7 @@ describe("POST /api/email/send", () => {
       const req = makeReq({
         agentId: "a1",
         from: "agent@company.com",
-        to: "agent-b@phneakngar.ai",
+        to: "agent-b@agents.example",
         subject: "Custom SMTP",
         htmlBody: "<p>Custom</p>",
       });
@@ -651,7 +651,7 @@ describe("POST /api/email/send", () => {
 
       const req = makeReq({
         agentId: "a1",
-        to: "agent-b@phneakngar.ai",
+        to: "agent-b@agents.example",
         subject: "Fail notify",
         htmlBody: "<p>Fail</p>",
       });
@@ -672,11 +672,11 @@ describe("POST /api/email/send", () => {
       mockIsWhitelisted.mockResolvedValue(false);
       mockWorkerSelfRefFetch.mockResolvedValue(Response.json({ ok: true }));
       mockCreateEmail.mockResolvedValue({ id: "e1" });
-      mockGetConversation.mockResolvedValue({ id: "conv_123" });
+      mockGetConversationForAgent.mockResolvedValue({ id: "conv_123" });
 
       const req = makeReq({
         agentId: "a1",
-        to: "agent-b@phneakngar.ai",
+        to: "agent-b@agents.example",
         subject: "Map test",
         htmlBody: "<p>Map</p>",
         conversationId: "conv_123",
@@ -684,6 +684,13 @@ describe("POST /api/email/send", () => {
 
       const res = await POST(req, {} as any);
       expect(res.status).toBe(200);
+      expect(mockGetConversationForAgent).toHaveBeenCalledWith(
+        {},
+        "conv_123",
+        "ws1",
+        "u1",
+        "a1",
+      );
       expect(mockCreateMapping).toHaveBeenCalledOnce();
       const args = mockCreateMapping.mock.calls[0]![1] as any;
       expect(args.workspaceId).toBe("ws1");
@@ -700,7 +707,7 @@ describe("POST /api/email/send", () => {
 
       const req = makeReq({
         agentId: "a1",
-        to: "agent-b@phneakngar.ai",
+        to: "agent-b@agents.example",
         subject: "No map",
         htmlBody: "<p>No map</p>",
       });
@@ -716,7 +723,7 @@ describe("POST /api/email/send", () => {
         Response.json({ ok: true, r2Key: "emails/abc/raw", messageId: "<msg1@worker.com>" }),
       );
       mockCreateEmail.mockResolvedValue({ id: "e1" });
-      mockGetConversation.mockResolvedValue({ id: "conv_456" });
+      mockGetConversationForAgent.mockResolvedValue({ id: "conv_456" });
 
       const req = makeReq({
         agentId: "a1",
@@ -741,11 +748,11 @@ describe("POST /api/email/send", () => {
       mockIsWhitelisted.mockResolvedValue(false);
       mockWorkerSelfRefFetch.mockResolvedValue(Response.json({ ok: true }));
       mockCreateEmail.mockResolvedValue({ id: "e1" });
-      mockGetConversation.mockResolvedValue(null);
+      mockGetConversationForAgent.mockResolvedValue(null);
 
       const req = makeReq({
         agentId: "a1",
-        to: "agent-b@phneakngar.ai",
+        to: "agent-b@agents.example",
         subject: "Bad conv",
         htmlBody: "<p>Bad</p>",
         conversationId: "conv_other_workspace",
@@ -756,13 +763,85 @@ describe("POST /api/email/send", () => {
       expect(mockCreateMapping).not.toHaveBeenCalled();
     });
 
+    it("does not link a same-workspace conversation owned by another user", async () => {
+      mockGetAgent.mockResolvedValue({
+        id: "a1",
+        emailHandle: "sender-agent",
+        workspaceId: "ws1",
+        ownerId: "u1",
+      });
+      mockGetAgentByHandle.mockResolvedValue({ id: "a2", emailHandle: "agent-b", workspaceId: "ws1" });
+      mockIsWhitelisted.mockResolvedValue(false);
+      mockWorkerSelfRefFetch.mockResolvedValue(Response.json({ ok: true, conversationId: "conv_b" }));
+      mockCreateEmail.mockResolvedValue({ id: "e1" });
+      mockGetConversationForAgent.mockResolvedValue(null);
+
+      const res = await POST(makeReq({
+        agentId: "a1",
+        to: "agent-b@agents.example",
+        subject: "Other user's conversation",
+        htmlBody: "<p>Private</p>",
+        conversationId: "conv_other_user",
+      }), {} as any);
+
+      expect(res.status).toBe(200);
+      expect(mockGetConversationForAgent).toHaveBeenCalledWith(
+        {},
+        "conv_other_user",
+        "ws1",
+        "u1",
+        "a1",
+      );
+      expect(mockCreateMapping).not.toHaveBeenCalled();
+      expect(mockCreateMessage).not.toHaveBeenCalled();
+      const payload = JSON.parse(mockWorkerSelfRefFetch.mock.calls[0][1].body);
+      expect(payload.senderConversationId).toBeUndefined();
+      expect(payload.senderAgentId).toBeUndefined();
+    });
+
+    it("does not link a conversation owned by the user but assigned to another agent", async () => {
+      mockGetAgent.mockResolvedValue({
+        id: "a1",
+        emailHandle: "sender-agent",
+        workspaceId: "ws1",
+        ownerId: "u1",
+      });
+      mockGetAgentByHandle.mockResolvedValue({ id: "a2", emailHandle: "agent-b", workspaceId: "ws1" });
+      mockIsWhitelisted.mockResolvedValue(false);
+      mockWorkerSelfRefFetch.mockResolvedValue(Response.json({ ok: true, conversationId: "conv_b" }));
+      mockCreateEmail.mockResolvedValue({ id: "e1" });
+      mockGetConversationForAgent.mockResolvedValue(null);
+
+      const res = await POST(makeReq({
+        agentId: "a1",
+        to: "agent-b@agents.example",
+        subject: "Wrong agent conversation",
+        htmlBody: "<p>Private</p>",
+        conversationId: "conv_agent_2",
+      }), {} as any);
+
+      expect(res.status).toBe(200);
+      expect(mockGetConversationForAgent).toHaveBeenCalledWith(
+        {},
+        "conv_agent_2",
+        "ws1",
+        "u1",
+        "a1",
+      );
+      expect(mockCreateMapping).not.toHaveBeenCalled();
+      expect(mockCreateMessage).not.toHaveBeenCalled();
+      const payload = JSON.parse(mockWorkerSelfRefFetch.mock.calls[0][1].body);
+      expect(payload.senderConversationId).toBeUndefined();
+      expect(payload.senderAgentId).toBeUndefined();
+    });
+
     it("does NOT create mapping on remote delivery when messageId is undefined", async () => {
       mockGetAgent.mockResolvedValue({ id: "a1", emailHandle: "test-agent" });
       mockEmailWorkerFetch.mockResolvedValue(
         Response.json({ ok: true, r2Key: "emails/abc/raw" }),
       );
       mockCreateEmail.mockResolvedValue({ id: "e1" });
-      mockGetConversation.mockResolvedValue({ id: "conv_456" });
+      mockGetConversationForAgent.mockResolvedValue({ id: "conv_456" });
 
       const req = makeReq({
         agentId: "a1",
@@ -785,12 +864,12 @@ describe("POST /api/email/send", () => {
       mockIsWhitelisted.mockResolvedValue(true);
       mockWorkerSelfRefFetch.mockResolvedValue(Response.json({ ok: true, conversationId: "conv_b" }));
       mockCreateEmail.mockResolvedValue({ id: "e1" });
-      mockGetConversation.mockResolvedValue({ id: "conv_a" });
+      mockGetConversationForAgent.mockResolvedValue({ id: "conv_a" });
       mockCreateMessage.mockResolvedValue({ id: "m1", conversationId: "conv_a", role: "event", content: "", taskId: null, createdAt: "2026-01-01" });
 
       const req = makeReq({
         agentId: "a1",
-        to: "agent-b@phneakngar.ai",
+        to: "agent-b@agents.example",
         subject: "Cross link",
         htmlBody: "<p>Hi</p>",
         conversationId: "conv_a",
@@ -810,12 +889,12 @@ describe("POST /api/email/send", () => {
       mockIsWhitelisted.mockResolvedValue(true);
       mockWorkerSelfRefFetch.mockResolvedValue(Response.json({ ok: true, conversationId: "conv_b" }));
       mockCreateEmail.mockResolvedValue({ id: "e1" });
-      mockGetConversation.mockResolvedValue({ id: "conv_a" });
+      mockGetConversationForAgent.mockResolvedValue({ id: "conv_a" });
       mockCreateMessage.mockResolvedValue({ id: "m1", conversationId: "conv_a", role: "event", content: "", taskId: null, createdAt: "2026-01-01" });
 
       const req = makeReq({
         agentId: "a1",
-        to: "agent-b@phneakngar.ai",
+        to: "agent-b@agents.example",
         subject: "Cross link",
         htmlBody: "<p>Hi</p>",
         conversationId: "conv_a",
@@ -836,7 +915,7 @@ describe("POST /api/email/send", () => {
         Response.json({ ok: true, r2Key: "emails/abc/raw", messageId: "<msg1@ext.com>" }),
       );
       mockCreateEmail.mockResolvedValue({ id: "e1" });
-      mockGetConversation.mockResolvedValue({ id: "conv_a" });
+      mockGetConversationForAgent.mockResolvedValue({ id: "conv_a" });
       mockCreateMessage.mockResolvedValue({ id: "m1", conversationId: "conv_a", role: "event", content: "", taskId: null, createdAt: "2026-01-01" });
 
       const req = makeReq({
@@ -861,11 +940,11 @@ describe("POST /api/email/send", () => {
       mockIsWhitelisted.mockResolvedValue(false);
       mockWorkerSelfRefFetch.mockResolvedValue(Response.json({ ok: true }));
       mockCreateEmail.mockResolvedValue({ id: "e1" });
-      mockGetConversation.mockResolvedValue({ id: "conv_a" });
+      mockGetConversationForAgent.mockResolvedValue({ id: "conv_a" });
 
       const req = makeReq({
         agentId: "a1",
-        to: "sender-agent@phneakngar.ai",
+        to: "sender-agent@agents.example",
         subject: "Self send",
         htmlBody: "<p>Self</p>",
         conversationId: "conv_a",
@@ -886,11 +965,11 @@ describe("POST /api/email/send", () => {
       mockWorkerSelfRefFetch.mockResolvedValue(
         new Response("notify failed", { status: 500 }),
       );
-      mockGetConversation.mockResolvedValue({ id: "conv_a" });
+      mockGetConversationForAgent.mockResolvedValue({ id: "conv_a" });
 
       const req = makeReq({
         agentId: "a1",
-        to: "agent-b@phneakngar.ai",
+        to: "agent-b@agents.example",
         subject: "Fail notify map",
         htmlBody: "<p>Fail</p>",
         conversationId: "conv_a",

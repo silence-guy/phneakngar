@@ -1,11 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
-import * as sharedMock from "@/test/shared-mock";
 
-const mockGetInviteByToken = vi.fn();
-const mockGetMemberByUserAndWorkspace = vi.fn();
-const mockRedeemInvite = vi.fn();
-const mockCreateMember = vi.fn();
+const mockGetInviteByTokenForUser = vi.fn();
+const mockRedeemInviteForUser = vi.fn();
+const mockInvalidate = vi.fn();
 
 vi.mock("@opennextjs/cloudflare", () => ({
   getCloudflareContext: vi.fn(async () => ({ env: { DB: {} } })),
@@ -18,17 +16,18 @@ vi.mock("@phneakngar/shared", async (importOriginal) => {
   return {
     ...actual,
     queries: {
-    workspaceInvite: {
-      getInviteByToken: (...args: unknown[]) => mockGetInviteByToken(...args),
-      redeemInvite: (...args: unknown[]) => mockRedeemInvite(...args),
+      workspaceInvite: {
+        getInviteByTokenForUser: (...args: unknown[]) => mockGetInviteByTokenForUser(...args),
+        redeemInviteForUser: (...args: unknown[]) => mockRedeemInviteForUser(...args),
+      },
     },
-    member: {
-      getMemberByUserAndWorkspace: (...args: unknown[]) => mockGetMemberByUserAndWorkspace(...args),
-      createMember: (...args: unknown[]) => mockCreateMember(...args),
-    },
-  },
   };
 });
+
+vi.mock("@/lib/cache", () => ({
+  invalidate: (...args: unknown[]) => mockInvalidate(...args),
+  cacheKeys: { allMembers: (workspaceId: string) => `members:${workspaceId}` },
+}));
 
 vi.mock("@/lib/middleware/auth", () => ({
   withAuth: vi.fn((handler: any) => async (req: any, ctx?: any) => {
@@ -57,132 +56,143 @@ const sampleInvite = {
   creatorEmail: "alice@example.com",
   usedBy: null,
   usedAt: null,
+  memberId: null,
   expiresAt: futureDate,
   createdAt: "2024-01-01T00:00:00Z",
 };
 
+const request = (method: "GET" | "POST", token = "tok-abc") =>
+  new NextRequest(`http://localhost/api/invite/${token}`, { method });
+const params = (token = "tok-abc") => ({ params: Promise.resolve({ token }) }) as any;
+
 describe("GET /api/invite/[token]", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("returns invite info for a valid token", async () => {
-    mockGetInviteByToken.mockResolvedValue(sampleInvite);
+  it("returns invite info for a valid unused token", async () => {
+    mockGetInviteByTokenForUser.mockResolvedValue(sampleInvite);
 
-    const req = new NextRequest("http://localhost/api/invite/tok-abc", { method: "GET" });
-    const res = await GET(req, { params: Promise.resolve({ token: "tok-abc" }) } as any);
+    const res = await GET(request("GET"), params());
     const body = await res.json();
 
     expect(res.status).toBe(200);
-    expect(body.workspace_name).toBe("Acme Corp");
-    expect(body.workspace_id).toBe("w1");
-    expect(body.invited_by).toBe("Alice");
+    expect(body).toEqual({
+      workspace_name: "Acme Corp",
+      workspace_id: "w1",
+      invited_by: "Alice",
+    });
+    expect(mockGetInviteByTokenForUser).toHaveBeenCalledWith({}, "tok-abc", "u1");
   });
 
-  it("uses creator email when creator name is null", async () => {
-    mockGetInviteByToken.mockResolvedValue({ ...sampleInvite, creatorName: null });
+  it("allows the redeemer to reload after a successful redemption", async () => {
+    mockGetInviteByTokenForUser.mockResolvedValue({
+      ...sampleInvite,
+      usedBy: "u1",
+      usedAt: new Date().toISOString(),
+      memberId: "m1",
+      expiresAt: pastDate,
+    });
 
-    const req = new NextRequest("http://localhost/api/invite/tok-abc", { method: "GET" });
-    const res = await GET(req, { params: Promise.resolve({ token: "tok-abc" }) } as any);
-    const body = await res.json();
-
-    expect(body.invited_by).toBe("alice@example.com");
+    expect((await GET(request("GET"), params())).status).toBe(200);
   });
 
-  it("returns 404 when invite not found", async () => {
-    mockGetInviteByToken.mockResolvedValue(null);
+  it("allows the same user to reload a partially redeemed invite so POST can repair it", async () => {
+    mockGetInviteByTokenForUser.mockResolvedValue({
+      ...sampleInvite,
+      usedBy: "u1",
+      usedAt: new Date().toISOString(),
+      memberId: null,
+      expiresAt: pastDate,
+    });
 
-    const req = new NextRequest("http://localhost/api/invite/bad-token", { method: "GET" });
-    const res = await GET(req, { params: Promise.resolve({ token: "bad-token" }) } as any);
-    expect(res.status).toBe(404);
+    expect((await GET(request("GET"), params())).status).toBe(200);
   });
 
-  it("returns 410 when invite is already used", async () => {
-    mockGetInviteByToken.mockResolvedValue({ ...sampleInvite, usedBy: "u2" });
-
-    const req = new NextRequest("http://localhost/api/invite/tok-abc", { method: "GET" });
-    const res = await GET(req, { params: Promise.resolve({ token: "tok-abc" }) } as any);
-    expect(res.status).toBe(410);
-    const body = await res.json();
-    expect(body.error).toBe("invite already used");
-  });
-
-  it("returns 410 when invite is expired", async () => {
-    mockGetInviteByToken.mockResolvedValue({ ...sampleInvite, expiresAt: pastDate });
-
-    const req = new NextRequest("http://localhost/api/invite/tok-abc", { method: "GET" });
-    const res = await GET(req, { params: Promise.resolve({ token: "tok-abc" }) } as any);
-    expect(res.status).toBe(410);
-    const body = await res.json();
-    expect(body.error).toBe("invite expired");
+  it.each([
+    [null, 404],
+    [{ ...sampleInvite, usedBy: "u2" }, 410],
+    [{ ...sampleInvite, expiresAt: pastDate }, 410],
+  ])("rejects unavailable invite %#", async (invite, status) => {
+    mockGetInviteByTokenForUser.mockResolvedValue(invite);
+    expect((await GET(request("GET"), params())).status).toBe(status);
   });
 });
 
 describe("POST /api/invite/[token]", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("accepts a valid invite and creates membership", async () => {
-    mockGetInviteByToken.mockResolvedValue(sampleInvite);
-    mockGetMemberByUserAndWorkspace.mockResolvedValue(null);
-    mockRedeemInvite.mockResolvedValue({ ...sampleInvite, usedBy: "u1" });
-    mockCreateMember.mockResolvedValue({ id: "m-new" });
+  it("redeems atomically and invalidates the member list", async () => {
+    mockRedeemInviteForUser.mockResolvedValue({
+      status: "success",
+      workspaceId: "w1",
+      workspaceSlug: "acme",
+    });
 
-    const req = new NextRequest("http://localhost/api/invite/tok-abc", { method: "POST" });
-    const res = await POST(req, { params: Promise.resolve({ token: "tok-abc" }) } as any);
+    const res = await POST(request("POST"), params());
     const body = await res.json();
 
     expect(res.status).toBe(200);
-    expect(body.workspace_id).toBe("w1");
-    expect(body.workspace_slug).toBe("acme");
-    expect(mockRedeemInvite).toHaveBeenCalledWith({}, "tok-abc", "u1");
-    expect(mockCreateMember).toHaveBeenCalledWith(
-      {},
-      { workspaceId: "w1", userId: "u1", role: "member" }
-    );
+    expect(body).toEqual({ workspace_id: "w1", workspace_slug: "acme" });
+    expect(mockRedeemInviteForUser).toHaveBeenCalledWith({}, "tok-abc", "u1");
+    expect(mockInvalidate).toHaveBeenCalledWith("members:w1");
   });
 
-  it("returns 409 when user is already a member", async () => {
-    mockGetInviteByToken.mockResolvedValue(sampleInvite);
-    mockGetMemberByUserAndWorkspace.mockResolvedValue({ id: "m-existing" });
+  it("returns the same success for a safe same-user retry", async () => {
+    mockRedeemInviteForUser.mockResolvedValue({
+      status: "success",
+      workspaceId: "w1",
+      workspaceSlug: "acme",
+    });
 
-    const req = new NextRequest("http://localhost/api/invite/tok-abc", { method: "POST" });
-    const res = await POST(req, { params: Promise.resolve({ token: "tok-abc" }) } as any);
+    expect((await POST(request("POST"), params())).status).toBe(200);
+    expect((await POST(request("POST"), params())).status).toBe(200);
+  });
+
+  it("returns success for same-user partial-state repair", async () => {
+    mockRedeemInviteForUser.mockResolvedValue({
+      status: "success",
+      workspaceId: "w1",
+      workspaceSlug: "acme",
+    });
+
+    const res = await POST(request("POST"), params());
+
+    expect(res.status).toBe(200);
+    expect(mockInvalidate).toHaveBeenCalledWith("members:w1");
+  });
+
+  it("rejects same-user partial-state repair when the workspace is at capacity", async () => {
+    mockRedeemInviteForUser.mockResolvedValue({ status: "capacity_full" });
+
+    const res = await POST(request("POST"), params());
+    const body = await res.json();
+
     expect(res.status).toBe(409);
-    const body = await res.json();
-    expect(body.error).toBe("already a member of this workspace");
+    expect(body.error).toBe("workspace capacity reached");
+    expect(mockInvalidate).not.toHaveBeenCalled();
   });
 
-  it("returns 410 when invite is already used", async () => {
-    mockGetInviteByToken.mockResolvedValue({ ...sampleInvite, usedBy: "u3" });
+  it.each([
+    ["not_found", 404],
+    ["expired", 410],
+    ["used", 410],
+    ["inconsistent", 410],
+    ["already_member", 409],
+    ["capacity_full", 409],
+  ])("maps %s outcome to %i", async (status, httpStatus) => {
+    mockRedeemInviteForUser.mockResolvedValue({ status });
 
-    const req = new NextRequest("http://localhost/api/invite/tok-abc", { method: "POST" });
-    const res = await POST(req, { params: Promise.resolve({ token: "tok-abc" }) } as any);
-    expect(res.status).toBe(410);
+    const res = await POST(request("POST"), params());
+
+    expect(res.status).toBe(httpStatus);
+    expect(mockInvalidate).not.toHaveBeenCalled();
   });
 
-  it("returns 410 when invite is expired", async () => {
-    mockGetInviteByToken.mockResolvedValue({ ...sampleInvite, expiresAt: pastDate });
+  it("returns 503 when the atomic batch fails", async () => {
+    mockRedeemInviteForUser.mockRejectedValue(new Error("D1 batch failed"));
 
-    const req = new NextRequest("http://localhost/api/invite/tok-abc", { method: "POST" });
-    const res = await POST(req, { params: Promise.resolve({ token: "tok-abc" }) } as any);
-    expect(res.status).toBe(410);
-    const body = await res.json();
-    expect(body.error).toBe("invite expired");
-  });
+    const res = await POST(request("POST"), params());
 
-  it("returns 404 when invite token not found", async () => {
-    mockGetInviteByToken.mockResolvedValue(null);
-
-    const req = new NextRequest("http://localhost/api/invite/bad-token", { method: "POST" });
-    const res = await POST(req, { params: Promise.resolve({ token: "bad-token" }) } as any);
-    expect(res.status).toBe(404);
-  });
-
-  it("returns 410 when redeemInvite returns null (race condition)", async () => {
-    mockGetInviteByToken.mockResolvedValue(sampleInvite);
-    mockGetMemberByUserAndWorkspace.mockResolvedValue(null);
-    mockRedeemInvite.mockResolvedValue(null);
-
-    const req = new NextRequest("http://localhost/api/invite/tok-abc", { method: "POST" });
-    const res = await POST(req, { params: Promise.resolve({ token: "tok-abc" }) } as any);
-    expect(res.status).toBe(410);
+    expect(res.status).toBe(503);
+    expect(mockInvalidate).not.toHaveBeenCalled();
   });
 });

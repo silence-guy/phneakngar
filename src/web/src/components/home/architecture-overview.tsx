@@ -9,12 +9,13 @@ import { DemoDashboard, type DashboardStep, type DashboardState, type DashboardC
 import { DemoTerminal, type TerminalLine } from "./demo-pad/demo-terminal";
 import { DemoMobile } from "./demo-pad/demo-mobile";
 import { useScriptedTimeline, type TimelineStep } from "./demo-pad/use-scripted-timeline";
+import { toPublicPhneakngarAddress } from "@/lib/email-domain";
 
 gsap.registerPlugin(ScrollTrigger);
 
 const ARCH_AGENTS: AgentInfo[] = [
-  { id: "planner", name: "វិចិត្រ", email: "planner@phneakngar.ai", config: { shape: "hexagon", eye: "dots", nose: "dash", bg: 5 } },
-  { id: "coder", name: "ដារ៉ា", email: "coder@phneakngar.ai", config: { shape: "task", eye: "happy", nose: "dot", bg: 0 } },
+  { id: "planner", name: "វិចិត្រ", email: toPublicPhneakngarAddress("planner"), config: { shape: "hexagon", eye: "dots", nose: "dash", bg: 5 } },
+  { id: "coder", name: "ដារ៉ា", email: toPublicPhneakngarAddress("coder"), config: { shape: "task", eye: "happy", nose: "dot", bg: 0 } },
 ];
 const ARCH_CONFIG: DashboardConfig = { agents: ARCH_AGENTS };
 
@@ -22,9 +23,9 @@ const ARCH_CONFIG: DashboardConfig = { agents: ARCH_AGENTS };
 const PLANNER_STEPS: DashboardStep[] = [
   { type: "user-message", text: "មានអ្នកប្រើប្រាស់រាយការណ៍ថា Safari គាំងពេល login — ជួយជួសជុលបានទេ?" },
   { type: "message", text: "ខ្ញុំកំពុងពិនិត្យ ហើយនឹងផ្ទេរទៅ ដារ៉ា សម្រាប់ផ្នែកកូដ។" },
-  { type: "email-out", subject: "ជួសជុល Safari flex gap ក្នុង login page", address: "coder@phneakngar.ai" },
+  { type: "email-out", subject: "ជួសជុល Safari flex gap ក្នុង login page", address: toPublicPhneakngarAddress("coder") },
   // After អ្នកសរសេរកូដ finishes:
-  { type: "email-in", subject: "Re: ជួសជុល Safari flex gap — រួចរាល់, PR #142", address: "coder@phneakngar.ai" },
+  { type: "email-in", subject: "Re: ជួសជុល Safari flex gap — រួចរាល់, PR #142", address: toPublicPhneakngarAddress("coder") },
   { type: "message", markdown: "ដារ៉ា បានជួសជុលរួច — បើក <strong>PR #142</strong> ហើយ។ បានកែ <code>login-page.tsx</code> និង <code>signup.tsx</code>; tests 42 pass។" },
   { type: "user-message", text: "ល្អណាស់ បញ្ចូលវាទៅ" },
   { type: "message", text: "រួចរាល់។ Merge ហើយ និងឆ្លើយតបទៅអ្នករាយការណ៍។" },
@@ -33,11 +34,11 @@ const PLANNER_STEPS: DashboardStep[] = [
 
 /* ─── អ្នកសរសេរកូដ's chat steps ─── */
 const CODER_STEPS: DashboardStep[] = [
-  { type: "email-in", subject: "ជួសជុល Safari flex gap ក្នុង login page", address: "planner@phneakngar.ai" },
+  { type: "email-in", subject: "ជួសជុល Safari flex gap ក្នុង login page", address: toPublicPhneakngarAddress("planner") },
   { type: "message", text: "ទទួលបានហើយ។ កំពុងស្វែងរកការប្រើ flex gap..." },
   { type: "message", markdown: `រកឃើញឯកសារប៉ះពាល់ 2:<br/><code>login-page.tsx:42</code> និង <code>signup.tsx:18</code>។ កំពុងជួសជុលទាំងពីរ។` },
   { type: "message", markdown: "រួចរាល់ — ប្តូរ flex gap ទៅជា margin spacing។ <strong>tests 42 pass ✓</strong>" },
-  { type: "email-out", subject: "Re: ជួសជុល Safari flex gap — រួចរាល់, PR #142", address: "planner@phneakngar.ai" },
+  { type: "email-out", subject: "Re: ជួសជុល Safari flex gap — រួចរាល់, PR #142", address: toPublicPhneakngarAddress("planner") },
 ];
 
 /* ─── Terminal lines ─── */
@@ -62,7 +63,7 @@ const TERMINAL_LINES: TerminalLine[] = [
     { text: "[session-runner] ", color: "muted" },
     { text: "email-send", color: "highlight" },
     { text: ": → ", color: "muted" },
-    { text: "coder@phneakngar.ai", color: "string" },
+    { text: toPublicPhneakngarAddress("coder"), color: "string" },
   ] },
   { spans: [
     { text: "INFO  ", color: "keyword" },
@@ -118,7 +119,7 @@ const TERMINAL_LINES: TerminalLine[] = [
     { text: "[session-runner] ", color: "muted" },
     { text: "email-send", color: "highlight" },
     { text: ": → ", color: "muted" },
-    { text: "planner@phneakngar.ai", color: "string" },
+    { text: toPublicPhneakngarAddress("planner"), color: "string" },
   ] },
   { spans: [
     { text: "INFO  ", color: "keyword" },

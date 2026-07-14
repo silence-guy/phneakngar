@@ -25,7 +25,7 @@ function makeTask(overrides: Partial<Task> = {}): Task {
 describe("buildInstructionContent email tool injection", () => {
   it("includes email tool section with full email address when agent has email handle", () => {
     const task = makeTask({
-      agent: { name: "test", instructions: "do stuff", emailHandle: "myagent" },
+      agent: { name: "test", instructions: "do stuff", emailHandle: "myagent", emailAddress: "myagent@agents.example", emailAddresses: ["myagent@agents.example"] },
     });
     const content = buildInstructionContent(task);
 
@@ -35,12 +35,12 @@ describe("buildInstructionContent email tool injection", () => {
     expect(content).not.toContain("email set --agent_id");
     expect(content).toContain(`${tempDir("phneakngar-emails")}/ws1/agent-123/`);
     expect(content).toContain("metadata.json");
-    expect(content).toContain("'myagent@cieee.xyz' (default, ភ្នាក់ងារ platform address)");
+    expect(content).toContain("'myagent@agents.example' (default, ភ្នាក់ងារ platform address)");
   });
 
   it("includes --email_id pull instruction for ID-based fetching", () => {
     const task = makeTask({
-      agent: { name: "test", instructions: "", emailHandle: "myagent" },
+      agent: { name: "test", instructions: "", emailHandle: "myagent", emailAddress: "myagent@agents.example", emailAddresses: ["myagent@agents.example"] },
     });
     const content = buildInstructionContent(task);
 
@@ -51,7 +51,7 @@ describe("buildInstructionContent email tool injection", () => {
 
   it("includes send-email docs when agent has email handle", () => {
     const task = makeTask({
-      agent: { name: "test", instructions: "do stuff", emailHandle: "myagent" },
+      agent: { name: "test", instructions: "do stuff", emailHandle: "myagent", emailAddress: "myagent@agents.example", emailAddresses: ["myagent@agents.example"] },
     });
     const content = buildInstructionContent(task);
 
@@ -62,7 +62,7 @@ describe("buildInstructionContent email tool injection", () => {
 
   it("includes reply-to docs when agent has email handle", () => {
     const task = makeTask({
-      agent: { name: "test", instructions: "do stuff", emailHandle: "myagent" },
+      agent: { name: "test", instructions: "do stuff", emailHandle: "myagent", emailAddress: "myagent@agents.example", emailAddresses: ["myagent@agents.example"] },
     });
     const content = buildInstructionContent(task);
 
@@ -82,21 +82,21 @@ describe("buildInstructionContent email tool injection", () => {
 
   it("includes owner email in opening line when user email is provided", () => {
     const task = makeTask({
-      agent: { name: "test", instructions: "do stuff", emailHandle: "myagent", userEmail: "gus@example.com" },
+      agent: { name: "test", instructions: "do stuff", emailHandle: "myagent", emailAddress: "myagent@agents.example", emailAddresses: ["myagent@agents.example"], userEmail: "gus@example.com" },
     });
     const content = buildInstructionContent(task);
 
-    expect(content).toContain("'myagent@cieee.xyz' (default, ភ្នាក់ងារ platform address)");
+    expect(content).toContain("'myagent@agents.example' (default, ភ្នាក់ងារ platform address)");
     expect(content).toContain("Your owner and creator is (gus@example.com).");
   });
 
   it("omits owner sentence when user email is not provided", () => {
     const task = makeTask({
-      agent: { name: "test", instructions: "do stuff", emailHandle: "myagent" },
+      agent: { name: "test", instructions: "do stuff", emailHandle: "myagent", emailAddress: "myagent@agents.example", emailAddresses: ["myagent@agents.example"] },
     });
     const content = buildInstructionContent(task);
 
-    expect(content).toContain("'myagent@cieee.xyz' (default, ភ្នាក់ងារ platform address)");
+    expect(content).toContain("'myagent@agents.example' (default, ភ្នាក់ងារ platform address)");
     expect(content).not.toContain("owner and creator");
   });
 
@@ -116,7 +116,7 @@ describe("buildInstructionContent email tool injection", () => {
   it("does not include --agent_id in CLI examples and shows auto-detect note", () => {
     const task = makeTask({
       agentId: "specific-agent-id",
-      agent: { name: "test", instructions: "", emailHandle: "handle" },
+      agent: { name: "test", instructions: "", emailHandle: "handle", emailAddress: "handle@agents.example", emailAddresses: ["handle@agents.example"] },
     });
     const content = buildInstructionContent(task);
 
@@ -128,7 +128,7 @@ describe("buildInstructionContent email tool injection", () => {
 
   it("includes the Talking to the user (send-dm) guidance block", () => {
     const task = makeTask({
-      agent: { name: "test", instructions: "", emailHandle: "handle" },
+      agent: { name: "test", instructions: "", emailHandle: "handle", emailAddress: "handle@agents.example", emailAddresses: ["handle@agents.example"] },
     });
     const content = buildInstructionContent(task);
 
@@ -140,7 +140,7 @@ describe("buildInstructionContent email tool injection", () => {
 
   it("still includes big boss instructions alongside email tools", () => {
     const task = makeTask({
-      agent: { name: "test", instructions: "Follow these rules", emailHandle: "myagent" },
+      agent: { name: "test", instructions: "Follow these rules", emailHandle: "myagent", emailAddress: "myagent@agents.example", emailAddresses: ["myagent@agents.example"] },
     });
     const content = buildInstructionContent(task);
 
@@ -153,18 +153,18 @@ describe("buildInstructionContent email tool injection", () => {
         name: "test",
         instructions: "",
         colleagues: [
-          { name: "Scout", email: "scout@cieee.xyz", description: "A researcher agent", instruction: 'Share findings with [@ id="agent-123" label="test"]' },
-          { name: "Writer", email: "writer@cieee.xyz", description: "", instruction: "Draft blog posts" },
+          { name: "Scout", email: "scout@agents.example", description: "A researcher agent", instruction: 'Share findings with [@ id="agent-123" label="test"]' },
+          { name: "Writer", email: "writer@agents.example", description: "", instruction: "Draft blog posts" },
         ],
       },
     });
     const content = buildInstructionContent(task);
 
     expect(content).toContain("## YOUR COLLEAGUES");
-    expect(content).toContain("### Scout (scout@cieee.xyz)");
+    expect(content).toContain("### Scout (scout@agents.example)");
     expect(content).toContain("A researcher agent");
     expect(content).toContain("**DELEGATE when:** Share findings with YOU");
-    expect(content).toContain("### Writer (writer@cieee.xyz)");
+    expect(content).toContain("### Writer (writer@agents.example)");
     expect(content).toContain("**DELEGATE when:** Draft blog posts");
   });
 
@@ -174,7 +174,7 @@ describe("buildInstructionContent email tool injection", () => {
         name: "test",
         instructions: "",
         colleagues: [
-          { name: "Scout", email: "scout@cieee.xyz", description: "", instruction: "Research" },
+          { name: "Scout", email: "scout@agents.example", description: "", instruction: "Research" },
         ],
       },
     });
@@ -209,13 +209,13 @@ describe("buildInstructionContent email tool injection", () => {
         name: "test",
         instructions: "",
         colleagues: [
-          { name: "Scout", email: "scout@cieee.xyz", description: "", instruction: "Share data" },
+          { name: "Scout", email: "scout@agents.example", description: "", instruction: "Share data" },
         ],
       },
     });
     const content = buildInstructionContent(task);
 
-    expect(content).toContain("### Scout (scout@cieee.xyz)");
+    expect(content).toContain("### Scout (scout@agents.example)");
     expect(content).toContain("**DELEGATE when:** Share data");
     // Only the header + relationship, no blank description line
     const scoutSection = content.split("### Scout")[1].split("##")[0];

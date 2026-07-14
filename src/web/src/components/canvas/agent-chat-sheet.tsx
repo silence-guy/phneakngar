@@ -10,7 +10,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { toPhneakngarAddress } from "@phneakngar/shared";
+import { toPublicPhneakngarAddress } from "@/lib/email-domain";
 import type { Agent } from "@phneakngar/shared";
 import { AnimatedAvatar, parseAvatarUrl } from "@/components/avatar";
 import { useAgentContext } from "@/contexts/agent-context";
@@ -116,7 +116,7 @@ export function AgentChatSheet({ open, onOpenChange, agentId, agent, targetConvI
                 {agent?.name ?? CANVAS_LABELS.chat.fallbackTitle}
               </SheetTitle>
               {agent?.email_handle && (
-                <span className="text-xs text-muted-foreground truncate">{toPhneakngarAddress(agent.email_handle)}</span>
+                <span className="text-xs text-muted-foreground truncate">{toPublicPhneakngarAddress(agent.email_handle)}</span>
               )}
             </div>
           </div>

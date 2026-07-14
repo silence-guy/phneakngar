@@ -7,7 +7,8 @@ import Placeholder from "@tiptap/extension-placeholder";
 import Mention from "@tiptap/extension-mention";
 import { Markdown } from "@tiptap/markdown";
 import { cn } from "@/lib/utils";
-import { isEmptyHtml, toPhneakngarAddress } from "@phneakngar/shared";
+import { isEmptyHtml } from "@phneakngar/shared";
+import { toPublicPhneakngarAddress } from "@/lib/email-domain";
 import type { Agent } from "@phneakngar/shared";
 import { createPortal } from "react-dom";
 
@@ -84,7 +85,7 @@ function MentionList({
             <span className="truncate font-medium">{agent.name}</span>
             {agent.email_handle && (
               <span className="truncate text-xs text-muted-foreground">
-                {toPhneakngarAddress(agent.email_handle)}
+                {toPublicPhneakngarAddress(agent.email_handle)}
               </span>
             )}
           </button>

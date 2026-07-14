@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import { useWorkspace } from "@/contexts/workspace-context";
 import { useAgentContext } from "@/contexts/agent-context";
 import { listEmails, getEmailBody, getEmailThread, deleteEmail, sendEmail, listEmailAccounts, updateEmailStatus, trustEmail } from "@/lib/api";
-import { toPhneakngarAddress } from "@phneakngar/shared";
+import { toPublicPhneakngarAddress } from "@/lib/email-domain";
 import type { Email, EmailAttachment, AgentEmailAccount } from "@phneakngar/shared";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -66,7 +66,7 @@ export default function AgentEmailPage() {
   }, []);
 
   type Mailbox = { type: "phneakngar"; address: string } | { type: "custom"; address: string; accountId: string };
-  const phneakngarAddress = agent?.email_handle ? toPhneakngarAddress(agent.email_handle) : "";
+  const phneakngarAddress = agent?.email_handle ? toPublicPhneakngarAddress(agent.email_handle) : "";
   const mailboxes: Mailbox[] = [
     ...(phneakngarAddress ? [{ type: "phneakngar" as const, address: phneakngarAddress }] : []),
     ...emailAccounts.map((a) => ({ type: "custom" as const, address: a.email_address, accountId: a.id })),

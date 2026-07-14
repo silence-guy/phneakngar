@@ -16,8 +16,7 @@ const mockGetUser = vi.fn();
 const mockClaimTasksForRuntimes = vi.fn();
 const mockSweepStaleState = vi.fn();
 const mockBroadcastToUser = vi.fn();
-const mockGetPendingFileRequests = vi.fn();
-const mockMarkFileRequestsDispatched = vi.fn();
+const mockClaimPendingFileRequests = vi.fn();
 const mockExpireStaleFileRequests = vi.fn();
 const mockListScheduledMeetings = vi.fn();
 const mockClaimMeetingSessions = vi.fn();
@@ -71,8 +70,7 @@ vi.mock("@phneakngar/shared", async (importOriginal) => {
       getAllEmailAccountsForWorkspace: (...args: unknown[]) => mockGetAllEmailAccountsForWorkspace(...args),
     },
     workspaceFileRequest: {
-      getPendingByWorkspace: (...args: unknown[]) => mockGetPendingFileRequests(...args),
-      markDispatched: (...args: unknown[]) => mockMarkFileRequestsDispatched(...args),
+      claimPendingByWorkspace: (...args: unknown[]) => mockClaimPendingFileRequests(...args),
       expireStale: (...args: unknown[]) => mockExpireStaleFileRequests(...args),
     },
     meetingSession: {
@@ -93,7 +91,7 @@ vi.mock("@phneakngar/shared", async (importOriginal) => {
 vi.mock("@/lib/middleware/auth", () => ({
   withAuth: vi.fn((handler: any) => async (req: any, ctx?: any) => {
     const params = ctx?.params instanceof Promise ? await ctx.params : ctx?.params;
-    return handler(req, { env: mockRouteEnv, userId: "u1", email: "u@t.com", authType: "machine" as const, workspaceId: "w1", params });
+    return handler(req, { env: mockRouteEnv, userId: "u1", email: "u@t.com", authType: "machine" as const, workspaceId: "w1", machineTokenHostname: "d1", params });
   }),
 }));
 
@@ -185,10 +183,11 @@ describe("POST /api/chhlat/tasks/poll", () => {
     vi.clearAllMocks();
     for (const key of Object.keys(mockRouteEnv)) delete mockRouteEnv[key];
     mockGetMachineByChhlat.mockResolvedValue(null);
-    mockGetPendingFileRequests.mockResolvedValue([]);
+    mockClaimPendingFileRequests.mockResolvedValue([]);
     mockExpireStaleFileRequests.mockResolvedValue(undefined);
     mockListScheduledMeetings.mockResolvedValue([]);
     mockGetAllAgentsForWorkspace.mockResolvedValue([]);
+    mockGetAgentsByIds.mockImplementation((...args: unknown[]) => mockGetAllAgentsForWorkspace(...args));
     mockGetAllEmailAccountsForWorkspace.mockResolvedValue([]);
     mockGetAllColleaguesForWorkspace.mockResolvedValue([]);
     mockGetConversationsByIds.mockResolvedValue([]);
@@ -282,6 +281,7 @@ describe("POST /api/chhlat/tasks/poll", () => {
       name: "Bot",
       runtime_config: { model: "gpt-4" },
       email_handle: null,
+      email_address: null,
       email_addresses: [],
       preferred_locale: null,
       language_policy: null,
@@ -315,6 +315,18 @@ describe("POST /api/chhlat/tasks/poll", () => {
     await POST(postReq({ chhlat_id: "d1", max_tasks: 5 }));
 
     expect(mockClaimTasksForRuntimes).toHaveBeenCalledWith(["r1"], 5, "w1");
+  });
+
+  it("clamps over-maximum max_tasks before claiming work", async () => {
+    mockUpsertMachine.mockResolvedValue({});
+    mockGetRuntimeIdsByChhlat.mockResolvedValue(["r1"]);
+    mockSweepStaleState.mockResolvedValue(undefined);
+    mockBroadcastToUser.mockResolvedValue(undefined);
+    mockClaimTasksForRuntimes.mockResolvedValue([]);
+
+    await POST(postReq({ chhlat_id: "d1", max_tasks: 999 }));
+
+    expect(mockClaimTasksForRuntimes).toHaveBeenCalledWith(["r1"], 8, "w1");
   });
 
   it("defaults max_tasks to 1", async () => {
@@ -667,17 +679,16 @@ describe("POST /api/chhlat/tasks/poll", () => {
 
   // --- Workspace file requests ---
 
-  it("includes pending file_requests in response and marks them dispatched", async () => {
+  it("includes claimed file_requests in response", async () => {
     mockUpsertMachine.mockResolvedValue({});
     mockGetRuntimeIdsByChhlat.mockResolvedValue(["r1"]);
     mockSweepStaleState.mockResolvedValue(undefined);
     mockBroadcastToUser.mockResolvedValue(undefined);
     mockClaimTasksForRuntimes.mockResolvedValue([]);
-    mockGetPendingFileRequests.mockResolvedValue([
+    mockClaimPendingFileRequests.mockResolvedValue([
       { id: "wfr_1", agentId: "a1", requestType: "tree", path: "." },
       { id: "wfr_2", agentId: "a1", requestType: "read", path: "memory.md" },
     ]);
-    mockMarkFileRequestsDispatched.mockResolvedValue(undefined);
 
     const res = await POST(postReq({ chhlat_id: "d1" }));
     const body = await res.json();
@@ -686,7 +697,7 @@ describe("POST /api/chhlat/tasks/poll", () => {
     expect(body.file_requests).toHaveLength(2);
     expect(body.file_requests[0]).toEqual({ id: "wfr_1", agent_id: "a1", request_type: "tree", path: "." });
     expect(body.file_requests[1]).toEqual({ id: "wfr_2", agent_id: "a1", request_type: "read", path: "memory.md" });
-    expect(mockMarkFileRequestsDispatched).toHaveBeenCalledWith({}, ["wfr_1", "wfr_2"]);
+    expect(mockClaimPendingFileRequests).toHaveBeenCalledWith({}, "w1", 16);
   });
 
   it("omits file_requests field when no pending requests", async () => {
@@ -695,14 +706,14 @@ describe("POST /api/chhlat/tasks/poll", () => {
     mockSweepStaleState.mockResolvedValue(undefined);
     mockBroadcastToUser.mockResolvedValue(undefined);
     mockClaimTasksForRuntimes.mockResolvedValue([]);
-    mockGetPendingFileRequests.mockResolvedValue([]);
+    mockClaimPendingFileRequests.mockResolvedValue([]);
 
     const res = await POST(postReq({ chhlat_id: "d1" }));
     const body = await res.json();
 
     expect(res.status).toBe(200);
     expect(body.file_requests).toBeUndefined();
-    expect(mockMarkFileRequestsDispatched).not.toHaveBeenCalled();
+    expect(mockClaimPendingFileRequests).toHaveBeenCalledWith({}, "w1", 16);
   });
 
   it("calls expireStale to clean up old file requests", async () => {
@@ -711,7 +722,7 @@ describe("POST /api/chhlat/tasks/poll", () => {
     mockSweepStaleState.mockResolvedValue(undefined);
     mockBroadcastToUser.mockResolvedValue(undefined);
     mockClaimTasksForRuntimes.mockResolvedValue([]);
-    mockGetPendingFileRequests.mockResolvedValue([]);
+    mockClaimPendingFileRequests.mockResolvedValue([]);
 
     await POST(postReq({ chhlat_id: "d1" }));
 
@@ -754,6 +765,7 @@ describe("POST /api/chhlat/tasks/poll", () => {
 
     expect(res.status).toBe(200);
     expect(body.meetings).toHaveLength(1);
+    expect(mockListScheduledMeetings).toHaveBeenCalledWith({}, "w1", expect.any(String), 4);
     expect(body.meetings[0]).toEqual({
       id: "ms1",
       meeting_url: "https://meet.google.com/abc",
@@ -763,6 +775,28 @@ describe("POST /api/chhlat/tasks/poll", () => {
       agent_name: "Jarvis",
       title: "Standup",
     });
+  });
+
+  it("returns claimed meetings in the selected scheduled order", async () => {
+    mockUpsertMachine.mockResolvedValue({});
+    mockGetRuntimeIdsByChhlat.mockResolvedValue(["r1"]);
+    mockSweepStaleState.mockResolvedValue(undefined);
+    mockBroadcastToUser.mockResolvedValue(undefined);
+    mockClaimTasksForRuntimes.mockResolvedValue([]);
+    mockListScheduledMeetings.mockResolvedValue([
+      { id: "ms1", agentId: "a1", workspaceId: "w1", meetingUrl: "https://meet.google.com/one", participants: [], status: "scheduled", agentName: "One", title: "One" },
+      { id: "ms2", agentId: "a2", workspaceId: "w1", meetingUrl: "https://meet.google.com/two", participants: [], status: "scheduled", agentName: "Two", title: "Two" },
+    ]);
+    mockClaimMeetingSessions.mockResolvedValue([
+      { id: "ms2", agentId: "a2", workspaceId: "w1", meetingUrl: "https://meet.google.com/two", participants: [], status: "joining" },
+      { id: "ms1", agentId: "a1", workspaceId: "w1", meetingUrl: "https://meet.google.com/one", participants: [], status: "joining" },
+    ]);
+
+    const res = await POST(postReq({ chhlat_id: "d1" }));
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body.meetings.map((meeting: { id: string }) => meeting.id)).toEqual(["ms1", "ms2"]);
   });
 
   it("omits meetings field when no scheduled meetings", async () => {

@@ -18,6 +18,7 @@ function createMockDb(rows: any[]) {
 
 describe("machine query module exports", () => {
   it("exports upsertMachine", () => { expect(typeof machineQueries.upsertMachine).toBe("function"); });
+  it("exports upsertMachineForActivation", () => { expect(typeof machineQueries.upsertMachineForActivation).toBe("function"); });
   it("exports updateMachineLastSeen", () => { expect(typeof machineQueries.updateMachineLastSeen).toBe("function"); });
   it("exports setMachineLastSeenNull", () => { expect(typeof machineQueries.setMachineLastSeenNull).toBe("function"); });
   it("exports getMachineByChhlat", () => { expect(typeof machineQueries.getMachineByChhlat).toBe("function"); });
@@ -42,6 +43,33 @@ describe("upsertMachine", () => {
     const mockDb = createMockDb([{ id: "m_1" }]);
     await machineQueries.upsertMachine(mockDb, { chhlatId: "d_1", workspaceId: "ws_1", deviceInfo: "x", lastSeenAt: null });
     expect(mockDb.values).toHaveBeenCalledWith(expect.objectContaining({ lastSeenAt: null }));
+  });
+});
+
+describe("upsertMachineForActivation", () => {
+  it("uses an owner-guarded conflict update", async () => {
+    const row = { chhlatId: "host.local", workspaceId: "ws_1", ownerId: "u1" };
+    const db = createMockDb([row]);
+
+    await expect(machineQueries.upsertMachineForActivation(db, {
+      chhlatId: "host.local",
+      workspaceId: "ws_1",
+      deviceInfo: "host.local",
+      ownerId: "u1",
+    })).resolves.toEqual(row);
+    expect(db.onConflictDoUpdate).toHaveBeenCalledWith(expect.objectContaining({
+      setWhere: expect.anything(),
+      set: expect.objectContaining({ ownerId: "u1" }),
+    }));
+  });
+
+  it("returns null when an existing machine belongs to another user", async () => {
+    await expect(machineQueries.upsertMachineForActivation(createMockDb([]), {
+      chhlatId: "host.local",
+      workspaceId: "ws_1",
+      deviceInfo: "host.local",
+      ownerId: "u1",
+    })).resolves.toBeNull();
   });
 });
 

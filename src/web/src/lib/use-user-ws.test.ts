@@ -69,7 +69,7 @@ vi.mock("react", () => ({
 function setupTokenFetch() {
   mockFetch.mockResolvedValue({
     ok: true,
-    json: () => Promise.resolve({ userId: "user-1", token: "tok-123" }),
+    json: () => Promise.resolve({ userId: "user-1", ticket: "ticket-123" }),
   })
 }
 
@@ -93,10 +93,10 @@ describe("useUserWs", () => {
     vi.useRealTimers()
   })
 
-  async function mountHook(onMessage: (msg: WsMessage) => void) {
+  async function mountHook(onMessage: (msg: WsMessage) => void, options?: Parameters<typeof import("./use-user-ws")["useUserWs"]>[1]) {
     // Re-import to get fresh module with fresh mocks
     const mod = await import("./use-user-ws")
-    mod.useUserWs(onMessage)
+    mod.useUserWs(onMessage, options)
     // Wait for async connect to complete
     await vi.runAllTimersAsync()
     return mod
@@ -181,6 +181,21 @@ describe("useUserWs", () => {
     ws.simulateMessage({ type: "test", data: "world" })
     expect(cb2).toHaveBeenCalledWith({ type: "test", data: "world" })
     expect(cb1).toHaveBeenCalledTimes(1) // cb1 not called again
+  })
+
+  it("uses connection ticket in the URL and does not send a session auth message", async () => {
+    setupTokenFetch()
+
+    const onMsg = vi.fn()
+    await mountHook(onMsg, { workspaceId: "w1" })
+    await vi.runAllTimersAsync()
+
+    const ws = MockWebSocket.instances[0]
+    expect(ws.url).toBe("ws://localhost:8789/?ticket=ticket-123")
+    ws.simulateOpen()
+    ws.simulateMessage({ type: "auth.ok" })
+    expect(ws.sent).not.toContain(JSON.stringify({ type: "auth", token: "tok-123" }))
+    expect(ws.sent).toContain(JSON.stringify({ type: "check_chhlat_status", workspaceId: "w1" }))
   })
 
   it("server-initiated close (ws IS current) still triggers reconnect with backoff", async () => {

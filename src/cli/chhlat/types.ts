@@ -47,6 +47,7 @@ interface TaskAgentData {
   name: string;
   instructions: string;
   emailHandle?: string | null;
+  emailAddress?: string | null;
   emailAddresses?: string[];
   userEmail?: string | null;
   userName?: string | null;
@@ -176,6 +177,7 @@ export function fromApiTask(api: import("@phneakngar/shared").TaskApi): Task {
           name: api.agent.name,
           instructions: api.agent.instructions,
           emailHandle: api.agent.email_handle ?? undefined,
+          emailAddress: api.agent.email_address ?? undefined,
           emailAddresses: api.agent.email_addresses ?? [],
           userEmail: api.agent.user_email ?? undefined,
           userName: api.agent.user_name ?? undefined,

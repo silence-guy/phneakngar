@@ -7,6 +7,7 @@ function createMockDb(rows: any[]) {
   chain.from = vi.fn(() => chain)
   chain.where = vi.fn(() => Promise.resolve(rows))
   chain.orderBy = vi.fn(() => chain)
+  chain.limit = vi.fn(() => Promise.resolve(rows))
   chain.update = vi.fn(() => chain)
   chain.set = vi.fn(() => chain)
   chain.returning = vi.fn(() => Promise.resolve(rows))
@@ -122,6 +123,32 @@ describe("claimMeetingSessions", () => {
   it("returns empty array for empty ids", async () => {
     const result = await meetingQueries.claimMeetingSessions(null as any, [], "ws_1", "2026-01-01T00:00:00Z")
     expect(result).toEqual([])
+  })
+})
+
+describe("listScheduledMeetings", () => {
+  it("applies the default bounded limit", async () => {
+    const mockDb: any = {}
+    mockDb.select = vi.fn(() => mockDb)
+    mockDb.from = vi.fn(() => mockDb)
+    mockDb.leftJoin = vi.fn(() => mockDb)
+    mockDb.where = vi.fn(() => mockDb)
+    mockDb.orderBy = vi.fn(() => mockDb)
+    mockDb.limit = vi.fn(() => Promise.resolve([]))
+    await meetingQueries.listScheduledMeetings(mockDb, "ws_1", "2026-01-01T00:00:00Z")
+    expect(mockDb.limit).toHaveBeenCalledWith(4)
+  })
+
+  it("clamps custom limit to the maximum", async () => {
+    const mockDb: any = {}
+    mockDb.select = vi.fn(() => mockDb)
+    mockDb.from = vi.fn(() => mockDb)
+    mockDb.leftJoin = vi.fn(() => mockDb)
+    mockDb.where = vi.fn(() => mockDb)
+    mockDb.orderBy = vi.fn(() => mockDb)
+    mockDb.limit = vi.fn(() => Promise.resolve([]))
+    await meetingQueries.listScheduledMeetings(mockDb, "ws_1", "2026-01-01T00:00:00Z", 99)
+    expect(mockDb.limit).toHaveBeenCalledWith(4)
   })
 })
 

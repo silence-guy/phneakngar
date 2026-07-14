@@ -32,8 +32,10 @@ bucket_name = "phneakngar-emails"
 [[send_email]]
 name = "SEND_EMAIL"
 
-# Public mail domain for agent addresses and OTP From: (must be onboarded to CF Email Sending)
+# Current live-testing domain only; not a permanent product default.
+# Must be onboarded to CF Email Sending and match the web Worker.
 [vars]
+NODE_ENV = "production"
 PHNEAKNGAR_DOMAIN = "cieee.xyz"
 
 [[durable_objects.bindings]]

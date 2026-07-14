@@ -1,7 +1,6 @@
 import { NextRequest } from "next/server";
 import { queries } from "@phneakngar/shared"
 import { getDb, withD1Retry } from "@/lib/db";
-import type { TaskMessageResponse } from "@phneakngar/shared"
 import { withAuth } from "@/lib/middleware/auth";
 import { withChhlatTaskAccess } from "@/lib/middleware/chhlat";
 import { writeJSON, writeError, parseBody } from "@/lib/middleware/helpers";
@@ -63,44 +62,68 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
     return writeJSON({ status: "ok" });
   }
 
+  const normalized = filtered.map((m) => ({
+    taskId,
+    seq: m.seq,
+    type: m.type,
+    tool: m.tool || "",
+    callId: m.call_id || "",
+    // tool-result content/input/output are intentionally blanked: those
+    // payloads can be very large (full tool stdout, file dumps), so we keep
+    // the row (for analysis: which tool ran, when) but not the heavy body.
+    content: m.type === "tool-result" ? "" : (m.content || ""),
+    input: m.type === "tool-result" ? undefined : m.input,
+    output: m.type === "tool-result" ? "" : (m.output || ""),
+  }));
+
+  const acceptedBySeq = new Map<number, typeof normalized[number]>();
+  for (const message of normalized) {
+    const existing = acceptedBySeq.get(message.seq);
+    if (!existing) {
+      acceptedBySeq.set(message.seq, message);
+      continue;
+    }
+    if (queries.taskMessage.taskMessagePayloadFingerprint(existing)
+      !== queries.taskMessage.taskMessagePayloadFingerprint(message)) {
+      return writeError("task message payload conflict", 409);
+    }
+  }
+  const accepted = [...acceptedBySeq.values()];
+
   const results = await Promise.allSettled(
-    filtered.map((m) =>
-      queries.taskMessage.createTaskMessage(db, {
-        taskId,
-        seq: m.seq,
-        type: m.type,
-        tool: m.tool || "",
-        callId: m.call_id || "",
-        // tool-result content/input/output are intentionally blanked: those
-        // payloads can be very large (full tool stdout, file dumps), so we keep
-        // the row (for analysis: which tool ran, when) but not the heavy body.
-        content: m.type === "tool-result" ? "" : (m.content || ""),
-        input: m.type === "tool-result" ? undefined : m.input,
-        output: m.type === "tool-result" ? "" : (m.output || ""),
-      })
+    accepted.map((m) =>
+      withD1Retry(() => queries.taskMessage.createTaskMessage(db, m))
     )
   );
 
-  results.forEach((r) => {
-    if (r.status === "rejected") {
-      log.warn("Failed to create task message", { taskId, err: r.reason });
-    }
+  const rejected = results.filter((result) => result.status === "rejected");
+  rejected.forEach((result) => {
+    log.warn("Failed to create task message", {
+      taskId,
+      err: result.reason instanceof Error ? result.reason.message : String(result.reason),
+    });
   });
 
-  const succeeded = filtered.filter((_, i) => results[i].status === "fulfilled");
+  const newlyCreated = results.flatMap((result) =>
+    result.status === "fulfilled" && result.value.created ? [result.value.message] : []
+  );
+
+  if (rejected.some((result) => !(result.reason instanceof queries.taskMessage.TaskMessageConflictError))) {
+    return writeError("task messages were not fully stored", 503);
+  }
+  if (rejected.length > 0) {
+    return writeError("task message payload conflict", 409);
+  }
+
   // Broadcast is a separate concern from storage: we STORE tool-use/thinking/
   // tool-result (for later analysis, above) but don't BROADCAST them — the live
-  // chat has no use for them. text is still broadcast (cheap, and harmless if the
-  // client ignores it); only type:"error" actually drives UI today.
-  const broadcastable = succeeded.filter((m) => m.type !== "tool-result" && m.type !== "tool-use" && m.type !== "thinking");
+  // chat has no use for them. Exact HTTP retries are not rebroadcast because only
+  // rows newly confirmed durable by this request are included here.
+  const broadcastable = newlyCreated.filter((message) =>
+    message.type !== "tool-result" && message.type !== "tool-use" && message.type !== "thinking"
+  );
   if (broadcastable.length > 0) {
-    const wsMessages: TaskMessageResponse[] = broadcastable.map((m) => ({
-      id: "",
-      seq: m.seq,
-      type: m.type,
-      content: m.content || "",
-      output: m.output || "",
-    }));
+    const wsMessages = broadcastable.map(taskMessageToResponse);
     const conv = await queries.conversation.getConversation(db, task.conversationId, ctx.workspaceId);
     if (conv) {
       broadcastToUser(conv.userId, { type: "task.messages", taskId, messages: wsMessages }).catch(() => {});

@@ -1,5 +1,5 @@
 import type { Database } from "@phneakngar/shared";
-import { queries, TASK_TYPES, MAX_TASKS_PER_TRACE } from "@phneakngar/shared";
+import { queries, TASK_TYPES, MAX_TASKS_PER_TRACE, MAX_POLL_TASKS, isTerminalTaskStatus } from "@phneakngar/shared";
 import { log } from "@/lib/logger";
 import { broadcastToUser, broadcastToChhlat } from "@/lib/broadcast";
 import { messageToResponse } from "@/lib/api/responses";
@@ -13,8 +13,19 @@ const conversationQueries = queries.conversation;
 const issueQueries = queries.issue;
 const inboxQueries = queries.inbox;
 
+export const TASK_ALREADY_TERMINAL_CODE = "TASK_ALREADY_TERMINAL";
+
+export class TaskAlreadyTerminalError extends Error {
+  readonly code = TASK_ALREADY_TERMINAL_CODE;
+
+  constructor(public readonly taskStatus: string) {
+    super("task is already in a terminal state");
+    this.name = "TaskAlreadyTerminalError";
+  }
+}
+
 export class TaskService {
-  constructor(private db: Database) {}
+  constructor(private db: Database, private emailDomain?: string) {}
 
   async enqueueTask(
     agentId: string,
@@ -104,11 +115,12 @@ export class TaskService {
   }
 
   async claimTasksForRuntimes(runtimeIds: string[], maxTasks: number, workspaceId: string) {
-    const killTasks = await taskQueries.claimKillTasks(this.db, runtimeIds, workspaceId, maxTasks);
-    const remaining = maxTasks - killTasks.length;
+    const boundedMaxTasks = Math.max(1, Math.min(maxTasks, MAX_POLL_TASKS));
+    const killTasks = await taskQueries.claimKillTasks(this.db, runtimeIds, workspaceId, boundedMaxTasks);
+    const remaining = boundedMaxTasks - killTasks.length;
 
     const tasks = remaining > 0
-      ? await taskQueries.listPendingTasksByRuntimes(this.db, runtimeIds, workspaceId)
+      ? await taskQueries.listPendingTasksByRuntimes(this.db, runtimeIds, workspaceId, remaining)
       : [];
     const runtimeIdSet = new Set(runtimeIds);
     const triedAgents = new Set<string>();
@@ -172,6 +184,7 @@ export class TaskService {
       const existing = await taskQueries.getTask(this.db, taskId, workspaceId);
       const status = existing?.status ?? "unknown";
       log.warn(`completeTask failed: task is in '${status}' status`, { taskId });
+      if (isTerminalTaskStatus(status)) throw new TaskAlreadyTerminalError(status);
       throw new Error(`cannot complete task in '${status}' status`);
     }
 
@@ -206,6 +219,7 @@ export class TaskService {
       const existing = await taskQueries.getTask(this.db, taskId, workspaceId);
       const status = existing?.status ?? "unknown";
       log.warn(`failTask failed: task is in '${status}' status`, { taskId });
+      if (isTerminalTaskStatus(status)) throw new TaskAlreadyTerminalError(status);
       throw new Error(`cannot fail task in '${status}' status`);
     }
 
@@ -384,7 +398,7 @@ export class TaskService {
 
       const runtime = await queries.runtime.getAgentRuntime(this.db, activeTask.runtimeId);
       if (runtime) {
-        broadcastToChhlat(runtime.chhlatId, {
+        broadcastToChhlat(workspaceId, runtime.chhlatId, {
           type: "chhlat.kill",
           workspaceId,
           agentId: activeTask.agentId,
@@ -441,7 +455,8 @@ export class TaskService {
     const dispatched = await taskQueries.dispatchTaskById(this.db, task.id, workspaceId);
     if (!dispatched) return;
 
-    const builder = new TaskPayloadBuilder(this.db);
+    if (!this.emailDomain) throw new Error("email domain configuration is required for task delivery");
+    const builder = new TaskPayloadBuilder(this.db, this.emailDomain);
     const payloads = await builder.buildFullPayloads([dispatched], workspaceId);
     if (payloads.length === 0) {
       await taskQueries.revertDispatchedToQueued(this.db, task.id, workspaceId);
@@ -449,7 +464,7 @@ export class TaskService {
     }
 
     try {
-      const { sent } = await broadcastToChhlat(runtime.chhlatId, {
+      const { sent } = await broadcastToChhlat(workspaceId, runtime.chhlatId, {
         type: "chhlat.tasks",
         tasks: payloads,
       });

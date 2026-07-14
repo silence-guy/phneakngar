@@ -1,6 +1,6 @@
 import { nanoid } from "nanoid"
 import PostalMime from "postal-mime"
-import { createDb, queries, parseEmailHandle, toPhneakngarAddress, getEmailDomain, createLogger, buildMimeMessage, extractAttachmentMeta, isEmailDraftAttachmentKeyForScope, EMAIL_NOTIFY_SECRET_HEADER } from "@phneakngar/shared"
+import { createDb, queries, parseEmailHandle, toPhneakngarAddress, getEmailDomain, createLogger, buildMimeMessage, extractAttachmentMeta, isEmailDraftAttachmentKeyForScope, EMAIL_NOTIFY_SECRET_HEADER, EMAIL_DOMAIN_EXPECTATION_HEADER } from "@phneakngar/shared"
 import { decrypt } from "@phneakngar/shared/crypto"
 import { safeEqualSecret } from "@phneakngar/shared/secrets"
 import { WorkerMailer, type AuthType } from "worker-mailer"
@@ -12,6 +12,7 @@ const MAX_ATTACHMENT_COUNT = 10
 const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024
 const MAX_TOTAL_ATTACHMENT_BYTES = 20 * 1024 * 1024
 import type { EmailEnv } from "./types"
+import { resolveEmailWorkerDomain } from "./email-domain"
 
 export { ImapPollerDO } from "./imap-poller-do"
 
@@ -64,7 +65,23 @@ export default {
     const url = new URL(request.url)
 
     if (url.pathname === "/health" && request.method === "GET") {
-      return Response.json({ status: "ok" })
+      try {
+        const emailDomain = resolveEmailWorkerDomain(env)
+        const expectedDomain = request.headers.get(EMAIL_DOMAIN_EXPECTATION_HEADER)
+        if (expectedDomain !== null && getEmailDomain(expectedDomain) !== emailDomain) {
+          throw new Error("Email domain configuration mismatch")
+        }
+        return Response.json({ status: "ok" })
+      } catch {
+        return Response.json({ status: "degraded" }, { status: 503 })
+      }
+    }
+
+    let emailDomain: string
+    try {
+      emailDomain = resolveEmailWorkerDomain(env)
+    } catch {
+      return Response.json({ error: "email service is not configured" }, { status: 503 })
     }
 
     if (!env.EMAIL_NOTIFY_SECRET) {
@@ -83,24 +100,24 @@ export default {
     }
 
     if (url.pathname === "/send/otp") {
-      return this.handleSendOtp(request, env)
+      return this.handleSendOtp(request, env, emailDomain)
     }
 
     if (url.pathname === "/send/agent") {
-      return this.handleSendAgent(request, env)
+      return this.handleSendAgent(request, env, emailDomain)
     }
 
     return Response.json({ error: "not found" }, { status: 404 })
   },
 
-  async handleSendOtp(request: Request, env: EmailEnv): Promise<Response> {
+  async handleSendOtp(request: Request, env: EmailEnv, emailDomain: string): Promise<Response> {
     const body = await request.json() as { to?: string; subject?: string; html?: string }
 
     if (!body.to || !body.subject) {
       return Response.json({ error: "to and subject are required" }, { status: 400 })
     }
 
-    const from = toPhneakngarAddress("no-reply", env.PHNEAKNGAR_DOMAIN)
+    const from = toPhneakngarAddress("no-reply", emailDomain)
     try {
       await env.SEND_EMAIL.send({
         from,
@@ -114,7 +131,7 @@ export default {
       const code = err && typeof err === "object" && "code" in err ? String((err as { code: unknown }).code) : ""
       log.error("OTP SEND_EMAIL failed", { error: msg, code, from, to: body.to })
       return Response.json(
-        { error: `email send failed: ${code || msg}`, from, domain: env.PHNEAKNGAR_DOMAIN ?? null },
+        { error: `email send failed: ${code || msg}` },
         { status: 502 },
       )
     }
@@ -122,7 +139,7 @@ export default {
     return Response.json({ ok: true, from })
   },
 
-  async handleSendAgent(request: Request, env: EmailEnv): Promise<Response> {
+  async handleSendAgent(request: Request, env: EmailEnv, emailDomain: string): Promise<Response> {
     const body = await request.json() as {
       agentId?: string
       workspaceId?: string
@@ -162,7 +179,7 @@ export default {
       if (!agent.emailHandle) {
         return Response.json({ error: "agent has no email handle configured" }, { status: 400 })
       }
-      fromAddress = toPhneakngarAddress(agent.emailHandle, env.PHNEAKNGAR_DOMAIN)
+      fromAddress = toPhneakngarAddress(agent.emailHandle, emailDomain)
     }
 
     const htmlBody = body.htmlBody ?? ""
@@ -213,7 +230,7 @@ export default {
     // PHNEAKNGAR_DOMAIN for CF Email Service, or the custom SMTP account domain.
     const fromDomain = useCustomSmtp && customAccount
       ? customAccount.emailAddress.split("@").pop()
-      : getEmailDomain(env.PHNEAKNGAR_DOMAIN)
+      : emailDomain
     const outMessageId = `<${nanoid()}@${fromDomain}>`
 
     // Build the raw MIME once — used both as the wire message (CF path) and as the
@@ -400,8 +417,16 @@ export default {
     const traceId = nanoid(12)
     const emailLog = log.child({ traceId, from: message.from, to: message.to })
 
+    let emailDomain: string
+    try {
+      emailDomain = resolveEmailWorkerDomain(env)
+    } catch {
+      message.setReject("Email service is not configured")
+      return
+    }
+
     const db = createDb(env.DB)
-    const handle = parseEmailHandle(message.to, env.PHNEAKNGAR_DOMAIN)
+    const handle = parseEmailHandle(message.to, emailDomain)
 
     const agent = await queries.agent.getAgentByHandle(db, handle)
     if (!agent) {
@@ -412,7 +437,7 @@ export default {
 
     emailLog.info("email received", { agentId: agent.id, handle })
 
-    const whitelisted = await queries.whitelist.isWhitelisted(db, agent.id, agent.workspaceId, message.from)
+    const whitelisted = await queries.whitelist.isWhitelisted(db, agent.id, agent.workspaceId, message.from, emailDomain)
 
     const rawBytes = await new Response(message.raw).arrayBuffer()
     const rawDigest = await sha256Hex(rawBytes)

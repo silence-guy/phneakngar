@@ -21,23 +21,22 @@ export function useAgentWs(agentId: string, onMessage: (msg: WsMessage) => void)
   const connectRef = useRef<(() => Promise<void>) | null>(null)
 
   const connect = useCallback(async () => {
-    let userId: string
-    let authToken: string
+    let ticket: string
     let wsPort: number = WS_DO_PORT_DEFAULT
     try {
       const res = await fetch("/api/ws/token")
       if (!res.ok) return
-      const body = await res.json() as { userId: string; token: string; wsPort?: number }
-      userId = body.userId
-      authToken = body.token
+      const body = await res.json() as { ticket: string; wsPort?: number }
+      ticket = body.ticket
       if (body.wsPort) wsPort = body.wsPort
     } catch {
       return
     }
 
+    const encodedTicket = encodeURIComponent(ticket)
     const url = isLocal
-      ? `ws://localhost:${wsPort}/?userId=${userId}&agentId=${agentId}`
-      : `${location.origin.replace("http", "ws")}/api/ws?userId=${userId}&agentId=${agentId}`
+      ? `ws://localhost:${wsPort}/?ticket=${encodedTicket}&agentId=${encodeURIComponent(agentId)}`
+      : `${location.origin.replace("http", "ws")}/api/ws?ticket=${encodedTicket}&agentId=${encodeURIComponent(agentId)}`
 
     let ws: WebSocket
     try {
@@ -49,7 +48,6 @@ export function useAgentWs(agentId: string, onMessage: (msg: WsMessage) => void)
 
     ws.onopen = () => {
       reconnectDelay.current = WS_RECONNECT_INIT
-      ws.send(JSON.stringify({ type: "auth", token: authToken }))
     }
 
     ws.onmessage = (e) => {

@@ -32,7 +32,7 @@ function isBoundary(prompt: string, endIndex: number): boolean {
   return true
 }
 
-export function parsePromptMentions(prompt: string, agents: PromptAgent[]): ParseResult {
+export function parsePromptMentions(prompt: string, agents: PromptAgent[], emailDomain: string): ParseResult {
   if (!prompt || agents.length === 0) return { enrichedPrompt: prompt, mentions: [] }
 
   const sorted = agents.slice().sort((a, b) => b.name.length - a.name.length)
@@ -73,13 +73,13 @@ export function parsePromptMentions(prompt: string, agents: PromptAgent[]): Pars
     const m = matches[i]
     const mention: PromptMention = {
       name: m.agent.name,
-      email: m.agent.emailHandle ? toPhneakngarAddress(m.agent.emailHandle) : null,
+      email: m.agent.emailHandle ? toPhneakngarAddress(m.agent.emailHandle, emailDomain) : null,
       description: m.agent.description,
     }
     mentions.unshift(mention)
 
     if (m.agent.emailHandle) {
-      const replacement = `@${m.agent.name} (${toPhneakngarAddress(m.agent.emailHandle)})`
+      const replacement = `@${m.agent.name} (${toPhneakngarAddress(m.agent.emailHandle, emailDomain)})`
       result = result.slice(0, m.start) + replacement + result.slice(m.end)
     } else {
       // Preserve canonical casing even without email

@@ -1,14 +1,15 @@
 import type { DashboardStep, AgentInfo } from "./demo-dashboard";
 import type { UseCaseScript } from "./use-case-demo";
+import { toPublicPhneakngarAddress } from "@/lib/email-domain";
 
 /* ─── Agent Configs ─── */
-const SALES: AgentInfo = { id: "sales", name: "សុភា", email: "sales@phneakngar.ai", config: { shape: "hexagon", eye: "dots", nose: "dash", bg: 5 } };
-const PLANNER: AgentInfo = { id: "planner", name: "វិចិត្រ", email: "planner@phneakngar.ai", config: { shape: "hexagon", eye: "dots", nose: "dash", bg: 5 } };
-const CODER: AgentInfo = { id: "coder", name: "ដារ៉ា", email: "coder@phneakngar.ai", config: { shape: "task", eye: "happy", nose: "dot", bg: 0 } };
-const REVIEWER: AgentInfo = { id: "reviewer", name: "រតនា", email: "reviewer@phneakngar.ai", config: { shape: "circle", eye: "arches", nose: "smile", bg: 8 } };
-const MARKETER: AgentInfo = { id: "marketer", name: "មាលា", email: "marketer@phneakngar.ai", config: { shape: "mail", eye: "dots", nose: "smile", bg: 3 } };
-const OPS: AgentInfo = { id: "ops", name: "សុវណ្ណ", email: "ops@phneakngar.ai", config: { shape: "folder", eye: "lines", nose: "dash", bg: 7 } };
-const ASSISTANT: AgentInfo = { id: "assistant", name: "បញ្ញា", email: "assistant@phneakngar.ai", config: { shape: "bulb", eye: "rings", nose: "oh", bg: 11 } };
+const SALES: AgentInfo = { id: "sales", name: "សុភា", email: toPublicPhneakngarAddress("sales"), config: { shape: "hexagon", eye: "dots", nose: "dash", bg: 5 } };
+const PLANNER: AgentInfo = { id: "planner", name: "វិចិត្រ", email: toPublicPhneakngarAddress("planner"), config: { shape: "hexagon", eye: "dots", nose: "dash", bg: 5 } };
+const CODER: AgentInfo = { id: "coder", name: "ដារ៉ា", email: toPublicPhneakngarAddress("coder"), config: { shape: "task", eye: "happy", nose: "dot", bg: 0 } };
+const REVIEWER: AgentInfo = { id: "reviewer", name: "រតនា", email: toPublicPhneakngarAddress("reviewer"), config: { shape: "circle", eye: "arches", nose: "smile", bg: 8 } };
+const MARKETER: AgentInfo = { id: "marketer", name: "មាលា", email: toPublicPhneakngarAddress("marketer"), config: { shape: "mail", eye: "dots", nose: "smile", bg: 3 } };
+const OPS: AgentInfo = { id: "ops", name: "សុវណ្ណ", email: toPublicPhneakngarAddress("ops"), config: { shape: "folder", eye: "lines", nose: "dash", bg: 7 } };
+const ASSISTANT: AgentInfo = { id: "assistant", name: "បញ្ញា", email: toPublicPhneakngarAddress("assistant"), config: { shape: "bulb", eye: "rings", nose: "oh", bg: 11 } };
 
 /* ═══════════════════════════════════════════
    1. Lead Auto Follow-up
@@ -18,16 +19,16 @@ const ASSISTANT: AgentInfo = { id: "assistant", name: "បញ្ញា", email: 
 const LEAD_SALES_STEPS: DashboardStep[] = [
   { type: "email-in", subject: "What's your pricing for a 50-person team?", address: "sarah@acmecorp.com" },
   { type: "message", text: "I remember this person. AcmeCorp, Series A — asked about API access two weeks ago." },
-  { type: "email-out", subject: "Does our API support bulk user import? Sarah needs this for 50 seats.", address: "coder@phneakngar.ai" },
-  { type: "email-in", subject: "Re: Yes, /api/users/bulk supports CSV import up to 500 users.", address: "coder@phneakngar.ai" },
+  { type: "email-out", subject: "Does our API support bulk user import? Sarah needs this for 50 seats.", address: toPublicPhneakngarAddress("coder") },
+  { type: "email-in", subject: "Re: Yes, /api/users/bulk supports CSV import up to 500 users.", address: toPublicPhneakngarAddress("coder") },
   { type: "message", text: "Got confirmation. Sending personalized reply with accurate info." },
   { type: "email-out", subject: "Re: Pricing — Team plan $29/seat with API access", address: "sarah@acmecorp.com" },
 ];
 
 const LEAD_CODER_STEPS: DashboardStep[] = [
-  { type: "email-in", subject: "Does our API support bulk user import? Sarah needs this for 50 seats.", address: "sales@phneakngar.ai" },
+  { type: "email-in", subject: "Does our API support bulk user import? Sarah needs this for 50 seats.", address: toPublicPhneakngarAddress("sales") },
   { type: "message", markdown: "Yes, <code>/api/users/bulk</code> supports CSV import up to 500 users. Shipped last week." },
-  { type: "email-out", subject: "Re: Yes, /api/users/bulk supports CSV import up to 500 users.", address: "sales@phneakngar.ai" },
+  { type: "email-out", subject: "Re: Yes, /api/users/bulk supports CSV import up to 500 users.", address: toPublicPhneakngarAddress("sales") },
 ];
 
 export const leadFollowupScript: UseCaseScript = {
@@ -73,26 +74,26 @@ export const leadFollowupScript: UseCaseScript = {
    ═══════════════════════════════════════════ */
 
 const BRIEF_PLANNER_STEPS: DashboardStep[] = [
-  { type: "email-in", subject: "Weekly Briefing — Mon 8:00 AM", address: "calendar@phneakngar.ai" },
+  { type: "email-in", subject: "Weekly Briefing — Mon 8:00 AM", address: toPublicPhneakngarAddress("calendar") },
   { type: "message", text: "Collecting updates from the team..." },
-  { type: "email-out", subject: "What shipped this week? Any blockers?", address: "coder@phneakngar.ai" },
-  { type: "email-in", subject: "Shipped calendar v2, 3 bug fixes. Blocker: OAuth refresh in staging.", address: "coder@phneakngar.ai" },
-  { type: "email-out", subject: "Marketing status update?", address: "marketer@phneakngar.ai" },
-  { type: "email-in", subject: "Blog post live, 2 social campaigns running. Launch copy 80% done.", address: "marketer@phneakngar.ai" },
+  { type: "email-out", subject: "What shipped this week? Any blockers?", address: toPublicPhneakngarAddress("coder") },
+  { type: "email-in", subject: "Shipped calendar v2, 3 bug fixes. Blocker: OAuth refresh in staging.", address: toPublicPhneakngarAddress("coder") },
+  { type: "email-out", subject: "Marketing status update?", address: toPublicPhneakngarAddress("marketer") },
+  { type: "email-in", subject: "Blog post live, 2 social campaigns running. Launch copy 80% done.", address: toPublicPhneakngarAddress("marketer") },
   { type: "message", markdown: `<strong>Weekly Briefing — May 19</strong><br/><span style="display:inline-block;margin:4px 0"><span style="font-size:18px;font-weight:600">12</span> <span style="font-size:11px;opacity:0.6">Completed</span> · <span style="font-size:18px;font-weight:600;color:#ca8a04">1</span> <span style="font-size:11px;opacity:0.6">Blocker</span> · <span style="font-size:18px;font-weight:600">5</span> <span style="font-size:11px;opacity:0.6">This Week</span></span><br/>🔴 OAuth token refresh failing in staging` },
   { type: "email-out", subject: "Your Monday Briefing — May 19", address: "owner@company.com" },
 ];
 
 const BRIEF_CODER_STEPS: DashboardStep[] = [
-  { type: "email-in", subject: "What shipped this week? Any blockers?", address: "planner@phneakngar.ai" },
+  { type: "email-in", subject: "What shipped this week? Any blockers?", address: toPublicPhneakngarAddress("planner") },
   { type: "message", text: "Shipped calendar v2, 3 bug fixes. Blocker: OAuth refresh failing in staging." },
-  { type: "email-out", subject: "Shipped calendar v2, 3 bug fixes. Blocker: OAuth refresh in staging.", address: "planner@phneakngar.ai" },
+  { type: "email-out", subject: "Shipped calendar v2, 3 bug fixes. Blocker: OAuth refresh in staging.", address: toPublicPhneakngarAddress("planner") },
 ];
 
 const BRIEF_MARKETER_STEPS: DashboardStep[] = [
-  { type: "email-in", subject: "Marketing status update?", address: "planner@phneakngar.ai" },
+  { type: "email-in", subject: "Marketing status update?", address: toPublicPhneakngarAddress("planner") },
   { type: "message", text: "Blog post live, 2 social campaigns running. Launch copy 80% done." },
-  { type: "email-out", subject: "Blog post live, 2 social campaigns running. Launch copy 80% done.", address: "planner@phneakngar.ai" },
+  { type: "email-out", subject: "Blog post live, 2 social campaigns running. Launch copy 80% done.", address: toPublicPhneakngarAddress("planner") },
 ];
 
 export const weeklyBriefScript: UseCaseScript = {
@@ -161,18 +162,18 @@ export const weeklyBriefScript: UseCaseScript = {
    ═══════════════════════════════════════════ */
 
 const STORE_OPS_STEPS: DashboardStep[] = [
-  { type: "email-in", subject: "Daily Store Check — 7:00 AM", address: "calendar@phneakngar.ai" },
+  { type: "email-in", subject: "Daily Store Check — 7:00 AM", address: toPublicPhneakngarAddress("calendar") },
   { type: "message", markdown: "Checking inventory, traffic, sales...<br/>✓ Check Inventory Levels<br/>✓ Pull Yesterday's Traffic &amp; Sales<br/>✓ Spot Anomalies" },
   { type: "message", text: "\"Classic Tee\" almost out of stock (3 left). Emailing Marketer to pause that ad." },
-  { type: "email-out", subject: "Pause \"Classic Tee\" Instagram ad — only 3 left in stock", address: "marketer@phneakngar.ai" },
-  { type: "email-in", subject: "Re: Paused. Switching budget to Hoodie campaign.", address: "marketer@phneakngar.ai" },
+  { type: "email-out", subject: "Pause \"Classic Tee\" Instagram ad — only 3 left in stock", address: toPublicPhneakngarAddress("marketer") },
+  { type: "email-in", subject: "Re: Paused. Switching budget to Hoodie campaign.", address: toPublicPhneakngarAddress("marketer") },
   { type: "email-out", subject: "Daily Store Report — May 23", address: "owner@company.com" },
 ];
 
 const STORE_MARKETER_STEPS: DashboardStep[] = [
-  { type: "email-in", subject: "Pause \"Classic Tee\" Instagram ad — only 3 left in stock", address: "ops@phneakngar.ai" },
+  { type: "email-in", subject: "Pause \"Classic Tee\" Instagram ad — only 3 left in stock", address: toPublicPhneakngarAddress("ops") },
   { type: "message", text: "Paused. Switching budget to the Hoodie campaign instead." },
-  { type: "email-out", subject: "Re: Paused. Switching budget to Hoodie campaign.", address: "ops@phneakngar.ai" },
+  { type: "email-out", subject: "Re: Paused. Switching budget to Hoodie campaign.", address: toPublicPhneakngarAddress("ops") },
 ];
 
 export const storeOpsScript: UseCaseScript = {
@@ -220,23 +221,23 @@ export const storeOpsScript: UseCaseScript = {
 const BUG_PLANNER_STEPS: DashboardStep[] = [
   { type: "email-in", subject: "Login page crashes on Safari", address: "user@company.com" },
   { type: "message", text: "Reproduced it — WebKit flex gap bug in Safari 14. Writing fix plan and emailing Coder." },
-  { type: "email-out", subject: "Replace flex gap with margin-based spacing in login page.", address: "coder@phneakngar.ai" },
-  { type: "email-in", subject: "Re: Fixed. PR #142 ready for review.", address: "coder@phneakngar.ai" },
-  { type: "email-in", subject: "Re: All tests pass. Approved.", address: "reviewer@phneakngar.ai" },
+  { type: "email-out", subject: "Replace flex gap with margin-based spacing in login page.", address: toPublicPhneakngarAddress("coder") },
+  { type: "email-in", subject: "Re: Fixed. PR #142 ready for review.", address: toPublicPhneakngarAddress("coder") },
+  { type: "email-in", subject: "Re: All tests pass. Approved.", address: toPublicPhneakngarAddress("reviewer") },
   { type: "email-out", subject: "Re: Login page crashes on Safari — Fixed in PR #142", address: "user@company.com" },
 ];
 
 const BUG_CODER_STEPS: DashboardStep[] = [
-  { type: "email-in", subject: "Replace flex gap with margin-based spacing in login page.", address: "planner@phneakngar.ai" },
+  { type: "email-in", subject: "Replace flex gap with margin-based spacing in login page.", address: toPublicPhneakngarAddress("planner") },
   { type: "message", text: "Fixed. PR opened. Emailing Reviewer." },
-  { type: "email-out", subject: "PR #142 ready. Safari flex gap fix.", address: "reviewer@phneakngar.ai" },
-  { type: "email-out", subject: "Re: Fixed. PR #142 ready for review.", address: "planner@phneakngar.ai" },
+  { type: "email-out", subject: "PR #142 ready. Safari flex gap fix.", address: toPublicPhneakngarAddress("reviewer") },
+  { type: "email-out", subject: "Re: Fixed. PR #142 ready for review.", address: toPublicPhneakngarAddress("planner") },
 ];
 
 const BUG_REVIEWER_STEPS: DashboardStep[] = [
-  { type: "email-in", subject: "PR #142 ready. Safari flex gap fix.", address: "coder@phneakngar.ai" },
+  { type: "email-in", subject: "PR #142 ready. Safari flex gap fix.", address: toPublicPhneakngarAddress("coder") },
   { type: "message", text: "All tests pass. Approved." },
-  { type: "email-out", subject: "Re: All tests pass. Approved.", address: "planner@phneakngar.ai" },
+  { type: "email-out", subject: "Re: All tests pass. Approved.", address: toPublicPhneakngarAddress("planner") },
 ];
 
 export const bugToPrScript: UseCaseScript = {
@@ -299,15 +300,15 @@ export const bugToPrScript: UseCaseScript = {
 const POST_MARKETER_STEPS: DashboardStep[] = [
   { type: "user-message", text: "សូមបង្ហោះអំពី release ថ្ងៃនេះ" },
   { type: "message", text: "I need to know what shipped today. Emailing Coder." },
-  { type: "email-out", subject: "ថ្ងៃនេះយើងបានបញ្ជូនអ្វីខ្លះ? ខ្ញុំត្រូវសរសេរ post។", address: "coder@phneakngar.ai" },
-  { type: "email-in", subject: "Re: បានបញ្ជូន recurring events សម្រាប់ calendar, email forwarding និងកែ bug 3។", address: "coder@phneakngar.ai" },
+  { type: "email-out", subject: "ថ្ងៃនេះយើងបានបញ្ជូនអ្វីខ្លះ? ខ្ញុំត្រូវសរសេរ post។", address: toPublicPhneakngarAddress("coder") },
+  { type: "email-in", subject: "Re: បានបញ្ជូន recurring events សម្រាប់ calendar, email forwarding និងកែ bug 3។", address: toPublicPhneakngarAddress("coder") },
   { type: "message", markdown: "ទទួលបានហើយ។ កំពុងសរសេរ និងបោះពុម្ពផ្សាយឥឡូវនេះ។<br/><br/>✓ បានបង្ហោះ update: <em>\"ទើបបញ្ជូន recurring calendar events, email forwarding និងកែ bug 3។ ក្រុម AI របស់អ្នកមិនដែលសម្រាក។\"</em>" },
 ];
 
 const POST_CODER_STEPS: DashboardStep[] = [
-  { type: "email-in", subject: "ថ្ងៃនេះយើងបានបញ្ជូនអ្វីខ្លះ? ខ្ញុំត្រូវសរសេរ post។", address: "marketer@phneakngar.ai" },
+  { type: "email-in", subject: "ថ្ងៃនេះយើងបានបញ្ជូនអ្វីខ្លះ? ខ្ញុំត្រូវសរសេរ post។", address: toPublicPhneakngarAddress("marketer") },
   { type: "message", text: "បានបញ្ជូន recurring events សម្រាប់ calendar, email forwarding និងកែ bug 3។" },
-  { type: "email-out", subject: "Re: បានបញ្ជូន recurring events សម្រាប់ calendar, email forwarding និងកែ bug 3។", address: "marketer@phneakngar.ai" },
+  { type: "email-out", subject: "Re: បានបញ្ជូន recurring events សម្រាប់ calendar, email forwarding និងកែ bug 3។", address: toPublicPhneakngarAddress("marketer") },
 ];
 
 export const postUpdateScript: UseCaseScript = {

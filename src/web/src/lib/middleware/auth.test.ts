@@ -6,6 +6,7 @@ const mockGetCloudflareContext = vi.hoisted(() => vi.fn());
 const mockGetDb = vi.hoisted(() => vi.fn());
 const mockCreateAuth = vi.hoisted(() => vi.fn());
 const mockBindCacheKV = vi.hoisted(() => vi.fn());
+const mockCached = vi.hoisted(() => vi.fn((_key, _ttl, fn) => fn()));
 const mockGetMachineTokenByToken = vi.hoisted(() => vi.fn());
 const mockUpdateMachineTokenLastUsed = vi.hoisted(() => vi.fn());
 
@@ -31,7 +32,7 @@ vi.mock("@phneakngar/shared", () => ({
 }));
 
 vi.mock("@/lib/cache", () => ({
-  cached: vi.fn((key, ttl, fn) => fn()),
+  cached: mockCached,
   cacheKeys: {
     machineToken: (token: string) => `mt:${token}`,
     machineTokenLastUsed: (token: string) => `mt_lu:${token}`,
@@ -62,7 +63,8 @@ function createMockMachineToken(overrides: Partial<{
   userId: string;
   userEmail: string;
   workspaceId: string;
-  status: "active" | "inactive" | "revoked";
+  hostname: string | null;
+  status: "pending" | "active" | "inactive" | "revoked";
 }> = {}) {
   return {
     id: "mt-123",
@@ -70,6 +72,7 @@ function createMockMachineToken(overrides: Partial<{
     userId: "user-456",
     userEmail: "test@example.com",
     workspaceId: "ws-789",
+    hostname: "host-1",
     status: "active" as const,
     createdAt: new Date().toISOString(),
     lastUsedAt: null,
@@ -111,6 +114,7 @@ describe("withAuth middleware", () => {
         email: ctx.email,
         authType: ctx.authType,
         workspaceId: ctx.workspaceId,
+        machineTokenHostname: ctx.machineTokenHostname,
       });
     });
   });
@@ -138,6 +142,7 @@ describe("withAuth middleware", () => {
       expect(body.email).toBe(machineToken.userEmail);
       expect(body.authType).toBe("machine");
       expect(body.workspaceId).toBe(machineToken.workspaceId);
+      expect(body.machineTokenHostname).toBe(machineToken.hostname);
 
       // Verify handler was called with correct context
       expect(testHandler).toHaveBeenCalledWith(
@@ -147,6 +152,7 @@ describe("withAuth middleware", () => {
           email: machineToken.userEmail,
           authType: "machine",
           workspaceId: machineToken.workspaceId,
+          machineTokenHostname: machineToken.hostname,
         }),
       );
       expect(mockGetMachineTokenByToken).toHaveBeenCalledWith(mockEnv.db, "al_abc123token");
@@ -182,6 +188,26 @@ describe("withAuth middleware", () => {
       expect(response.status).toBe(401);
       const body = await response.json();
       expect(body.error).toBe("invalid token");
+      expect(testHandler).not.toHaveBeenCalled();
+    });
+
+    it("does not expose a pending token to the cache fill", async () => {
+      const machineToken = createMockMachineToken({ status: "pending" });
+      mockGetMachineTokenByToken.mockResolvedValueOnce(machineToken);
+      let cacheFillResult: unknown = machineToken;
+      mockCached.mockImplementationOnce(async (_key, _ttl, fn) => {
+        cacheFillResult = await fn();
+        return cacheFillResult;
+      });
+
+      const req = new NextRequest("http://localhost/api/test", {
+        headers: { Authorization: "Bearer al_abc123token" },
+      });
+
+      const response = await withAuth(testHandler)(req);
+
+      expect(response.status).toBe(401);
+      expect(cacheFillResult).toBeNull();
       expect(testHandler).not.toHaveBeenCalled();
     });
 

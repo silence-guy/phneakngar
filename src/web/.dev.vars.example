@@ -6,6 +6,8 @@
 # NEVER commit .dev.vars — it contains real secrets.
 # =============================================================================
 
+NODE_ENV=development
+
 # Session signing secret (generate with: openssl rand -base64 32)
 BETTER_AUTH_SECRET=
 BETTER_AUTH_URL=http://localhost:3000
@@ -30,6 +32,8 @@ GOOGLE_CLIENT_SECRET=
 # Device Code Flow — comma-separated allowed client IDs
 DEVICE_CLIENT_IDS=phneakngar-cli
 
-# Public agent email domain (must match Cloudflare Email Routing/Sending zone)
-PHNEAKNGAR_DOMAIN=cieee.xyz
-NEXT_PUBLIC_PHNEAKNGAR_DOMAIN=cieee.xyz
+# Local agent email domain. cieee.xyz is the current live-testing deployment only.
+# Keep the server and browser values identical.
+PHNEAKNGAR_DOMAIN=phneakngar.invalid
+NEXT_PUBLIC_PHNEAKNGAR_DOMAIN=phneakngar.invalid
+NEXT_PUBLIC_PHNEAKNGAR_ENVIRONMENT=development

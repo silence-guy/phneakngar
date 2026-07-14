@@ -14,25 +14,18 @@ function stringOrNull(value: unknown): string | null {
 }
 
 export class TaskPayloadBuilder {
-  constructor(private db: Database) {}
+  constructor(private db: Database, private emailDomain: string) {}
 
   async buildFullPayloads(tasks: ClaimedTaskRow[], workspaceId: string) {
     const nonKillTasks = tasks.filter((t) => t.type !== TASK_TYPES.KILL_TASK);
     const agentIds = [...new Set(nonKillTasks.map((t) => t.agentId))];
 
     const [allAgents, allEmailAccounts, allColleagues] = agentIds.length > 0
-      ? await Promise.all([
-          queries.agent.getAllAgentsForWorkspace(this.db, workspaceId),
-          cached(cacheKeys.allEmailAccounts(workspaceId), 600, () => queries.emailAccount.getAllEmailAccountsForWorkspace(this.db, workspaceId)),
-          queries.agentLink.getAllColleaguesForWorkspace(this.db, workspaceId).catch(() => [] as Awaited<ReturnType<typeof queries.agentLink.getAllColleaguesForWorkspace>>),
-        ]).then(([agents, emails, colleagues]) => {
-          const agentIdSet = new Set(agentIds);
-          return [
-            agents.filter((a) => agentIdSet.has(a.id)),
-            emails.filter((a) => agentIdSet.has(a.agentId)),
-            colleagues.filter((c) => agentIdSet.has(c.agentId)),
-          ] as const;
-        })
+        ? await Promise.all([
+          queries.agent.getAgentsByIds(this.db, agentIds, workspaceId),
+          queries.emailAccount.getEmailAccountsByAgents(this.db, agentIds, workspaceId),
+          queries.agentLink.getColleaguesForAgents(this.db, agentIds, workspaceId).catch(() => [] as Awaited<ReturnType<typeof queries.agentLink.getColleaguesForAgents>>),
+        ])
       : [[], [], [] as Awaited<ReturnType<typeof queries.agentLink.getAllColleaguesForWorkspace>>];
 
     const agentMap = new Map(allAgents.map((a) => [a.id, a]));
@@ -78,7 +71,7 @@ export class TaskPayloadBuilder {
       const taskContext = task.context as Record<string, unknown> | null | undefined;
       const emailAddresses: string[] = [];
       if (agent) {
-        if (agent.emailHandle) emailAddresses.push(toPhneakngarAddress(agent.emailHandle));
+        if (agent.emailHandle) emailAddresses.push(toPhneakngarAddress(agent.emailHandle, this.emailDomain));
         const customAccounts = emailAccountsByAgent.get(agent.id) ?? [];
         emailAddresses.push(...customAccounts);
       }
@@ -158,7 +151,7 @@ export class TaskPayloadBuilder {
       const rawColleagues = colleaguesByAgent.get(task.agentId) ?? [];
       const colleagues = rawColleagues.map((c) => ({
         name: c.name,
-        email: c.emailHandle ? toPhneakngarAddress(c.emailHandle) : "",
+        email: c.emailHandle ? toPhneakngarAddress(c.emailHandle, this.emailDomain) : "",
         description: c.description,
         instruction: c.instruction,
       }));
@@ -174,6 +167,7 @@ export class TaskPayloadBuilder {
               name: agent.name,
               runtime_config: (agent.runtimeConfig || {}) as Record<string, unknown>,
               email_handle: agent.emailHandle || null,
+              email_address: agent.emailHandle ? toPhneakngarAddress(agent.emailHandle, this.emailDomain) : null,
               email_addresses: emailAddresses,
               user_email: null as string | null,
               user_name: ownerName,

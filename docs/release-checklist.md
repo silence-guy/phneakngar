@@ -31,18 +31,23 @@ Also verify:
 - `src/web/wrangler.toml`, `src/email-worker/wrangler.toml`, and `src/ws-do/wrangler.toml` reference the intended Cloudflare account resources.
 - `BETTER_AUTH_URL`, OAuth callbacks, the custom domain, and Email Worker `WEB_ORIGIN` use the same HTTPS origin.
 - `EMAIL_NOTIFY_SECRET` matches between web and email Workers.
+- `PHNEAKNGAR_DOMAIN` matches across web and email Workers, the same value is supplied as `NEXT_PUBLIC_PHNEAKNGAR_DOMAIN` during the OpenNext build, and `NEXT_PUBLIC_PHNEAKNGAR_ENVIRONMENT=production`.
 - `ENCRYPTION_KEY` matches between web and email Workers.
 - `WS_SERVICE_SECRET` matches between web and WebSocket Workers.
 - `MIN_CLI_VERSION` is raised only when the new server cannot safely serve an older CLI.
 - Production dependency audit and workflow security checks have passed in a network-enabled environment.
 
-Validate all Worker bundles without deploying:
+Build OpenNext with the target environment's email domain, verify the browser assets, and validate all Worker bundles without deploying:
 
 ```bash
+PHNEAKNGAR_DOMAIN=mail.example NEXT_PUBLIC_PHNEAKNGAR_DOMAIN=mail.example NEXT_PUBLIC_PHNEAKNGAR_ENVIRONMENT=production pnpm --filter @phneakngar/web run build:worker
+NEXT_PUBLIC_PHNEAKNGAR_DOMAIN=mail.example pnpm --filter @phneakngar/web run verify:email-domain-build
 pnpm --filter @phneakngar/ws-do exec wrangler deploy --dry-run --outdir /tmp/phneakngar-ws-do
-pnpm --filter @phneakngar/email-worker exec wrangler deploy --dry-run --outdir /tmp/phneakngar-email-worker
-pnpm --filter @phneakngar/web exec wrangler deploy --dry-run --outdir /tmp/phneakngar-web
+pnpm --filter @phneakngar/email-worker exec wrangler deploy --dry-run --outdir /tmp/phneakngar-email-worker --var PHNEAKNGAR_DOMAIN:mail.example
+pnpm --filter @phneakngar/web exec wrangler deploy --dry-run --outdir /tmp/phneakngar-web --var PHNEAKNGAR_DOMAIN:mail.example --var NEXT_PUBLIC_PHNEAKNGAR_DOMAIN:mail.example --var NEXT_PUBLIC_PHNEAKNGAR_ENVIRONMENT:production
 ```
+
+`mail.example` is a non-canonical validation value. Replace it with the actual Cloudflare-onboarded domain before a release or deployment.
 
 ## Test the Version Bump Without Writing
 

@@ -8,7 +8,7 @@ import * as sharedMock from "@/test/shared-mock";
 // invalid payloads are rejected before hitting any DB logic.
 // ---------------------------------------------------------------------------
 
-const chhlatAuth = { env: {}, userId: "u1", email: "u@t.com", authType: "machine" as const, workspaceId: "w1" };
+const chhlatAuth = { env: {}, userId: "u1", email: "u@t.com", authType: "machine" as const, workspaceId: "w1", machineTokenHostname: "d1" };
 
 function baseMocks() {
   return {
@@ -525,7 +525,12 @@ describe("chhlat route body validation", () => {
             getAgentRuntimeForWorkspace: vi.fn().mockResolvedValue({ id: "rt1" }),
           },
           taskMessage: {
-            createTaskMessage: vi.fn().mockResolvedValue(undefined),
+            TaskMessageConflictError: actual.queries.taskMessage.TaskMessageConflictError,
+            taskMessagePayloadFingerprint: actual.queries.taskMessage.taskMessagePayloadFingerprint,
+            createTaskMessage: vi.fn().mockImplementation((_db, data) => Promise.resolve({
+              message: { id: `m${data.seq}`, ...data },
+              created: true,
+            })),
           },
           conversation: {
             getConversation: vi.fn().mockResolvedValue({ id: "c1", userId: "u1" }),
@@ -559,7 +564,10 @@ describe("chhlat route body validation", () => {
       vi.resetModules();
       applyBase();
 
-      const createMock = vi.fn().mockResolvedValue(undefined);
+      const createMock = vi.fn().mockImplementation((_db, data) => Promise.resolve({
+        message: { id: `m${data.seq}`, ...data },
+        created: true,
+      }));
       const broadcastMock = vi.fn().mockResolvedValue(undefined);
 
       vi.doMock("@phneakngar/shared", async () => {
@@ -574,7 +582,11 @@ describe("chhlat route body validation", () => {
           runtime: {
             getAgentRuntimeForWorkspace: vi.fn().mockResolvedValue({ id: "rt1" }),
           },
-          taskMessage: { createTaskMessage: createMock },
+          taskMessage: {
+            TaskMessageConflictError: actual.queries.taskMessage.TaskMessageConflictError,
+            taskMessagePayloadFingerprint: actual.queries.taskMessage.taskMessagePayloadFingerprint,
+            createTaskMessage: createMock,
+          },
           conversation: {
             getConversation: vi.fn().mockResolvedValue({ id: "c1", userId: "owner-u2" }),
           },
@@ -630,7 +642,11 @@ describe("chhlat route body validation", () => {
             runtime: {
               getAgentRuntimeForWorkspace: vi.fn().mockResolvedValue({ id: "rt1" }),
             },
-            taskMessage: { createTaskMessage: vi.fn().mockResolvedValue(undefined) },
+            taskMessage: {
+              TaskMessageConflictError: real.queries.taskMessage.TaskMessageConflictError,
+              taskMessagePayloadFingerprint: real.queries.taskMessage.taskMessagePayloadFingerprint,
+              createTaskMessage: vi.fn().mockResolvedValue(undefined),
+            },
             conversation: {
               getConversation: vi.fn().mockResolvedValue({ id: "c1", userId: "owner-u2" }),
             },

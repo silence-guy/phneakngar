@@ -1,130 +1,160 @@
+<p align="center">
+  <img src="../../assets/readme-banner.png" alt="ភ្នាក់ងារ — self-hosted app installer" width="800" />
+</p>
+
 # @phneakngar/app
 
-Run ភ្នាក់ងារ locally — one command, no clone needed.
+`@phneakngar/app` is the self-hosted installer and service wrapper for running the ភ្នាក់ងារ web app, Email Worker, WebSocket Worker, local D1 state, and embedded CLI on one machine.
 
-> **Agent-only machines:** if you only need to run Agents against an existing server
-> (hosted or already deployed), install `@phneakngar/cli` instead — see
-> [INSTALL.md](../../INSTALL.md).
-> Default control plane: `https://phneakngar-web.thatsilenceguy.workers.dev`
-> This package self-hosts the full control plane (web + workers) on the local machine.
+- Main project guide: [../../README.md](../../README.md)
+- Khmer guide: [../../README.km.md](../../README.km.md)
+- Agent-only client install: [../../INSTALL.md](../../INSTALL.md)
 
-## Quick Start
+## Publication status
+
+A public npm check on **2026-07-14** returned `E404` for `@phneakngar/app`. Use the monorepo development command or an operator-built tarball until registry publication is confirmed. `npx @phneakngar/app …` is documented below only as a conditional post-publication path.
+
+## Quick start from this repository
+
+Use Node.js `>=20.19.0`, pnpm `10.33.0`, and Bun `1.3.14`:
 
 ```bash
-npx @phneakngar/app onboard
+pnpm install --frozen-lockfile
+pnpm db:migrate
+pnpm dev:app onboard
 ```
 
-This will:
+The root `dev:app` script sets `PHNEAKNGAR_PROJECT_ROOT` and runs the app wrapper from source. After onboarding, open `http://localhost:15210`.
 
-1. Check your environment (Node.js >= 20, AI runtime)
-2. Install ភ្នាក់ងារ to `~/.phneakngar/self-hosted/`
-3. Generate secrets (`BETTER_AUTH_SECRET`, `ENCRYPTION_KEY`)
-4. Run database migrations (SQLite via Cloudflare D1 local)
-5. Start all services (web, email worker, WebSocket)
-6. Create your account and workspace
-7. Register your AI runtime and start chhlat
-8. Open the dashboard in your browser
+Other development commands:
 
-## Commands
+```bash
+pnpm dev:app start
+pnpm dev:app stop
+pnpm dev:app update
+```
+
+## Install an operator-provided tarball
+
+```bash
+npm install --global ./phneakngar-app-*.tgz
+phneakngar-app onboard
+```
+
+Commands after global tarball installation:
 
 | Command | Description |
 | --- | --- |
-| `npx @phneakngar/app onboard` | Full setup: install, migrate, start, and register |
-| `npx @phneakngar/app start` | Start services from an existing installation |
-| `npx @phneakngar/app stop` | Stop all services |
-| `npx @phneakngar/app update` | Update to latest version, re-run migrations, then stop |
+| `phneakngar-app onboard` | Install, migrate, start services, and guide registration |
+| `phneakngar-app start` | Start an existing local installation |
+| `phneakngar-app stop` | Stop local services |
+| `phneakngar-app update` | Replace the bundle, apply migrations, and restore the services/chhlat that were running before the update |
+| `phneakngar-app register` | Register the embedded CLI with the local server |
+| `phneakngar-app chhlat start` | Start the embedded CLI chhlat |
+| `phneakngar-app chhlat stop` | Stop the embedded CLI chhlat |
+| `phneakngar-app chhlat status` | Show embedded CLI chhlat status |
+| `phneakngar-app cli <command>` | Pass a command through to the embedded CLI |
 
-### Embedded CLI
+## Build the app tarball
 
-`@phneakngar/app` bundles a copy of `@phneakngar/cli` for managing the local chhlat and runtime registration:
+From the monorepo root, follow the same build and bundle order used by the publish workflow:
 
 ```bash
-npx @phneakngar/app register          # Register CLI with local server
-npx @phneakngar/app chhlat start      # Start chhlat
-npx @phneakngar/app chhlat stop       # Stop chhlat
-npx @phneakngar/app chhlat status     # Check chhlat status
-npx @phneakngar/app cli <any command> # Pass-through to @phneakngar/cli
+pnpm install --frozen-lockfile
+PHNEAKNGAR_DOMAIN=phneakngar.invalid NEXT_PUBLIC_PHNEAKNGAR_DOMAIN=phneakngar.invalid NEXT_PUBLIC_PHNEAKNGAR_ENVIRONMENT=development pnpm build --filter=@phneakngar/shared --filter=@phneakngar/web --filter=@phneakngar/cli --filter=@phneakngar/email-worker --filter=@phneakngar/ws-do --filter=@phneakngar/app
+pnpm -C src/app run bundle
+pnpm -C src/app run build
+cd src/app
+npm pack
 ```
+
+The explicit `development` marker allows the optimized local app bundle to use the visibly non-production `phneakngar.invalid` identity. Hosted OpenNext builds must use their onboarded domain and `NEXT_PUBLIC_PHNEAKNGAR_ENVIRONMENT=production` instead.
+
+The generated `phneakngar-app-*.tgz` can be copied to another machine and installed with npm as shown above.
+
+## Conditional npm/`npx` usage
+
+Only after `npm view @phneakngar/app version --registry=https://registry.npmjs.org` succeeds:
+
+```bash
+npx @phneakngar/app onboard
+npx @phneakngar/app start
+npx @phneakngar/app stop
+npx @phneakngar/app update
+```
+
+## What onboarding does
+
+1. Checks Node.js and detects an installed AI runtime.
+2. Installs the self-hosted bundle under `~/.phneakngar/self-hosted/`.
+3. Generates local secrets.
+4. Applies local Cloudflare D1 migrations.
+5. Starts the web, Email Worker, and WebSocket Worker services.
+6. Guides account/workspace creation and runtime registration.
+7. Starts chhlat and opens the dashboard.
 
 ## Options
 
-```
+```text
 --port-web <port>    Web server port (default: 15210)
---port-email <port>  Email worker port (default: 15211)
---port-ws <port>     WebSocket worker port (default: 15212)
---skip-register      Skip account creation (onboard only)
+--port-email <port>  Email Worker port (default: 15211)
+--port-ws <port>     WebSocket Worker port (default: 15212)
+--skip-register      Skip account creation during onboarding
 ```
 
 ## Architecture
 
-### Services
+`@phneakngar/app` is a local installer/wrapper. The hosted Cloudflare web package is `@phneakngar/web`; the two labels are not interchangeable.
 
-ភ្នាក់ងារ runs three local services, each in its own Wrangler dev process:
+| Local service | Package | Default port | Responsibility |
+| --- | --- | --- | --- |
+| Web | `@phneakngar/web` | `15210` | Next.js dashboard, API, and authentication |
+| Email Worker | `@phneakngar/email-worker` | `15211` | Local email processing path |
+| WebSocket Worker | `@phneakngar/ws-do` | `15212` | Durable Object real-time channels |
 
-| Service | Default Port | Description |
-| --- | --- | --- |
-| **Web** | 15210 | Main web app (Next.js on Wrangler) — dashboard, API, auth |
-| **Email Worker** | 15211 | Email processing worker |
-| **WebSocket (WS-DO)** | 15212 | Real-time communication via Durable Objects |
+In an installed bundle, all three services use separate local Wrangler processes and share D1 state persisted under `~/.phneakngar/self-hosted/web/.wrangler/state/`. In monorepo development, the web service runs with `next dev`, while the Email and WebSocket Workers run with Wrangler.
 
-All services share a single SQLite database (Cloudflare D1 local mode) with state persisted at `~/.phneakngar/self-hosted/web/.wrangler/state/`.
-
-### Directory Layout
-
-```
+```text
 ~/.phneakngar/self-hosted/
-├── web/                  # Web app (wrangler.toml, migrations, .dev.vars)
-│   ├── .wrangler/state/  # D1 database & KV persistence
-│   └── migrations/       # SQL migration files
-├── email-worker/         # Email worker (wrangler.toml, .dev.vars)
-├── ws-do/                # WebSocket Durable Object worker
-├── logs/                 # Service logs (web.log, email-worker.log, ws-do.log)
-└── .pids.json            # PID tracking for running services
+├── web/
+│   ├── .wrangler/state/
+│   └── migrations/
+├── email-worker/
+├── ws-do/
+├── logs/
+└── .pids.json
 ```
 
-### Database Migrations
+## Migrations and secrets
 
-Migrations are SQL files applied via `wrangler d1 migrations apply --local`. They run automatically during:
+- `onboard` applies all migrations for a fresh installation.
+- `update` applies pending migrations after replacing the bundle.
+- Wrangler records applied migrations.
+- On first onboarding, the wrapper generates missing web and Email Worker `.dev.vars` files.
+- Existing secret files are not overwritten.
 
-- **`onboard`** — applies all migrations on fresh install
-- **`update`** — applies any new migrations after installing the latest version
+## Current live-testing values
 
-Wrangler tracks which migrations have been applied; only pending ones are executed.
-
-### Secrets Management
-
-On first `onboard`, secrets are auto-generated and written to `.dev.vars` files:
-
-- **Web**: `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `ENCRYPTION_KEY`, OAuth client ID/secret placeholders
-- **Email Worker**: `ENCRYPTION_KEY` (synced from web)
-
-Secrets are never overwritten on subsequent runs — only missing files are created.
-
-## Dev Mode
-
-When the `PHNEAKNGAR_PROJECT_ROOT` environment variable is set, `@phneakngar/app` runs in dev mode against the monorepo:
-
-- Runs `pnpm predev` to set up environment files
-- Runs `pnpm db:migrate` for migrations (instead of Wrangler CLI)
-- Starts web via `next dev` (instead of Wrangler)
-- Services run in foreground with prefixed log output (`[web]`, `[email-worker]`, `[ws-do]`)
-- `Ctrl+C` cleanly stops all services
-
-```bash
-PHNEAKNGAR_PROJECT_ROOT=/path/to/phneakngar npx @phneakngar/app onboard
-```
+Agent-only clients currently default to the live-testing control plane at `https://phneakngar-web.thatsilenceguy.workers.dev`, whose current email domain is `cieee.xyz`. Those are live-testing values only, not permanent canonical product identity. A local `@phneakngar/app` installation uses its own local service origin and does not require that hosted deployment.
 
 ## Requirements
 
-- Node.js >= 20
-- One of: `claude`, `codex`, `opencode`, or `grok` CLI installed
-  - For Grok: install the xAI Grok Build CLI and run `grok login` (subscription) or set `XAI_API_KEY`
+### Running an operator-built tarball
+
+- Node.js `>=20.19.0`
+- One supported AI runtime: Claude Code, Codex, OpenCode, or Grok CLI
+
+### Building from the repository
+
+- Node.js `>=20.19.0`
+- pnpm `10.33.0`
+- Bun `1.3.14`
 
 ## Limitations
 
-- Email send/receive is not available in local mode
-- Social OAuth login is disabled; use email/password
+- External email send/receive is unavailable in local mode unless an operator configures a supported email environment.
+- Social OAuth is disabled in the default local setup; use the local account flow.
 
 ## License
 
-Apache-2.0 — see [LICENSE](../../LICENSE).
+Apache-2.0 — see [../../LICENSE](../../LICENSE).

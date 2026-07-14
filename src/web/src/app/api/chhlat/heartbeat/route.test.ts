@@ -31,7 +31,7 @@ vi.mock("@phneakngar/shared", async (importOriginal) => {
 
 vi.mock("@/lib/middleware/auth", () => ({
   withAuth: vi.fn((handler: any) => async (req: any) => {
-    return handler(req, { env: {}, userId: "u1", email: "u@t.com", authType: "machine" as const, workspaceId: "w1" });
+    return handler(req, { env: {}, userId: "u1", email: "u@t.com", authType: "machine" as const, workspaceId: "w1", machineTokenHostname: "d1" });
   }),
 }));
 

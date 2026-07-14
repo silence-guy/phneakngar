@@ -7,11 +7,13 @@ import { taskToResponse } from "@/lib/api/responses";
 import { TaskService } from "@/lib/services/task";
 import { broadcastToUser } from "@/lib/broadcast";
 import { invalidate, cacheKeys } from "@/lib/cache";
+import { resolveServerEmailDomain } from "@/lib/email-domain";
 
 export const POST = withAuth(async (req, ctx) => {
   const ws = await withWorkspaceMember(req, ctx);
   if (ws instanceof Response) return ws;
 
+  const emailDomain = resolveServerEmailDomain(ctx.env);
   const db = getDb(ctx.env.DB);
 
   const id = ctx.params?.id;
@@ -29,7 +31,7 @@ export const POST = withAuth(async (req, ctx) => {
     return writeError("not found", 404);
   }
 
-  const taskService = new TaskService(db);
+  const taskService = new TaskService(db, emailDomain);
   try {
     const { oldTask, newTask } = await taskService.retryTask(id, ws.workspaceId);
     const dateStr = new Date().toISOString().slice(0, 10);

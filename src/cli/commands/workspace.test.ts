@@ -97,8 +97,8 @@ describe("workspace init", () => {
       studio: { name: "Test WS" },
       workspace: { id: "ws_test", name: "Test WS", slug: "test-ws" },
       agents: [
-        { id: "ag1", name: "Alice", email_handle: "alice" },
-        { id: "ag2", name: "Bob", email_handle: "bob" },
+        { id: "ag1", name: "Alice", email_handle: "alice", email: "alice@agents.example" },
+        { id: "ag2", name: "Bob", email_handle: "bob", email: "bob@agents.example" },
       ],
       links: [],
     });
@@ -112,7 +112,7 @@ describe("workspace init", () => {
       ]),
     }));
     expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("Workspace initialized"));
-    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("alice@cieee.xyz"));
+    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("alice@agents.example"));
     expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("http://localhost:3000/w/test-ws"));
   });
 

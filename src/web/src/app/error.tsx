@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { TypewriterVisual } from "@/components/typewriter-visual";
 import { ERROR_PAGE_LABELS } from "@/app/error-page-labels";
+import { toPublicPhneakngarAddress } from "@/lib/email-domain";
 
 export default function Error({
   reset,
@@ -34,7 +35,7 @@ export default function Error({
               >
                 <div className="tw-email-line">
                   <span style={{ color: "var(--landing-text)" }}>{ERROR_PAGE_LABELS.fromLabel}</span>{" "}
-                  system@phneakngar.ai
+                  {toPublicPhneakngarAddress("system")}
                 </div>
                 <div className="tw-email-line">
                   <span style={{ color: "var(--landing-text)" }}>{ERROR_PAGE_LABELS.toLabel}</span>{" "}

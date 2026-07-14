@@ -18,7 +18,7 @@ import { cn } from "@/lib/utils";
 import { rankMentionAgents } from "@/lib/mention-agents";
 import { buildChatMentionExtension } from "@/lib/chat-mention-extension";
 import { decodeChatEntities } from "@/lib/chat-markdown";
-import { toPhneakngarAddress } from "@phneakngar/shared";
+import { toPublicPhneakngarAddress } from "@/lib/email-domain";
 import type { Agent, AgentLink } from "@phneakngar/shared";
 import type { PopupKeyEvent } from "@/hooks/use-slash-command";
 
@@ -136,7 +136,7 @@ function MentionList({ state }: { state: MentionPopupState }) {
             <span className="truncate font-medium">{agent.name}</span>
             {agent.email_handle && (
               <span className="truncate text-xs text-muted-foreground">
-                {toPhneakngarAddress(agent.email_handle)}
+                {toPublicPhneakngarAddress(agent.email_handle)}
               </span>
             )}
           </button>

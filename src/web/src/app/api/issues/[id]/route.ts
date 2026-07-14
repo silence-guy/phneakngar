@@ -15,6 +15,7 @@ import { TaskService } from "@/lib/services/task";
 import { broadcastToUser } from "@/lib/broadcast";
 import { invalidate, cacheKeys } from "@/lib/cache";
 import { log } from "@/lib/logger";
+import { resolveServerEmailDomain } from "@/lib/email-domain";
 
 export const GET = withAuth(async (req: NextRequest, ctx) => {
   const ws = await withWorkspaceMember(req, ctx);
@@ -52,6 +53,7 @@ export const PATCH = withAuth(async (req: NextRequest, ctx) => {
   const ws = await withWorkspaceMember(req, ctx);
   if (ws instanceof Response) return ws;
 
+  const emailDomain = resolveServerEmailDomain(ctx.env);
   const db = getDb(ctx.env.DB);
   const id = ctx.params?.id;
   if (!id) return writeError("issue id is required", 400);
@@ -100,7 +102,7 @@ export const PATCH = withAuth(async (req: NextRequest, ctx) => {
       ? `${existing.title}\n\n${existing.description}`
       : existing.title;
 
-    const taskService = new TaskService(db);
+    const taskService = new TaskService(db, emailDomain);
     try {
       const task = await taskService.enqueueTask(
         body.agent_id,

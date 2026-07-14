@@ -1,6 +1,7 @@
 import { eq, and, desc, lte, isNotNull, inArray } from "drizzle-orm";
 import { meetingSession, agent } from "../schema";
 import type { Database } from "../index";
+import { MAX_POLL_MEETINGS } from "../../constants";
 
 export async function createMeetingSession(
   db: Database,
@@ -201,7 +202,8 @@ export async function deleteMeetingSession(
 export async function listScheduledMeetings(
   db: Database,
   workspaceId: string,
-  beforeOrAt: string
+  beforeOrAt: string,
+  limit = MAX_POLL_MEETINGS,
 ) {
   return db
     .select({
@@ -225,7 +227,8 @@ export async function listScheduledMeetings(
         lte(meetingSession.scheduledAt, beforeOrAt)
       )
     )
-    .orderBy(meetingSession.scheduledAt);
+    .orderBy(meetingSession.scheduledAt, meetingSession.id)
+    .limit(Math.max(1, Math.min(limit, MAX_POLL_MEETINGS)));
 }
 
 export async function listMeetingsWithSchedule(

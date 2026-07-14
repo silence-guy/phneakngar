@@ -1,6 +1,7 @@
-import { eq, and, inArray, lt } from "drizzle-orm";
+import { eq, and, inArray, lt, asc } from "drizzle-orm";
 import { workspaceFileRequest } from "../schema";
 import type { Database } from "../index";
+import { MAX_POLL_FILE_REQUESTS } from "../../constants";
 
 export async function createRequest(
   db: Database,
@@ -21,6 +22,7 @@ export async function createRequest(
 export async function getPendingByWorkspace(
   db: Database,
   workspaceId: string,
+  limit = MAX_POLL_FILE_REQUESTS,
 ) {
   return db
     .select()
@@ -30,7 +32,43 @@ export async function getPendingByWorkspace(
         eq(workspaceFileRequest.workspaceId, workspaceId),
         eq(workspaceFileRequest.status, "pending"),
       ),
-    );
+    )
+    .orderBy(asc(workspaceFileRequest.createdAt), asc(workspaceFileRequest.id))
+    .limit(Math.max(1, Math.min(limit, MAX_POLL_FILE_REQUESTS)));
+}
+
+export async function claimPendingByWorkspace(
+  db: Database,
+  workspaceId: string,
+  limit = MAX_POLL_FILE_REQUESTS,
+) {
+  const selected = await getPendingByWorkspace(db, workspaceId, limit);
+  if (selected.length === 0) return [];
+
+  const now = new Date().toISOString();
+  const selectedOrder = new Map(selected.map((row, index) => [row.id, index]));
+  const claimed = (
+    await Promise.all(
+      selected.map((row) =>
+        db
+          .update(workspaceFileRequest)
+          .set({ status: "dispatched", updatedAt: now })
+          .where(
+            and(
+              eq(workspaceFileRequest.id, row.id),
+              eq(workspaceFileRequest.workspaceId, workspaceId),
+              eq(workspaceFileRequest.status, "pending"),
+            ),
+          )
+          .returning(),
+      ),
+    )
+  ).flat();
+
+  return claimed.sort((left, right) =>
+    (selectedOrder.get(left.id) ?? Number.MAX_SAFE_INTEGER)
+    - (selectedOrder.get(right.id) ?? Number.MAX_SAFE_INTEGER)
+  );
 }
 
 export async function markDispatched(db: Database, ids: string[]) {

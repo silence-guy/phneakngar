@@ -12,7 +12,7 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import { ProviderLogo } from "@/components/provider-logo";
-import { toPhneakngarAddress } from "@phneakngar/shared";
+import { toPublicPhneakngarAddress } from "@/lib/email-domain";
 import type { AgentRuntime as Runtime } from "@phneakngar/shared";
 import type { MemberRole } from "./scenario-presets";
 import { STUDIO_ONBOARDING_LABELS, studioRoleLabel } from "./studio-onboarding-labels";
@@ -80,7 +80,7 @@ export function TeamPreview({
               </div>
               {/* Email */}
               <p className="text-[10px] text-muted-foreground/70 font-mono truncate">
-                {toPhneakngarAddress(m.emailHandle || m.name.toLowerCase())}
+                {toPublicPhneakngarAddress(m.emailHandle || m.name.toLowerCase())}
               </p>
               {/* Description — flex-1 to push runtime picker to bottom */}
               <p className="text-[11px] text-muted-foreground leading-snug flex-1">

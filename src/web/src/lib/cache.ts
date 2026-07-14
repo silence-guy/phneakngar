@@ -156,9 +156,14 @@ export function invalidateInboxCounts(userId: string, workspaceId: string): Prom
   return invalidateMany(INBOX_TYPE_COMBOS.map((combo) => `${prefix}${combo}`));
 }
 
+const machineTokenCacheKeyFromHash = (tokenHash: string) => `mt:${tokenHash}`;
+const machineTokenLastUsedCacheKeyFromHash = (tokenHash: string) => `mt_lu:${tokenHash}`;
+
 export const cacheKeys = {
-  machineToken: (token: string) => `mt:${hashSecret(token)}`,
-  machineTokenLastUsed: (token: string) => `mt_lu:${hashSecret(token)}`,
+  machineTokenByHash: machineTokenCacheKeyFromHash,
+  machineToken: (token: string) => machineTokenCacheKeyFromHash(hashSecret(token)),
+  machineTokenLastUsedByHash: machineTokenLastUsedCacheKeyFromHash,
+  machineTokenLastUsed: (token: string) => machineTokenLastUsedCacheKeyFromHash(hashSecret(token)),
   member: (workspaceId: string, userId: string) => `mem:${workspaceId}:${userId}`,
   workspaceDefaultLocale: (workspaceId: string) => `ws_locale:${workspaceId}`,
   runtimeIds: (workspaceId: string, chhlatId: string) => `rt:${workspaceId}:${chhlatId}`,

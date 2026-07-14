@@ -16,6 +16,7 @@ function createMockDb(rows: any[]) {
   chain.delete = vi.fn(() => chain);
   chain.groupBy = vi.fn(() => chain);
   chain.leftJoin = vi.fn(() => chain);
+  chain.innerJoin = vi.fn(() => chain);
   return chain;
 }
 
@@ -59,6 +60,32 @@ describe("task query function signatures", () => {
 describe("listPendingTasksByRuntimes", () => {
   it("returns empty array for empty runtimeIds without querying DB", async () => {
     const result = await taskQueries.listPendingTasksByRuntimes(null as any, [], "ws_1");
+    expect(result).toEqual([]);
+  });
+
+  it("applies a bounded candidate limit", async () => {
+    const mockDb = createMockDb([]);
+    await taskQueries.listPendingTasksByRuntimes(mockDb, ["rt_1"], "ws_1", 999);
+    expect(mockDb.limit).toHaveBeenCalledWith(64);
+  });
+
+  it("groups candidates by agent before applying the response limit", async () => {
+    const mockDb = createMockDb([]);
+    await taskQueries.listPendingTasksByRuntimes(mockDb, ["rt_1"], "ws_1", 8);
+    expect(mockDb.groupBy).toHaveBeenCalledTimes(1);
+    expect(mockDb.limit).toHaveBeenCalledWith(8);
+  });
+
+  it("joins agent capacity and applies claimability predicates before limiting", async () => {
+    const mockDb = createMockDb([]);
+    await taskQueries.listPendingTasksByRuntimes(mockDb, ["rt_1"], "ws_1", 8);
+    expect(mockDb.innerJoin).toHaveBeenCalledTimes(1);
+    expect(mockDb.where).toHaveBeenCalledTimes(1);
+    expect(mockDb.limit).toHaveBeenCalledWith(8);
+  });
+
+  it("returns empty array for zero limit without querying DB", async () => {
+    const result = await taskQueries.listPendingTasksByRuntimes(null as any, ["rt_1"], "ws_1", 0);
     expect(result).toEqual([]);
   });
 });

@@ -10,6 +10,7 @@ import { TaskService } from "@/lib/services/task";
 import { broadcastToUser } from "@/lib/broadcast";
 import { invalidate, cacheKeys } from "@/lib/cache";
 import type { IssueStatusType } from "@phneakngar/shared";
+import { resolveServerEmailDomain } from "@/lib/email-domain";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const MAX_FILES = 10;
@@ -62,6 +63,7 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
   const ws = await withWorkspaceMember(req, ctx);
   if (ws instanceof Response) return ws;
 
+  const emailDomain = resolveServerEmailDomain(ctx.env);
   const db = getDb(ctx.env.DB);
   const bucket = ctx.env.EMAIL_BUCKET;
 
@@ -183,7 +185,7 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
     description: created.description,
   });
 
-  const taskService = new TaskService(db);
+  const taskService = new TaskService(db, emailDomain);
   try {
     const task = await taskService.enqueueTask(
       body.agent_id,

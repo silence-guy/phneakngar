@@ -260,7 +260,7 @@ export function AgentProvider({
     reloadRuntimes();
     for (const fn of reconnectSubscribersRef.current) fn();
   }, [reloadRuntimes]);
-  useUserWs(handleWsMessage, { onReconnect: handleReconnect });
+  useUserWs(handleWsMessage, { onReconnect: handleReconnect, workspaceId });
 
   const handleCreateAgent = useCallback(
     async (req: CreateAgentRequest): Promise<Agent | null> => {

@@ -4,6 +4,7 @@ import { withAuth } from "@/lib/middleware/auth"
 import { writeJSON, writeError } from "@/lib/middleware/helpers"
 import { getDb } from "@/lib/db"
 import { log } from "@/lib/logger"
+import { resolveServerEmailDomain } from "@/lib/email-domain"
 
 const MAX_TRANSCRIPT_BYTES = 5 * 1024 * 1024
 const MAX_ERROR_BYTES = 16 * 1024
@@ -14,6 +15,7 @@ function utf8Size(value: string | undefined): number {
 
 export const POST = withAuth(async (req: NextRequest, ctx) => {
   const cfEnv = ctx.env
+  const emailDomain = resolveServerEmailDomain(cfEnv)
   const db = getDb(cfEnv.DB)
 
   if (!ctx.workspaceId) {
@@ -78,11 +80,11 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
     const agent = await queries.agent.getAgent(db, meeting.agentId, body.workspaceId)
 
     if (agent?.emailHandle) {
-      const messageId = `<meeting-${body.meetingId}@${process.env.PHNEAKNGAR_DOMAIN || "cieee.xyz"}>`
+      const messageId = `<meeting-${body.meetingId}@${emailDomain}>`
       const existing = await queries.email.getEmailByMessageId(db, messageId, body.workspaceId)
       if (!existing) {
-        const fromAddr = toPhneakngarAddress("no-reply")
-        const toAddr = toPhneakngarAddress(agent.emailHandle)
+        const fromAddr = toPhneakngarAddress("no-reply", emailDomain)
+        const toAddr = toPhneakngarAddress(agent.emailHandle, emailDomain)
         const meetingTitle = meeting.title || "Untitled"
         const subject = `Meeting completed: ${meetingTitle} — please summarize`
 
@@ -134,14 +136,30 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
           body: notifyPayload,
         }
 
+        let notifyResponse: Response
+        let notifyTransport = "service-binding"
         try {
-          await cfEnv.WORKER_SELF_REFERENCE!.fetch("http://internal/api/email/notify", notifyInit)
+          notifyResponse = await cfEnv.WORKER_SELF_REFERENCE!.fetch(
+            "http://internal/api/email/notify",
+            notifyInit,
+          )
         } catch {
+          notifyTransport = "local-fallback"
+          log.warn("meeting-callback: service-binding notify transport failed")
           try {
-            await fetch(`${DEV_WEB_URL}/api/email/notify`, notifyInit)
-          } catch (e) {
-            log.warn("meeting-callback: email notify failed", { err: String(e) })
+            notifyResponse = await fetch(`${DEV_WEB_URL}/api/email/notify`, notifyInit)
+          } catch {
+            log.warn("meeting-callback: local notify transport failed")
+            return writeError("email notify failed", 502)
           }
+        }
+
+        if (!notifyResponse.ok) {
+          log.warn("meeting-callback: email notify returned non-success", {
+            transport: notifyTransport,
+            status: notifyResponse.status,
+          })
+          return writeError("email notify failed", 502)
         }
       }
     }

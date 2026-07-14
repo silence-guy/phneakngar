@@ -85,11 +85,16 @@ export {
   EVENT_POLL_INTERVAL_MS,
   AGENT_HANDLE_MIN_LENGTH,
   MAX_TASKS_PER_TRACE,
+  MAX_POLL_TASKS,
+  MAX_PENDING_TASK_CANDIDATES_PER_POLL,
+  MAX_POLL_FILE_REQUESTS,
+  MAX_POLL_MEETINGS,
   DEV_PASSWORD,
   DEV_WEB_URL,
   DEV_WS_DO_URL,
   DEV_EMAIL_WORKER_URL,
   EMAIL_NOTIFY_SECRET_HEADER,
+  EMAIL_DOMAIN_EXPECTATION_HEADER,
   WS_SERVICE_SECRET_HEADER,
   MeetingStatus,
   TERMINAL_MEETING_STATUSES,
@@ -305,13 +310,15 @@ export {
 } from "./db/queries/calendar-event";
 
 // Utils
+export type { EmailDomainEnvironment } from "./utils/email";
 export {
   parseEmailHandle,
   toPhneakngarAddress,
   isValidHandle,
   getEmailDomain,
+  resolveEmailDomain,
   emailDomainSuffix,
-  DEFAULT_EMAIL_DOMAIN,
+  NON_PRODUCTION_EMAIL_DOMAIN,
 } from "./utils/email";
 export { parsePromptMentions } from "./utils/prompt-parser";
 export type { PromptAgent, PromptMention, ParseResult } from "./utils/prompt-parser";
@@ -322,6 +329,19 @@ export { generateWorkspaceSlug } from "./utils/slug";
 export { truncateTitle, truncateGraphemes, sliceGraphemes, toGraphemes } from "./utils/title";
 export { semverGte } from "./semver";
 export { resolveChhlatId, withChhlatIdFields } from "./chhlat-id";
+export {
+  WS_TICKET_TTL_SECONDS,
+  WS_TICKET_VERSION,
+  WS_CHHLAT_TICKET_AUDIENCE,
+  WS_USER_TICKET_AUDIENCE,
+  issueWsConnectionTicket,
+  validateWsConnectionTicket,
+} from "./ws-ticket";
+export type {
+  WsConnectionTicketAudience,
+  WsConnectionTicketPayload,
+  WsTicketValidationResult,
+} from "./ws-ticket";
 export {
   resolveMode,
   cliCommand,

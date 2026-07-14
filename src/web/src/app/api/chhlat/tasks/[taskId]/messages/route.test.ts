@@ -31,6 +31,8 @@ vi.mock("@phneakngar/shared", async (importOriginal) => {
     createDb: vi.fn(() => ({})),
   queries: {
     taskMessage: {
+      TaskMessageConflictError: actual.queries.taskMessage.TaskMessageConflictError,
+      taskMessagePayloadFingerprint: actual.queries.taskMessage.taskMessagePayloadFingerprint,
       listTaskMessages: (...args: any[]) => mockListTaskMessages(...args),
       createTaskMessage: (...args: any[]) => mockCreateTaskMessage(...args),
     },
@@ -79,6 +81,7 @@ vi.mock("@/lib/logger", () => ({
   log: { warn: vi.fn(), info: vi.fn(), error: vi.fn() },
 }));
 
+import { queries } from "@phneakngar/shared";
 import { GET, POST } from "./route";
 
 const withParams = (taskId: string) => ({
@@ -155,7 +158,10 @@ describe("GET /api/chhlat/tasks/[taskId]/messages", () => {
 describe("POST /api/chhlat/tasks/[taskId]/messages", () => {
   it("creates messages for workspace-scoped task", async () => {
     mockGetConversation.mockResolvedValue({ id: "c1", userId: "owner-u2" });
-    mockCreateTaskMessage.mockResolvedValue({ id: "m1" });
+    mockCreateTaskMessage.mockResolvedValue({
+      message: { id: "m1", seq: 1, type: "text", content: "hello", output: "" },
+      created: true,
+    });
 
     const res = await POST(messageReq("t1", [{ seq: 1, type: "text", content: "hello" }]), withParams("t1"));
     const body = await res.json();
@@ -202,7 +208,10 @@ describe("POST /api/chhlat/tasks/[taskId]/messages", () => {
 
   it("only broadcasts text and error messages via WebSocket to conversation owner", async () => {
     mockGetConversation.mockResolvedValue({ id: "c1", userId: "owner-u2" });
-    mockCreateTaskMessage.mockResolvedValue({ id: "m1" });
+    mockCreateTaskMessage.mockImplementation((_db, data) => Promise.resolve({
+      message: { id: `m${data.seq}`, ...data },
+      created: true,
+    }));
 
     const res = await POST(
       messageReq("t1", [
@@ -226,7 +235,10 @@ describe("POST /api/chhlat/tasks/[taskId]/messages", () => {
 
   it("stores thinking messages but does not broadcast them", async () => {
     mockGetConversation.mockResolvedValue({ id: "c1", userId: "owner-u2" });
-    mockCreateTaskMessage.mockResolvedValue({ id: "m1" });
+    mockCreateTaskMessage.mockImplementation((_db, data) => Promise.resolve({
+      message: { id: `m${data.seq}`, ...data },
+      created: true,
+    }));
 
     const res = await POST(
       messageReq("t1", [
@@ -248,7 +260,10 @@ describe("POST /api/chhlat/tasks/[taskId]/messages", () => {
 
   it("does not broadcast when all messages are tool-result", async () => {
     mockGetConversation.mockResolvedValue({ id: "c1", userId: "owner-u2" });
-    mockCreateTaskMessage.mockResolvedValue({ id: "m1" });
+    mockCreateTaskMessage.mockImplementation((_db, data) => Promise.resolve({
+      message: { id: `m${data.seq}`, ...data },
+      created: true,
+    }));
 
     await POST(
       messageReq("t1", [
@@ -258,6 +273,112 @@ describe("POST /api/chhlat/tasks/[taskId]/messages", () => {
       withParams("t1")
     );
 
+    expect(mockBroadcastToUser).not.toHaveBeenCalled();
+  });
+
+  it("acknowledges an exact replay without broadcasting it again", async () => {
+    mockGetConversation.mockResolvedValue({ id: "c1", userId: "owner-u2" });
+    mockCreateTaskMessage.mockResolvedValue({
+      message: { id: "m1", seq: 1, type: "text", content: "hello", output: "" },
+      created: false,
+    });
+
+    const res = await POST(
+      messageReq("t1", [{ seq: 1, type: "text", content: "hello" }]),
+      withParams("t1"),
+    );
+
+    expect(res.status).toBe(200);
+    expect(mockBroadcastToUser).not.toHaveBeenCalled();
+  });
+
+  it("returns 503 for a partial storage failure and broadcasts nothing", async () => {
+    mockGetConversation.mockResolvedValue({ id: "c1", userId: "owner-u2" });
+    mockCreateTaskMessage
+      .mockResolvedValueOnce({
+        message: { id: "m1", seq: 1, type: "text", content: "stored", output: "" },
+        created: true,
+      })
+      .mockRejectedValueOnce(new Error("D1 unavailable"));
+
+    const res = await POST(
+      messageReq("t1", [
+        { seq: 1, type: "text", content: "stored" },
+        { seq: 2, type: "error", content: "not stored" },
+      ]),
+      withParams("t1"),
+    );
+    const body = await res.json();
+
+    expect(res.status).toBe(503);
+    expect(body.error).toBe("task messages were not fully stored");
+    expect(mockBroadcastToUser).not.toHaveBeenCalled();
+  });
+
+  it("returns 409 when the same task sequence has a conflicting payload", async () => {
+    mockCreateTaskMessage.mockRejectedValue(
+      new queries.taskMessage.TaskMessageConflictError("t1", 1),
+    );
+
+    const res = await POST(
+      messageReq("t1", [{ seq: 1, type: "text", content: "different" }]),
+      withParams("t1"),
+    );
+
+    expect(res.status).toBe(409);
+    expect(mockBroadcastToUser).not.toHaveBeenCalled();
+  });
+
+  it("rejects conflicting duplicate sequences in the submitted batch before writing", async () => {
+    const res = await POST(
+      messageReq("t1", [
+        { seq: 1, type: "text", content: "first" },
+        { seq: 1, type: "text", content: "different" },
+      ]),
+      withParams("t1"),
+    );
+    const body = await res.json();
+
+    expect(res.status).toBe(409);
+    expect(body.error).toBe("task message payload conflict");
+    expect(mockCreateTaskMessage).not.toHaveBeenCalled();
+    expect(mockBroadcastToUser).not.toHaveBeenCalled();
+  });
+
+  it("deduplicates identical duplicate sequences in the submitted batch", async () => {
+    mockCreateTaskMessage.mockResolvedValue({
+      message: { id: "m1", seq: 1, type: "text", content: "same", output: "" },
+      created: true,
+    });
+
+    const res = await POST(
+      messageReq("t1", [
+        { seq: 1, type: "text", content: "same" },
+        { seq: 1, type: "text", content: "same" },
+      ]),
+      withParams("t1"),
+    );
+
+    expect(res.status).toBe(200);
+    expect(mockCreateTaskMessage).toHaveBeenCalledOnce();
+  });
+
+  it("preserves retryability when a batch has both conflict and transient failures", async () => {
+    mockCreateTaskMessage
+      .mockRejectedValueOnce(new queries.taskMessage.TaskMessageConflictError("t1", 1))
+      .mockRejectedValueOnce(new Error("D1 unavailable"));
+
+    const res = await POST(
+      messageReq("t1", [
+        { seq: 1, type: "text", content: "conflict" },
+        { seq: 2, type: "error", content: "transient" },
+      ]),
+      withParams("t1"),
+    );
+    const body = await res.json();
+
+    expect(res.status).toBe(503);
+    expect(body.error).toBe("task messages were not fully stored");
     expect(mockBroadcastToUser).not.toHaveBeenCalled();
   });
 });

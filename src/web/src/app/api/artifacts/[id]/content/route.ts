@@ -36,13 +36,8 @@ export const GET = withAuth(async (req: NextRequest, ctx) => {
   const db = getDb(ctx.env.DB);
   const bucket = ctx.env.EMAIL_BUCKET;
 
-  const row = await queries.artifact.getArtifact(db, id, ws.workspaceId);
+  const row = await queries.artifact.getArtifactForOwner(db, id, ws.workspaceId, ctx.userId);
   if (!row) {
-    return writeError("not found", 404);
-  }
-
-  const agent = await queries.agent.getAgent(db, row.agentId, ws.workspaceId, ctx.userId);
-  if (!agent) {
     return writeError("not found", 404);
   }
 
@@ -60,6 +55,7 @@ export const GET = withAuth(async (req: NextRequest, ctx) => {
     "Content-Disposition": contentDisposition(disposition, row.filename),
     "Content-Security-Policy": "sandbox",
     "X-Content-Type-Options": "nosniff",
+    "Cache-Control": "private, no-store",
   };
 
   return new Response(object.body, { headers });

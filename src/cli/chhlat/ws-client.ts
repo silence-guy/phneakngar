@@ -14,6 +14,7 @@ export interface ChhlatWsClientOptions {
   serverURL: string;
   chhlatId: string;
   machineToken: string;
+  fetchTicket: () => Promise<{ ticket: string; workspaceId?: string; wsPort?: number }>;
   onMessage: (msg: ChhlatPushMessage) => void;
   onConnected: () => void;
   onDisconnected: () => void;
@@ -31,14 +32,15 @@ export class ChhlatWsClient {
 
   constructor(private opts: ChhlatWsClientOptions) {}
 
-  getUrl(): string {
+  getUrl(ticket: string, wsPort = WS_DO_DEV_PORT): string {
     const url = new URL(this.opts.serverURL);
     const isLocal = url.hostname === "localhost" || url.hostname === "127.0.0.1";
+    const query = `ticket=${encodeURIComponent(ticket)}&chhlatId=${encodeURIComponent(this.opts.chhlatId)}`;
     if (isLocal) {
-      return `ws://localhost:${WS_DO_DEV_PORT}/?chhlatId=${this.opts.chhlatId}`;
+      return `ws://localhost:${wsPort}/?${query}`;
     }
     const protocol = url.protocol === "https:" ? "wss:" : "ws:";
-    return `${protocol}//${url.host}/api/ws/chhlat?chhlatId=${this.opts.chhlatId}`;
+    return `${protocol}//${url.host}/api/ws/chhlat?${query}`;
   }
 
   isConnected(): boolean {
@@ -48,8 +50,22 @@ export class ChhlatWsClient {
   connect(): void {
     if (this.closed) return;
     this.cleanup();
+    void this.openWithFreshTicket();
+  }
 
-    const wsUrl = this.getUrl();
+  private async openWithFreshTicket(): Promise<void> {
+    let issued: { ticket: string; workspaceId?: string; wsPort?: number };
+    try {
+      issued = await this.opts.fetchTicket();
+      if (!issued?.ticket) throw new Error("missing websocket ticket");
+    } catch (err) {
+      log.warn("ws ticket fetch failed", { err: String(err) });
+      this.scheduleReconnect();
+      return;
+    }
+    if (this.closed) return;
+
+    const wsUrl = this.getUrl(issued.ticket, issued.wsPort);
     log.info("connecting", { url: wsUrl });
 
     try {
@@ -66,6 +82,7 @@ export class ChhlatWsClient {
         type: "auth",
         machineToken: this.opts.machineToken,
         chhlatId: this.opts.chhlatId,
+        ...(issued.workspaceId ? { workspaceId: issued.workspaceId } : {}),
       }));
       this.lastMessageAt = Date.now();
       this.startHeartbeat();

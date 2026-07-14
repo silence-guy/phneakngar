@@ -485,6 +485,7 @@ export const taskMessage = sqliteTable(
     createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
   },
   (t) => [
+    unique("task_message_task_seq_unique").on(t.taskId, t.seq),
     index("idx_task_message_task_seq").on(t.taskId, t.seq),
     index("idx_task_message_task_created").on(t.taskId, t.createdAt),
   ]

@@ -3,37 +3,45 @@ import { NextRequest } from "next/server";
 import * as sharedMock from "@/test/shared-mock";
 
 const mockGetMachineTokenByToken = vi.fn();
-const mockActivateMachineToken = vi.fn();
-const mockUpsertMachine = vi.fn();
+const mockClaimMachineTokenActivation = vi.fn();
+const mockFinalizeMachineTokenActivation = vi.fn();
+const mockUpsertMachineForActivation = vi.fn();
 const mockUpsertAgentRuntime = vi.fn();
+const mockListAgentRuntimesByChhlat = vi.fn();
+const mockListAgentRuntimesByChhlatProviders = vi.fn();
 const mockBroadcastToUser = vi.fn();
+const mockBindCacheKV = vi.fn();
+const mockInvalidateMany = vi.fn();
 
 function sharedMocks() {
   const shared = sharedMock as unknown as Record<string, unknown>;
   return {
     "@opennextjs/cloudflare": {
-      getCloudflareContext: vi.fn(() => Promise.resolve({ env: { DB: {} } })),
+      getCloudflareContext: vi.fn(() => Promise.resolve({ env: { DB: {}, CACHE_KV: {} } })),
     },
     "@phneakngar/shared": () => ({
       ...shared,
       createDb: vi.fn(() => ({})),
       queries: {
         machineToken: {
-          getMachineTokenByToken: (...a: any[]) => mockGetMachineTokenByToken(...a),
-          activateMachineToken: (...a: any[]) => mockActivateMachineToken(...a),
+          getMachineTokenByToken: (...args: any[]) => mockGetMachineTokenByToken(...args),
+          claimMachineTokenActivation: (...args: any[]) => mockClaimMachineTokenActivation(...args),
+          finalizeMachineTokenActivation: (...args: any[]) => mockFinalizeMachineTokenActivation(...args),
         },
         machine: {
-          upsertMachine: (...a: any[]) => mockUpsertMachine(...a),
+          upsertMachineForActivation: (...args: any[]) => mockUpsertMachineForActivation(...args),
         },
         runtime: {
-          upsertAgentRuntime: (...a: any[]) => mockUpsertAgentRuntime(...a),
+          upsertAgentRuntime: (...args: any[]) => mockUpsertAgentRuntime(...args),
+          listAgentRuntimesByChhlat: (...args: any[]) => mockListAgentRuntimesByChhlat(...args),
+          listAgentRuntimesByChhlatProviders: (...args: any[]) => mockListAgentRuntimesByChhlatProviders(...args),
         },
       },
       ActivateTokenRequestSchema: shared.ActivateTokenRequestSchema,
       createLogger: () => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() }),
     }),
     "@/lib/broadcast": {
-      broadcastToUser: (...a: any[]) => mockBroadcastToUser(...a),
+      broadcastToUser: (...args: any[]) => mockBroadcastToUser(...args),
     },
   };
 }
@@ -46,12 +54,55 @@ function makeReq(body: unknown) {
   });
 }
 
+const validBody = {
+  token: "al_test123",
+  hostname: "TestMachine.local",
+  runtimes: [{ type: "claude", version: "2.1.0" }],
+};
+const runtimesJson = JSON.stringify([{ type: "claude", version: "2.1.0" }]);
+const pendingToken = {
+  id: "mt_1",
+  userId: "u1",
+  userEmail: "u1@example.com",
+  workspaceId: "ws_1",
+  tokenHash: "hash_1",
+  status: "pending",
+  hostname: null,
+  runtimesJson: null,
+};
+const runtimeRow = {
+  id: "rt_1",
+  workspaceId: "ws_1",
+  chhlatId: "TestMachine.local",
+  runtimeMode: "local",
+  provider: "claude",
+  deviceInfo: "TestMachine.local",
+  metadata: { version: "2.1.0" },
+  createdAt: "2026-01-01T00:00:00.000Z",
+  updatedAt: "2026-01-01T00:00:00.000Z",
+  machineLastSeenAt: null,
+};
+
 describe("POST /api/machine-tokens/activate", () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockGetMachineTokenByToken.mockResolvedValue(pendingToken);
+    mockClaimMachineTokenActivation.mockResolvedValue({
+      ...pendingToken,
+      hostname: validBody.hostname,
+      runtimesJson,
+    });
+    mockUpsertMachineForActivation.mockResolvedValue({ ownerId: "u1" });
+    mockUpsertAgentRuntime.mockResolvedValue(runtimeRow);
+    mockFinalizeMachineTokenActivation.mockResolvedValue({ ...pendingToken, status: "active" });
+    mockListAgentRuntimesByChhlat.mockResolvedValue([runtimeRow]);
+    mockListAgentRuntimesByChhlatProviders.mockResolvedValue([runtimeRow]);
+    mockBroadcastToUser.mockResolvedValue(undefined);
+    mockInvalidateMany.mockResolvedValue(undefined);
+  });
 
   async function loadRoute() {
     vi.resetModules();
-
     const mocks = sharedMocks();
 
     vi.doMock("@opennextjs/cloudflare", () => mocks["@opennextjs/cloudflare"]);
@@ -59,130 +110,211 @@ describe("POST /api/machine-tokens/activate", () => {
     vi.doMock("@/lib/db", () => ({ getDb: vi.fn(() => ({})) }));
     vi.doMock("@/lib/broadcast", () => mocks["@/lib/broadcast"]);
     vi.doMock("@/lib/cache", () => ({
-      invalidate: vi.fn(() => Promise.resolve()),
+      bindCacheKV: (...args: any[]) => mockBindCacheKV(...args),
+      invalidateMany: (...args: any[]) => mockInvalidateMany(...args),
       cacheKeys: {
-        machineToken: (t: string) => `mt:${t}`,
-        runtimeIds: () => "ri:",
-        allRuntimes: () => "ar:",
+        machineTokenByHash: (hash: string) => `mt:${hash}`,
+        machineTokenLastUsedByHash: (hash: string) => `mt_lu:${hash}`,
+        runtimeIds: (workspaceId: string, chhlatId: string) => `rt:${workspaceId}:${chhlatId}`,
+        allRuntimes: (workspaceId: string) => `runtimes:${workspaceId}`,
       },
     }));
-    vi.doMock("@/lib/middleware/helpers", async () => {
-      return await import("@/lib/middleware/helpers");
-    });
+    vi.doMock("@/lib/middleware/helpers", async () => await import("@/lib/middleware/helpers"));
     vi.doMock("@/lib/api/responses", () => ({
-      runtimeToResponse: (r: any) => ({ id: r.id, provider: r.provider }),
+      runtimeToResponse: (runtime: any) => ({ id: runtime.id, provider: runtime.provider }),
     }));
 
     const { POST } = await import("./route");
     return POST;
   }
 
-  const validBody = {
-    token: "al_test123",
-    hostname: "TestMachine.local",
-    runtimes: [{ type: "claude", version: "2.1.0" }],
-  };
-
-  const pendingToken = {
-    id: "mt_1",
-    userId: "u1",
-    workspaceId: "ws_1",
-    status: "pending",
-  };
-
-  it("creates machine + runtime rows and activates token", async () => {
+  it("claims, provisions, finalizes, invalidates caches, and broadcasts", async () => {
     const POST = await loadRoute();
-
-    mockGetMachineTokenByToken.mockResolvedValue(pendingToken);
-    mockUpsertMachine.mockResolvedValue(undefined);
-    mockUpsertAgentRuntime.mockResolvedValue({ id: "rt_1", provider: "claude" });
-    mockActivateMachineToken.mockResolvedValue(undefined);
-    mockBroadcastToUser.mockResolvedValue(undefined);
 
     const res = await POST(makeReq(validBody));
     const body = await res.json();
 
     expect(res.status).toBe(200);
-    expect(body.chhlat_id).toBe("TestMachine.local");
-    expect(body.workspace_id).toBe("ws_1");
-    expect(body.runtimes).toHaveLength(1);
-
-    expect(mockUpsertMachine).toHaveBeenCalledWith(expect.anything(), {
+    expect(body).toEqual({
+      chhlat_id: "TestMachine.local",
+      workspace_id: "ws_1",
+      runtimes: [{ id: "rt_1", provider: "claude" }],
+    });
+    expect(mockClaimMachineTokenActivation).toHaveBeenCalledWith(
+      {}, "mt_1", "TestMachine.local", runtimesJson,
+    );
+    expect(mockUpsertMachineForActivation).toHaveBeenCalledWith({}, {
       chhlatId: "TestMachine.local",
       workspaceId: "ws_1",
       deviceInfo: "TestMachine.local",
-      lastSeenAt: null,
       ownerId: "u1",
     });
+    expect(mockFinalizeMachineTokenActivation).toHaveBeenCalledWith(
+      {}, "mt_1", "TestMachine.local", runtimesJson,
+    );
+    expect(mockBindCacheKV).toHaveBeenCalledWith({});
+    expect(mockInvalidateMany).toHaveBeenCalledWith([
+      "mt:hash_1",
+      "mt_lu:hash_1",
+      "rt:ws_1:TestMachine.local",
+      "runtimes:ws_1",
+    ]);
+    expect(mockBroadcastToUser).toHaveBeenCalledOnce();
+  });
 
-    expect(mockUpsertAgentRuntime).toHaveBeenCalledWith(expect.anything(), {
-      workspaceId: "ws_1",
-      chhlatId: "TestMachine.local",
-      runtimeMode: "local",
-      provider: "claude",
-      deviceInfo: "TestMachine.local",
-      metadata: { version: "2.1.0" },
+  it("returns the persisted identity for an exact active retry", async () => {
+    const POST = await loadRoute();
+    mockGetMachineTokenByToken.mockResolvedValue({
+      ...pendingToken,
+      status: "active",
+      hostname: validBody.hostname,
+      runtimesJson,
     });
 
-    expect(mockActivateMachineToken).toHaveBeenCalledWith(
-      expect.anything(),
-      "mt_1",
-      "TestMachine.local",
+    const res = await POST(makeReq(validBody));
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body.runtimes[0].id).toBe("rt_1");
+    expect(mockClaimMachineTokenActivation).not.toHaveBeenCalled();
+    expect(mockUpsertMachineForActivation).not.toHaveBeenCalled();
+    expect(mockFinalizeMachineTokenActivation).not.toHaveBeenCalled();
+    expect(mockBroadcastToUser).not.toHaveBeenCalled();
+  });
+
+  it("returns the claimed runtime set on exact active retry even when extra runtimes exist", async () => {
+    const POST = await loadRoute();
+    mockGetMachineTokenByToken.mockResolvedValue({
+      ...pendingToken,
+      status: "active",
+      hostname: validBody.hostname,
+      runtimesJson,
+    });
+    mockListAgentRuntimesByChhlat.mockResolvedValue([
+      runtimeRow,
+      { ...runtimeRow, id: "rt_extra", provider: "gemini" },
+    ]);
+    mockListAgentRuntimesByChhlatProviders.mockResolvedValue([runtimeRow]);
+
+    const res = await POST(makeReq(validBody));
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body.runtimes).toEqual([{ id: "rt_1", provider: "claude" }]);
+    expect(mockFinalizeMachineTokenActivation).not.toHaveBeenCalled();
+    expect(mockListAgentRuntimesByChhlatProviders).toHaveBeenCalledWith(
+      {}, "ws_1", "TestMachine.local", ["claude"],
     );
   });
 
-  it("broadcasts runtime.registered event", async () => {
+  it("does not finalize when claimed runtimes are not durably resolved", async () => {
     const POST = await loadRoute();
+    mockListAgentRuntimesByChhlatProviders.mockResolvedValue([]);
 
-    mockGetMachineTokenByToken.mockResolvedValue(pendingToken);
-    mockUpsertMachine.mockResolvedValue(undefined);
-    mockUpsertAgentRuntime.mockResolvedValue({ id: "rt_1", provider: "claude" });
-    mockActivateMachineToken.mockResolvedValue(undefined);
-    mockBroadcastToUser.mockResolvedValue(undefined);
+    const res = await POST(makeReq(validBody));
 
-    await POST(makeReq(validBody));
+    expect(res.status).toBe(503);
+    expect(mockFinalizeMachineTokenActivation).not.toHaveBeenCalled();
+  });
 
-    expect(mockBroadcastToUser).toHaveBeenCalledWith("u1", {
-      type: "runtime.registered",
-      chhlatId: "TestMachine.local",
-      hostname: "TestMachine.local",
-      workspaceId: "ws_1",
+  it("rejects reassignment of an active token", async () => {
+    const POST = await loadRoute();
+    mockGetMachineTokenByToken.mockResolvedValue({
+      ...pendingToken,
+      status: "active",
+      hostname: "Other.local",
+      runtimesJson,
     });
+
+    expect((await POST(makeReq(validBody))).status).toBe(409);
+    expect(mockUpsertMachineForActivation).not.toHaveBeenCalled();
   });
 
-  it("returns 404 when token not found", async () => {
+  it("allows only one of two concurrent different-host claims", async () => {
     const POST = await loadRoute();
+    let state = { ...pendingToken } as any;
+    mockGetMachineTokenByToken.mockImplementation(() => Promise.resolve({ ...state }));
+    mockClaimMachineTokenActivation.mockImplementation((_db, _id, hostname, claimJson) => {
+      if (state.hostname || state.runtimesJson) return Promise.resolve(null);
+      state = { ...state, hostname, runtimesJson: claimJson };
+      return Promise.resolve({ ...state });
+    });
+    mockFinalizeMachineTokenActivation.mockImplementation(() => {
+      state = { ...state, status: "active" };
+      return Promise.resolve({ ...state });
+    });
 
-    mockGetMachineTokenByToken.mockResolvedValue(null);
+    const [first, second] = await Promise.all([
+      POST(makeReq(validBody)),
+      POST(makeReq({ ...validBody, hostname: "Other.local" })),
+    ]);
 
-    const res = await POST(makeReq(validBody));
-    const body = await res.json();
-
-    expect(res.status).toBe(404);
-    expect(body.error).toBe("token not found");
+    expect([first.status, second.status].sort()).toEqual([200, 409]);
+    expect(mockFinalizeMachineTokenActivation).toHaveBeenCalledOnce();
   });
 
-  it("returns 409 when token already used", async () => {
+  it("resumes after partial provisioning fails", async () => {
     const POST = await loadRoute();
+    const claimedToken = {
+      ...pendingToken,
+      hostname: validBody.hostname,
+      runtimesJson,
+    };
+    mockGetMachineTokenByToken
+      .mockResolvedValueOnce(pendingToken)
+      .mockResolvedValueOnce(claimedToken);
+    mockUpsertAgentRuntime
+      .mockRejectedValueOnce(new Error("D1 write failed"))
+      .mockResolvedValueOnce(runtimeRow);
 
-    mockGetMachineTokenByToken.mockResolvedValue({ ...pendingToken, status: "active" });
+    const failed = await POST(makeReq(validBody));
+    const retried = await POST(makeReq(validBody));
 
-    const res = await POST(makeReq(validBody));
-    const body = await res.json();
-
-    expect(res.status).toBe(409);
-    expect(body.error).toBe("token already used");
+    expect(failed.status).toBe(503);
+    expect(retried.status).toBe(200);
+    expect(mockClaimMachineTokenActivation).toHaveBeenCalledOnce();
+    expect(mockUpsertAgentRuntime).toHaveBeenCalledTimes(2);
+    expect(mockFinalizeMachineTokenActivation).toHaveBeenCalledOnce();
   });
 
-  it("returns 422 when token has no workspace_id", async () => {
+  it("converges when an identical contender finalizes first", async () => {
     const POST = await loadRoute();
-
-    mockGetMachineTokenByToken.mockResolvedValue({ ...pendingToken, workspaceId: null });
+    mockFinalizeMachineTokenActivation.mockResolvedValue(null);
+    mockGetMachineTokenByToken
+      .mockResolvedValueOnce(pendingToken)
+      .mockResolvedValueOnce({
+        ...pendingToken,
+        status: "active",
+        hostname: validBody.hostname,
+        runtimesJson,
+      });
 
     const res = await POST(makeReq(validBody));
-    const body = await res.json();
 
-    expect(res.status).toBe(422);
-    expect(body.error).toContain("no workspace_id");
+    expect(res.status).toBe(200);
+    expect(mockBroadcastToUser).not.toHaveBeenCalled();
+  });
+
+  it("rejects duplicate runtime providers before claiming", async () => {
+    const POST = await loadRoute();
+    const res = await POST(makeReq({
+      ...validBody,
+      runtimes: [
+        { type: "claude", version: "1" },
+        { type: "claude", version: "2" },
+      ],
+    }));
+
+    expect(res.status).toBe(400);
+    expect(mockGetMachineTokenByToken).not.toHaveBeenCalled();
+  });
+
+  it("returns 404 when token is missing and 422 when it has no workspace", async () => {
+    const POST = await loadRoute();
+    mockGetMachineTokenByToken.mockResolvedValueOnce(null);
+    expect((await POST(makeReq(validBody))).status).toBe(404);
+
+    mockGetMachineTokenByToken.mockResolvedValueOnce({ ...pendingToken, workspaceId: null });
+    expect((await POST(makeReq(validBody))).status).toBe(422);
   });
 });

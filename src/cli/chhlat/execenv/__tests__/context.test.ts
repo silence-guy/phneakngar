@@ -64,10 +64,10 @@ describe("buildInstructionContent", () => {
 
   it("includes agent email in opening line", () => {
     const task = makeTask({
-      agent: { name: "Aria", instructions: "", emailHandle: "aria" },
+      agent: { name: "Aria", instructions: "", emailHandle: "aria", emailAddress: "aria@agents.example", emailAddresses: ["aria@agents.example"] },
     });
     const content = buildInstructionContent(task);
-    expect(content).toContain("You're Aria (aria@cieee.xyz) in the ភ្នាក់ងារ Platform.");
+    expect(content).toContain("You're Aria (aria@agents.example) in the ភ្នាក់ងារ Platform.");
   });
 
   it("omits email parenthetical when no email configured", () => {
@@ -141,7 +141,7 @@ describe("buildInstructionContent memory & format", () => {
 
   it("includes the email quick reference when an email handle is configured", () => {
     const content = buildInstructionContent(
-      makeTask({ agent: { name: "test", instructions: "", emailHandle: "myagent" } }),
+      makeTask({ agent: { name: "test", instructions: "", emailHandle: "myagent", emailAddress: "myagent@agents.example", emailAddresses: ["myagent@agents.example"] } }),
     );
     expect(content).toContain("### Email command quick reference");
     expect(content).toContain("email pull --email_id <EMAIL_ID>");
@@ -157,7 +157,7 @@ describe("buildInstructionContent memory & format", () => {
 
   it("renders the Talking to the user block instructing send-dm", () => {
     const content = buildInstructionContent(
-      makeTask({ agent: { name: "test", instructions: "", emailHandle: "myagent" } }),
+      makeTask({ agent: { name: "test", instructions: "", emailHandle: "myagent", emailAddress: "myagent@agents.example", emailAddresses: ["myagent@agents.example"] } }),
     );
     expect(content).toContain("### Talking to the user");
     expect(content).toContain("texting a colleague");

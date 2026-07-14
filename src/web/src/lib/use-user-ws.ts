@@ -8,7 +8,7 @@ const WS_DO_PORT_DEFAULT = Number(process.env.NEXT_PUBLIC_WS_DO_PORT) || 8789
 const WS_RECONNECT_INIT = Number(process.env.NEXT_PUBLIC_WS_RECONNECT_DELAY_MS) || 1000
 const WS_RECONNECT_MAX = Number(process.env.NEXT_PUBLIC_WS_RECONNECT_MAX_DELAY_MS) || 30_000
 
-export function useUserWs(onMessage: (msg: WsMessage) => void, options?: { onReconnect?: () => void }): { send: (msg: object) => void } {
+export function useUserWs(onMessage: (msg: WsMessage) => void, options?: { onReconnect?: () => void; workspaceId?: string }): { send: (msg: object) => void } {
   const wsRef = useRef<WebSocket | null>(null)
   const reconnectDelay = useRef(WS_RECONNECT_INIT)
   const onMessageRef = useRef(onMessage)
@@ -38,8 +38,7 @@ export function useUserWs(onMessage: (msg: WsMessage) => void, options?: { onRec
   }, [])
 
   const connect = useCallback(async () => {
-    let userId: string
-    let authToken: string
+    let ticket: string
     let wsPort: number = WS_DO_PORT_DEFAULT
     try {
       const res = await fetch("/api/ws/token")
@@ -48,9 +47,8 @@ export function useUserWs(onMessage: (msg: WsMessage) => void, options?: { onRec
         scheduleReconnect()
         return
       }
-      const body = await res.json() as { userId: string; token: string; wsPort?: number }
-      userId = body.userId
-      authToken = body.token
+      const body = await res.json() as { ticket: string; wsPort?: number }
+      ticket = body.ticket
       if (body.wsPort) wsPort = body.wsPort
     } catch (err) {
       console.warn("[ws] token fetch error:", err)
@@ -58,9 +56,10 @@ export function useUserWs(onMessage: (msg: WsMessage) => void, options?: { onRec
       return
     }
 
+    const encodedTicket = encodeURIComponent(ticket)
     const url = isLocal
-      ? `ws://localhost:${wsPort}/?userId=${userId}`
-      : `${location.origin.replace("http", "ws")}/api/ws/user?userId=${userId}`
+      ? `ws://localhost:${wsPort}/?ticket=${encodedTicket}`
+      : `${location.origin.replace("http", "ws")}/api/ws/user?ticket=${encodedTicket}`
 
     let ws: WebSocket
     try {
@@ -74,7 +73,6 @@ export function useUserWs(onMessage: (msg: WsMessage) => void, options?: { onRec
 
     ws.onopen = () => {
       reconnectDelay.current = WS_RECONNECT_INIT
-      ws.send(JSON.stringify({ type: "auth", token: authToken }))
 
       if (hasConnectedBeforeRef.current) {
         onReconnectRef.current?.()
@@ -99,7 +97,9 @@ export function useUserWs(onMessage: (msg: WsMessage) => void, options?: { onRec
       try {
         const msg = JSON.parse(e.data)
         if (msg.type === "auth.ok") {
-          ws.send(JSON.stringify({ type: "check_chhlat_status" }))
+          if (options?.workspaceId) {
+            ws.send(JSON.stringify({ type: "check_chhlat_status", workspaceId: options.workspaceId }))
+          }
           return
         }
         onMessageRef.current(msg as WsMessage)
@@ -114,7 +114,7 @@ export function useUserWs(onMessage: (msg: WsMessage) => void, options?: { onRec
       if (livenessIntervalRef.current) { clearInterval(livenessIntervalRef.current); livenessIntervalRef.current = null }
       scheduleReconnect()
     }
-  }, [scheduleReconnect])
+  }, [options?.workspaceId, scheduleReconnect])
 
   useEffect(() => {
     connectRef.current = connect

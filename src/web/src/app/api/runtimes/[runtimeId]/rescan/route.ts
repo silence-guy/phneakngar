@@ -25,7 +25,7 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
 
   await queries.machine.setPendingRescan(db, runtime.chhlatId, ws.workspaceId);
 
-  broadcastToChhlat(runtime.chhlatId, { type: "chhlat.rescan" }).catch(() => {});
+  broadcastToChhlat(ws.workspaceId, runtime.chhlatId, { type: "chhlat.rescan" }).catch(() => {});
 
   return writeJSON({ pending_rescan: true });
 });

@@ -22,6 +22,12 @@ export async function withChhlatMachine(
   if (auth.authType !== "machine" || !auth.workspaceId) {
     return forbidden("machine token required");
   }
+  if (!auth.machineTokenHostname) {
+    return forbidden("machine token is not bound to a chhlat_id");
+  }
+  if (auth.machineTokenHostname !== chhlatId) {
+    return forbidden("chhlat_id does not match token hostname");
+  }
 
   const machine = await queries.machine.getMachineByChhlat(db, chhlatId, auth.workspaceId);
   if (machine?.ownerId && machine.ownerId !== auth.userId) {

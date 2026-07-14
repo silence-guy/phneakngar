@@ -1,9 +1,9 @@
-import { eq, and, desc, asc, inArray, notInArray, ne, count, lt, or, sql, exists } from "drizzle-orm";
+import { eq, and, desc, asc, inArray, notInArray, ne, count, lt, or, sql, exists, max, min } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
-import { agentTaskQueue, taskMessage, conversation, message } from "../schema";
+import { agentTaskQueue, taskMessage, conversation, message, agent } from "../schema";
 import type { Database } from "../index";
 import { ClaimedTaskRowSchema, type TaskVisibleOutcomeStatus } from "../../schemas";
-import { TASK_TYPES } from "../../constants";
+import { MAX_PENDING_TASK_CANDIDATES_PER_POLL, TASK_TYPES } from "../../constants";
 
 export async function createTask(
   db: Database,
@@ -423,21 +423,91 @@ export async function updateTaskVisibleOutcomeStatus(
 export async function listPendingTasksByRuntimes(
   db: Database,
   runtimeIds: string[],
-  workspaceId: string
+  workspaceId: string,
+  limit = MAX_PENDING_TASK_CANDIDATES_PER_POLL,
 ) {
-  if (runtimeIds.length === 0) return [];
+  if (runtimeIds.length === 0 || limit <= 0) return [];
+  const capacityTask = alias(agentTaskQueue, "capacity_task");
+  const capacityExcludingTask = alias(agentTaskQueue, "capacity_excluding_task");
+  const blockingTask = alias(agentTaskQueue, "blocking_task");
+  const steeringTask = alias(agentTaskQueue, "steering_task");
+  const topPriority = max(agentTaskQueue.priority);
+  const firstCreatedAt = min(agentTaskQueue.createdAt);
+  const activeStatuses = sql`('dispatched', 'running')`;
+  const activeCount = sql<number>`(
+    select count(*)
+    from ${capacityTask}
+    where ${capacityTask.agentId} = ${agentTaskQueue.agentId}
+      and ${capacityTask.workspaceId} = ${agentTaskQueue.workspaceId}
+      and ${capacityTask.status} in ${activeStatuses}
+      and ${capacityTask.type} <> ${TASK_TYPES.KILL_TASK}
+  )`;
+  const conversationIsClaimable = sql<boolean>`not exists (
+    select 1
+    from ${blockingTask}
+    where ${blockingTask.agentId} = ${agentTaskQueue.agentId}
+      and ${blockingTask.workspaceId} = ${agentTaskQueue.workspaceId}
+      and ${blockingTask.conversationId} = ${agentTaskQueue.conversationId}
+      and ${blockingTask.status} in ${activeStatuses}
+      and ${blockingTask.type} <> ${TASK_TYPES.KILL_TASK}
+      and (
+        ${blockingTask.contextKey} is null
+        or ${agentTaskQueue.contextKey} is null
+        or ${blockingTask.contextKey} <> ${agentTaskQueue.contextKey}
+      )
+  )`;
+  const hasCapacityOrSteerableRoom = sql<boolean>`(
+    ${activeCount} < ${agent.maxConcurrentTasks}
+    or exists (
+      select 1
+      from ${steeringTask}
+      where ${steeringTask.agentId} = ${agentTaskQueue.agentId}
+        and ${steeringTask.workspaceId} = ${agentTaskQueue.workspaceId}
+        and ${steeringTask.conversationId} = ${agentTaskQueue.conversationId}
+        and ${steeringTask.status} in ${activeStatuses}
+        and ${steeringTask.type} <> ${TASK_TYPES.KILL_TASK}
+        and ${steeringTask.contextKey} is not null
+        and ${agentTaskQueue.contextKey} = ${steeringTask.contextKey}
+        and (
+          select count(*)
+          from ${capacityExcludingTask}
+          where ${capacityExcludingTask.agentId} = ${agentTaskQueue.agentId}
+            and ${capacityExcludingTask.workspaceId} = ${agentTaskQueue.workspaceId}
+            and ${capacityExcludingTask.status} in ${activeStatuses}
+            and ${capacityExcludingTask.type} <> ${TASK_TYPES.KILL_TASK}
+            and ${capacityExcludingTask.id} <> ${steeringTask.id}
+        ) < ${agent.maxConcurrentTasks}
+    )
+  )`;
+
   return db
-    .select()
+    .select({
+      agentId: agentTaskQueue.agentId,
+      workspaceId: agentTaskQueue.workspaceId,
+      priority: topPriority,
+      createdAt: firstCreatedAt,
+    })
     .from(agentTaskQueue)
+    .innerJoin(
+      agent,
+      and(
+        eq(agent.id, agentTaskQueue.agentId),
+        eq(agent.workspaceId, agentTaskQueue.workspaceId),
+      ),
+    )
     .where(
       and(
         eq(agentTaskQueue.workspaceId, workspaceId),
         inArray(agentTaskQueue.runtimeId, runtimeIds),
-        inArray(agentTaskQueue.status, ["queued", "dispatched"]),
-        ne(agentTaskQueue.type, TASK_TYPES.KILL_TASK)
+        eq(agentTaskQueue.status, "queued"),
+        ne(agentTaskQueue.type, TASK_TYPES.KILL_TASK),
+        conversationIsClaimable,
+        hasCapacityOrSteerableRoom,
       )
     )
-    .orderBy(desc(agentTaskQueue.priority), asc(agentTaskQueue.createdAt));
+    .groupBy(agentTaskQueue.agentId, agentTaskQueue.workspaceId)
+    .orderBy(desc(topPriority), asc(firstCreatedAt), asc(agentTaskQueue.agentId))
+    .limit(Math.max(1, Math.min(limit, MAX_PENDING_TASK_CANDIDATES_PER_POLL)));
 }
 
 export async function hasPendingTaskForConversation(

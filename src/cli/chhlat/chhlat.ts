@@ -1,4 +1,4 @@
-import { ChhlatClient } from "./client.js";
+import { ChhlatClient, isTaskAlreadyTerminalError } from "./client.js";
 import { type ChhlatConfig, loadChhlatConfig, sessionRunnerLogDir, chhlatLogFilePath } from "./config.js";
 import { createHealthServer, detectHeadroomHealth, type HeadroomHealth } from "./health.js";
 import { detectVersion, createBackend } from "./agent/index.js";
@@ -123,12 +123,7 @@ export function pruneSessionRunnerLogs(): void {
 }
 
 export function isClientError(error: unknown): boolean {
-  if (!(error instanceof Error)) return false;
-  const match = error.message.match(/^HTTP (\d+):/);
-  if (!match) return false;
-  const status = Number(match[1]);
-  if (status === 408 || status === 429) return false;
-  return status >= 400 && status < 500;
+  return isTaskAlreadyTerminalError(error);
 }
 
 function isValidMarker(data: unknown): data is MarkerData {
@@ -667,6 +662,7 @@ export async function startChhlat(
         serverURL: config.serverURL,
         chhlatId: config.chhlatId,
         machineToken: wsToken,
+        fetchTicket: () => client.wsTicket(wsToken, config.chhlatId),
         onMessage: handleWsPush,
         onConnected: () => {
           log.info("WS connected — switching to low-frequency poll");
@@ -820,6 +816,7 @@ export async function startChhlat(
             serverURL: config.serverURL,
             chhlatId: config.chhlatId,
             machineToken: token,
+            fetchTicket: () => client.wsTicket(token, config.chhlatId),
             onMessage: handleWsPush,
             onConnected: () => {
               log.info("WS connected — switching to low-frequency poll");
@@ -913,7 +910,7 @@ async function handleFileRequest(
   token: string,
 ): Promise<void> {
   const agentWorkdir = join(config.workspacesRoot, workspaceId, req.agent_id, "workdir");
-  const resolved = validatePath(agentWorkdir, req.path);
+  const resolved = await validatePath(agentWorkdir, req.path);
 
   if (!resolved) {
     await client.reportFileData(token, { request_id: req.id, error: "invalid path", path: req.path });
@@ -922,7 +919,11 @@ async function handleFileRequest(
 
   try {
     if (req.request_type === "tree") {
-      const entries = await readDirectoryTree(resolved, agentWorkdir);
+      const entries = await readDirectoryTree(
+        resolved,
+        agentWorkdir,
+        join(agentWorkdir, req.path),
+      );
       await client.reportFileData(token, { request_id: req.id, entries, path: req.path });
     } else {
       const { content, isBinary } = await readFileContent(resolved);

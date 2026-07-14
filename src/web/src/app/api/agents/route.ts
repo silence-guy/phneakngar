@@ -9,6 +9,7 @@ import { TaskService } from "@/lib/services/task";
 import { invalidate, cached, cacheKeys } from "@/lib/cache";
 import { filterVisibleAgents } from "@/lib/agent-visibility";
 import { buildAgentWelcomeEmailPrompt } from "@/lib/welcome-prompts";
+import { resolveServerEmailDomain } from "@/lib/email-domain";
 
 export const GET = withAuth(async (req, ctx) => {
   const ws = await withWorkspaceMember(req, ctx);
@@ -28,6 +29,7 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
   const ws = await withWorkspaceMember(req, ctx);
   if (ws instanceof Response) return ws;
 
+  const emailDomain = resolveServerEmailDomain(ctx.env);
   const db = getDb(ctx.env.DB)
 
   const [body, valErr] = await parseBody(req, CreateAgentRequestSchema);
@@ -97,7 +99,7 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
         title: `Welcome: ${ctx.email}`.slice(0, 50),
         type: TASK_TYPES.EMAIL_NOTIFICATION,
       });
-      const taskService = new TaskService(db);
+      const taskService = new TaskService(db, emailDomain);
       await taskService.enqueueTask(
         newAgent.id,
         conv.id,
@@ -114,7 +116,7 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
   }
 
   if (isOnline(runtime.machineLastSeenAt)) {
-    const taskService = new TaskService(db);
+    const taskService = new TaskService(db, emailDomain);
     await taskService.reconcileAgentStatus(newAgent.id, ws.workspaceId);
     const updated = await queries.agent.getAgent(
       db,

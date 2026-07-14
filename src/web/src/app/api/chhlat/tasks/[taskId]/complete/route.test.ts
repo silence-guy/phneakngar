@@ -57,10 +57,20 @@ vi.mock("@/lib/middleware/helpers", () => {
   };
 });
 vi.mock("@/lib/services/task", () => {
+  class TaskAlreadyTerminalError extends Error {
+    readonly code = "TASK_ALREADY_TERMINAL";
+    constructor(public readonly taskStatus: string) {
+      super("task is already in a terminal state");
+    }
+  }
   const MockTaskService = function (this: any) {
     this.completeTask = (...a: any[]) => mockCompleteTask(...a);
   } as any;
-  return { TaskService: MockTaskService };
+  return {
+    TaskService: MockTaskService,
+    TaskAlreadyTerminalError,
+    TASK_ALREADY_TERMINAL_CODE: "TASK_ALREADY_TERMINAL",
+  };
 });
 vi.mock("@/lib/api/responses", () => ({
   taskToResponse: (...args: any[]) => mockTaskToResponse(...args),
@@ -74,6 +84,7 @@ vi.mock("@/lib/cache", () => ({
   cacheKeys: { overviewTaskStats: (w: string, d: string) => `ts:${w}:${d}` },
 }));
 
+import { TaskAlreadyTerminalError } from "@/lib/services/task";
 import { POST } from "./route";
 
 const withParams = (taskId: string) => ({
@@ -141,6 +152,29 @@ describe("POST /api/chhlat/tasks/[taskId]/complete", () => {
     expect(res.status).toBe(404);
     expect(body.error).toBe("task not found");
     expect(mockCompleteTask).not.toHaveBeenCalled();
+  });
+
+  it("returns a machine-readable conflict when the task is already terminal", async () => {
+    mockCompleteTask.mockRejectedValueOnce(new TaskAlreadyTerminalError("completed"));
+
+    const res = await POST(makeReq("t1", { output: "done" }), withParams("t1"));
+    const body = await res.json();
+
+    expect(res.status).toBe(409);
+    expect(body).toEqual({
+      error: "task is already in a terminal state",
+      code: "TASK_ALREADY_TERMINAL",
+    });
+  });
+
+  it("keeps non-terminal transition errors distinct from terminal conflicts", async () => {
+    mockCompleteTask.mockRejectedValueOnce(new Error("cannot complete task in 'queued' status"));
+
+    const res = await POST(makeReq("t1", { output: "done" }), withParams("t1"));
+    const body = await res.json();
+
+    expect(res.status).toBe(400);
+    expect(body).toEqual({ error: "cannot complete task in 'queued' status" });
   });
 
   it("rejects tasks owned by another machine runtime", async () => {

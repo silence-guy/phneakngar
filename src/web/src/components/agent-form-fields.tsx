@@ -46,6 +46,7 @@ import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
 import { AutoResizeTextarea } from "@/components/ui/auto-resize-textarea";
 import { agentFormLabel } from "@/lib/locale";
+import { getPublicEmailDomain } from "@/lib/email-domain";
 
 export function nameToHandle(name: string): string {
   return name
@@ -317,9 +318,7 @@ export function EmailHandleField({
           className="w-full border-0 bg-transparent px-0 py-0.5 text-sm text-foreground shadow-none outline-none placeholder:text-muted-foreground/40 focus-visible:ring-0"
         />
         <span className="shrink-0 text-sm text-muted-foreground/70">
-          @{process.env.NEXT_PUBLIC_PHNEAKNGAR_DOMAIN ||
-            process.env.PHNEAKNGAR_DOMAIN ||
-            "cieee.xyz"}
+          @{getPublicEmailDomain()}
         </span>
       </div>
       {handleError && (

@@ -78,7 +78,7 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
       const scheduledTime = body.scheduledAt ? new Date(body.scheduledAt) : new Date()
       const fiveMinFromNow = new Date(Date.now() + 5 * 60 * 1000)
       if (scheduledTime <= fiveMinFromNow) {
-        broadcastToChhlat(runtime.chhlatId, {
+        broadcastToChhlat(ws.workspaceId, runtime.chhlatId, {
           type: "chhlat.meetings",
           meetings: [{
             id: created.id,

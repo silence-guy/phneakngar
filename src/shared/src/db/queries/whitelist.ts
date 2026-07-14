@@ -47,8 +47,8 @@ export async function removeWhitelistByEmail(db: Database, agentId: string, work
   return rows[0] ?? null;
 }
 
-export async function isWhitelisted(db: Database, agentId: string, workspaceId: string, email: string): Promise<boolean> {
-  const handle = parseEmailHandle(email);
+export async function isWhitelisted(db: Database, agentId: string, workspaceId: string, email: string, emailDomain: string): Promise<boolean> {
+  const handle = parseEmailHandle(email, emailDomain);
   if (handle) {
     const rows = await db
       .select({ workspaceId: agent.workspaceId })
@@ -74,7 +74,7 @@ export async function isWhitelisted(db: Database, agentId: string, workspaceId: 
 
 /** Pre-fetch whitelist + workspace agent handles for O(1) batch lookups. */
 export async function buildWhitelistSet(
-  db: Database, agentId: string, workspaceId: string
+  db: Database, agentId: string, workspaceId: string, emailDomain: string
 ): Promise<{ check: (email: string) => boolean }> {
   const [whitelistRows, agentRows] = await Promise.all([
     db.select({ email: agentWhitelist.email })
@@ -92,7 +92,7 @@ export async function buildWhitelistSet(
 
   return {
     check(email: string): boolean {
-      const handle = parseEmailHandle(email);
+      const handle = parseEmailHandle(email, emailDomain);
       if (handle && handleSet.has(handle)) return true;
       return emailSet.has(email);
     },

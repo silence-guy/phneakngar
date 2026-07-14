@@ -1,5 +1,5 @@
 import { eq, desc, and } from "drizzle-orm";
-import { artifact } from "../schema";
+import { artifact, conversation } from "../schema";
 import type { Database } from "../index";
 import type { Artifact } from "../../types";
 
@@ -52,6 +52,33 @@ export async function getArtifact(db: Database, id: string, workspaceId: string)
     .from(artifact)
     .where(and(eq(artifact.id, id), eq(artifact.workspaceId, workspaceId)));
   return rows[0] ?? null;
+}
+
+export async function getArtifactForOwner(
+  db: Database,
+  id: string,
+  workspaceId: string,
+  userId: string,
+) {
+  const rows = await db
+    .select({ artifact })
+    .from(artifact)
+    .innerJoin(
+      conversation,
+      and(
+        eq(conversation.id, artifact.conversationId),
+        eq(conversation.workspaceId, artifact.workspaceId),
+      ),
+    )
+    .where(
+      and(
+        eq(artifact.id, id),
+        eq(artifact.workspaceId, workspaceId),
+        eq(conversation.workspaceId, workspaceId),
+        eq(conversation.userId, userId),
+      ),
+    );
+  return rows[0]?.artifact ?? null;
 }
 
 export function artifactToResponse(row: typeof artifact.$inferSelect): Artifact {

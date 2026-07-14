@@ -10,6 +10,7 @@ import { agentToResponse, agentLinkToResponse } from "@/lib/api/responses";
 import { invalidate, cached, cacheKeys } from "@/lib/cache";
 import { broadcastToUser } from "@/lib/broadcast";
 import { randomConfig, serializeAvatarConfig } from "@/components/avatar";
+import { resolveServerEmailDomain } from "@/lib/email-domain";
 
 function generateUniqueHandleFromSet(
   handleSet: Set<string>,
@@ -38,6 +39,7 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
   const ws = await withWorkspaceMember(req, ctx);
   if (ws instanceof Response) return ws;
 
+  const emailDomain = resolveServerEmailDomain(ctx.env);
   const db = getDb(ctx.env.DB);
 
   const agentId = req.nextUrl.searchParams.get("agentId");
@@ -93,7 +95,7 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
   });
 
   if (callingAgent.emailHandle) {
-    const callerEmail = toPhneakngarAddress(callingAgent.emailHandle);
+    const callerEmail = toPhneakngarAddress(callingAgent.emailHandle, emailDomain);
     await queries.whitelist.addWhitelist(db, newAgent.id, ws.workspaceId, callerEmail);
   }
   if (ctx.email) {
@@ -116,14 +118,14 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
   if (isOnline(runtime.machineLastSeenAt) && callingAgent.emailHandle) {
     try {
       const cfEnv = ctx.env;
-      const fromAddress = toPhneakngarAddress(callingAgent.emailHandle);
-      const toAddress = toPhneakngarAddress(handle);
+      const fromAddress = toPhneakngarAddress(callingAgent.emailHandle, emailDomain);
+      const toAddress = toPhneakngarAddress(handle, emailDomain);
       const subject = "សូមស្វាគមន៍ — អ្នកត្រូវបានជ្រើសរើសចូលក្រុម";
       const htmlBody =
         `<p>សួស្តី</p>` +
         `<p>ខ្ញុំទើបជ្រើសរើសអ្នកចូលក្រុម។ សេចក្តីណែនាំរបស់អ្នកត្រូវបានកំណត់រួចហើយ។ ` +
         `សូមឆ្លើយតបដើម្បីបញ្ជាក់ថាអ្នករួចរាល់ធ្វើការ — ប្រាប់ឈ្មោះ និងអាសយដ្ឋានអ៊ីមែលរបស់អ្នក។</p>`;
-      const messageId = `<${nanoid()}@${process.env.PHNEAKNGAR_DOMAIN || "cieee.xyz"}>`;
+      const messageId = `<${nanoid()}@${emailDomain}>`;
       const traceId = "tr_" + nanoid();
 
       const rawMime = buildMimeMessage({
@@ -206,7 +208,7 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
   }
 
   return writeJSON({
-    agent: { ...agentToResponse(newAgent), email: toPhneakngarAddress(handle) },
+    agent: { ...agentToResponse(newAgent), email: toPhneakngarAddress(handle, emailDomain) },
     link: agentLinkToResponse(link),
   }, 201);
 });

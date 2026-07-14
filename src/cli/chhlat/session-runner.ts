@@ -9,7 +9,7 @@
 import { mkdir, writeFile, rm, rename } from "fs/promises";
 import { mkdirSync } from "fs";
 import path from "path";
-import { ChhlatClient } from "./client.js";
+import { ChhlatClient, ChhlatHttpError, isTaskAlreadyTerminalError } from "./client.js";
 import { createBackend } from "./agent/index.js";
 import { prepare } from "./execenv/index.js";
 import {
@@ -80,26 +80,12 @@ export async function writeMarkerFile(
 }
 
 function isRetryableError(e: unknown): boolean {
-  if (!(e instanceof Error)) return true;
-  const msg = e.message;
-  if (/ECONNREFUSED|ECONNRESET|ETIMEDOUT|ENETUNREACH|EHOSTUNREACH|EAI_AGAIN/.test(msg)) return true;
-  const httpMatch = msg.match(/^HTTP (\d+):/);
-  if (httpMatch) {
-    const status = Number(httpMatch[1]);
-    if (status >= 500) return true;
-    if (status === 408 || status === 429) return true;
-    return false;
+  if (e instanceof ChhlatHttpError) {
+    return e.status >= 500 || e.status === 408 || e.status === 429;
   }
-  return true;
-}
-
-function isClientError(e: unknown): boolean {
-  if (!(e instanceof Error)) return false;
-  const match = e.message.match(/^HTTP (\d+):/);
-  if (!match) return false;
-  const status = Number(match[1]);
-  if (status === 408 || status === 429) return false;
-  return status >= 400 && status < 500;
+  if (!(e instanceof Error)) return true;
+  return /ECONNREFUSED|ECONNRESET|ETIMEDOUT|ENETUNREACH|EHOSTUNREACH|EAI_AGAIN/.test(e.message)
+    || e instanceof TypeError;
 }
 
 export async function reportToServer(
@@ -116,14 +102,16 @@ export async function reportToServer(
       return;
     } catch (e) {
       lastErr = e;
-      if (isClientError(e)) {
-        log.info(`server report for task ${markerData.taskId}: task already in terminal state (${e})`);
+      if (isTaskAlreadyTerminalError(e)) {
+        log.info(`server report for task ${markerData.taskId}: task already in terminal state`);
         return;
       }
       if (attempt < RETRY_DELAYS.length && isRetryableError(e)) {
         log.debug(`server report attempt ${attempt + 1} failed for task ${markerData.taskId}, retrying in ${RETRY_DELAYS[attempt]}ms`);
         await new Promise((r) => setTimeout(r, RETRY_DELAYS[attempt]));
+        continue;
       }
+      break;
     }
   }
 

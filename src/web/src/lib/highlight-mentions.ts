@@ -1,4 +1,4 @@
-import type { Agent } from "@phneakngar/shared"
+import { getEmailDomain, type Agent } from "@phneakngar/shared"
 
 function isTrigger(text: string, atIndex: number): boolean {
   if (atIndex === 0) return true
@@ -39,12 +39,19 @@ export function highlightMentions(content: string, agents: Agent[]): string {
       const slice = content.slice(afterAt, nameEnd)
       if (slice.toLowerCase() !== agent.name.toLowerCase()) continue
 
-      // Check if this is the enriched form: @AgentName (handle@phneakngar.ai)
+      // Check if this is the enriched form: @AgentName (handle@configured-domain)
       let matchEnd = nameEnd
       const afterName = content.slice(nameEnd)
-      const enrichedMatch = afterName.match(/^ \([a-zA-Z0-9-]+@phneakngar\.ai\)/)
-      if (enrichedMatch) {
-        matchEnd = nameEnd + enrichedMatch[0].length
+      const enrichedCandidate = afterName.match(/^ \([a-zA-Z0-9-]+@([a-zA-Z0-9.-]+)\)/)
+      let enrichedMatch: RegExpMatchArray | null = null
+      if (enrichedCandidate) {
+        try {
+          getEmailDomain(enrichedCandidate[1])
+          enrichedMatch = enrichedCandidate
+          matchEnd = nameEnd + enrichedMatch[0].length
+        } catch {
+          enrichedMatch = null
+        }
       }
 
       if (!enrichedMatch && !isBoundary(content, nameEnd)) continue

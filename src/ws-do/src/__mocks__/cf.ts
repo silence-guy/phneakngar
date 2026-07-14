@@ -10,12 +10,29 @@ export function createMockCtx() {
   })
   const getWebSockets = vi.fn(() => webSockets)
   const setWebSocketAutoResponse = vi.fn()
+  const storageMap = new Map<string, unknown>()
+  const storage = {
+    get: vi.fn((key: string) => Promise.resolve(storageMap.get(key))),
+    put: vi.fn((key: string, value: unknown) => {
+      storageMap.set(key, value)
+      return Promise.resolve()
+    }),
+    delete: vi.fn((key: string) => Promise.resolve(storageMap.delete(key))),
+    list: vi.fn((options?: { prefix?: string; limit?: number }) => {
+      const entries = [...storageMap.entries()]
+        .filter(([key]) => !options?.prefix || key.startsWith(options.prefix))
+        .slice(0, options?.limit)
+      return Promise.resolve(new Map(entries))
+    }),
+  }
 
   return {
-    ctx: { acceptWebSocket, getWebSockets, setWebSocketAutoResponse } as unknown as DurableObjectState,
+    ctx: { acceptWebSocket, getWebSockets, setWebSocketAutoResponse, storage } as unknown as DurableObjectState,
     acceptWebSocket,
     getWebSockets,
     setWebSocketAutoResponse,
+    storage,
+    storageMap,
     webSockets,
   }
 }

@@ -2,33 +2,120 @@ import { eq, and, gt, asc, notInArray } from "drizzle-orm";
 import { taskMessage, agentTaskQueue } from "../schema";
 import type { Database } from "../index";
 
+export const TASK_MESSAGE_CONFLICT_PREFLIGHT_SQL = `
+SELECT DISTINCT
+  candidate.task_id,
+  candidate.seq
+FROM task_message AS candidate
+WHERE EXISTS (
+  SELECT 1
+  FROM task_message AS conflicting
+  WHERE conflicting.task_id = candidate.task_id
+    AND conflicting.seq = candidate.seq
+    AND conflicting.id <> candidate.id
+    AND (
+      conflicting.type IS NOT candidate.type
+      OR conflicting.tool IS NOT candidate.tool
+      OR conflicting.call_id IS NOT candidate.call_id
+      OR conflicting.content IS NOT candidate.content
+      OR conflicting.input IS NOT candidate.input
+      OR conflicting.output IS NOT candidate.output
+    )
+)
+ORDER BY candidate.task_id, candidate.seq;
+`.trim();
+
+export interface TaskMessageInsert {
+  taskId: string;
+  seq: number;
+  type: string;
+  tool: string;
+  callId?: string;
+  content: string;
+  input?: unknown;
+  output: string;
+}
+
+export class TaskMessageConflictError extends Error {
+  constructor(taskId: string, seq: number) {
+    super(`task message payload conflict for ${taskId}:${seq}`);
+    this.name = "TaskMessageConflictError";
+  }
+}
+
+function canonicalJson(value: unknown): string {
+  if (value == null) return "null";
+  if (Array.isArray(value)) {
+    return `[${value.map(canonicalJson).join(",")}]`;
+  }
+  if (typeof value === "object") {
+    const entries = Object.entries(value as Record<string, unknown>)
+      .filter(([, entryValue]) => entryValue !== undefined)
+      .sort(([left], [right]) => left.localeCompare(right));
+    return `{${entries.map(([key, entryValue]) => `${JSON.stringify(key)}:${canonicalJson(entryValue)}`).join(",")}}`;
+  }
+  return JSON.stringify(value);
+}
+
+function payloadMatches(
+  existing: typeof taskMessage.$inferSelect,
+  data: TaskMessageInsert,
+): boolean {
+  return taskMessagePayloadFingerprint({
+    taskId: existing.taskId,
+    seq: existing.seq,
+    type: existing.type,
+    tool: existing.tool,
+    callId: existing.callId,
+    content: existing.content,
+    input: existing.input,
+    output: existing.output,
+  }) === taskMessagePayloadFingerprint(data);
+}
+
+export function taskMessagePayloadFingerprint(data: TaskMessageInsert): string {
+  return canonicalJson({
+    type: data.type,
+    tool: data.tool,
+    callId: data.callId || "",
+    content: data.content,
+    input: data.input ?? null,
+    output: data.output,
+  });
+}
+
 export async function createTaskMessage(
   db: Database,
-  data: {
-    taskId: string;
-    seq: number;
-    type: string;
-    tool: string;
-    callId?: string;
-    content: string;
-    input?: unknown;
-    output: string;
-  }
-) {
-  const rows = await db
+  data: TaskMessageInsert,
+): Promise<{ message: typeof taskMessage.$inferSelect; created: boolean }> {
+  const values = {
+    taskId: data.taskId,
+    seq: data.seq,
+    type: data.type,
+    tool: data.tool,
+    callId: data.callId || "",
+    content: data.content,
+    input: data.input ?? null,
+    output: data.output,
+  };
+  const inserted = await db
     .insert(taskMessage)
-    .values({
-      taskId: data.taskId,
-      seq: data.seq,
-      type: data.type,
-      tool: data.tool,
-      callId: data.callId || "",
-      content: data.content,
-      input: data.input ?? null,
-      output: data.output,
-    })
+    .values(values)
+    .onConflictDoNothing({ target: [taskMessage.taskId, taskMessage.seq] })
     .returning();
-  return rows[0]!;
+  if (inserted[0]) {
+    return { message: inserted[0], created: true };
+  }
+
+  const existing = await db
+    .select()
+    .from(taskMessage)
+    .where(and(eq(taskMessage.taskId, data.taskId), eq(taskMessage.seq, data.seq)))
+    .limit(1);
+  if (!existing[0] || !payloadMatches(existing[0], data)) {
+    throw new TaskMessageConflictError(data.taskId, data.seq);
+  }
+  return { message: existing[0], created: false };
 }
 
 export async function listTaskMessages(db: Database, taskId: string, workspaceId: string) {

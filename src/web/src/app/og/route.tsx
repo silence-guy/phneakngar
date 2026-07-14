@@ -1,5 +1,6 @@
 import { ImageResponse } from "next/og";
 import type { NextRequest } from "next/server";
+import { toPublicPhneakngarAddress } from "@/lib/email-domain";
 
 const FONT_URL =
   "https://fonts.gstatic.com/s/dmsans/v17/rP2tp2ywxg089UriI5-g4vlH9VoD8CmcqZG40F9JadbnoEwAfJtRSW3z.ttf";
@@ -18,7 +19,7 @@ async function loadFont(): Promise<ArrayBuffer | null> {
   }
 }
 
-function TypewriterIllustration() {
+function TypewriterIllustration({ agentEmail }: { agentEmail: string }) {
   const keyRows = [9, 7, 9];
   return (
     <div
@@ -51,7 +52,7 @@ function TypewriterIllustration() {
           }}
         >
           <div style={{ display: "flex", fontSize: 11, color: "#8a7e6e", marginBottom: 4 }}>
-            From: agent@phneakngar.ai
+            From: {agentEmail}
           </div>
           <div style={{ display: "flex", fontSize: 11, color: "#8a7e6e", marginBottom: 4 }}>
             To: you@email.com
@@ -127,6 +128,7 @@ function TypewriterIllustration() {
 }
 
 export async function GET(request: NextRequest) {
+  const agentEmail = toPublicPhneakngarAddress("agent");
   try {
     const { searchParams } = request.nextUrl;
     const title = searchParams.get("title") || "ក្រុមហ៊ុនផ្ទាល់ខ្លួនរបស់អ្នក";
@@ -177,7 +179,7 @@ export async function GET(request: NextRequest) {
               width: 380,
             }}
           >
-            <TypewriterIllustration />
+            <TypewriterIllustration agentEmail={agentEmail} />
           </div>
         </div>
       ),

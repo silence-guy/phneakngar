@@ -6,6 +6,7 @@ import { writeJSON, writeError, parseBody, formatTimestamp } from "@/lib/middlew
 import { TaskService } from "@/lib/services/task"
 import { invalidate, cacheKeys } from "@/lib/cache"
 import { buildWhitelistWelcomeEmailPrompt } from "@/lib/welcome-prompts"
+import { resolveServerEmailDomain } from "@/lib/email-domain"
 
 export const GET = withAuth(async (req, ctx) => {
   const ws = await withWorkspaceMember(req, ctx);
@@ -33,6 +34,7 @@ export const POST = withAuth(async (req, ctx) => {
   const ws = await withWorkspaceMember(req, ctx);
   if (ws instanceof Response) return ws;
 
+  const emailDomain = resolveServerEmailDomain(ctx.env);
   const db = getDb(ctx.env.DB);
 
   const agentId = ctx.params?.id;
@@ -57,7 +59,7 @@ export const POST = withAuth(async (req, ctx) => {
         title: `Welcome: ${email}`.slice(0, 50),
         type: TASK_TYPES.EMAIL_NOTIFICATION,
       });
-      const taskService = new TaskService(db);
+      const taskService = new TaskService(db, emailDomain);
       await taskService.enqueueTask(
         agent.id,
         conv.id,

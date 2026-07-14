@@ -25,8 +25,12 @@ declare namespace Cloudflare {
     RUNTIME_MODEL_OPTIONS?: string
     MIN_CLI_VERSION?: string
     DEVICE_CLIENT_IDS?: string
-    /** Public email domain for agent addresses (must match Email Worker / CF Email Sending) */
+    /** Server email domain for agent addresses. cieee.xyz is live-testing only. */
     PHNEAKNGAR_DOMAIN?: string
+    /** Browser email domain; must match PHNEAKNGAR_DOMAIN. */
+    NEXT_PUBLIC_PHNEAKNGAR_DOMAIN?: string
+    /** Browser build/runtime identity mode; local app bundles use development. */
+    NEXT_PUBLIC_PHNEAKNGAR_ENVIRONMENT?: string
     NODE_ENV?: string
   }
 }

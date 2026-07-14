@@ -1,134 +1,140 @@
-# Install Agents on a client machine
+# Install agents on a client machine
 
-This is the **single client install guide** for running ភ្នាក់ងារ Agents on a machine.
-You do **not** need to clone this monorepo, install Cloudflare tools, or deploy Workers.
+This is the client install guide for running ភ្នាក់ងារ agents against an existing control plane. You do not need to deploy the web stack, Cloudflare Workers, or D1 on an agent-only machine.
 
-Agents run as a background **chhlat** (`@phneakngar/cli` → command `phneakngar`). Chhlat connects to your control plane, receives tasks, and executes them with a local AI runtime (`claude`, `codex`, `opencode`, or `grok`).
+Agents run through the `phneakngar` command from `@phneakngar/cli`. Its background **chhlat** connects to the configured control plane, receives tasks, and executes them with a local AI runtime.
 
-For operator Cloudflare deploys, see [DEPLOY.md](DEPLOY.md). For full local self-host of the web stack, see [src/app/README.md](src/app/README.md).
+For the full local control plane, see [src/app/README.md](src/app/README.md). For operator Cloudflare deployment, see [DEPLOY.md](DEPLOY.md).
 
----
+## Current live-testing deployment
 
-## Production control plane (this deployment)
+These values describe the deployment currently used for live testing. They are operational defaults for that environment, not permanent canonical product identity.
 
-| Item | Value |
+| Item | Current live-testing value |
 | --- | --- |
-| **Cloudflare Worker** | `phneakngar-web` |
-| **Public origin** | `https://phneakngar-web.thatsilenceguy.workers.dev` |
-| **Health** | `https://phneakngar-web.thatsilenceguy.workers.dev/api/health` |
-| **Dashboard** | `https://phneakngar-web.thatsilenceguy.workers.dev` |
-| **Email domain** | **`cieee.xyz`** (Cloudflare Email Routing + Sending) |
-| **OTP / system From** | `no-reply@cieee.xyz` |
-| **Agent addresses** | `{handle}@cieee.xyz` |
+| Control-plane origin | `https://phneakngar-web.thatsilenceguy.workers.dev` |
+| Health endpoint | `https://phneakngar-web.thatsilenceguy.workers.dev/api/health` |
+| Email domain | `cieee.xyz` |
+| OTP/system sender | `no-reply@cieee.xyz` |
+| Agent addresses | `{handle}@cieee.xyz` |
 
-This origin is the CLI default (`DEFAULT_BASE_URL` in `@phneakngar/shared`). Override only if you run a different environment.
+Operators and self-hosters should provide their own origin and email domain. This project does not define a permanent public domain. To use another control plane:
 
 ```bash
-# optional override
-phneakngar config set-server https://phneakngar-web.thatsilenceguy.workers.dev
-# or
-export PHNEAKNGAR_SERVER_URL=https://phneakngar-web.thatsilenceguy.workers.dev
+phneakngar config set-server https://your-control-plane.example
+# macOS/Linux alternative for the current shell
+export PHNEAKNGAR_SERVER_URL=https://your-control-plane.example
 ```
 
----
+```powershell
+# Windows PowerShell alternative for the current shell
+$env:PHNEAKNGAR_SERVER_URL = "https://your-control-plane.example"
+```
 
-## Quick start (clean machine)
-
-### Requirements
+## Requirements
 
 | Requirement | Supported |
 | --- | --- |
-| **Node.js** | `>= 20.19.0` (LTS recommended) |
-| **OS** | macOS, Linux, Windows (Node.js) |
-| **npm** | Comes with Node.js |
-| **AI runtime** | At least one of: [Claude Code](https://docs.anthropic.com/en/docs/claude-code), [Codex](https://openai.com/index/introducing-codex/), [OpenCode](https://github.com/opencode-ai/opencode), [Grok CLI](https://x.ai/cli) |
-| **Network** | Outbound HTTPS to `https://phneakngar-web.thatsilenceguy.workers.dev` |
+| Node.js | `>=20.19.0` |
+| OS | macOS, Linux, or Windows with Node.js |
+| AI runtime | At least one of Claude Code, Codex, OpenCode, or Grok CLI |
+| Network | Outbound HTTPS to the operator-provided control-plane origin |
 
-You do **not** need pnpm, Bun, Wrangler, Docker, or a Cloudflare account on the agent machine.
+An agent-only machine does not need pnpm, Bun, Wrangler, Docker, or a Cloudflare account when it receives a ready-made CLI tarball.
 
-### Install the CLI
+Shell snippets use POSIX syntax unless a PowerShell alternative is shown. The `phneakngar config set-server` command is portable and preferred over environment-variable syntax on Windows.
 
-> **Status (2026-07-11):** `@phneakngar/cli` is **not on the public npm registry yet**  
-> (`npm install -g @phneakngar/cli` → **404**). Use the monorepo pack path below until a
-> `release: vX.Y.Z` publish completes (see [src/cli/RELEASING.md](src/cli/RELEASING.md)).
+## Install the CLI
 
-**Working install today (from this monorepo):**
+### Publication status
+
+Public npm checks on **2026-07-14** returned `E404` for `@phneakngar/cli`. Use one of the tarball paths below until the package is verifiably published.
+
+### Option A: install an operator-provided tarball
 
 ```bash
-cd /path/to/phneakngar   # this repository
-cd src/cli
-pnpm run build
-npm pack
-npm install --global "$(pwd)/phneakngar-cli-0.0.149.tgz"
-
-# ensure npm's global bin is on PATH (Homebrew Node example):
-#   export PATH="$(npm prefix -g)/bin:$PATH"
-# or install into Homebrew prefix:
-#   npm install --global --prefix /opt/homebrew ./phneakngar-cli-0.0.149.tgz
-
+npm install --global ./phneakngar-cli-X.Y.Z.tgz
 phneakngar version
 ```
 
-**From a copied tarball (client machine without monorepo):**
+Replace `X.Y.Z` with the tarball version. On macOS/Linux, ensure npm's global binary directory is on `PATH` if the command is not found:
 
 ```bash
-# Operator sends you phneakngar-cli-0.0.149.tgz, then:
-npm install --global ./phneakngar-cli-0.0.149.tgz
+export PATH="$(npm prefix --global)/bin:$PATH"
+```
+
+On Windows, run `npm prefix --global` and add the returned directory to the user `PATH` if npm did not configure it during Node.js installation.
+
+### Option B: build the tarball from this repository
+
+This build path requires the repository toolchain: Node.js `>=20.19.0`, pnpm `10.33.0`, and Bun `1.3.14`.
+
+macOS/Linux:
+
+```bash
+cd /path/to/phneakngar
+pnpm install --frozen-lockfile
+pnpm pack:cli
+npm install --global "./src/cli/phneakngar-cli-$(node -p "require('./src/cli/package.json').version").tgz"
 phneakngar version
 ```
 
-**After the package is published to npmjs.org:**
+Windows PowerShell:
+
+```powershell
+Set-Location C:\path\to\phneakngar
+pnpm install --frozen-lockfile
+pnpm pack:cli
+$version = node -p "require('./src/cli/package.json').version"
+npm install --global "./src/cli/phneakngar-cli-$version.tgz"
+phneakngar version
+```
+
+### Conditional: install from public npm after publication
+
+Only use this after `npm view @phneakngar/cli version --registry=https://registry.npmjs.org` succeeds:
 
 ```bash
-# Prefer the official registry (mirrors may lag or 404):
 npm install --global @phneakngar/cli --registry=https://registry.npmjs.org
 phneakngar version
 ```
 
-**One-shot from local package folder (no global bin):**
+## Initialize, diagnose, register, and start
 
-```bash
-node /path/to/node_modules/@phneakngar/cli/dist/index.js doctor
-```
-
-### Initialize, diagnose, register, start
-
-Run **one command at a time** (do not paste comments like `# opens /device` into zsh).
+Run one command at a time:
 
 ```bash
 phneakngar init
 phneakngar doctor
 ```
 
-**1. Sign in on the web first** (required for device login):
-
-Open https://phneakngar-web.thatsilenceguy.workers.dev/sign-in  
-Enter your email → complete the OTP from `no-reply@cieee.xyz`.
-
-**2. Link this machine (pick one):**
+Sign in to the dashboard supplied by your operator, then link the machine with one of these methods:
 
 ```bash
-# A) Browser device login (recommended)
+# Browser device login
 phneakngar login
-# → browser opens /device — click Approve while still signed in
 
-# B) Machine token from the dashboard
+# Or use a machine token from the dashboard
 phneakngar register --token al_xxxxxxxxxxxxxxxxxxxxxxxx
 ```
 
-**3. Start chhlat only after registration succeeds:**
+Start chhlat only after registration succeeds:
 
 ```bash
-phneakngar status          # should say Registered
+phneakngar status
 phneakngar chhlat start
-phneakngar doctor          # no FAIL lines
+phneakngar doctor
 ```
 
-If login says **device code expired**: you must approve within the code TTL (now 15 minutes). Sign in on the web first, then run `phneakngar login` again and Approve promptly.
+For the current live-testing deployment, the sign-in page is:
 
-Expected healthy doctor: **Registration**, **Chhlat**, **Server**, and **Chhlat health** are PASS.
+```text
+https://phneakngar-web.thatsilenceguy.workers.dev/sign-in
+```
 
----
+OTP mail for that live-testing deployment currently comes from `no-reply@cieee.xyz`. Those values can change and are not permanent identity.
+
+If device login reports an expired code, sign in first, run `phneakngar login` again, and approve within the displayed time limit.
 
 ## Day-to-day commands
 
@@ -139,20 +145,18 @@ Expected healthy doctor: **Registration**, **Chhlat**, **Server**, and **Chhlat 
 | Full status | `phneakngar status` |
 | Diagnostics | `phneakngar doctor` |
 | View logs | `phneakngar logs` |
-| Log path only | `phneakngar logs --path-only` |
+| Show log path | `phneakngar logs --path-only` |
 | Stop agents | `phneakngar chhlat stop` |
 | CLI version | `phneakngar version` |
-| Show config | `phneakngar config show` |
-| Config path | `phneakngar config path` |
+| Show configuration | `phneakngar config show` |
+| Show config path | `phneakngar config path` |
 | Set server URL | `phneakngar config set-server <url>` |
 
-Foreground debug:
+Foreground debugging:
 
 ```bash
 phneakngar chhlat start --foreground
 ```
-
----
 
 ## Configuration
 
@@ -160,190 +164,189 @@ phneakngar chhlat start --foreground
 
 | Path | Purpose |
 | --- | --- |
-| `~/.phneakngar/config.json` | Server URL, profiles, workspace tokens |
-| `~/.phneakngar/chhlat.pid` | Chhlat process id |
-| `~/.phneakngar/chhlat/logs/YYYY-MM-DD.log` | Chhlat logs (under chhlat/logs) |
-| `~/.phneakngar/workspaces/` | Per-task workspace directories |
+| `~/.phneakngar/config.json` | Server URL, profiles, and workspace tokens |
+| `~/.phneakngar/chhlat.pid` | Chhlat process ID |
+| `~/.phneakngar/chhlat/logs/YYYY-MM-DD.log` | Chhlat logs |
+| `~/.phneakngar/workspaces/` | Per-task workspaces |
 
-Config directory mode is `0700`; `config.json` is written as `0600`.
+The config directory uses mode `0700`; `config.json` is written with mode `0600`.
 
-Override the config root (tests / multi-instance):
+Override the local config/state root for tests or multiple instances:
 
 ```bash
+# macOS/Linux
 export PHNEAKNGAR_PROJECT_ROOT=/var/lib/phneakngar
+```
+
+```powershell
+# Windows PowerShell
+$env:PHNEAKNGAR_PROJECT_ROOT = "C:\phneakngar-state"
 ```
 
 ### Environment variables
 
 | Variable | Required | Description |
 | --- | --- | --- |
-| `PHNEAKNGAR_SERVER_URL` | No | Control plane base URL (default: Cloudflare workers.dev origin above) |
-| `PHNEAKNGAR_PROJECT_ROOT` | No | Config/state directory (default `~/.phneakngar`) |
-| `PHNEAKNGAR_AGENT_ID` | Sometimes | Default agent id for some commands |
-| `PHNEAKNGAR_HEALTH_PORT` | No | Local chhlat health port (default `19514`) |
-| `PHNEAKNGAR_CLAUDE_PATH` | No | Path to `claude` binary |
-| `PHNEAKNGAR_CODEX_PATH` | No | Path to `codex` binary |
-| `PHNEAKNGAR_OPENCODE_PATH` | No | Path to `opencode` binary |
-| `PHNEAKNGAR_GROK_PATH` | No | Path to `grok` binary |
-| `PHNEAKNGAR_*_MODEL` | No | Model overrides per provider |
-| `XAI_API_KEY` | For Grok API mode | Alternative to `grok login` |
-| `PHNEAKNGAR_CHHLAT_MAX_CONCURRENT_TASKS` | No | Default `20` |
-| `PHNEAKNGAR_SHUTDOWN_TIMEOUT_MS` | No | Graceful stop wait (default `5000`) |
+| `PHNEAKNGAR_SERVER_URL` | No | Control-plane base URL; set this for a non-default environment |
+| `PHNEAKNGAR_PROJECT_ROOT` | No | Config/state root; defaults to `~/.phneakngar` |
+| `PHNEAKNGAR_AGENT_ID` | Sometimes | Default agent ID for commands that require one |
+| `PHNEAKNGAR_HEALTH_PORT` | No | Local chhlat health port; defaults to `19514` |
+| `PHNEAKNGAR_CLAUDE_PATH` | No | Path to the `claude` binary |
+| `PHNEAKNGAR_CODEX_PATH` | No | Path to the `codex` binary |
+| `PHNEAKNGAR_OPENCODE_PATH` | No | Path to the `opencode` binary |
+| `PHNEAKNGAR_GROK_PATH` | No | Path to the `grok` binary |
+| `PHNEAKNGAR_*_MODEL` | No | Per-provider model override |
+| `XAI_API_KEY` | Grok API mode | Alternative to `grok login` |
+| `PHNEAKNGAR_CHHLAT_MAX_CONCURRENT_TASKS` | No | Maximum concurrent tasks; defaults to `20` |
+| `PHNEAKNGAR_SHUTDOWN_TIMEOUT_MS` | No | Graceful stop timeout; defaults to `5000` ms |
 
 ### Secrets
 
-- Machine tokens (`al_…`) live in `~/.phneakngar/config.json` with mode `0600`.
-- Do **not** commit tokens or paste them into tickets/chat.
+- Machine tokens (`al_…`) are credentials. Do not commit them or paste them into tickets or chat.
 - Rotate tokens from the dashboard if a machine is lost.
-- AI provider credentials stay with provider CLIs (`claude`, `codex`, `grok login`, etc.).
-
----
+- AI-provider credentials stay with their provider CLIs.
 
 ## Update
 
+### From a new tarball
+
 ```bash
 phneakngar chhlat stop
-npm install --global @phneakngar/cli@latest
+npm install --global ./phneakngar-cli-X.Y.Z.tgz
 phneakngar version
 phneakngar doctor
 phneakngar chhlat start
 ```
 
-Or:
-
-```bash
-phneakngar update
-```
-
-From a new tarball:
+### Conditional: after npm publication
 
 ```bash
 phneakngar chhlat stop
-npm install --global ./phneakngar-cli-<version>.tgz
+npm install --global @phneakngar/cli@latest --registry=https://registry.npmjs.org
+phneakngar version
+phneakngar doctor
 phneakngar chhlat start
 ```
 
----
+`phneakngar update` also depends on a published package and should be treated as conditional until registry publication is confirmed.
 
 ## Uninstall
+
+macOS/Linux:
 
 ```bash
 phneakngar chhlat stop
 npm uninstall --global @phneakngar/cli
-# Optional: remove local state (destructive)
+# Optional and destructive: remove local state
 rm -rf ~/.phneakngar
 ```
 
----
+Windows PowerShell:
+
+```powershell
+phneakngar chhlat stop
+npm uninstall --global @phneakngar/cli
+# Optional and destructive: remove local state
+Remove-Item -Recurse -Force "$HOME\.phneakngar"
+```
 
 ## Troubleshooting
 
 | Symptom | What to try |
 | --- | --- |
-| `command not found: phneakngar` | Put npm global bin on `PATH`, or use `npx @phneakngar/cli`. |
-| `doctor` FAIL: AI runtimes | Install/authenticate `claude`, `codex`, `opencode`, or `grok` on `PATH`. |
-| `doctor` FAIL: Registration | Run `phneakngar login` or `register --token`. |
-| Server WARN / unreachable | Confirm origin: `curl -sS https://phneakngar-web.thatsilenceguy.workers.dev/api/health`. Set `phneakngar config set-server …` if needed. |
-| `login` → `invalid_client` | Operator must set Worker secret `DEVICE_CLIENT_IDS=phneakngar-cli` on `phneakngar-web` (see [DEPLOY.md](DEPLOY.md)). |
-| Chhlat exits immediately | `phneakngar logs` + `phneakngar doctor`. |
-| Stale pidfile | `phneakngar chhlat stop` then `phneakngar chhlat start`. |
-| Tasks not arriving | Control plane up, CLI ≥ server `MIN_CLI_VERSION`, chhlat running, agent online in dashboard. |
-| Grok not detected | Install [Grok CLI](https://x.ai/cli); `grok login` or `XAI_API_KEY`. |
+| `command not found: phneakngar` | Add `$(npm prefix --global)/bin` to `PATH`, then reinstall the tarball if needed. |
+| `doctor` reports no AI runtime | Install and authenticate Claude Code, Codex, OpenCode, or Grok CLI. |
+| `doctor` reports no registration | Run `phneakngar login` or `phneakngar register --token …`. |
+| Server unreachable | Confirm the operator-provided origin and run `phneakngar config set-server <url>`. |
+| Chhlat exits immediately | Run `phneakngar logs` and `phneakngar doctor`. |
+| Stale PID file | Run `phneakngar chhlat stop`, then `phneakngar chhlat start`. |
+| Tasks do not arrive | Check control-plane health, registration, minimum CLI version, chhlat status, and agent status in the dashboard. |
 
 Local chhlat health:
 
 ```bash
+# macOS/Linux
 curl -sS "http://127.0.0.1:${PHNEAKNGAR_HEALTH_PORT:-19514}/health"
 ```
 
-Control plane health:
+```powershell
+# Windows PowerShell
+Invoke-RestMethod "http://127.0.0.1:19514/health"
+```
+
+Current live-testing control-plane health:
 
 ```bash
 curl -sS https://phneakngar-web.thatsilenceguy.workers.dev/api/health
 ```
 
----
+## Email notes for the current live-testing deployment
 
-## Email notes
+The current test environment uses `cieee.xyz` with Cloudflare Email Routing and Sending:
 
-Outbound (OTP, agent mail) and inbound both require a **Cloudflare-onboarded zone**. This deployment uses **`cieee.xyz`**:
+- Outbound sender: `*@cieee.xyz`
+- Inbound route: `*@cieee.xyz` to `phneakngar-email-worker`
+- Worker configuration: `PHNEAKNGAR_DOMAIN=cieee.xyz`
 
-- Outbound: Worker `SEND_EMAIL` binding, From `*@cieee.xyz`
-- Inbound: Email Routing rule `to:*@cieee.xyz` → `phneakngar-email-worker`
-- Env: `PHNEAKNGAR_DOMAIN=cieee.xyz` on web + email Workers
+This is deployment-specific, not a permanent canonical domain. Other environments must configure and validate their own Cloudflare-onboarded email zone.
 
-If you stop receiving mail:
-
-1. `pnpm exec wrangler email sending settings cieee.xyz` — must be enabled  
-2. `pnpm exec wrangler email routing rules list cieee.xyz` — worker rule enabled  
-3. Confirm agent handles and OTP From use `@cieee.xyz`, not `@phneakngar.ai`  
-4. Check spam for `no-reply@cieee.xyz`
-
-## Security
-
-- Treat machine tokens as credentials.
-- Restrict who can log into the agent machine — chhlat can run coding agents with local filesystem access.
-- Keep the control plane on HTTPS (Cloudflare workers.dev is HTTPS by default).
-- Review provider CLI permissions and workspace roots under `~/.phneakngar/workspaces`.
-- Do not run chhlat as a shared multi-user root service without isolation.
-
----
-
-## Development setup (contributors)
+## Development setup for contributors
 
 ```bash
 pnpm install --frozen-lockfile
 pnpm --filter @phneakngar/cli test
 pnpm --filter @phneakngar/cli build
+# macOS/Linux
 PHNEAKNGAR_SERVER_URL=http://localhost:15210 pnpm dev:cli
+```
+
+```powershell
+# Windows PowerShell (the root dev:cli script uses POSIX inline assignments)
+$env:PHNEAKNGAR_SERVER_URL = "http://localhost:15210"
+$env:PHNEAKNGAR_WS_DO_PORT = "15212"
+$env:PHNEAKNGAR_PROJECT_ROOT = Join-Path (Get-Location) ".phneakngar"
+$env:PHNEAKNGAR_HEALTH_PORT = "19515"
+pnpm --filter @phneakngar/cli dev
 ```
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) and [docs/source-map.md](docs/source-map.md).
 
----
+## Release and packaging for operators
 
-## Release and publishing (operators)
-
-Packages publish only on a validated `release: vX.Y.Z` commit via GitHub Actions (npm Trusted Publishers). See [docs/release-checklist.md](docs/release-checklist.md) and [src/cli/RELEASING.md](src/cli/RELEASING.md).
+Package publishing is handled by validated `release: vX.Y.Z` commits. See [docs/release-checklist.md](docs/release-checklist.md) and [src/cli/RELEASING.md](src/cli/RELEASING.md).
 
 ```bash
-# from monorepo root — does not publish
+# Validate, build, pack, install, and smoke-test the CLI package locally
 pnpm verify:cli-package
 ```
 
-Manual pack:
+Or create only the tarball:
 
 ```bash
-cd src/cli
-pnpm run build
-npm pack
-npm install --global ./phneakngar-cli-*.tgz
-phneakngar doctor
+pnpm pack:cli
 ```
 
----
+## Optional full local stack
 
-## Optional: full local stack (`@phneakngar/app`)
+For local development from this repository:
 
-Only if you need web + workers on the same machine (not required for agent-only clients):
+```bash
+pnpm install --frozen-lockfile
+pnpm db:migrate
+pnpm dev:app onboard
+```
+
+For an operator-provided `@phneakngar/app` tarball:
+
+```bash
+npm install --global ./phneakngar-app-*.tgz
+phneakngar-app onboard
+```
+
+Only after `@phneakngar/app` is published to public npm:
 
 ```bash
 npx @phneakngar/app onboard
 ```
 
-See [src/app/README.md](src/app/README.md).
-
----
-
-## Concise command checklist
-
-```bash
-npm install --global @phneakngar/cli   # or install the .tgz
-phneakngar init
-phneakngar doctor
-phneakngar login                      # or: register --token al_...
-phneakngar chhlat start
-phneakngar status
-phneakngar logs
-phneakngar chhlat stop
-```
+See [src/app/README.md](src/app/README.md) for details.

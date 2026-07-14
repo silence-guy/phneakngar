@@ -28,6 +28,10 @@ describe("conversation query module exports", () => {
     expect(typeof conversationQueries.getConversation).toBe("function");
   });
 
+  it("exports getConversationForAgent", () => {
+    expect(typeof conversationQueries.getConversationForAgent).toBe("function");
+  });
+
   it("exports getConversationsByIds", () => {
     expect(typeof conversationQueries.getConversationsByIds).toBe("function");
   });
@@ -97,6 +101,38 @@ describe("getConversation", () => {
     const conv = { id: "conv_1", title: "Test" };
     const mockDb = createMockDb([conv]);
     const result = await conversationQueries.getConversation(mockDb, "conv_1", "ws_1");
+    expect(result).toEqual(conv);
+  });
+});
+
+describe("getConversationForAgent", () => {
+  it("returns null when no conversation matches the full ownership scope", async () => {
+    const mockDb = createMockDb([]);
+
+    const result = await conversationQueries.getConversationForAgent(
+      mockDb,
+      "conv_other_user",
+      "ws_1",
+      "usr_1",
+      "ag_1",
+    );
+
+    expect(result).toBeNull();
+    expect(mockDb.where).toHaveBeenCalledOnce();
+  });
+
+  it("returns a conversation when the scoped query matches", async () => {
+    const conv = { id: "conv_1", workspaceId: "ws_1", userId: "usr_1", agentId: "ag_1" };
+    const mockDb = createMockDb([conv]);
+
+    const result = await conversationQueries.getConversationForAgent(
+      mockDb,
+      conv.id,
+      conv.workspaceId,
+      conv.userId,
+      conv.agentId,
+    );
+
     expect(result).toEqual(conv);
   });
 });

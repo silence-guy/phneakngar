@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
+import { readFileSync } from "node:fs";
 import { drizzle } from "drizzle-orm/d1";
 import { eq, and, asc } from "drizzle-orm";
 import { taskMessage, agentTaskQueue } from "../../src/db/schema";
@@ -42,6 +43,121 @@ describe("task-message query module exports", () => {
 
   it("exports deleteTaskMessages", () => {
     expect(typeof taskMessageQueries.deleteTaskMessages).toBe("function");
+  });
+
+  it("exports taskMessagePayloadFingerprint", () => {
+    expect(typeof taskMessageQueries.taskMessagePayloadFingerprint).toBe("function");
+  });
+
+  it("exports TASK_MESSAGE_CONFLICT_PREFLIGHT_SQL", () => {
+    expect(typeof taskMessageQueries.TASK_MESSAGE_CONFLICT_PREFLIGHT_SQL).toBe("string");
+  });
+});
+
+describe("createTaskMessage", () => {
+  const data = {
+    taskId: "task-1",
+    seq: 7,
+    type: "text",
+    tool: "",
+    callId: "call-1",
+    content: "hello",
+    input: { nested: { b: 2, a: 1 } },
+    output: "",
+  };
+
+  function createInsertDb(
+    inserted: unknown[],
+    existing: unknown[],
+  ) {
+    const insertChain: any = {};
+    insertChain.values = vi.fn(() => insertChain);
+    insertChain.onConflictDoNothing = vi.fn(() => insertChain);
+    insertChain.returning = vi.fn(() => Promise.resolve(inserted));
+
+    const selectChain: any = {};
+    selectChain.from = vi.fn(() => selectChain);
+    selectChain.where = vi.fn(() => selectChain);
+    selectChain.limit = vi.fn(() => Promise.resolve(existing));
+
+    return {
+      insert: vi.fn(() => insertChain),
+      select: vi.fn(() => selectChain),
+      insertChain,
+      selectChain,
+    } as any;
+  }
+
+  it("returns a newly inserted durable row", async () => {
+    const row = { id: "tm-1", ...data, createdAt: "2026-01-01T00:00:00.000Z" };
+    const db = createInsertDb([row], []);
+
+    await expect(taskMessageQueries.createTaskMessage(db, data)).resolves.toEqual({
+      message: row,
+      created: true,
+    });
+    expect(db.insertChain.onConflictDoNothing).toHaveBeenCalledOnce();
+    expect(db.select).not.toHaveBeenCalled();
+  });
+
+  it("treats an exact replay as an idempotent success", async () => {
+    const row = { id: "tm-1", ...data, input: { nested: { a: 1, b: 2 } }, createdAt: "2026-01-01T00:00:00.000Z" };
+    const db = createInsertDb([], [row]);
+
+    await expect(taskMessageQueries.createTaskMessage(db, data)).resolves.toEqual({
+      message: row,
+      created: false,
+    });
+  });
+
+  it("rejects a replay with a conflicting payload", async () => {
+    const row = { id: "tm-1", ...data, content: "different", createdAt: "2026-01-01T00:00:00.000Z" };
+    const db = createInsertDb([], [row]);
+
+    await expect(taskMessageQueries.createTaskMessage(db, data)).rejects.toBeInstanceOf(
+      taskMessageQueries.TaskMessageConflictError,
+    );
+  });
+
+  it("fingerprints equivalent payloads with canonical JSON object key order", () => {
+    expect(taskMessageQueries.taskMessagePayloadFingerprint(data)).toBe(
+      taskMessageQueries.taskMessagePayloadFingerprint({
+        ...data,
+        input: { nested: { a: 1, b: 2 } },
+      }),
+    );
+  });
+});
+
+describe("TASK_MESSAGE_CONFLICT_PREFLIGHT_SQL", () => {
+  it("uses null-aware column comparisons instead of delimiter concatenation", () => {
+    const sql = taskMessageQueries.TASK_MESSAGE_CONFLICT_PREFLIGHT_SQL;
+
+    expect(sql).toContain("WHERE EXISTS");
+    expect(sql).not.toContain("char(31)");
+    expect(sql).not.toContain(" || ");
+    for (const column of ["type", "tool", "call_id", "content", "input", "output"]) {
+      expect(sql).toContain(`conflicting.${column} IS NOT candidate.${column}`);
+    }
+  });
+
+  it("covers payloads that collide under the old delimiter fingerprint", () => {
+    const delimiter = String.fromCharCode(31);
+    const left = ["text", `tool${delimiter}call`, "id", "content", "null", ""];
+    const right = ["text", "tool", `call${delimiter}id`, "content", "null", ""];
+
+    expect(left.join(delimiter)).toBe(right.join(delimiter));
+    expect(taskMessageQueries.TASK_MESSAGE_CONFLICT_PREFLIGHT_SQL).toContain(
+      "conflicting.tool IS NOT candidate.tool",
+    );
+    expect(taskMessageQueries.TASK_MESSAGE_CONFLICT_PREFLIGHT_SQL).toContain(
+      "conflicting.call_id IS NOT candidate.call_id",
+    );
+  });
+
+  it("keeps docs/migrations.md aligned with the shared preflight SQL", () => {
+    const docs = readFileSync(new URL("../../../../docs/migrations.md", import.meta.url), "utf8");
+    expect(docs).toContain(taskMessageQueries.TASK_MESSAGE_CONFLICT_PREFLIGHT_SQL);
   });
 });
 
@@ -103,4 +219,3 @@ describe("listTaskMessagesSince", () => {
     expect(taskMessageQueries.listTaskMessagesSince.length).toBe(4);
   });
 });
-

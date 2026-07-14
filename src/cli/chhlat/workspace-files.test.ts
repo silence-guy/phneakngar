@@ -1,42 +1,66 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { join } from "path";
-import { mkdirSync, writeFileSync, rmSync } from "fs";
+import { join, relative } from "path";
+import { mkdirSync, writeFileSync, rmSync, mkdtempSync, symlinkSync, realpathSync } from "fs";
 import { tmpdir } from "os";
 import { readDirectoryTree, readFileContent, validatePath } from "./workspace-files";
 
 let workDir: string;
+let outsideDir: string;
 
 beforeEach(() => {
-  workDir = join(tmpdir(), `phneakngar-test-files-${Date.now()}`);
-  mkdirSync(workDir, { recursive: true });
+  workDir = mkdtempSync(join(tmpdir(), "phneakngar-test-files-"));
+  outsideDir = mkdtempSync(join(tmpdir(), "phneakngar-test-outside-"));
 });
 
 afterEach(() => {
   rmSync(workDir, { recursive: true, force: true });
+  rmSync(outsideDir, { recursive: true, force: true });
 });
 
 describe("validatePath", () => {
-  it("returns resolved path for valid relative path", () => {
-    const result = validatePath(workDir, "memory.md");
-    expect(result).toBe(join(workDir, "memory.md"));
+  it("returns the canonical path for a valid nested file", async () => {
+    mkdirSync(join(workDir, "experiences"));
+    writeFileSync(join(workDir, "experiences", "workflow.md"), "safe");
+
+    const result = await validatePath(workDir, "experiences/workflow.md");
+
+    expect(result).toBe(realpathSync(join(workDir, "experiences", "workflow.md")));
   });
 
-  it("returns resolved path for nested path", () => {
-    const result = validatePath(workDir, "experiences/workflow.md");
-    expect(result).toBe(join(workDir, "experiences", "workflow.md"));
+  it("returns null for path traversal attempt", async () => {
+    writeFileSync(join(outsideDir, "secret.md"), "secret");
+    expect(await validatePath(workDir, relative(workDir, join(outsideDir, "secret.md")))).toBeNull();
   });
 
-  it("returns null for path traversal attempt", () => {
-    expect(validatePath(workDir, "../../../etc/passwd")).toBeNull();
+  it("returns null for absolute path outside workdir", async () => {
+    writeFileSync(join(outsideDir, "secret.md"), "secret");
+    expect(await validatePath(workDir, join(outsideDir, "secret.md"))).toBeNull();
   });
 
-  it("returns null for absolute path outside workdir", () => {
-    expect(validatePath(workDir, "/tmp/evil")).toBeNull();
+  it("rejects a file symlink whose target escapes the workdir", async () => {
+    const outsideFile = join(outsideDir, "secret.md");
+    writeFileSync(outsideFile, "secret");
+    symlinkSync(outsideFile, join(workDir, "secret-link.md"), "file");
+
+    expect(await validatePath(workDir, "secret-link.md")).toBeNull();
   });
 
-  it("returns the workdir itself for '.'", () => {
-    const result = validatePath(workDir, ".");
-    expect(result).toBe(workDir);
+  it("rejects a directory symlink whose target escapes the workdir", async () => {
+    writeFileSync(join(outsideDir, "secret.md"), "secret");
+    symlinkSync(outsideDir, join(workDir, "outside-link"), process.platform === "win32" ? "junction" : "dir");
+
+    expect(await validatePath(workDir, "outside-link")).toBeNull();
+  });
+
+  it("allows a symlink whose canonical target remains in the workdir", async () => {
+    writeFileSync(join(workDir, "AGENTS.md"), "safe");
+    symlinkSync(join(workDir, "AGENTS.md"), join(workDir, "CLAUDE.md"), "file");
+
+    expect(await validatePath(workDir, "CLAUDE.md")).toBe(realpathSync(join(workDir, "AGENTS.md")));
+  });
+
+  it("returns the canonical workdir for '.'", async () => {
+    expect(await validatePath(workDir, ".")).toBe(realpathSync(workDir));
   });
 });
 
@@ -105,6 +129,28 @@ describe("readDirectoryTree", () => {
     expect(file.size).toBeGreaterThan(0);
     expect(file.modifiedAt).toBeTruthy();
     expect(new Date(file.modifiedAt).getTime()).toBeGreaterThan(0);
+  });
+
+  it("omits file and directory symlinks that escape the workdir", async () => {
+    const outsideFile = join(outsideDir, "secret.md");
+    writeFileSync(outsideFile, "secret");
+    symlinkSync(outsideFile, join(workDir, "secret-link.md"), "file");
+    symlinkSync(outsideDir, join(workDir, "outside-link"), process.platform === "win32" ? "junction" : "dir");
+
+    const entries = await readDirectoryTree(workDir, workDir);
+
+    expect(entries.map((entry) => entry.name)).not.toContain("secret-link.md");
+    expect(entries.map((entry) => entry.name)).not.toContain("outside-link");
+  });
+
+  it("includes safe in-workdir symlinks using their logical path", async () => {
+    writeFileSync(join(workDir, "AGENTS.md"), "safe");
+    symlinkSync(join(workDir, "AGENTS.md"), join(workDir, "CLAUDE.md"), "file");
+
+    const entries = await readDirectoryTree(workDir, workDir);
+    const link = entries.find((entry) => entry.name === "CLAUDE.md");
+
+    expect(link).toMatchObject({ path: "CLAUDE.md", isDirectory: false, size: 4 });
   });
 });
 

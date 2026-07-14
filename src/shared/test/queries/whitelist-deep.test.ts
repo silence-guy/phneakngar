@@ -56,13 +56,13 @@ describe("isWhitelisted", () => {
     const chain: any = {};
     chain.select = vi.fn(() => chain); chain.from = vi.fn(() => chain);
     chain.where = vi.fn(() => chain); chain.limit = vi.fn(() => Promise.resolve([{ id: "wl_1" }]));
-    expect(await wl.isWhitelisted(chain, "ag_1", "w", "test@test.com")).toBe(true);
+    expect(await wl.isWhitelisted(chain, "ag_1", "w", "test@test.com", "agents.example")).toBe(true);
   });
   it("returns false for non-whitelisted email", async () => {
     const chain: any = {};
     chain.select = vi.fn(() => chain); chain.from = vi.fn(() => chain);
     chain.where = vi.fn(() => chain); chain.limit = vi.fn(() => Promise.resolve([]));
-    expect(await wl.isWhitelisted(chain, "ag_1", "w", "unknown@test.com")).toBe(false);
+    expect(await wl.isWhitelisted(chain, "ag_1", "w", "unknown@test.com", "agents.example")).toBe(false);
   });
 });
 
@@ -71,7 +71,7 @@ describe("buildWhitelistSet", () => {
     const chain: any = {};
     chain.select = vi.fn(() => chain); chain.from = vi.fn(() => chain);
     chain.where = vi.fn(() => Promise.resolve([{ email: "a@b.com" }]));
-    const result = await wl.buildWhitelistSet(chain, "ag_1", "w");
+    const result = await wl.buildWhitelistSet(chain, "ag_1", "w", "agents.example");
     expect(result.check("a@b.com")).toBe(true);
     expect(result.check("unknown@b.com")).toBe(false);
   });

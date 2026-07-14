@@ -67,14 +67,11 @@ vi.mock("@phneakngar/shared", async () => {
     EMAIL_NOTIFY_SECRET_HEADER: real.EMAIL_NOTIFY_SECRET_HEADER,
     createDb: (d1: unknown) => mockCreateDb(d1),
     createLogger: () => noopLogger,
-    parseEmailHandle: (address: string, domain?: string | null) => {
-      const suffix = `@${(domain || "cieee.xyz").replace(/^@/, "")}`
-      return address.toLowerCase().endsWith(suffix) ? address.slice(0, -suffix.length) : ""
-    },
-    toPhneakngarAddress: (h: string, domain?: string | null) =>
-      `${h}@${(domain || "cieee.xyz").replace(/^@/, "")}`,
-    getEmailDomain: (domain?: string | null) =>
-      (domain || "cieee.xyz").replace(/^@/, "").toLowerCase(),
+    parseEmailHandle: real.parseEmailHandle,
+    toPhneakngarAddress: real.toPhneakngarAddress,
+    getEmailDomain: real.getEmailDomain,
+    resolveEmailDomain: real.resolveEmailDomain,
+    EMAIL_DOMAIN_EXPECTATION_HEADER: real.EMAIL_DOMAIN_EXPECTATION_HEADER,
     DEV_WEB_URL: "http://localhost:3000",
     queries: {
       agent: {
@@ -89,6 +86,7 @@ vi.mock("@phneakngar/shared", async () => {
 })
 
 // Import handler after mocks are set up
+import { EMAIL_DOMAIN_EXPECTATION_HEADER } from "@phneakngar/shared"
 import handler from "./index"
 
 // Standard agent fixture
@@ -125,13 +123,13 @@ function setup(overrides?: {
   const { message, setReject, forward, rawText } = createMockMessage(
     overrides?.messageOpts ?? {
       from: "owner@example.com",
-      to: "jarvis@cieee.xyz",
+      to: "jarvis@agents.example",
       subject: "Hello",
       body: "Test body",
     }
   )
 
-  const env = { DB: {} as D1Database, EMAIL_BUCKET: bucket, WEB_SERVICE: fetcher, SEND_EMAIL: sendEmail, IMAP_POLLER: {} as DurableObjectNamespace, ENCRYPTION_KEY: "test-secret", EMAIL_NOTIFY_SECRET: "notify-secret" }
+  const env = { DB: {} as D1Database, EMAIL_BUCKET: bucket, WEB_SERVICE: fetcher, SEND_EMAIL: sendEmail, IMAP_POLLER: {} as DurableObjectNamespace, ENCRYPTION_KEY: "test-secret", EMAIL_NOTIFY_SECRET: "notify-secret", PHNEAKNGAR_DOMAIN: "agents.example" }
 
   return { env, message, put, wsFetch, setReject, forward, rawText }
 }
@@ -153,7 +151,7 @@ describe("agent resolution", () => {
     expect(put).not.toHaveBeenCalled()
   })
 
-  it("parses handle from cieee.xyz address and looks up agent", async () => {
+  it("parses handle from agents.example address and looks up agent", async () => {
     const { env, message } = setup({ isWhitelisted: true })
 
     await handler.email(message, env)
@@ -225,7 +223,7 @@ describe("whitelisted path", () => {
   it("defaults subject to '(No Subject)' when header is missing", async () => {
     const { env, message, wsFetch } = setup({
       isWhitelisted: true,
-      messageOpts: { from: "owner@example.com", to: "jarvis@cieee.xyz", subject: null },
+      messageOpts: { from: "owner@example.com", to: "jarvis@agents.example", subject: null },
     })
 
     await handler.email(message, env)
@@ -247,7 +245,7 @@ describe("whitelisted path", () => {
       isWhitelisted: true,
       messageOpts: {
         from: "owner@example.com",
-        to: "jarvis@cieee.xyz",
+        to: "jarvis@agents.example",
         subject: "Re: Thread",
         extraHeaders: {
           "message-id": "<msg-123@example.com>",
@@ -286,7 +284,7 @@ describe("RFC 2047 subject decoding", () => {
       isWhitelisted: true,
       messageOpts: {
         from: "owner@example.com",
-        to: "jarvis@cieee.xyz",
+        to: "jarvis@agents.example",
         subject: encodedSubject,
         body: "Test body",
       },
@@ -304,7 +302,7 @@ describe("RFC 2047 subject decoding", () => {
       isWhitelisted: true,
       messageOpts: {
         from: "owner@example.com",
-        to: "jarvis@cieee.xyz",
+        to: "jarvis@agents.example",
         subject: encodedSubject,
         body: "Test body",
       },
@@ -321,7 +319,7 @@ describe("RFC 2047 subject decoding", () => {
       isWhitelisted: true,
       messageOpts: {
         from: "owner@example.com",
-        to: "jarvis@cieee.xyz",
+        to: "jarvis@agents.example",
         subject: "Plain subject",
         body: "Test body",
       },
@@ -338,7 +336,7 @@ describe("RFC 2047 subject decoding", () => {
       isWhitelisted: true,
       messageOpts: {
         from: "owner@example.com",
-        to: "jarvis@cieee.xyz",
+        to: "jarvis@agents.example",
         subject: null,
         body: "Test body",
       },
@@ -356,7 +354,7 @@ describe("RFC 2047 subject decoding", () => {
 
     const rawText = [
       "From: owner@example.com",
-      "To: jarvis@cieee.xyz",
+      "To: jarvis@agents.example",
       "Subject: ",
       "",
       "Test body",
@@ -366,7 +364,7 @@ describe("RFC 2047 subject decoding", () => {
     const forward = vi.fn().mockResolvedValue(undefined)
     const message = {
       from: "owner@example.com",
-      to: "jarvis@cieee.xyz",
+      to: "jarvis@agents.example",
       headers,
       raw: new Response(rawText).body!,
       rawSize: rawText.length,
@@ -381,7 +379,7 @@ describe("RFC 2047 subject decoding", () => {
     const { bucket, put } = createMockR2()
     const { fetcher, fetch: wsFetch } = createMockFetcher()
     const { sendEmail } = createMockSendEmail()
-    const env = { DB: {} as D1Database, EMAIL_BUCKET: bucket, WEB_SERVICE: fetcher, SEND_EMAIL: sendEmail, IMAP_POLLER: {} as DurableObjectNamespace, ENCRYPTION_KEY: "test-secret", EMAIL_NOTIFY_SECRET: "notify-secret" }
+    const env = { DB: {} as D1Database, EMAIL_BUCKET: bucket, WEB_SERVICE: fetcher, SEND_EMAIL: sendEmail, IMAP_POLLER: {} as DurableObjectNamespace, ENCRYPTION_KEY: "test-secret", EMAIL_NOTIFY_SECRET: "notify-secret", PHNEAKNGAR_DOMAIN: "agents.example" }
 
     await handler.email(message, env)
 
@@ -394,7 +392,7 @@ describe("RFC 2047 subject decoding", () => {
 
 describe("non-whitelisted path", () => {
   const strangerOpts = {
-    messageOpts: { from: "stranger@example.com", to: "jarvis@cieee.xyz", subject: "Spam" } as const,
+    messageOpts: { from: "stranger@example.com", to: "jarvis@agents.example", subject: "Spam" } as const,
   }
 
   it("notifies web service with isWhitelisted: false and forwarded: false", async () => {
@@ -445,6 +443,47 @@ describe("non-whitelisted path", () => {
   })
 })
 
+describe("GET /health", () => {
+  it("returns ok for an explicit valid domain", async () => {
+    const { env } = setup()
+    const response = await handler.fetch(new Request("http://localhost/health"), env)
+
+    expect(response.status).toBe(200)
+    expect(await response.json()).toEqual({ status: "ok" })
+  })
+
+  it.each([undefined, "https://private.example/path", "phneakngar.invalid"])(
+    "returns a generic 503 for unsafe production domain configuration",
+    async (domain) => {
+      const { env } = setup()
+      const response = await handler.fetch(
+        new Request("http://localhost/health"),
+        { ...env, NODE_ENV: "production", PHNEAKNGAR_DOMAIN: domain as unknown as string },
+      )
+      const text = await response.text()
+
+      expect(response.status).toBe(503)
+      expect(JSON.parse(text)).toEqual({ status: "degraded" })
+      expect(text).not.toContain("PHNEAKNGAR_DOMAIN")
+      expect(text).not.toContain("private.example")
+      expect(text).not.toContain("phneakngar.invalid")
+    },
+  )
+
+  it("returns a generic 503 when the web Worker expects a different domain", async () => {
+    const { env } = setup()
+    const response = await handler.fetch(
+      new Request("http://localhost/health", {
+        headers: { [EMAIL_DOMAIN_EXPECTATION_HEADER]: "other.example" },
+      }),
+      { ...env, NODE_ENV: "production" },
+    )
+
+    expect(response.status).toBe(503)
+    expect(await response.json()).toEqual({ status: "degraded" })
+  })
+})
+
 // ─── Group 5: POST /send/otp ───
 
 describe("POST /send/otp", () => {
@@ -461,7 +500,7 @@ describe("POST /send/otp", () => {
     const { fetcher } = createMockFetcher()
     const { sendEmail, send } = createMockSendEmail()
     return {
-      env: { DB: {} as D1Database, EMAIL_BUCKET: bucket, WEB_SERVICE: fetcher, SEND_EMAIL: sendEmail, IMAP_POLLER: {} as DurableObjectNamespace, ENCRYPTION_KEY: "test-secret", EMAIL_NOTIFY_SECRET: "notify-secret" },
+      env: { DB: {} as D1Database, EMAIL_BUCKET: bucket, WEB_SERVICE: fetcher, SEND_EMAIL: sendEmail, IMAP_POLLER: {} as DurableObjectNamespace, ENCRYPTION_KEY: "test-secret", EMAIL_NOTIFY_SECRET: "notify-secret", PHNEAKNGAR_DOMAIN: "agents.example" },
       send,
     }
   }
@@ -478,11 +517,22 @@ describe("POST /send/otp", () => {
     expect(json.ok).toBe(true)
     expect(send).toHaveBeenCalledOnce()
     expect(send).toHaveBeenCalledWith({
-      from: "no-reply@cieee.xyz",
+      from: "no-reply@agents.example",
       to: "user@example.com",
       subject: "Your code",
       html: "<p>123456</p>",
     })
+  })
+
+  it("refuses production fallback before calling SEND_EMAIL", async () => {
+    const { env, send } = otpEnv()
+    const res = await handler.fetch(
+      makeOtpRequest({ to: "user@example.com", subject: "Your code" }),
+      { ...env, NODE_ENV: "production", PHNEAKNGAR_DOMAIN: "phneakngar.invalid" },
+    )
+
+    expect(res.status).toBe(503)
+    expect(send).not.toHaveBeenCalled()
   })
 
   it("returns 400 when 'to' is missing", async () => {
@@ -520,7 +570,7 @@ describe("POST /send/agent", () => {
     const { fetcher } = createMockFetcher()
     const { sendEmail, send } = createMockSendEmail()
     return {
-      env: { DB: {} as D1Database, EMAIL_BUCKET: bucket, WEB_SERVICE: fetcher, SEND_EMAIL: sendEmail, IMAP_POLLER: {} as DurableObjectNamespace, ENCRYPTION_KEY: "test-secret", EMAIL_NOTIFY_SECRET: "notify-secret" },
+      env: { DB: {} as D1Database, EMAIL_BUCKET: bucket, WEB_SERVICE: fetcher, SEND_EMAIL: sendEmail, IMAP_POLLER: {} as DurableObjectNamespace, ENCRYPTION_KEY: "test-secret", EMAIL_NOTIFY_SECRET: "notify-secret", PHNEAKNGAR_DOMAIN: "agents.example" },
       send,
       put,
       bucket,
@@ -550,9 +600,9 @@ describe("POST /send/agent", () => {
     // Verify SEND_EMAIL.send was called with a raw-MIME EmailMessage
     expect(send).toHaveBeenCalledOnce()
     const sendArg = send.mock.calls[0][0] as { from: string; to: string; raw: string }
-    expect(sendArg.from).toBe("jarvis@cieee.xyz")
+    expect(sendArg.from).toBe("jarvis@agents.example")
     expect(sendArg.to).toBe("user@example.com")
-    expect(sendArg.raw).toContain("From: jarvis@cieee.xyz")
+    expect(sendArg.raw).toContain("From: jarvis@agents.example")
     expect(sendArg.raw).toContain("To: user@example.com")
     expect(sendArg.raw).toContain("Subject: Hello")
     expect(sendArg.raw).toContain("<p>Hi there</p>")
@@ -566,7 +616,7 @@ describe("POST /send/agent", () => {
     expect(key).toMatch(/^emails\/mock-id-\d+\/raw$/)
     expect(opts).toEqual({ httpMetadata: { contentType: "message/rfc822" } })
     expect(body).toBe(sendArg.raw)
-    expect(body).toContain("From: jarvis@cieee.xyz")
+    expect(body).toContain("From: jarvis@agents.example")
     expect(body).toContain("To: user@example.com")
     expect(body).toContain("Subject: Hello")
     expect(body).toContain("Content-Type: text/html; charset=utf-8")
@@ -750,7 +800,7 @@ describe("POST /send/agent", () => {
 
     expect(res.status).toBe(200)
     const json = await res.json() as { ok: boolean; messageId: string }
-    expect(json.messageId).toMatch(/@cieee.xyz>$/)
+    expect(json.messageId).toMatch(/@agents.example>$/)
 
     // Threading headers now ride the WIRE message (raw MIME), not just the archive.
     const sendArg = send.mock.calls[0][0] as { raw: string }
@@ -781,7 +831,7 @@ describe("POST /send/agent", () => {
 
     expect(res.status).toBe(200)
     const json = await res.json() as { ok: boolean; messageId: string }
-    expect(json.messageId).toMatch(/@cieee.xyz>$/)
+    expect(json.messageId).toMatch(/@agents.example>$/)
 
     const storedMime = put.mock.calls[0][1] as string
     expect(storedMime).toContain("Message-ID:")
@@ -819,7 +869,7 @@ describe("POST /send/agent with custom SMTP", () => {
     const { fetcher } = createMockFetcher()
     const { sendEmail, send } = createMockSendEmail()
     return {
-      env: { DB: {} as D1Database, EMAIL_BUCKET: bucket, WEB_SERVICE: fetcher, SEND_EMAIL: sendEmail, IMAP_POLLER: {} as DurableObjectNamespace, ENCRYPTION_KEY: "test-secret", EMAIL_NOTIFY_SECRET: "notify-secret" },
+      env: { DB: {} as D1Database, EMAIL_BUCKET: bucket, WEB_SERVICE: fetcher, SEND_EMAIL: sendEmail, IMAP_POLLER: {} as DurableObjectNamespace, ENCRYPTION_KEY: "test-secret", EMAIL_NOTIFY_SECRET: "notify-secret", PHNEAKNGAR_DOMAIN: "agents.example" },
       send,
       put,
     }
@@ -973,7 +1023,7 @@ describe("fetch() routing", () => {
     const { bucket } = createMockR2()
     const { fetcher } = createMockFetcher()
     const { sendEmail } = createMockSendEmail()
-    return { DB: {} as D1Database, EMAIL_BUCKET: bucket, WEB_SERVICE: fetcher, SEND_EMAIL: sendEmail, IMAP_POLLER: {} as DurableObjectNamespace, ENCRYPTION_KEY: "test-secret", EMAIL_NOTIFY_SECRET: "notify-secret" }
+    return { DB: {} as D1Database, EMAIL_BUCKET: bucket, WEB_SERVICE: fetcher, SEND_EMAIL: sendEmail, IMAP_POLLER: {} as DurableObjectNamespace, ENCRYPTION_KEY: "test-secret", EMAIL_NOTIFY_SECRET: "notify-secret", PHNEAKNGAR_DOMAIN: "agents.example" }
   }
 
   it("returns 404 for unknown paths", async () => {
@@ -1006,7 +1056,7 @@ describe("IMAP management routes", () => {
     const mockGet = vi.fn().mockReturnValue(mockStub)
     const imapPoller = { idFromName: mockIdFromName, get: mockGet } as unknown as DurableObjectNamespace
     return {
-      env: { DB: {} as D1Database, EMAIL_BUCKET: bucket, WEB_SERVICE: fetcher, SEND_EMAIL: sendEmail, IMAP_POLLER: imapPoller, ENCRYPTION_KEY: "test-secret", EMAIL_NOTIFY_SECRET: "notify-secret" },
+      env: { DB: {} as D1Database, EMAIL_BUCKET: bucket, WEB_SERVICE: fetcher, SEND_EMAIL: sendEmail, IMAP_POLLER: imapPoller, ENCRYPTION_KEY: "test-secret", EMAIL_NOTIFY_SECRET: "notify-secret", PHNEAKNGAR_DOMAIN: "agents.example" },
       doFetch,
       mockIdFromName,
       mockGet,

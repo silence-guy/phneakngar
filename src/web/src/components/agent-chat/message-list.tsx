@@ -8,6 +8,7 @@ import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Streamdown } from "streamdown";
 import { mermaid, cjk, math } from "@/lib/streamdown-plugins";
 import { highlightMentions } from "@/lib/highlight-mentions";
+import { getPublicEmailDomain } from "@/lib/email-domain";
 import { TaskStream } from "@/components/task-stream";
 import { RuntimeErrorBlock } from "@/components/agent-chat/runtime-error-block";
 import { AnimatedAvatar, type AvatarConfig } from "@/components/avatar";
@@ -727,7 +728,7 @@ export const MessageItem = memo(function MessageItem({
         const data = parseEventData(msg.metadata, msg.content, conversationType);
         let card: React.ReactNode;
         if (data.type === "email") {
-          const handle = parseEmailHandle(data.address);
+          const handle = parseEmailHandle(data.address, getPublicEmailDomain());
           const targetConvId = msg.metadata?.targetConversationId as string | undefined;
           const targetAgentId = msg.metadata?.targetAgentId as string | undefined;
           const isInternalEmail = !!handle;

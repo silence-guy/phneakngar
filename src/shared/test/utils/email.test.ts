@@ -4,33 +4,68 @@ import {
   toPhneakngarAddress,
   isValidHandle,
   getEmailDomain,
+  resolveEmailDomain,
+  NON_PRODUCTION_EMAIL_DOMAIN,
 } from "../../src/utils/email"
 
 describe("getEmailDomain", () => {
-  it("normalizes and strips leading @", () => {
-    expect(getEmailDomain("cieee.xyz")).toBe("cieee.xyz")
-    expect(getEmailDomain("@cieee.xyz")).toBe("cieee.xyz")
+  it("normalizes an explicit domain", () => {
+    expect(getEmailDomain(" Example.COM ")).toBe("example.com")
+    expect(getEmailDomain("@mail.example.com")).toBe("mail.example.com")
   })
-  it("defaults to cieee.xyz when unset", () => {
-    const prev = process.env.PHNEAKNGAR_DOMAIN
-    delete process.env.PHNEAKNGAR_DOMAIN
-    expect(getEmailDomain()).toBe("cieee.xyz")
-    if (prev === undefined) delete process.env.PHNEAKNGAR_DOMAIN
-    else process.env.PHNEAKNGAR_DOMAIN = prev
+
+  it.each([
+    "",
+    "localhost",
+    "https://example.com",
+    "example.com/path",
+    "user@example.com",
+    "example.com:443",
+    "-example.com",
+    "example-.com",
+    "example..com",
+    "example.com.",
+  ])("rejects invalid domain %j without echoing it", (domain) => {
+    expect(() => getEmailDomain(domain)).toThrow("Invalid email domain configuration")
+    try {
+      getEmailDomain(domain)
+    } catch (error) {
+      expect(String(error)).not.toContain(domain || "not-present")
+    }
+  })
+})
+
+describe("resolveEmailDomain", () => {
+  it.each(["development", "test"] as const)("uses a visible fallback in %s", (environment) => {
+    expect(resolveEmailDomain(undefined, environment)).toBe(NON_PRODUCTION_EMAIL_DOMAIN)
+  })
+
+  it("requires an explicit valid non-fallback production domain", () => {
+    expect(() => resolveEmailDomain(undefined, "production")).toThrow("Invalid email domain configuration")
+    expect(() => resolveEmailDomain("bad domain", "production")).toThrow("Invalid email domain configuration")
+    expect(() => resolveEmailDomain(NON_PRODUCTION_EMAIL_DOMAIN, "production")).toThrow("Invalid email domain configuration")
+    expect(resolveEmailDomain("agents.example.com", "production")).toBe("agents.example.com")
   })
 })
 
 describe("parseEmailHandle", () => {
-  it("extracts handle", () => expect(parseEmailHandle("jarvis@cieee.xyz")).toBe("jarvis"))
-  it("uses explicit domain", () =>
-    expect(parseEmailHandle("jarvis@example.com", "example.com")).toBe("jarvis"))
-  it("empty for foreign domain", () => expect(parseEmailHandle("u@gmail.com")).toBe(""))
+  it("extracts handles only for the selected domain", () => {
+    expect(parseEmailHandle("Jarvis@agents.example.com", "agents.example.com")).toBe("jarvis")
+    expect(parseEmailHandle("Jarvis <jarvis@agents.example.com>", "agents.example.com")).toBe("jarvis")
+    expect(parseEmailHandle("jarvis@other.example", "agents.example.com")).toBe("")
+  })
+
+  it("supports a second custom domain without code changes", () => {
+    expect(parseEmailHandle("jarvis@robots.example", "robots.example")).toBe("jarvis")
+  })
 })
+
 describe("toPhneakngarAddress", () => {
-  it("appends domain", () => expect(toPhneakngarAddress("jarvis")).toBe("jarvis@cieee.xyz"))
-  it("uses explicit domain", () =>
-    expect(toPhneakngarAddress("no-reply", "cieee.xyz")).toBe("no-reply@cieee.xyz"))
+  it("requires and normalizes an explicit domain", () => {
+    expect(toPhneakngarAddress("jarvis", "Agents.Example.com")).toBe("jarvis@agents.example.com")
+  })
 })
+
 describe("isValidHandle", () => {
   it("accepts 3+ alphanum+dash", () => { expect(isValidHandle("jarvis")).toBe(true); expect(isValidHandle("my-bot")).toBe(true); expect(isValidHandle("abc")).toBe(true) })
   it("rejects <3", () => expect(isValidHandle("ab")).toBe(false))

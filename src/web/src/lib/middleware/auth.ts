@@ -11,6 +11,7 @@ export interface AuthContext {
   email: string
   authType: "user" | "machine"
   workspaceId?: string
+  machineTokenHostname?: string | null
 }
 
 export type AuthenticatedHandler = (
@@ -42,7 +43,10 @@ export function withAuth(handler: AuthenticatedHandler) {
           const mt = await cached(
             cacheKeys.machineToken(raw),
             900,
-            () => queries.machineToken.getMachineTokenByToken(db, raw),
+            async () => {
+              const machineToken = await queries.machineToken.getMachineTokenByToken(db, raw)
+              return machineToken?.status === "active" ? machineToken : null
+            },
           )
           if (!mt || mt.status !== "active" || !mt.workspaceId) {
             return NextResponse.json({ error: "invalid token" }, { status: 401 })
@@ -58,6 +62,7 @@ export function withAuth(handler: AuthenticatedHandler) {
             email: mt.userEmail,
             authType: "machine",
             workspaceId: mt.workspaceId,
+            machineTokenHostname: mt.hostname,
           }
           return handler(req, { ...authCtx, params: resolvedParams })
         } catch {

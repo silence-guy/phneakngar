@@ -6,6 +6,7 @@ import { useGSAP } from "@gsap/react";
 import { SplitText } from "gsap/SplitText";
 import { useLocalStorage } from "@/hooks/use-local-storage";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { toPublicPhneakngarAddress } from "@/lib/email-domain";
 
 gsap.registerPlugin(SplitText);
 
@@ -22,56 +23,56 @@ interface TypewriterEmail {
 /** Clean, professional emails — default for the homepage. First email is shown on load, rest are randomly picked. */
 const EMAILS_DEFAULT: TypewriterEmail[] = [
   {
-    from: "jarvis@phneakngar.ai",
+    from: toPublicPhneakngarAddress("jarvis"),
     to: "you@email.com",
     subject: "រីករាយថ្ងៃកំណើត!",
     body: "រីករាយថ្ងៃកំណើត! ខ្ញុំចងចាំបានច្បាស់ \u2014 April 17th។ សូមឲ្យថ្ងៃនេះស្រួល និងសមនឹងអ្វីដែលអ្នកខំប្រឹង។ សម្រាកបន្តិច ហើយខ្ញុំនឹងចាត់ការផ្នែកដែលនៅសល់។",
   },
   {
     from: "you@email.com",
-    to: "jarvis@phneakngar.ai",
+    to: toPublicPhneakngarAddress("jarvis"),
     subject: "រៀបចំកំណត់ត្រាប្រជុំសប្តាហ៍នេះ",
     body: "Jarvis, ខ្ញុំបានដាក់កំណត់ត្រាប្រជុំទាំងអស់ទៅក្នុង /docs/notes។ ជួយរៀបតាមគម្រោង ដក action items ហើយសង្ខេបឲ្យផង។ ចំណុចណាដែលបន្ទាន់ សូមដាក់សញ្ញាឲ្យខ្ញុំដឹង។",
   },
   {
-    from: "jarvis@phneakngar.ai",
+    from: toPublicPhneakngarAddress("jarvis"),
     to: "you@email.com",
     subject: "សង្ខេបព្រឹកនេះ \u2014 Apr 17",
     body: "អរុណសួស្តី។ យប់មិញ CI លើ main បានជោគជ័យ, PR ពីរត្រូវបាន merge, ហើយគ្មានការជូនដំណឹង។ ថ្ងៃនេះមាន standup ម៉ោង 10 ព្រឹក និង design review ម៉ោង 2 រសៀល។ ខ្ញុំបាន rebase branch របស់អ្នក និងរត់ linter រួចហើយ។",
   },
   {
-    from: "jarvis@phneakngar.ai",
+    from: toPublicPhneakngarAddress("jarvis"),
     to: "you@email.com",
     subject: "Re: អ្នកនៅទីនោះទេ?",
     body: "នៅជានិច្ច។ ខ្ញុំបានធ្វើការតាំងពីម៉ោង 3 ព្រឹក \u2014 សម្អាត inbox, ចាត់អាទិភាព bug reports ពីរ, ហើយរៀប deploy ទុករង់ចាំអ្នក។ ទៅយកកាហ្វេបាន ខ្ញុំនៅទីនេះពេលអ្នកត្រឡប់មក។",
   },
   {
     from: "you@email.com",
-    to: "jarvis@phneakngar.ai",
+    to: toPublicPhneakngarAddress("jarvis"),
     subject: "ជួយ refactor auth middleware បានទេ?",
     body: "ការគ្រប់គ្រង session ក្នុង src/middleware/auth.ts ចាប់ផ្តើមរញ៉េរញ៉ៃ។ ជួយបំបែកជាមុខងារតូចៗ បន្ថែម error types ត្រឹមត្រូវ ហើយធានាថា tests នៅតែ pass។ កុំប្តូរ public API។",
   },
   {
-    from: "jarvis@phneakngar.ai",
+    from: toPublicPhneakngarAddress("jarvis"),
     to: "you@email.com",
     subject: "សង្ខេបសប្តាហ៍ \u2014 Apr 14\u201317",
     body: "សប្តាហ៍នេះ: PR 12 ត្រូវបាន merge, bug 3 ត្រូវបានបិទ, test coverage ឡើងដល់ 86%។ អ្នកបានចំណាយពេលច្រើនលើ calendar feature។ រំលឹក: អ្នកធ្លាប់និយាយថាចង់ពិនិត្យ caching strategy វិញ។ ឲ្យខ្ញុំរៀប proposal ទេ?",
   },
   {
     from: "you@email.com",
-    to: "jarvis@phneakngar.ai",
+    to: toPublicPhneakngarAddress("jarvis"),
     subject: "ស្រាវជ្រាវ vector DB សម្រាប់ memory",
     body: "ខ្ញុំកំពុងគិតបន្ថែម semantic search ទៅ memory system។ ជួយប្រៀបធៀប pgvector, Qdrant និង Turbopuffer ផង។ ផ្តោតលើ local-first setup, latency និងរបៀបភ្ជាប់ជាមួយ SQLite stack របស់យើង។",
   },
   {
-    from: "jarvis@phneakngar.ai",
+    from: toPublicPhneakngarAddress("jarvis"),
     to: "you@email.com",
     subject: "ជូនដំណឹង \u2014 CI លើ main បរាជ័យ",
     body: "Build ខូចប្រហែល 20 នាទីមុន។ Test ដែលបរាជ័យគឺ calendar-month-grid.test.ts \u2014 មើលទៅជា off-by-one ក្នុង week boundary logic ពី commit ចុងក្រោយរបស់អ្នក។ ខ្ញុំមាន fix រួចហើយ។ ឲ្យខ្ញុំ push ទេ?",
   },
   {
     from: "you@email.com",
-    to: "jarvis@phneakngar.ai",
+    to: toPublicPhneakngarAddress("jarvis"),
     subject: "រៀបចំ demo សម្រាប់ថ្ងៃស្អែក",
     body: "យើងនឹង demo ក្រុមនៅថ្ងៃស្អែកម៉ោង 2 រសៀល។ ជួយធានាថា staging ទាន់សម័យ, seed test data ដែលស្រដៀងពិត, ហើយសរសេរ walkthrough ខ្លីមួយ។ សូមឲ្យក្រោម 5 នាទី។",
   },
