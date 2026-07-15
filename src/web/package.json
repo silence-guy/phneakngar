@@ -1,6 +1,6 @@
 {
   "name": "@phneakngar/web",
-  "version": "0.0.150",
+  "version": "0.0.2",
   "private": true,
   "scripts": {
     "dev": "next dev",

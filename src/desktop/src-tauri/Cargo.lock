@@ -34,7 +34,7 @@ dependencies = [
 
 [[package]]
 name = "phneakngar-desktop"
-version = "0.0.150"
+version = "0.0.2"
 dependencies = [
  "base64 0.22.1",
  "objc2",

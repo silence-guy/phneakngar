@@ -1,6 +1,6 @@
 {
   "name": "@phneakngar/app",
-  "version": "0.0.150",
+  "version": "0.0.2",
   "description": "Run ភ្នាក់ងារ locally — one command, no clone needed",
   "license": "Apache-2.0",
   "homepage": "https://phneakngar-web.thatsilenceguy.workers.dev",

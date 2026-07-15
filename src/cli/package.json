@@ -1,6 +1,6 @@
 {
   "name": "@phneakngar/cli",
-  "version": "0.0.150",
+  "version": "0.0.2",
   "description": "ភ្នាក់ងារ CLI — install and run local AI agents on a client machine",
   "license": "Apache-2.0",
   "author": "ភ្នាក់ងារ",
