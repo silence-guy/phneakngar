@@ -17,6 +17,7 @@ docs/*
 .dev.vars
 plans/
 .agents/
+.codex/
 .context_timeline/
 .claude/
 .impeccable.md
