@@ -32,6 +32,112 @@ export interface ActivateResult {
   runtimeProviders: string[];
 }
 
+const AL_TOKEN_RE = /al_[A-Za-z0-9_-]{8,}/g;
+const MAX_BODY_CHARS = 200;
+
+/** Strip machine-token secrets and cap body length for safe console output. */
+export function sanitizeActivateBody(bodyText: string): string {
+  const redacted = bodyText.replace(AL_TOKEN_RE, "al_[redacted]");
+  if (redacted.length <= MAX_BODY_CHARS) return redacted;
+  return `${redacted.slice(0, MAX_BODY_CHARS)}…`;
+}
+
+function extractServerError(bodyText: string): string {
+  const trimmed = bodyText.trim();
+  if (!trimmed) return "";
+  try {
+    const parsed = JSON.parse(trimmed) as { error?: unknown };
+    if (typeof parsed?.error === "string") return parsed.error;
+  } catch {
+    // plain text body
+  }
+  return trimmed;
+}
+
+/**
+ * Map activate HTTP status + body to a human-readable CLI error with an actionable hint.
+ * Safe for console: never includes full al_* secrets.
+ */
+export function formatActivateFailure(status: number, bodyText: string): string {
+  const shortBody = sanitizeActivateBody(bodyText || "(empty body)");
+  const serverError = extractServerError(bodyText).toLowerCase();
+  const hint = activateFailureHint(status, serverError);
+  if (hint) {
+    return `Error: registration failed (${status}): ${shortBody}\n  → ${hint}`;
+  }
+  return `Error: registration failed (${status}): ${shortBody}`;
+}
+
+function activateFailureHint(status: number, serverError: string): string | null {
+  if (status === 404 || serverError.includes("token not found")) {
+    return (
+      "Token not found on this server. Check the server URL " +
+      `('${cmdPrefix()} init --server <url>' / config) and copy a fresh token from the UI.`
+    );
+  }
+
+  if (
+    status === 422
+    || serverError.includes("workspace_id")
+    || serverError.includes("no workspace")
+  ) {
+    return (
+      "Token has no workspace. Open or create a workspace in the app first, " +
+      "then generate a new token."
+    );
+  }
+
+  if (status === 409) {
+    if (serverError.includes("another user")) {
+      return (
+        "This machine hostname is already linked to another user. " +
+        "Use a different hostname or create a new token in the UI after resolving ownership."
+      );
+    }
+    if (
+      serverError.includes("already claimed")
+      || serverError.includes("another machine")
+      || serverError.includes("already used")
+      || serverError.includes("could not be finalized")
+    ) {
+      return (
+        "Token already used on another machine (or a different runtime set). " +
+        "Create a new token in the UI for this machine."
+      );
+    }
+    return (
+      "Token activation conflict (already claimed or used). " +
+      "Create a new token in the UI and try again."
+    );
+  }
+
+  if (status === 503 || serverError.includes("temporarily unavailable")) {
+    return "Token activation temporarily unavailable. Retry in a moment.";
+  }
+
+  if (status === 400) {
+    return (
+      "Invalid activation request. Re-copy the token from the UI and ensure " +
+      "at least one runtime (claude, codex, opencode, or grok) is installed."
+    );
+  }
+
+  if (status === 401) {
+    return (
+      "Server rejected this token. Copy a fresh token from the UI and confirm " +
+      `the server URL ('${cmdPrefix()} init --server <url>' / config).`
+    );
+  }
+
+  return null;
+}
+
+function fatalExit(code = 1): never {
+  process.exit(code);
+  // process.exit is typed `never` but test mocks may return; keep control flow terminal.
+  throw new Error(`process.exit(${code})`);
+}
+
 export async function activateAndSave(opts: {
   token: string;
   serverUrl: string;
@@ -45,30 +151,40 @@ export async function activateAndSave(opts: {
     console.error(
       "Error: no runtimes found. Install claude, codex, opencode, or grok first.",
     );
-    process.exit(1);
+    fatalExit(1);
   }
   console.log(`Found: ${runtimes.map((r) => r.type).join(", ")}`);
 
   const host = hostname();
   console.log("Registering machine...");
   let activateResp: ActivateResponse;
+  let res: Response;
   try {
-    const res = await fetch(`${serverUrl}/api/machine-tokens/activate`, {
+    res = await fetch(`${serverUrl}/api/machine-tokens/activate`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ token, hostname: host, runtimes }),
     });
-    if (!res.ok) {
-      const text = await res.text();
-      console.error(`Error: registration failed (${res.status}): ${text}`);
-      process.exit(1);
-    }
+  } catch (err) {
+    console.error(
+      `Error: failed to activate: ${err instanceof Error ? err.message : err}`,
+    );
+    fatalExit(1);
+  }
+
+  if (!res.ok) {
+    const text = await res.text();
+    console.error(formatActivateFailure(res.status, text));
+    fatalExit(1);
+  }
+
+  try {
     activateResp = await res.json() as ActivateResponse;
   } catch (err) {
     console.error(
       `Error: failed to activate: ${err instanceof Error ? err.message : err}`,
     );
-    process.exit(1);
+    fatalExit(1);
   }
 
   const client = new APIClient(serverUrl, token);
@@ -80,12 +196,12 @@ export async function activateAndSave(opts: {
     console.error(
       `Error: failed to fetch workspaces: ${err instanceof Error ? err.message : err}`,
     );
-    process.exit(1);
+    fatalExit(1);
   }
 
   if (!workspaces.length) {
     console.error("Error: no workspaces found for this user");
-    process.exit(1);
+    fatalExit(1);
   }
 
   const ws = workspaces.find((w) => w.id === activateResp.workspace_id) || workspaces[0];
