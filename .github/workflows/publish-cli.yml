@@ -87,4 +87,4 @@ jobs:
       - name: Publish to npm (OIDC)
         if: steps.check.outputs.skip == 'false'
         working-directory: src/cli
-        run: npm publish --access public
+        run: npm publish --access public --tag latest
