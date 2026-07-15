@@ -61,7 +61,8 @@ function gitStatus() {
 function parsePackFiles(packJson) {
   try {
     const trimmed = packJson.trim();
-    const jsonStart = trimmed.indexOf("[\n  {");
+    const jsonMatch = trimmed.match(/(?:^|\n)\s*\[\s*(?:\n\s*)?\{/);
+    const jsonStart = jsonMatch ? jsonMatch.index + (trimmed[jsonMatch.index] === "\n" ? 1 : 0) : -1;
     const jsonEnd = trimmed.lastIndexOf("]");
     const jsonText = jsonStart >= 0 && jsonEnd > jsonStart
       ? trimmed.slice(jsonStart, jsonEnd + 1)
@@ -108,7 +109,10 @@ function assertPackContents(files, dryRunOutput) {
     }
   }
 
-  if (!files.some((file) => file.startsWith("bundled/web/migrations/") && file.endsWith(".sql"))) {
+  const hasMigration =
+    files.some((file) => file.startsWith("bundled/web/migrations/") && file.endsWith(".sql")) ||
+    /bundled\/web\/migrations\/[^"\s]+\.sql/.test(dryRunOutput);
+  if (!hasMigration) {
     console.error("Pack must include bundled web D1 migration files");
     process.exit(1);
   }
