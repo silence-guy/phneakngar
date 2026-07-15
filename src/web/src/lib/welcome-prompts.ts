@@ -8,6 +8,16 @@ export const WELCOME_EMAIL_SUBJECT_STUDIO = "សូមស្វាគមន៍�
 export const WELCOME_EMAIL_SUBJECT_AGENT = "សូមស្វាគមន៍ពីភ្នាក់ងារ AI របស់អ្នក";
 export const WELCOME_EMAIL_SUBJECT_WHITELIST = "សូមស្វាគមន៍ — ទំនាក់ទំនងថ្មី";
 
+/**
+ * Visible conversation seeds when welcome tasks are enqueued.
+ * Without these, the chat opens empty while the task is queued/dispatched
+ * (no user/assistant messages exist until the agent finishes).
+ */
+export const WELCOME_EMAIL_SEED_EVENT =
+  "កិច្ចការស្វាគមន៍៖ ភ្នាក់ងារកំពុងផ្ញើអ៊ីមែលស្វាគមន៍ជូនអ្នក។";
+export const WELCOME_CHAT_SEED_EVENT =
+  "កិច្ចការស្វាគមន៍៖ ភ្នាក់ងារកំពុងរៀបចំសារណែនាំខ្លួន។";
+
 export const WELCOME_USER_FACING_KHMER_RULE =
   "CRITICAL LANGUAGE RULE: Write ALL user-facing content (greeting, chat message, and email body) entirely in natural Khmer (km-KH). " +
   "Do NOT match the owner's name or email language. Even if the owner uses English, still write in Khmer. " +

@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { queries, CreateStudioRequestSchema, isValidHandle, isOnline, TASK_TYPES, toPhneakngarAddress } from "@phneakngar/shared";
+import { queries, CreateStudioRequestSchema, isValidHandle, isOnline, TASK_TYPES, MessageRole, toPhneakngarAddress } from "@phneakngar/shared";
 import { nanoid } from "nanoid";
 import { uniqueNamesGenerator, names } from "unique-names-generator";
 import { getDb } from "@/lib/db";
@@ -13,6 +13,8 @@ import { invalidate, cached, cacheKeys } from "@/lib/cache";
 import {
   buildStudioWelcomeChatPrompt,
   buildStudioWelcomeEmailPrompt,
+  WELCOME_CHAT_SEED_EVENT,
+  WELCOME_EMAIL_SEED_EVENT,
 } from "@/lib/welcome-prompts";
 import { resolveServerEmailDomain } from "@/lib/email-domain";
 
@@ -229,13 +231,24 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
         type: TASK_TYPES.EMAIL_NOTIFICATION,
       });
       const taskService = new TaskService(db, emailDomain);
-      await taskService.enqueueTask(
+      const emailTask = await taskService.enqueueTask(
         leaderAgent.id,
         conv.id,
         ws.workspaceId,
         welcomePrompt,
         TASK_TYPES.EMAIL_NOTIFICATION,
       );
+      // Lifecycle note (not role:event) — event rows render as email/calendar cards.
+      await queries.message.createMessage(db, {
+        conversationId: conv.id,
+        role: MessageRole.ASSISTANT,
+        content: WELCOME_EMAIL_SEED_EVENT,
+        taskId: emailTask.id,
+        metadata: JSON.stringify({
+          kind: "lifecycle",
+          event_type: "welcome_email_queued",
+        }),
+      });
     } catch {
       // Best-effort
     }
@@ -263,13 +276,23 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
         type: TASK_TYPES.USER_DM_MESSAGE,
       });
       const taskService2 = new TaskService(db, emailDomain);
-      await taskService2.enqueueTask(
+      const chatTask = await taskService2.enqueueTask(
         leaderAgent.id,
         dmConv.id,
         ws.workspaceId,
         welcomeChatPrompt,
         TASK_TYPES.USER_DM_MESSAGE,
       );
+      await queries.message.createMessage(db, {
+        conversationId: dmConv.id,
+        role: MessageRole.ASSISTANT,
+        content: WELCOME_CHAT_SEED_EVENT,
+        taskId: chatTask.id,
+        metadata: JSON.stringify({
+          kind: "lifecycle",
+          event_type: "welcome_chat_queued",
+        }),
+      });
     } catch {
       // Best-effort
     }

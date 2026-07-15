@@ -8,7 +8,7 @@ import React, {
   useCallback,
   useMemo,
 } from "react";
-import { useParams, useSearchParams } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useWorkspace } from "@/contexts/workspace-context";
 import { Button } from "@/components/ui/button";
 import { TaskStream } from "@/components/task-stream";
@@ -97,6 +97,10 @@ import {
   sayHiLabel,
   agentWellRestedLabel,
 } from "@/components/agent-chat/agent-chat-labels";
+import {
+  isActiveTaskStuck,
+  resolveChatEmptyState,
+} from "@/components/agent-chat/chat-empty-state";
 
 export function AgentChatView({
   agentId: propAgentId,
@@ -111,6 +115,7 @@ export function AgentChatView({
 }) {
   const params = useParams();
   const searchParams = useSearchParams();
+  const router = useRouter();
   const { workspaceId, slug } = useWorkspace();
   const {
     agents,
@@ -757,7 +762,15 @@ export function AgentChatView({
             if (btn) toast.success(AGENT_CHAT_LABELS.view.copiedToClipboard);
           }}
         >
-          <div className="mx-auto max-w-3xl pt-6 pb-15 min-w-0">
+          <div
+            className={cn(
+              "mx-auto max-w-3xl pt-6 pb-15 min-w-0",
+              // When empty, fill the scroll viewport so the empty frame can
+              // center vertically — avoids a bottom-only “is reading” + composer
+              // void after registration while a welcome/email task is active.
+              messages.length === 0 && "flex min-h-full flex-col",
+            )}
+          >
             {/* Root message for thread conversations — rendered as a normal MessageItem with flagged emphasis + corner icon, no actions */}
             {threadRootMessage && (
               <div className="mb-2">
@@ -798,42 +811,131 @@ export function AgentChatView({
               </div>
             )}
 
-            {messages.length === 0 &&
-              !activeTask &&
-              (() => {
-                const agent = agents.find((a) => a.id === agentId);
-                const isNewAgent =
-                  agent?.created_at &&
+            {/* Empty frame: do NOT gate on !activeTask. TaskStream only renders
+                errors now; presence owns reading/typing. Gating left a blank
+                void after email registration / opening an active task from the
+                canvas panel while messages were never seeded. */}
+            {(() => {
+              const agent = agents.find((a) => a.id === agentId);
+              const isNewAgent = Boolean(
+                agent?.created_at &&
                   renderNow - new Date(agent.created_at).getTime() <
-                  5 * 60 * 1000;
-                const hasEmailTask = (activeTaskCounts[agentId] ?? 0) > 0;
+                    5 * 60 * 1000,
+              );
+              // Typed: only email_notification counts as welcome-email (not any active count).
+              const hasEmailTask =
+                isTaskActive && activeTask?.type === "email_notification";
+              const activeTaskAgeMs =
+                activeTask?.created_at != null
+                  ? Date.now() - new Date(activeTask.created_at).getTime()
+                  : null;
+              const emptyKind = resolveChatEmptyState({
+                messageCount: messages.length,
+                isNewAgent,
+                hasEmailTask,
+                activeChannel: activeChannel ?? "default",
+                activeTaskStatus: isTaskActive
+                  ? (activeTask?.status ?? null)
+                  : null,
+                activeTaskType: isTaskActive
+                  ? (activeTask?.type ?? null)
+                  : null,
+                activeTaskAgeMs: isTaskActive ? activeTaskAgeMs : null,
+              });
 
-                if (isNewAgent && hasEmailTask && activeChannel === "default") {
-                  return (
-                    <div className="flex flex-col items-center justify-center py-20 gap-3 animate-[fade-up_400ms_ease-out_both]">
-                      <div className="relative animate-bounce">
-                        <Mail className="size-8 text-primary" />
-                        <span className="absolute -top-1 -right-1 flex size-3">
-                          <span className="animate-ping absolute inline-flex size-full rounded-full bg-primary/60" />
-                          <span className="relative inline-flex size-3 rounded-full bg-primary" />
-                        </span>
-                      </div>
-                      <p className="text-sm text-muted-foreground text-center max-w-xs">
-                        {AGENT_CHAT_LABELS.view.welcomeEmailTitle}
-                      </p>
-                      <p className="text-xs text-muted-foreground/60 text-center max-w-xs">
-                        {AGENT_CHAT_LABELS.view.welcomeEmailSubcopy}
-                      </p>
-                    </div>
-                  );
-                }
+              if (emptyKind === "none") return null;
 
+              const frameClass =
+                "flex flex-1 flex-col items-center justify-center gap-3 py-12 animate-[fade-up_400ms_ease-out_both]";
+
+              if (emptyKind === "welcome-email") {
                 return (
-                  <p className="text-center text-muted-foreground py-20 text-base animate-[fade-up_400ms_ease-out_both]">
-                    {sayHiLabel(agentFirstName)}
-                  </p>
+                  <div className={frameClass}>
+                    <div className="relative motion-safe:animate-bounce">
+                      <Mail className="size-8 text-primary" />
+                      <span className="absolute -top-1 -right-1 flex size-3">
+                        <span className="absolute inline-flex size-full rounded-full bg-primary/60 motion-safe:animate-ping" />
+                        <span className="relative inline-flex size-3 rounded-full bg-primary" />
+                      </span>
+                    </div>
+                    <p className="text-sm text-muted-foreground text-center max-w-xs">
+                      {AGENT_CHAT_LABELS.view.welcomeEmailTitle}
+                    </p>
+                    <p className="text-xs text-muted-foreground/60 text-center max-w-xs">
+                      {AGENT_CHAT_LABELS.view.welcomeEmailSubcopy}
+                    </p>
+                  </div>
                 );
-              })()}
+              }
+
+              if (emptyKind === "active-working") {
+                return (
+                  <div className={frameClass}>
+                    <Loader2 className="size-6 animate-spin text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground text-center max-w-xs">
+                      {AGENT_CHAT_LABELS.view.activeWorkingTitle}
+                    </p>
+                    <p className="text-xs text-muted-foreground/60 text-center max-w-xs">
+                      {AGENT_CHAT_LABELS.view.activeWorkingSubcopy}
+                    </p>
+                  </div>
+                );
+              }
+
+              if (emptyKind === "active-stuck") {
+                return (
+                  <div className={frameClass}>
+                    <p className="text-sm text-foreground text-center max-w-xs font-medium">
+                      {AGENT_CHAT_LABELS.view.activeStuckTitle}
+                    </p>
+                    <p className="text-xs text-muted-foreground text-center max-w-xs">
+                      {AGENT_CHAT_LABELS.view.activeStuckSubcopy}
+                    </p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => router.push(`/w/${slug}/runtimes`)}
+                    >
+                      {AGENT_CHAT_LABELS.view.openRuntimes}
+                    </Button>
+                  </div>
+                );
+              }
+
+              return (
+                <p className="flex flex-1 items-center justify-center text-center text-muted-foreground py-12 text-base animate-[fade-up_400ms_ease-out_both]">
+                  {sayHiLabel(agentFirstName)}
+                </p>
+              );
+            })()}
+
+            {/* Stuck runtime banner — survives seed lifecycle messages (which
+                set messageCount > 0 and hide the empty-frame stuck UI). */}
+            {(() => {
+              if (!isTaskActive || !activeTask?.created_at) return null;
+              const ageMs =
+                Date.now() - new Date(activeTask.created_at).getTime();
+              if (!isActiveTaskStuck(activeTask.status, ageMs)) return null;
+              // Empty frame already shows the full stuck UI when no messages.
+              if (messages.length === 0) return null;
+              return (
+                <div className="mb-4 flex flex-col items-center gap-2 rounded-lg border border-border/60 bg-muted/40 px-4 py-3 text-center">
+                  <p className="text-sm font-medium text-foreground">
+                    {AGENT_CHAT_LABELS.view.activeStuckTitle}
+                  </p>
+                  <p className="text-xs text-muted-foreground max-w-sm">
+                    {AGENT_CHAT_LABELS.view.activeStuckSubcopy}
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => router.push(`/w/${slug}/runtimes`)}
+                  >
+                    {AGENT_CHAT_LABELS.view.openRuntimes}
+                  </Button>
+                </div>
+              );
+            })()}
 
             {timeline.map((item, idx) => {
               const pos = groupPositions[idx];

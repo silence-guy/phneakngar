@@ -23,6 +23,9 @@ describe("AGENT_CHAT_LABELS", () => {
     expect(AGENT_CHAT_LABELS.view.dropFilesHere).toMatch(KHMER);
     expect(AGENT_CHAT_LABELS.view.attachFiles).toMatch(KHMER);
     expect(AGENT_CHAT_LABELS.view.send).toMatch(KHMER);
+    expect(AGENT_CHAT_LABELS.view.activeWorkingTitle).toMatch(KHMER);
+    expect(AGENT_CHAT_LABELS.view.activeStuckTitle).toMatch(KHMER);
+    expect(AGENT_CHAT_LABELS.view.openRuntimes).toMatch(KHMER);
   });
 
   it("keeps the technical clipboard token while wrapping in Khmer", () => {

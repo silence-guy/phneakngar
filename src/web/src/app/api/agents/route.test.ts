@@ -9,6 +9,10 @@ const mockListAgents = vi.fn();
 const mockCreateAgent = vi.fn();
 const mockGetAgent = vi.fn();
 const mockGetAgentRuntimeForWorkspace = vi.fn();
+const mockCreateConversation = vi.fn();
+const mockCreateMessage = vi.fn();
+const mockAddWhitelist = vi.fn();
+const mockEnqueueTask = vi.fn();
 
 vi.mock("@/lib/db", () => ({ getDb: vi.fn(() => ({})) }));
 
@@ -24,12 +28,22 @@ vi.mock("@phneakngar/shared", async (importOriginal) => {
       getAllAgentsForWorkspace: (...args: unknown[]) => mockListAgents(...args),
       createAgent: (...args: unknown[]) => mockCreateAgent(...args),
       getAgent: (...args: unknown[]) => mockGetAgent(...args),
+      getAgentByHandle: vi.fn().mockResolvedValue(null),
     },
     agentAccess: {
       getAllAgentAccessForWorkspace: vi.fn().mockResolvedValue([]),
     },
     runtime: {
       getAgentRuntimeForWorkspace: (...args: unknown[]) => mockGetAgentRuntimeForWorkspace(...args),
+    },
+    conversation: {
+      createConversation: (...args: unknown[]) => mockCreateConversation(...args),
+    },
+    message: {
+      createMessage: (...args: unknown[]) => mockCreateMessage(...args),
+    },
+    whitelist: {
+      addWhitelist: (...args: unknown[]) => mockAddWhitelist(...args),
     },
   },
   };
@@ -53,7 +67,10 @@ vi.mock("@/lib/api/responses", () => ({
 const mockReconcileAgentStatus = vi.fn();
 vi.mock("@/lib/services/task", () => {
   const Svc = function () {
-    return { reconcileAgentStatus: mockReconcileAgentStatus };
+    return {
+      reconcileAgentStatus: mockReconcileAgentStatus,
+      enqueueTask: (...args: unknown[]) => mockEnqueueTask(...args),
+    };
   };
   return { TaskService: Svc };
 });
@@ -232,5 +249,53 @@ describe("POST /api/agents", () => {
         },
       }),
     );
+  });
+
+  it("seeds a lifecycle welcome message when online agent has email handle", async () => {
+    mockGetAgentRuntimeForWorkspace.mockResolvedValue({
+      machineLastSeenAt: new Date().toISOString(),
+      runtimeMode: "local",
+    });
+    mockCreateAgent.mockResolvedValue({
+      id: "a1",
+      name: "Mail Agent",
+      runtimeId: "r1",
+      emailHandle: "mail-agent",
+    });
+    mockGetAgent.mockResolvedValue({
+      id: "a1",
+      name: "Mail Agent",
+      runtimeId: "r1",
+      emailHandle: "mail-agent",
+    });
+    mockCreateConversation.mockResolvedValue({ id: "conv-welcome" });
+    mockEnqueueTask.mockResolvedValue({ id: "task-welcome" });
+    mockCreateMessage.mockResolvedValue({ id: "msg-seed" });
+
+    const req = new NextRequest("http://localhost/api/agents", {
+      method: "POST",
+      body: JSON.stringify({
+        name: "Mail Agent",
+        runtime_id: "r1",
+        email_handle: "mail-agent",
+      }),
+    });
+    const res = await POST(req, {});
+
+    expect(res.status).toBe(201);
+    expect(mockEnqueueTask).toHaveBeenCalled();
+    expect(mockCreateMessage).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        conversationId: "conv-welcome",
+        role: "assistant",
+        taskId: "task-welcome",
+        content: expect.stringMatching(/[ក-៿]/),
+      }),
+    );
+    const meta = JSON.parse(
+      (mockCreateMessage.mock.calls[0][1] as { metadata: string }).metadata,
+    );
+    expect(meta).toMatchObject({ kind: "lifecycle" });
   });
 });

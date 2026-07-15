@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { queries, isValidHandle, isOnline, CreateAgentRequestSchema, TASK_TYPES } from "@phneakngar/shared"
+import { queries, isValidHandle, isOnline, CreateAgentRequestSchema, TASK_TYPES, MessageRole } from "@phneakngar/shared"
 import { getDb } from "@/lib/db"
 import { withAuth } from "@/lib/middleware/auth";
 import { withWorkspaceMember } from "@/lib/middleware/workspace";
@@ -8,7 +8,7 @@ import { agentToResponse } from "@/lib/api/responses";
 import { TaskService } from "@/lib/services/task";
 import { invalidate, cached, cacheKeys } from "@/lib/cache";
 import { filterVisibleAgents } from "@/lib/agent-visibility";
-import { buildAgentWelcomeEmailPrompt } from "@/lib/welcome-prompts";
+import { buildAgentWelcomeEmailPrompt, WELCOME_EMAIL_SEED_EVENT } from "@/lib/welcome-prompts";
 import { resolveServerEmailDomain } from "@/lib/email-domain";
 
 export const GET = withAuth(async (req, ctx) => {
@@ -100,13 +100,23 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
         type: TASK_TYPES.EMAIL_NOTIFICATION,
       });
       const taskService = new TaskService(db, emailDomain);
-      await taskService.enqueueTask(
+      const emailTask = await taskService.enqueueTask(
         newAgent.id,
         conv.id,
         ws.workspaceId,
         buildAgentWelcomeEmailPrompt({ ownerEmail: ctx.email, agentName: name }),
         TASK_TYPES.EMAIL_NOTIFICATION,
       );
+      await queries.message.createMessage(db, {
+        conversationId: conv.id,
+        role: MessageRole.ASSISTANT,
+        content: WELCOME_EMAIL_SEED_EVENT,
+        taskId: emailTask.id,
+        metadata: JSON.stringify({
+          kind: "lifecycle",
+          event_type: "welcome_email_queued",
+        }),
+      });
       const dateStr = new Date().toISOString().slice(0, 10);
       invalidate(cacheKeys.overviewTaskStats(ws.workspaceId, dateStr)).catch(() => {});
       invalidate(cacheKeys.activeTaskCounts(ws.workspaceId)).catch(() => {});

@@ -18,6 +18,7 @@ const mockAddWhitelist = vi.fn();
 const mockCreateLink = vi.fn();
 const mockCreateConversation = vi.fn();
 const mockEnqueueTask = vi.fn();
+const mockCreateMessage = vi.fn();
 
 vi.mock("@/lib/db", () => ({ getDb: vi.fn(() => ({})) }));
 
@@ -65,6 +66,9 @@ vi.mock("@phneakngar/shared", async (importOriginal) => {
     },
     conversation: {
       createConversation: (...args: unknown[]) => mockCreateConversation(...args),
+    },
+    message: {
+      createMessage: (...args: unknown[]) => mockCreateMessage(...args),
     },
     agentPin: {
       pinAgent: vi.fn(),
@@ -127,7 +131,8 @@ beforeEach(() => {
     ...data,
   }));
   mockCreateConversation.mockResolvedValue({ id: "conv1" });
-  mockEnqueueTask.mockResolvedValue({});
+  mockEnqueueTask.mockResolvedValue({ id: "task-welcome" });
+  mockCreateMessage.mockResolvedValue({ id: "msg-seed" });
 });
 
 describe("POST /api/studios", () => {
@@ -288,6 +293,21 @@ describe("POST /api/studios", () => {
       expect(prompt).toContain("natural Khmer");
       expect(prompt).not.toMatch(/same language as your owner/i);
       expect(prompt).not.toMatch(/owner's name or email suggests/i);
+    }
+    // Lifecycle seeds (assistant + kind:lifecycle) so chat is not blank and
+    // does not render as Email/Calendar event cards.
+    expect(mockCreateMessage).toHaveBeenCalledTimes(2);
+    for (const call of mockCreateMessage.mock.calls) {
+      const data = call[1] as {
+        role: string;
+        taskId: string;
+        content: string;
+        metadata: string;
+      };
+      expect(data.role).toBe("assistant");
+      expect(data.taskId).toBe("task-welcome");
+      expect(data.content).toMatch(/[ក-៿]/);
+      expect(JSON.parse(data.metadata)).toMatchObject({ kind: "lifecycle" });
     }
   });
 

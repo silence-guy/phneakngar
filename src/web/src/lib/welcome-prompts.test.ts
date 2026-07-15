@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  WELCOME_CHAT_SEED_EVENT,
+  WELCOME_EMAIL_SEED_EVENT,
   WELCOME_EMAIL_SUBJECT_AGENT,
   WELCOME_EMAIL_SUBJECT_STUDIO,
   WELCOME_EMAIL_SUBJECT_WHITELIST,
@@ -50,5 +52,11 @@ describe("welcome prompts", () => {
     });
     expect(whitelistPrompt).toContain(WELCOME_EMAIL_SUBJECT_WHITELIST);
     expect(whitelistPrompt).toContain(WELCOME_USER_FACING_KHMER_RULE);
+  });
+
+  it("exposes Khmer seed events for welcome chat/email conversations", () => {
+    const KHMER = /[ក-៿]/;
+    expect(WELCOME_EMAIL_SEED_EVENT).toMatch(KHMER);
+    expect(WELCOME_CHAT_SEED_EVENT).toMatch(KHMER);
   });
 });
