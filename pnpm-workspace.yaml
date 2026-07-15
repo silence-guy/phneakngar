@@ -16,3 +16,5 @@ onlyBuiltDependencies:
   - simple-git-hooks
   - unrs-resolver
   - workerd
+patchedDependencies:
+  '@base-ui/react@1.6.0': patches/@base-ui__react@1.6.0.patch

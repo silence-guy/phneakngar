@@ -92,6 +92,12 @@ Durable Object classes and migrations are created by the corresponding Worker de
 
 The committed resource IDs are deployment-account-specific identifiers, not credentials. Replace them only when deploying to a different Cloudflare account.
 
+### OpenNext cache build warnings
+
+During `opennextjs-cloudflare build`, Wrangler may print that the internal `NEXT_CACHE_DO_QUEUE` / `DOQueueHandler` Durable Object binding will not work in local development, and workerd may warn while Next.js is prerendering pages because the generated OpenNext worker has not been emitted yet. Keep the binding in `src/web/wrangler.toml`: `src/web/custom-worker.ts` re-exports `DOQueueHandler` from the generated `.open-next/worker.js`, and production deploys require that class for OpenNext's cache queue.
+
+Treat those messages as build-time local-dev diagnostics unless the final generated worker no longer exports `DOQueueHandler` or a deployed health check fails.
+
 ## 4. Production Variables and Secrets
 
 Never commit `.dev.vars`, `.env`, or secret values. Generate independent random values with a cryptographically secure generator. A 32-byte random value encoded as base64url is suitable.
