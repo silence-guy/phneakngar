@@ -78,7 +78,7 @@ id = "4bff39b5ff614c03812abeaf93308fd2"
 [vars]
 NODE_ENV = "production"
 RUNTIME_MODEL_OPTIONS = '{"claude":["claude-opus-4-6","claude-sonnet-4-6","claude-haiku-4-5"],"codex":["gpt-5.4","gpt-5.3-codex"],"grok":["grok-4.5","grok-composer-2.5-fast"]}'
-MIN_CLI_VERSION = "0.0.140"
+MIN_CLI_VERSION = "0.0.150"
 # Current live-testing domain only; not a permanent product default.
 # Must match Email Worker and Cloudflare Email Sending domain.
 PHNEAKNGAR_DOMAIN = "cieee.xyz"
