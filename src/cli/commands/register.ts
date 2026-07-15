@@ -28,6 +28,7 @@ export function registerCommand(): Command {
           `Error: --token is required\nUsage: ${cmdPrefix()} register --token <token>`,
         );
         process.exit(1);
+        return;
       }
 
       if (!token.startsWith("al_")) {
@@ -35,25 +36,27 @@ export function registerCommand(): Command {
           "Error: invalid token format: must start with 'al_'",
         );
         process.exit(1);
+        return;
       }
 
-      const client = new APIClient(serverUrl, token);
-
-      // Verify the token first so we don't activate-and-save a token
-      // the server will reject, leaving the CLI with a broken config on disk.
-      let me: MeResponse;
-      try {
-        me = await client.getJSON<MeResponse>("/api/me");
-      } catch (err) {
-        console.error(
-          `Error: failed to verify token: ${err instanceof Error ? err.message : err}`,
-        );
-        process.exit(1);
-      }
-
+      // Activate first: pending machine tokens (al_*) are rejected by /api/me
+      // until activate promotes them. activateAndSave persists config only after
+      // a successful activate (same pattern as login.ts).
       const result = await activateAndSave({ token, serverUrl, profile });
 
-      console.log(`\nRegistered as ${me.email}`);
+      // Optional display-only identity fetch after activate (non-fatal).
+      let email = "";
+      try {
+        const client = new APIClient(serverUrl, token);
+        const me = await client.getJSON<MeResponse>("/api/me");
+        email = me.email;
+      } catch {
+        // Non-fatal — proceed without email for display (mirror login.ts)
+      }
+
+      if (email) {
+        console.log(`\nRegistered as ${email}`);
+      }
       console.log(`Workspace: ${result.workspaceName} (${result.workspaceId})`);
       console.log(`Runtimes: ${result.runtimeProviders.join(", ")}`);
     });
