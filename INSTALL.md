@@ -48,7 +48,7 @@ Shell snippets use POSIX syntax unless a PowerShell alternative is shown. The `p
 
 ### Publication status
 
-Public npm checks on **2026-07-14** returned `E404` for `@phneakngar/cli`. Use one of the tarball paths below until the package is verifiably published.
+Public npm checks on **2026-07-15** returned `E404` for `@phneakngar/cli`. Use one of the tarball paths below until the package is verifiably published.
 
 ### Option A: install an operator-provided tarball
 
@@ -342,6 +342,8 @@ For an operator-provided `@phneakngar/app` tarball:
 npm install --global ./phneakngar-app-*.tgz
 phneakngar-app onboard
 ```
+
+Full local `@phneakngar/app` mode is currently documented for macOS/Linux. Windows remains supported for the agent-only CLI path above, but do not advertise Windows app support until a Windows PowerShell smoke proves local Wrangler services, process cleanup, migrations, and `phneakngar-app start/stop` all pass.
 
 Operators should validate the app tarball before sharing it:
 

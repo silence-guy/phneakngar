@@ -31,6 +31,7 @@ Also verify:
 - No `.env`, `.dev.vars`, `.wrangler`, local D1 file, build output, coverage output, or credential is tracked.
 - `src/web/wrangler.toml`, `src/email-worker/wrangler.toml`, and `src/ws-do/wrangler.toml` reference the intended Cloudflare account resources.
 - Operator tarballs for both `@phneakngar/cli` and `@phneakngar/app` pass clean-install smoke before they are shared with another device.
+- Windows support for full local `@phneakngar/app` mode is advertised only after a Windows PowerShell smoke proves local Wrangler services, process cleanup, migrations, and `phneakngar-app start/stop` all pass.
 - `BETTER_AUTH_URL`, OAuth callbacks, the custom domain, and Email Worker `WEB_ORIGIN` use the same HTTPS origin.
 - `EMAIL_NOTIFY_SECRET` matches between web and email Workers.
 - `PHNEAKNGAR_DOMAIN` matches across web and email Workers, the same value is supplied as `NEXT_PUBLIC_PHNEAKNGAR_DOMAIN` during the OpenNext build, and `NEXT_PUBLIC_PHNEAKNGAR_ENVIRONMENT=production`.

@@ -28,7 +28,7 @@ Agents execute on your machines with access to the tools and codebases you permi
 
 ## Installation status
 
-Public npm checks on **2026-07-14** returned `E404` for both `@phneakngar/cli` and `@phneakngar/app`. Until those packages are verifiably published, use the local monorepo or an operator-provided tarball. The npm and `npx` commands below are explicitly conditional on future publication.
+Public npm checks on **2026-07-15** returned `E404` for both `@phneakngar/cli` and `@phneakngar/app`. Until those packages are verifiably published, use the local monorepo or an operator-provided tarball. The npm and `npx` commands below are explicitly conditional on future publication.
 
 ### Agent-only machine
 

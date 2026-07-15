@@ -12,7 +12,7 @@
 
 ## Publication status
 
-A public npm check on **2026-07-14** returned `E404` for `@phneakngar/app`. Use the monorepo development command or an operator-built tarball until registry publication is confirmed. `npx @phneakngar/app …` is documented below only as a conditional post-publication path.
+A public npm check on **2026-07-15** returned `E404` for `@phneakngar/app`. Use the monorepo development command or an operator-built tarball until registry publication is confirmed. `npx @phneakngar/app …` is documented below only as a conditional post-publication path.
 
 ## Quick start from this repository
 
@@ -40,6 +40,8 @@ pnpm dev:app update
 npm install --global ./phneakngar-app-*.tgz
 phneakngar-app onboard
 ```
+
+Full local app mode is currently documented for macOS/Linux. Use the agent-only CLI install path on Windows until a Windows PowerShell smoke proves local Wrangler services, process cleanup, migrations, and `phneakngar-app start/stop` all pass.
 
 Commands after global tarball installation:
 
