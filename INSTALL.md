@@ -40,57 +40,15 @@ $env:PHNEAKNGAR_SERVER_URL = "https://your-control-plane.example"
 | AI runtime | At least one of Claude Code, Codex, OpenCode, or Grok CLI |
 | Network | Outbound HTTPS to the operator-provided control-plane origin |
 
-An agent-only machine does not need pnpm, Bun, Wrangler, Docker, or a Cloudflare account when it receives a ready-made CLI tarball.
+An agent-only machine does not need pnpm, Bun, Wrangler, Docker, or a Cloudflare account.
 
 Shell snippets use POSIX syntax unless a PowerShell alternative is shown. The `phneakngar config set-server` command is portable and preferred over environment-variable syntax on Windows.
 
 ## Install the CLI
 
-### Publication status
+### Published npm package
 
 `@phneakngar/cli` is published under the public `@phneakngar` npm scope. This checkout is configured for release `0.0.1`; install `@phneakngar/cli@0.0.1` explicitly when you need this release.
-
-### Option A: install an operator-provided tarball
-
-```bash
-npm install --global ./phneakngar-cli-X.Y.Z.tgz
-phneakngar version
-```
-
-Replace `X.Y.Z` with the tarball version. On macOS/Linux, ensure npm's global binary directory is on `PATH` if the command is not found:
-
-```bash
-export PATH="$(npm prefix --global)/bin:$PATH"
-```
-
-On Windows, run `npm prefix --global` and add the returned directory to the user `PATH` if npm did not configure it during Node.js installation.
-
-### Option B: build the tarball from this repository
-
-This build path requires the repository toolchain: Node.js `>=20.19.0`, pnpm `10.33.0`, and Bun `1.3.14`.
-
-macOS/Linux:
-
-```bash
-cd /path/to/phneakngar
-pnpm install --frozen-lockfile
-pnpm pack:cli
-npm install --global "./src/cli/phneakngar-cli-$(node -p "require('./src/cli/package.json').version").tgz"
-phneakngar version
-```
-
-Windows PowerShell:
-
-```powershell
-Set-Location C:\path\to\phneakngar
-pnpm install --frozen-lockfile
-pnpm pack:cli
-$version = node -p "require('./src/cli/package.json').version"
-npm install --global "./src/cli/phneakngar-cli-$version.tgz"
-phneakngar version
-```
-
-### Option C: install from public npm
 
 Use the explicit version for reproducible installs:
 
@@ -237,18 +195,6 @@ $env:PHNEAKNGAR_PROJECT_ROOT = "C:\phneakngar-state"
 
 ## Update
 
-### From a new tarball
-
-```bash
-phneakngar chhlat stop
-npm install --global ./phneakngar-cli-X.Y.Z.tgz
-phneakngar version
-phneakngar doctor
-phneakngar chhlat start
-```
-
-### From public npm
-
 ```bash
 phneakngar chhlat stop
 npm install --global @phneakngar/cli@0.0.1
@@ -283,7 +229,7 @@ Remove-Item -Recurse -Force "$HOME\.phneakngar"
 
 | Symptom | What to try |
 | --- | --- |
-| `command not found: phneakngar` | Add `$(npm prefix --global)/bin` to `PATH`, then reinstall the tarball if needed. |
+| `command not found: phneakngar` | Add `$(npm prefix --global)/bin` to `PATH`, then reinstall `@phneakngar/cli` if needed. |
 | `doctor` reports no AI runtime | Install and authenticate Claude Code, Codex, OpenCode, or Grok CLI. |
 | `doctor` reports no registration | Run `phneakngar login` or `phneakngar register --token …`. |
 | Server unreachable | Confirm the operator-provided origin and run `phneakngar config set-server <url>`. |
@@ -349,12 +295,6 @@ Package publishing is handled by validated `release: vX.Y.Z` commits. See [docs/
 pnpm verify:cli-package
 ```
 
-Or create only the tarball:
-
-```bash
-pnpm pack:cli
-```
-
 ## Optional full local stack
 
 For local development from this repository:
@@ -365,25 +305,18 @@ pnpm db:migrate
 pnpm dev:app onboard
 ```
 
-For an operator-provided `@phneakngar/app` tarball:
-
-```bash
-npm install --global ./phneakngar-app-*.tgz
-phneakngar-app onboard
-```
-
-Full local `@phneakngar/app` mode is currently documented for macOS/Linux. Windows remains supported for the agent-only CLI path above, but do not advertise Windows app support until a Windows PowerShell smoke proves local Wrangler services, process cleanup, migrations, and `phneakngar-app start/stop` all pass.
-
-Operators should validate the app tarball before sharing it:
-
-```bash
-pnpm verify:app-package
-```
-
 For the public npm app wrapper on macOS/Linux:
 
 ```bash
 npx @phneakngar/app@0.0.1 onboard
+```
+
+Full local `@phneakngar/app` mode is currently documented for macOS/Linux. Windows remains supported for the agent-only CLI path above, but do not advertise Windows app support until a Windows PowerShell smoke proves local Wrangler services, process cleanup, migrations, and `phneakngar-app start/stop` all pass.
+
+Operators should validate the app package before release:
+
+```bash
+pnpm verify:app-package
 ```
 
 Use the agent-only CLI install path on Windows for now. Full local `@phneakngar/app` mode is not advertised for Windows until a Windows PowerShell smoke proves local Wrangler services, process cleanup, migrations, and `phneakngar-app start/stop` all pass.

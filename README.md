@@ -26,36 +26,13 @@ Agents execute on your machines with access to the tools and codebases you permi
   <img src="./assets/phneakngar-org_rounded.png" alt="ភ្នាក់ងារ organization view" width="700" />
 </p>
 
-## Installation status
+## Install
 
 The npm packages are published under the `@phneakngar` scope. This checkout is configured for release `0.0.1`; use explicit `@0.0.1` installs when you want this release rather than another dist-tag.
 
 ### Agent-only machine
 
-Use this path when the control plane already exists. The complete guide is [INSTALL.md](INSTALL.md).
-
-Build and install the CLI tarball from this repository:
-
-```bash
-pnpm install --frozen-lockfile
-pnpm pack:cli
-npm install --global "./src/cli/phneakngar-cli-$(node -p "require('./src/cli/package.json').version").tgz"
-
-phneakngar init
-phneakngar doctor
-phneakngar login
-phneakngar chhlat start
-phneakngar status
-```
-
-Or install a tarball supplied by an operator:
-
-```bash
-npm install --global ./phneakngar-cli-*.tgz
-phneakngar doctor
-```
-
-Install the `0.0.1` CLI release from public npm:
+Use this path when the control plane already exists. Install the `0.0.1` CLI release from public npm, then initialize and connect the machine. The complete guide is [INSTALL.md](INSTALL.md).
 
 macOS:
 
@@ -133,7 +110,7 @@ Windows:
 
 Use the agent-only CLI install path on Windows for now. Full local `@phneakngar/app` mode is documented for macOS/Linux until a Windows PowerShell smoke proves local Wrangler services, process cleanup, migrations, and `phneakngar-app start/stop` all pass.
 
-See [src/app/README.md](src/app/README.md) for the local/tarball app-wrapper workflow. For Cloudflare deployment, see [DEPLOY.md](DEPLOY.md); Workers are deployed manually.
+See [src/app/README.md](src/app/README.md) for the local app-wrapper workflow. For Cloudflare deployment, see [DEPLOY.md](DEPLOY.md); Workers are deployed manually.
 
 ## Current live-testing deployment
 
