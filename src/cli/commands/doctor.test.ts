@@ -5,6 +5,7 @@ import { tmpdir } from "os";
 import {
   checkNodeVersion,
   checkRegistration,
+  checkAgentWorkdirScope,
   checkRuntimes,
   checkConfig,
   runDoctor,
@@ -55,6 +56,38 @@ describe("checkConfig / checkRegistration", () => {
     expect(result.status).toBe("warn");
   });
 
+  it("fails registration when watched_workspaces is empty", () => {
+    writeConfig({ server_url: "https://example.com", watched_workspaces: [] });
+    const result = checkRegistration();
+    expect(result.status).toBe("fail");
+    expect(result.detail).toMatch(/watched_workspaces empty|not registered/i);
+    expect(result.detail).toMatch(/empty/i);
+    expect(result.hint).toMatch(/register --token al_/);
+    // Fail-closed: agents cannot reach this PC without a machine token
+    expect(result.hint).toMatch(/workspace/i);
+  });
+
+  it("fails registration when config has no watched_workspaces key", () => {
+    writeConfig({ server_url: "https://example.com" });
+    const result = checkRegistration();
+    expect(result.status).toBe("fail");
+    expect(result.hint).toMatch(/register --token al_/);
+  });
+
+  it("fails registration when only deleted or tokenless entries exist", () => {
+    writeConfig({
+      server_url: "https://example.com",
+      watched_workspaces: [
+        { id: "ws1", name: "Gone", token: "al_old", status: "deleted" },
+        { id: "ws2", name: "Empty", token: "", status: "active" },
+      ],
+    });
+    const result = checkRegistration();
+    expect(result.status).toBe("fail");
+    expect(result.detail).toMatch(/no active|none usable|not registered/i);
+    expect(result.hint).toMatch(/register --token al_/);
+  });
+
   it("fails registration when no token", () => {
     writeConfig({ server_url: "https://example.com", watched_workspaces: [] });
     expect(checkRegistration().status).toBe("fail");
@@ -70,6 +103,16 @@ describe("checkConfig / checkRegistration", () => {
     const result = checkRegistration();
     expect(result.status).toBe("pass");
     expect(result.detail).toContain("Acme");
+  });
+});
+
+describe("checkAgentWorkdirScope", () => {
+  it("is info-only and documents workdir-only access (not whole PC)", () => {
+    const result = checkAgentWorkdirScope();
+    expect(result.status).toBe("info");
+    expect(result.detail).toMatch(/workdir/i);
+    expect(result.detail).toMatch(/workspaces/);
+    expect(result.detail).toMatch(/not (the )?whole (PC|machine|filesystem)/i);
   });
 });
 
@@ -90,6 +133,31 @@ describe("runDoctor", () => {
     const names = result.checks.map((c: DoctorCheck) => c.name);
     expect(names).toContain("Registration");
     expect(names).toContain("Chhlat");
+    expect(names).toContain("Agent workdir scope");
+    const reg = result.checks.find((c) => c.name === "Registration")!;
+    expect(reg.status).toBe("fail");
+    expect(reg.hint).toMatch(/register --token al_/);
+    const scope = result.checks.find((c) => c.name === "Agent workdir scope")!;
+    expect(scope.status).toBe("info");
+  });
+
+  it("passes registration when token present (skip network) and still includes workdir info", async () => {
+    writeConfig({
+      server_url: "https://example.com",
+      watched_workspaces: [
+        { id: "ws1", name: "Acme", token: "al_testtoken", status: "active" },
+      ],
+    });
+    const result = await runDoctor(undefined, { skipNetwork: true });
+    const reg = result.checks.find((c) => c.name === "Registration")!;
+    expect(reg.status).toBe("pass");
+    const scope = result.checks.find((c) => c.name === "Agent workdir scope")!;
+    expect(scope.status).toBe("info");
+    // Registration pass alone is not enough for overall ok if chhlat/runtimes fail —
+    // but registration must not be a fail when token present.
+    expect(result.checks.some((c) => c.name === "Registration" && c.status === "fail")).toBe(
+      false,
+    );
   });
 
   it("includes network checks when enabled", async () => {

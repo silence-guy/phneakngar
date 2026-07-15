@@ -22,9 +22,21 @@ describe("formatStatusReport", () => {
   it("reports not registered when config empty", () => {
     const lines = formatStatusReport();
     expect(lines.some((l) => l.includes("Not registered"))).toBe(true);
+    expect(lines.some((l) => /register --token al_/.test(l))).toBe(true);
     expect(lines.some((l) => l.startsWith("CLI version:"))).toBe(true);
     expect(lines.some((l) => l.startsWith("Chhlat:"))).toBe(true);
     expect(lines.some((l) => l.startsWith("AI runtimes:"))).toBe(true);
+  });
+
+  it("reports empty watched_workspaces when present but empty", () => {
+    mkdirSync(tempDir, { recursive: true });
+    writeFileSync(
+      join(tempDir, "config.json"),
+      JSON.stringify({ server_url: "https://example.com", watched_workspaces: [] }),
+    );
+    const lines = formatStatusReport();
+    expect(lines.some((l) => /watched_workspaces empty/.test(l))).toBe(true);
+    expect(lines.some((l) => /register --token al_/.test(l))).toBe(true);
   });
 
   it("reports registered workspace", () => {

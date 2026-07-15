@@ -1,5 +1,6 @@
 import { Command } from "commander";
 import { existsSync, accessSync, constants } from "fs";
+import { join } from "path";
 import { loadCLIConfigForProfile, configPath, configDir } from "../lib/config.js";
 import { getServerUrl, cmdPrefix } from "../lib/env.js";
 import { detectRuntimes } from "../lib/runtimes.js";
@@ -84,21 +85,55 @@ export function checkConfig(profile?: string): DoctorCheck {
   };
 }
 
+/**
+ * Fail closed when this PC has no usable watched workspace machine token.
+ * Agents cannot reach the machine until `register --token al_...` succeeds
+ * for the workspace (per-workspace). There is no separate server "machine online"
+ * heartbeat API in doctor — reachability is registration + chhlat running.
+ */
 export function checkRegistration(profile?: string): DoctorCheck {
   const cfg = loadCLIConfigForProfile(profile);
-  const ws = cfg.watched_workspaces?.find((w) => w.token && w.status !== "deleted");
+  const list = cfg.watched_workspaces ?? [];
+  const ws = list.find((w) => w.token && w.status !== "deleted");
+  const registerHint = `Run '${cmdPrefix()} register --token al_...' (per workspace; create token in the dashboard). Or '${cmdPrefix()} login'.`;
+
   if (!ws?.token) {
+    let detail: string;
+    if (list.length === 0) {
+      detail = "not registered — watched_workspaces empty (no machine token for this PC)";
+    } else {
+      const deleted = list.filter((w) => w.status === "deleted").length;
+      const tokenless = list.filter((w) => !w.token).length;
+      detail = `not registered — no active watched workspace token (${list.length} entries, none usable`;
+      const parts: string[] = [];
+      if (deleted) parts.push(`${deleted} deleted`);
+      if (tokenless) parts.push(`${tokenless} without token`);
+      if (parts.length) detail += `; ${parts.join(", ")}`;
+      detail += ")";
+    }
     return {
       name: "Registration",
       status: "fail",
-      detail: "not registered",
-      hint: `Run '${cmdPrefix()} login' or '${cmdPrefix()} register --token al_...'`,
+      detail,
+      hint: registerHint,
     };
   }
   return {
     name: "Registration",
     status: "pass",
-    detail: `workspace ${ws.name || "unknown"} (${ws.id || "no-id"})`,
+    detail: `workspace ${ws.name || "unknown"} (${ws.id || "no-id"}) — agent can use this PC once chhlat is running`,
+  };
+}
+
+/** Info-only: agents never get whole-PC FS — only agent workdirs under workspaces root. */
+export function checkAgentWorkdirScope(profile?: string): DoctorCheck {
+  // workspacesRoot lives under configDir (or profile suffix); keep message stable for doctor.
+  void profile;
+  const root = join(configDir(), "workspaces");
+  return {
+    name: "Agent workdir scope",
+    status: "info",
+    detail: `agents only access agent workdirs under ${root} (not the whole PC)`,
   };
 }
 
@@ -231,6 +266,7 @@ export async function runDoctor(
     checkCliVersion(),
     checkConfig(profile),
     checkRegistration(profile),
+    checkAgentWorkdirScope(profile),
     checkRuntimes(),
     checkChhlat(profile),
   ];

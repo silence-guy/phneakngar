@@ -18,8 +18,17 @@ export function formatStatusReport(profile?: string): string[] {
   lines.push(`Server: ${server}`);
 
   if (!ws?.token) {
-    lines.push("Registration: Not registered");
-    lines.push(`Hint: Run '${cmdPrefix()} login' or '${cmdPrefix()} register --token <token>'`);
+    const empty =
+      !cfg.watched_workspaces?.length ||
+      !cfg.watched_workspaces.some((w) => w.token && w.status !== "deleted");
+    lines.push(
+      empty && !cfg.watched_workspaces?.length
+        ? "Registration: Not registered (watched_workspaces empty)"
+        : "Registration: Not registered (no active machine token)",
+    );
+    lines.push(
+      `Hint: Run '${cmdPrefix()} register --token al_...' (per workspace). Or '${cmdPrefix()} login'.`,
+    );
   } else {
     lines.push("Registration: Registered");
     lines.push(`Workspace: ${ws.name || "unknown"} (${ws.id || "no-id"})`);
