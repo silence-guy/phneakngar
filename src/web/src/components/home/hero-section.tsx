@@ -9,6 +9,7 @@ import { SplitText } from "gsap/SplitText";
 import { TypewriterVisual } from "@/components/typewriter-visual";
 import { BrandMark } from "@/components/brand-mark";
 import { trackLandingCtaClicked } from "@/lib/analytics";
+import { HERO_SECTION_LABELS } from "./hero-section-labels";
 
 gsap.registerPlugin(ScrollTrigger, SplitText);
 
@@ -140,12 +141,19 @@ export function HeroSection({ isLoggedIn }: { isLoggedIn: boolean }) {
         <div
           className="hero-clipboard relative mt-8 shrink-0 w-full max-w-lg cursor-pointer"
           style={{ opacity: 0 }}
+          role="button"
+          tabIndex={0}
           onClick={() => {
             navigator.clipboard.writeText(
               `អាន ${window.location.origin}/onboard.md ហើយធ្វើតាមការណែនាំ ដើម្បីដំឡើង និងកំណត់រចនាសម្ព័ន្ធ ភ្នាក់ងារ`
             );
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
+          }}
+          onKeyDown={(event) => {
+            if (event.key !== "Enter" && event.key !== " ") return;
+            event.preventDefault();
+            event.currentTarget.click();
           }}
         >
           {/* Floating badge label */}
@@ -223,7 +231,7 @@ export function HeroSection({ isLoggedIn }: { isLoggedIn: boolean }) {
         {/* CTA */}
         <div ref={ctaRef} className="mt-8 shrink-0 flex flex-nowrap items-center justify-center gap-3" style={{ opacity: 0 }}>
           {isLoggedIn ? (
-            <a
+            <Link
               href="/workspaces?auto"
               onClick={() => trackLandingCtaClicked({ cta_name: "open_app" })}
               className="inline-flex items-center gap-2 px-6 py-2.5 text-sm transition-all duration-200 hover:opacity-80"
@@ -240,9 +248,9 @@ export function HeroSection({ isLoggedIn }: { isLoggedIn: boolean }) {
                 <line x1="15" y1="12" x2="3" y2="12" />
               </svg>
                   បើកកម្មវិធី
-            </a>
+            </Link>
           ) : (
-            <a
+            <Link
               href="/sign-in"
               onClick={() => trackLandingCtaClicked({ cta_name: "get_started" })}
               className="inline-flex items-center gap-2 px-6 py-2.5 text-sm transition-all duration-200 hover:opacity-80"
@@ -259,7 +267,7 @@ export function HeroSection({ isLoggedIn }: { isLoggedIn: boolean }) {
                 <line x1="15" y1="12" x2="3" y2="12" />
               </svg>
                   ចាប់ផ្តើម
-            </a>
+            </Link>
           )}
           <Link
             href="/templates"
@@ -292,7 +300,7 @@ export function HeroSection({ isLoggedIn }: { isLoggedIn: boolean }) {
             color: "var(--landing-text-muted)",
           }}
         >
-          For the full experience, open on a desktop browser.
+          {HERO_SECTION_LABELS.mobileExperienceHint}
         </p>
       </div>
     </section>

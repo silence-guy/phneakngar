@@ -24,6 +24,7 @@ import Image from "next/image"
 import { GradientBackground } from "@/components/gradient-background"
 import { Logo } from "@/components/logo"
 import { DEV_PASSWORD } from "@phneakngar/shared"
+import { cn } from "@/lib/utils"
 import {
   SIGN_IN_LABELS,
   showImageAriaLabel,
@@ -152,10 +153,12 @@ function SignInForm({ postLoginUrl, isProd }: { postLoginUrl: string; isProd: bo
   return (
     <FieldGroup>
       <div className="flex flex-col items-center gap-2 text-center">
-        <h1 className="text-2xl font-bold">{SIGN_IN_LABELS.title}</h1>
-        <p className="text-sm text-muted-foreground">{SIGN_IN_LABELS.subtitle}</p>
+        <h1 className="text-2xl font-semibold tracking-tight">{SIGN_IN_LABELS.title}</h1>
+        <p className="max-w-64 text-sm leading-relaxed text-muted-foreground [overflow-wrap:anywhere]">
+          {SIGN_IN_LABELS.subtitle}
+        </p>
         {subtitle && (
-          <p className="text-balance text-muted-foreground">{subtitle}</p>
+          <p className="text-balance text-sm leading-relaxed text-muted-foreground [overflow-wrap:anywhere]">{subtitle}</p>
         )}
       </div>
 
@@ -186,7 +189,7 @@ function SignInForm({ postLoginUrl, isProd }: { postLoginUrl: string; isProd: bo
                 <Button
                   type="submit"
                   disabled={loading || isCoolingDown}
-                  className="w-full"
+                  className="h-10 w-full"
                 >
                   {sendLabel}
                 </Button>
@@ -245,7 +248,7 @@ function SignInForm({ postLoginUrl, isProd }: { postLoginUrl: string; isProd: bo
               />
             </Field>
             <Field>
-              <Button type="submit" disabled={loading} className="w-full">
+              <Button type="submit" disabled={loading} className="h-10 w-full">
                 {loading ? SIGN_IN_LABELS.action.signingIn : SIGN_IN_LABELS.action.signIn}
               </Button>
             </Field>
@@ -260,7 +263,7 @@ function SignInForm({ postLoginUrl, isProd }: { postLoginUrl: string; isProd: bo
         <Button
           variant="outline"
           type="button"
-          className="w-full"
+          className="h-10 w-full"
           onClick={() =>
             signIn.social({ provider: "google", callbackURL: postLoginUrl })
           }
@@ -292,8 +295,16 @@ function ProductGallery() {
   }, [])
 
   return (
-    <div className="flex h-full flex-col items-center justify-center p-6">
-      <div className="relative w-full rounded-lg overflow-hidden shadow-lg">
+    <div className="flex h-full flex-col justify-between p-5">
+      <div className="space-y-1.5">
+        <p className="text-xs font-medium text-muted-foreground">
+          {SIGN_IN_LABELS.surface.galleryTitle}
+        </p>
+        <p className="text-lg font-semibold tracking-tight text-foreground">
+          {galleryImages[active].label}
+        </p>
+      </div>
+      <div className="relative mt-5 w-full overflow-hidden rounded-lg border border-border/70 bg-background/70 shadow-[0_18px_45px_-30px_oklch(0.2_0.01_60/45%)]">
         {galleryImages.map((img, i) => (
           <Image
             key={img.src}
@@ -312,19 +323,17 @@ function ProductGallery() {
           />
         ))}
       </div>
-      <p className="mt-3 text-xs text-muted-foreground font-medium tracking-wide">
-        {galleryImages[active].label}
-      </p>
-      <div className="mt-2 flex gap-1.5">
-        {galleryImages.map((_, i) => (
+      <div className="mt-4 flex gap-1.5">
+        {galleryImages.map((img, i) => (
           <button
-            key={i}
+            key={img.src}
+            type="button"
             onClick={() => setActive(i)}
-            className="h-1.5 rounded-full transition-all duration-300"
+            className="h-1.5 rounded-full transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
             style={{
               width: i === active ? 16 : 6,
               backgroundColor: i === active
-                ? "var(--foreground)"
+                ? "var(--primary)"
                 : "var(--muted-foreground)",
               opacity: i === active ? 1 : 0.3,
             }}
@@ -336,29 +345,66 @@ function ProductGallery() {
   )
 }
 
+function SurfaceDetail({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-2 rounded-md border border-foreground/10 bg-background/55 px-2.5 py-1.5 text-xs leading-none text-muted-foreground",
+        className,
+      )}
+    >
+      <span className="size-1.5 rounded-full bg-primary/70" aria-hidden />
+      {children}
+    </span>
+  )
+}
+
 export default function SignInPageClient({ isProd }: { isProd: boolean }) {
   const searchParams = useSearchParams()
   const postLoginUrl = safeRedirectUrl(searchParams.get("redirect"))
 
   return (
-    <div className="relative flex min-h-svh flex-col items-center justify-center p-6 md:p-10">
+    <div className="relative flex min-h-svh flex-col items-center justify-center p-4 sm:p-6 md:p-10">
       <GradientBackground />
-      <div className="w-full max-w-sm md:max-w-4xl">
-        <div className="flex flex-col gap-6">
-          <div className="flex justify-center mb-2">
-            <Logo size="lg" />
-          </div>
-          <Card className="overflow-hidden p-0">
-            <CardContent className="grid p-0 md:grid-cols-2">
-              <div className="p-6 md:p-8 md:min-h-105 flex flex-col justify-center">
+      <div className="w-[calc(100vw-2rem)] max-w-sm md:w-full md:max-w-4xl">
+        <div className="mb-5 flex justify-center">
+          <Logo size="lg" />
+        </div>
+        <Card className="rounded-lg border border-foreground/10 bg-card/92 p-0 shadow-[0_24px_80px_-55px_oklch(0.2_0.01_60/65%)] backdrop-blur">
+          <CardContent className="grid p-0 md:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)]">
+            <div className="flex min-h-[430px] min-w-0 flex-col justify-center p-6 sm:p-8">
+              <div className="mb-7 space-y-3">
+                <p className="text-sm font-medium text-muted-foreground">
+                  {SIGN_IN_LABELS.surface.status}
+                </p>
+                <div className="space-y-2">
+                  <h2 className="text-balance text-2xl font-semibold tracking-tight text-foreground">
+                    {SIGN_IN_LABELS.surface.heading}
+                  </h2>
+                  <p className="text-sm leading-7 text-muted-foreground [overflow-wrap:anywhere]">
+                    {SIGN_IN_LABELS.surface.detail}
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2 pt-1">
+                  <SurfaceDetail>{SIGN_IN_LABELS.surface.email}</SurfaceDetail>
+                  <SurfaceDetail>{SIGN_IN_LABELS.surface.local}</SurfaceDetail>
+                </div>
+              </div>
+              <div className="min-w-0 border-t border-border/70 pt-6">
                 <SignInForm postLoginUrl={postLoginUrl} isProd={isProd} />
               </div>
-              <div className="hidden bg-muted md:block relative overflow-hidden min-h-105">
-                <ProductGallery />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+            </div>
+            <div className="relative hidden min-h-[430px] overflow-hidden border-l border-border/70 bg-muted/55 md:block">
+              <ProductGallery />
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   )

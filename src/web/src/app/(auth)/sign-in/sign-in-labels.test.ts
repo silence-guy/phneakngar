@@ -33,6 +33,12 @@ describe("sign-in labels", () => {
     }
   });
 
+  it("localizes own-brand surface copy to Khmer", () => {
+    for (const label of Object.values(SIGN_IN_LABELS.surface)) {
+      expect(isKhmer(label)).toBe(true);
+    }
+  });
+
   it("formats counts and aria helpers in Khmer without dropping values", () => {
     expect(waitSecondsLabel(30)).toContain("30");
     expect(isKhmer(waitSecondsLabel(30))).toBe(true);
