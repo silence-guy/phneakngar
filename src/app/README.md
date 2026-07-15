@@ -68,6 +68,12 @@ cd src/app
 npm pack
 ```
 
+Or run the full clean-install package smoke from the monorepo root:
+
+```bash
+pnpm verify:app-package
+```
+
 The explicit `development` marker allows the optimized local app bundle to use the visibly non-production `phneakngar.invalid` identity. Hosted OpenNext builds must use their onboarded domain and `NEXT_PUBLIC_PHNEAKNGAR_ENVIRONMENT=production` instead.
 
 The generated `phneakngar-app-*.tgz` can be copied to another machine and installed with npm as shown above.

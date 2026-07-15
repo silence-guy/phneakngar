@@ -30,7 +30,7 @@
     "access": "public"
   },
   "scripts": {
-    "build": "bun build src/index.ts --outdir dist --target node --format esm --external commander --external wrangler && node scripts/bundle-cli.mjs",
+    "build": "bun build src/index.ts --outdir dist --target node --format esm --external commander --external wrangler && node scripts/bundle-cli.mjs && node scripts/prepare-dist.mjs",
     "prepack": "pnpm run build && node -e \"const{existsSync}=require('fs');if(!existsSync('bundled/web'))throw new Error('bundled/ missing — run pnpm bundle first')\"",
     "bundle": "bun run scripts/bundle.ts",
     "knip": "knip",
@@ -43,6 +43,7 @@
     "commander": "^14.0.3",
     "playwright-core": "^1.61.0",
     "postal-mime": "^2.7.4",
+    "sharp": "^0.35.2",
     "wrangler": "^4.103.0"
   },
   "devDependencies": {

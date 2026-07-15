@@ -343,6 +343,12 @@ npm install --global ./phneakngar-app-*.tgz
 phneakngar-app onboard
 ```
 
+Operators should validate the app tarball before sharing it:
+
+```bash
+pnpm verify:app-package
+```
+
 Only after `@phneakngar/app` is published to public npm:
 
 ```bash

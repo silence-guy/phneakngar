@@ -68,12 +68,11 @@ jobs:
       - run: pnpm install --frozen-lockfile
         if: steps.check.outputs.skip == 'false'
 
-      - name: Build CLI bundle
+      - name: Verify CLI package
         if: steps.check.outputs.skip == 'false'
-        run: pnpm -C src/cli run build
+        run: node scripts/verify-cli-package.mjs
 
       - name: Publish to npm (OIDC)
         if: steps.check.outputs.skip == 'false'
         working-directory: src/cli
         run: npm publish --access public
-

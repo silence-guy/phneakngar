@@ -182,6 +182,8 @@ pnpm check:project
 pnpm typecheck
 pnpm lint
 pnpm test
+pnpm verify:cli-package
+pnpm verify:app-package
 ```
 
 ## License

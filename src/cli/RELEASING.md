@@ -79,3 +79,11 @@ phneakngar chhlat start
 ```
 
 Full client docs: [INSTALL.md](../../INSTALL.md).
+
+For full local self-hosted installs, `@phneakngar/app` has its own verifier:
+
+```bash
+node scripts/verify-app-package.mjs
+```
+
+Run both package verifiers before a release that may be installed on another device.

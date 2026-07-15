@@ -37,7 +37,9 @@
     "db:migrate:remote": "pnpm --filter @phneakngar/web exec wrangler d1 migrations apply phneakngar-app --remote",
     "bump": "node scripts/bump-version.mjs",
     "pack:cli": "pnpm --filter @phneakngar/cli run build && pnpm --filter @phneakngar/cli exec npm pack",
+    "pack:app": "PHNEAKNGAR_DOMAIN=phneakngar.invalid NEXT_PUBLIC_PHNEAKNGAR_DOMAIN=phneakngar.invalid NEXT_PUBLIC_PHNEAKNGAR_ENVIRONMENT=development pnpm build --filter=@phneakngar/shared --filter=@phneakngar/web --filter=@phneakngar/cli --filter=@phneakngar/email-worker --filter=@phneakngar/ws-do --filter=@phneakngar/app && pnpm -C src/app run bundle && pnpm -C src/app run build && pnpm --filter @phneakngar/app exec npm pack",
     "verify:cli-package": "node scripts/verify-cli-package.mjs",
+    "verify:app-package": "node scripts/verify-app-package.mjs",
     "prepare": "simple-git-hooks",
     "check:project": "node scripts/check-project-guardrails.mjs"
   },

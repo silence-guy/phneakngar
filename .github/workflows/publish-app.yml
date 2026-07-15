@@ -72,17 +72,9 @@ jobs:
       - run: pnpm install --frozen-lockfile
         if: steps.check.outputs.skip == 'false'
 
-      - name: Build packages
+      - name: Verify app package
         if: steps.check.outputs.skip == 'false'
-        run: pnpm build --filter=@phneakngar/shared --filter=@phneakngar/web --filter=@phneakngar/cli --filter=@phneakngar/email-worker --filter=@phneakngar/ws-do --filter=@phneakngar/app
-
-      - name: Bundle app (pre-build workers)
-        if: steps.check.outputs.skip == 'false'
-        run: pnpm -C src/app run bundle
-
-      - name: Build app CLI
-        if: steps.check.outputs.skip == 'false'
-        run: pnpm -C src/app run build
+        run: node scripts/verify-app-package.mjs
 
       - name: Publish to npm (OIDC)
         if: steps.check.outputs.skip == 'false'

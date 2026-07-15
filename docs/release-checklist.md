@@ -19,6 +19,7 @@ pnpm db:reset
 pnpm db:migrate
 # Client package smoke (pack + clean install) — does not publish
 pnpm verify:cli-package
+pnpm verify:app-package
 ```
 
 Client install docs: [INSTALL.md](../INSTALL.md)
@@ -29,6 +30,7 @@ Also verify:
 - The complete local migration chain applies from an empty database.
 - No `.env`, `.dev.vars`, `.wrangler`, local D1 file, build output, coverage output, or credential is tracked.
 - `src/web/wrangler.toml`, `src/email-worker/wrangler.toml`, and `src/ws-do/wrangler.toml` reference the intended Cloudflare account resources.
+- Operator tarballs for both `@phneakngar/cli` and `@phneakngar/app` pass clean-install smoke before they are shared with another device.
 - `BETTER_AUTH_URL`, OAuth callbacks, the custom domain, and Email Worker `WEB_ORIGIN` use the same HTTPS origin.
 - `EMAIL_NOTIFY_SECRET` matches between web and email Workers.
 - `PHNEAKNGAR_DOMAIN` matches across web and email Workers, the same value is supplied as `NEXT_PUBLIC_PHNEAKNGAR_DOMAIN` during the OpenNext build, and `NEXT_PUBLIC_PHNEAKNGAR_ENVIRONMENT=production`.
@@ -102,7 +104,7 @@ For a valid `release: vX.Y.Z` commit:
 
 1. CI runs repository quality, tests, builds, E2E jobs where configured, and Worker dry-runs.
 2. `Auto-Tag & Release` verifies tag consistency, creates the tag when absent, and creates or repairs the GitHub Release.
-3. CLI and app publish workflows verify package versions, use npm trusted publishing, and skip versions already present in npm.
+3. CLI and app publish workflows verify package versions, run clean-install package smoke, use npm trusted publishing, and skip versions already present in npm.
 4. Desktop release runs only when the release commit contains `src/desktop/.deploy-version`, or when manually dispatched.
 5. Mobile release validates that the release commit, package version, and mobile marker match.
 6. Cloudflare Workers are not deployed by GitHub Actions.

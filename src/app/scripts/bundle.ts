@@ -52,44 +52,12 @@ if (existsSync(bundledDir)) rmSync(bundledDir, { recursive: true });
 console.log("\n=== Building Web (opennextjs-cloudflare) ===\n");
 const webSrc = join(monoRoot, "src", "web");
 
-const blogStub = `\
-export interface BlogPost { slug: string; title: string; date: string; author: string; excerpt: string; readingTime: string; content: string; }
-export function getAllPosts(): BlogPost[] { return []; }
-export function getPostBySlug(slug: string): BlogPost | undefined { return undefined; }
-`;
-
-// Strip blog content before building the app package
-const blogAppDir = join(webSrc, "src", "app", "blog");
-const blogLibDir = join(webSrc, "src", "lib", "blog");
-
-const blogPublicDir = join(webSrc, "public", "blog");
-const blogContentDir = join(webSrc, "src", "content");
-
-console.log("[bundle] Stripping blog content for app-only build...");
-rmSync(blogAppDir, { recursive: true });
-rmSync(blogLibDir, { recursive: true });
-rmSync(blogPublicDir, { recursive: true, force: true });
-rmSync(blogContentDir, { recursive: true, force: true });
-mkdirSync(blogLibDir, { recursive: true });
-writeFileSync(join(blogLibDir, "posts.ts"), blogStub);
-
-try {
-  run("npx opennextjs-cloudflare build", webSrc);
-} finally {
-  console.log("[bundle] Restoring blog source files...");
-  try {
-    execSync("git checkout -- src/web/src/app/blog/ src/web/src/lib/blog/ src/web/public/blog/ src/web/src/content/", {
-      cwd: monoRoot,
-      stdio: "inherit",
-    });
-  } catch (e) {
-    console.error("[bundle] WARNING: Failed to restore blog files:", e);
-  }
-}
+run("npx opennextjs-cloudflare build", webSrc);
 
 const webDest = join(bundledDir, "web");
 mkdirSync(webDest, { recursive: true });
 cpSync(join(webSrc, ".open-next"), join(webDest, ".open-next"), { recursive: true });
+rmSync(join(webDest, ".open-next", "cache"), { recursive: true, force: true });
 rewriteAbsolutePaths(webDest);
 cpSync(join(webSrc, "wrangler.toml"), join(webDest, "wrangler.toml"));
 cpSync(join(webSrc, "custom-worker.ts"), join(webDest, "custom-worker.ts"));
