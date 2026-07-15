@@ -28,7 +28,7 @@ Agents execute on your machines with access to the tools and codebases you permi
 
 ## Installation status
 
-Public npm checks on **2026-07-15** returned `E404` for both `@phneakngar/cli` and `@phneakngar/app`. Until those packages are verifiably published, use the local monorepo or an operator-provided tarball. The npm and `npx` commands below are explicitly conditional on future publication.
+The npm packages are published under the `@phneakngar` scope. This checkout is configured for release `0.0.1`; use explicit `@0.0.1` installs when you want this release rather than another dist-tag.
 
 ### Agent-only machine
 
@@ -55,10 +55,42 @@ npm install --global ./phneakngar-cli-*.tgz
 phneakngar doctor
 ```
 
-After `@phneakngar/cli` is published to the public npm registry, this shorter install becomes available:
+Install the `0.0.1` CLI release from public npm:
+
+macOS:
 
 ```bash
-npm install --global @phneakngar/cli --registry=https://registry.npmjs.org
+node --version  # must be >=20.19.0
+npm install --global @phneakngar/cli@0.0.1
+phneakngar version
+phneakngar init
+phneakngar doctor
+phneakngar login
+phneakngar chhlat start
+```
+
+Linux:
+
+```bash
+node --version  # must be >=20.19.0
+npm install --global @phneakngar/cli@0.0.1
+phneakngar version
+phneakngar init
+phneakngar doctor
+phneakngar login
+phneakngar chhlat start
+```
+
+Windows PowerShell:
+
+```powershell
+node --version  # must be >=20.19.0
+npm install --global @phneakngar/cli@0.0.1
+phneakngar version
+phneakngar init
+phneakngar doctor
+phneakngar login
+phneakngar chhlat start
 ```
 
 ### Full local stack for development
@@ -89,11 +121,17 @@ pnpm --filter @phneakngar/ws-do exec wrangler dev --port 15212 --persist-to ../w
 | Email Worker | `http://localhost:15211` |
 | WebSocket Worker | `http://localhost:15212` |
 
-After `@phneakngar/app` is published to the public npm registry, the packaged onboarding flow can be run with:
+Install the `0.0.1` app wrapper from public npm:
+
+macOS/Linux:
 
 ```bash
-npx @phneakngar/app onboard
+npx @phneakngar/app@0.0.1 onboard
 ```
+
+Windows:
+
+Use the agent-only CLI install path on Windows for now. Full local `@phneakngar/app` mode is documented for macOS/Linux until a Windows PowerShell smoke proves local Wrangler services, process cleanup, migrations, and `phneakngar-app start/stop` all pass.
 
 See [src/app/README.md](src/app/README.md) for the local/tarball app-wrapper workflow. For Cloudflare deployment, see [DEPLOY.md](DEPLOY.md); Workers are deployed manually.
 

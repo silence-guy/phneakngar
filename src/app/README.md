@@ -12,7 +12,7 @@
 
 ## Publication status
 
-A public npm check on **2026-07-15** returned `E404` for `@phneakngar/app`. Use the monorepo development command or an operator-built tarball until registry publication is confirmed. `npx @phneakngar/app …` is documented below only as a conditional post-publication path.
+`@phneakngar/app` is published under the public `@phneakngar` npm scope. This checkout is configured for release `0.0.1`; use explicit `@0.0.1` commands when you want this release rather than another dist-tag.
 
 ## Quick start from this repository
 
@@ -80,16 +80,22 @@ The explicit `development` marker allows the optimized local app bundle to use t
 
 The generated `phneakngar-app-*.tgz` can be copied to another machine and installed with npm as shown above.
 
-## Conditional npm/`npx` usage
+## Public npm/`npx` usage
 
-Only after `npm view @phneakngar/app version --registry=https://registry.npmjs.org` succeeds:
+Use the explicit version for reproducible installs:
+
+macOS/Linux:
 
 ```bash
-npx @phneakngar/app onboard
-npx @phneakngar/app start
-npx @phneakngar/app stop
-npx @phneakngar/app update
+npx @phneakngar/app@0.0.1 onboard
+npx @phneakngar/app@0.0.1 start
+npx @phneakngar/app@0.0.1 stop
+npx @phneakngar/app@0.0.1 update
 ```
+
+Windows:
+
+Use the agent-only CLI install path on Windows for now. Full local `@phneakngar/app` mode is documented for macOS/Linux until a Windows PowerShell smoke proves local Wrangler services, process cleanup, migrations, and `phneakngar-app start/stop` all pass.
 
 ## What onboarding does
 

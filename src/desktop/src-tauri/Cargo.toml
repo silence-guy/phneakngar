@@ -3,7 +3,7 @@ members = ["plugins/tauri-plugin-push"]
 
 [package]
 name = "phneakngar-desktop"
-version = "0.0.149"
+version = "0.0.1"
 edition = "2021"
 description = "ភ្នាក់ងារ — Your Personal Company"
 

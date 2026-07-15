@@ -48,7 +48,7 @@ Shell snippets use POSIX syntax unless a PowerShell alternative is shown. The `p
 
 ### Publication status
 
-Public npm checks on **2026-07-15** returned `E404` for `@phneakngar/cli`. Use one of the tarball paths below until the package is verifiably published.
+`@phneakngar/cli` is published under the public `@phneakngar` npm scope. This checkout is configured for release `0.0.1`; install `@phneakngar/cli@0.0.1` explicitly when you need this release.
 
 ### Option A: install an operator-provided tarball
 
@@ -90,13 +90,42 @@ npm install --global "./src/cli/phneakngar-cli-$version.tgz"
 phneakngar version
 ```
 
-### Conditional: install from public npm after publication
+### Option C: install from public npm
 
-Only use this after `npm view @phneakngar/cli version --registry=https://registry.npmjs.org` succeeds:
+Use the explicit version for reproducible installs:
+
+macOS:
 
 ```bash
-npm install --global @phneakngar/cli --registry=https://registry.npmjs.org
+node --version  # must be >=20.19.0
+npm install --global @phneakngar/cli@0.0.1
 phneakngar version
+```
+
+Linux:
+
+```bash
+node --version  # must be >=20.19.0
+npm install --global @phneakngar/cli@0.0.1
+phneakngar version
+```
+
+Windows PowerShell:
+
+```powershell
+node --version  # must be >=20.19.0
+npm install --global @phneakngar/cli@0.0.1
+phneakngar version
+```
+
+If `phneakngar` is not found after install, check npm's global binary path:
+
+```bash
+printf '%s\n' "$(npm prefix --global)/bin"
+```
+
+```powershell
+npm prefix --global
 ```
 
 ## Initialize, diagnose, register, and start
@@ -218,17 +247,17 @@ phneakngar doctor
 phneakngar chhlat start
 ```
 
-### Conditional: after npm publication
+### From public npm
 
 ```bash
 phneakngar chhlat stop
-npm install --global @phneakngar/cli@latest --registry=https://registry.npmjs.org
+npm install --global @phneakngar/cli@0.0.1
 phneakngar version
 phneakngar doctor
 phneakngar chhlat start
 ```
 
-`phneakngar update` also depends on a published package and should be treated as conditional until registry publication is confirmed.
+`phneakngar update` uses the configured public package channel. For pinned production rollouts, prefer an explicit `npm install --global @phneakngar/cli@0.0.1` step.
 
 ## Uninstall
 
@@ -351,10 +380,12 @@ Operators should validate the app tarball before sharing it:
 pnpm verify:app-package
 ```
 
-Only after `@phneakngar/app` is published to public npm:
+For the public npm app wrapper on macOS/Linux:
 
 ```bash
-npx @phneakngar/app onboard
+npx @phneakngar/app@0.0.1 onboard
 ```
+
+Use the agent-only CLI install path on Windows for now. Full local `@phneakngar/app` mode is not advertised for Windows until a Windows PowerShell smoke proves local Wrangler services, process cleanup, migrations, and `phneakngar-app start/stop` all pass.
 
 See [src/app/README.md](src/app/README.md) for details.
