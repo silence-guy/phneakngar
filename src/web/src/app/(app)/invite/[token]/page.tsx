@@ -7,7 +7,12 @@ import { getInviteInfo, acceptInvite, type InviteInfo } from "@/lib/api";
 import { trackInviteAccepted } from "@/lib/analytics";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { INVITE_LABELS, invitedByLabel, joinedWorkspaceLabel } from "./invite-labels";
+import {
+  INVITE_LABELS,
+  invitedByLabel,
+  joinedWorkspaceAccessNote,
+  joinedWorkspaceLabel,
+} from "./invite-labels";
 
 type State = "loading" | "ready" | "error" | "accepting" | "done";
 
@@ -39,7 +44,9 @@ export default function InvitePage() {
       const result = await acceptInvite(token);
       trackInviteAccepted({ workspace_id: result.workspace_id ?? "" });
       setState("done");
-      toast.success(joinedWorkspaceLabel(info?.workspace_name ?? INVITE_LABELS.fallbackWorkspace));
+      toast.success(joinedWorkspaceLabel(info?.workspace_name ?? INVITE_LABELS.fallbackWorkspace), {
+        description: joinedWorkspaceAccessNote(),
+      });
       router.replace(`/w/${result.workspace_slug}/home`);
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : INVITE_LABELS.errors.joinFailed);

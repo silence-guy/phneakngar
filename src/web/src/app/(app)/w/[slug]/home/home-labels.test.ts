@@ -10,6 +10,12 @@ describe("home labels", () => {
     expect(HOME_LABELS.getStarted).toBe("ចាប់ផ្តើម");
   });
 
+  it("provides member empty-state copy that does not require CLI", () => {
+    expect(HOME_LABELS.waitingForTeamComputer).toContain("CLI");
+    expect(HOME_LABELS.waitingForAgents.length).toBeGreaterThan(0);
+    expect(HOME_LABELS.showOptionalConnect.length).toBeGreaterThan(0);
+  });
+
   it("provides Khmer link error copy", () => {
     expect(HOME_LABELS.linkAlreadyExists).toBe("ការតភ្ជាប់មានរួចហើយ");
     expect(HOME_LABELS.cannotLinkToSelf).toBe("មិនអាចភ្ជាប់ភ្នាក់ងារទៅខ្លួនឯងបានទេ");

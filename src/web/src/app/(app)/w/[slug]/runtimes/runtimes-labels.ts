@@ -28,6 +28,10 @@ export const RUNTIMES_LABELS = {
   connectMachineSheetTitle: "ភ្ជាប់ម៉ាស៊ីន",
   connectMachineSheetDescription:
     "ម៉ាស៊ីនរបស់អ្នកដំណើរការភ្នាក់ងារ AI ក្នុងម៉ាស៊ីនដោយប្រើ Claude Code, Codex ឬ OpenCode។",
+  connectMachineSheetDescriptionMember:
+    "ស្រេចចិត្ត៖ ភ្ជាប់ម៉ាស៊ីននេះបើអ្នកចង់រត់ភ្នាក់ងារលើវា។ សមាជិកអាចប្រើភ្នាក់ងារតាមគេហទំព័រពេលកុំព្យូទ័រក្រុមនៅបណ្តាញ។",
+  connectToStartMember:
+    "គ្មានម៉ាស៊ីននៅបណ្តាញទេ។ សុំម្ចាស់ភ្ជាប់កុំព្យូទ័រ ឬភ្ជាប់ម៉ាស៊ីននេះ (ស្រេចចិត្ត)។",
   updateTriggered: "បានចាប់ផ្តើមធ្វើបច្ចុប្បន្នភាព",
   updateTriggerFailed: "មិនអាចចាប់ផ្តើមធ្វើបច្ចុប្បន្នភាពបានទេ",
   rescanTriggered: "បានចាប់ផ្តើមស្កេនឡើងវិញ — chhlat នឹងចាប់ផ្តើមឡើងវិញដើម្បីរកបរិស្ថានដំណើរការ",

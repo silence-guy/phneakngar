@@ -2,9 +2,12 @@
 
 import { createContext, useContext, useEffect, type ReactNode } from "react"
 
+export type MemberRole = "owner" | "member"
+
 interface WorkspaceContextValue {
   workspaceId: string
   slug: string
+  memberRole: MemberRole
 }
 
 const WorkspaceContext = createContext<WorkspaceContextValue | null>(null)
@@ -15,9 +18,14 @@ export function useWorkspace() {
   return ctx
 }
 
+export function normalizeMemberRole(role: string | null | undefined): MemberRole {
+  return role === "owner" ? "owner" : "member"
+}
+
 export function WorkspaceProvider({
   workspaceId,
   slug,
+  memberRole,
   children,
 }: WorkspaceContextValue & { children: ReactNode }) {
   useEffect(() => {
@@ -25,7 +33,7 @@ export function WorkspaceProvider({
   }, [slug])
 
   return (
-    <WorkspaceContext.Provider value={{ workspaceId, slug }}>
+    <WorkspaceContext.Provider value={{ workspaceId, slug, memberRole }}>
       {children}
     </WorkspaceContext.Provider>
   )

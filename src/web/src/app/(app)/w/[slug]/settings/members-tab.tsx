@@ -135,6 +135,10 @@ export function MembersTab() {
             </Button>
           </div>
 
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            {SETTINGS_LABELS.members.inviteWebAccessNote}
+          </p>
+
           {invites.length === 0 ? (
             <p className="text-xs text-muted-foreground py-2">
               {SETTINGS_LABELS.members.noInvites}

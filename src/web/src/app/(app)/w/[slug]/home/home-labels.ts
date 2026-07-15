@@ -15,6 +15,14 @@ export const HOME_LABELS = {
   updateLinkFailed: "មិនអាចធ្វើបច្ចុប្បន្នភាពការតភ្ជាប់បានទេ",
   deleteLinkFailed: "មិនអាចលុបការតភ្ជាប់បានទេ",
   generateTokenFailed: "មិនអាចបង្កើតថូខឹនបានទេ",
+  /** Member + no online machine: primary empty-state message */
+  waitingForTeamComputer:
+    "កន្លែងធ្វើការនេះត្រូវការកុំព្យូទ័ររបស់ក្រុមដែលភ្ជាប់ (ម្ចាស់ ឬសមាជិកផ្សេង)។ អ្នកអាចប្រើតាមគេហទំព័របានរួចហើយ—មិនចាំបាច់ដំឡើង CLI ដើម្បីចូលរួមទេ។",
+  /** Member + machine online but no agents */
+  waitingForAgents:
+    "កុំព្យូទ័ររបស់ក្រុមបានភ្ជាប់ហើយ។ កំពុងរង់ចាំម្ចាស់បង្កើតភ្នាក់ងារ—អ្នកអាចរុករកតាមគេហទំព័របាន។",
+  showOptionalConnect: "ភ្ជាប់កុំព្យូទ័រនេះ (ស្រេចចិត្ត)",
+  hideOptionalConnect: "លាក់ការភ្ជាប់ស្រេចចិត្ត",
 } as const;
 
 export const HOME_LAYOUT_LABELS: Record<LayoutType, string> = {

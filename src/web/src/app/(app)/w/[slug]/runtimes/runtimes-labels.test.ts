@@ -15,6 +15,8 @@ describe("runtimes labels", () => {
     expect(RUNTIMES_LABELS.neverSeen).toBe("មិនធ្លាប់ឃើញ");
     expect(RUNTIMES_LABELS.remove).toBe("ដកចេញ");
     expect(RUNTIMES_LABELS.machineConnected).toBe("ម៉ាស៊ីនបានភ្ជាប់");
+    expect(RUNTIMES_LABELS.connectMachineSheetDescriptionMember).toContain("ស្រេចចិត្ត");
+    expect(RUNTIMES_LABELS.connectToStartMember.length).toBeGreaterThan(0);
   });
 
   it("maps runtime status ids to Khmer labels", () => {

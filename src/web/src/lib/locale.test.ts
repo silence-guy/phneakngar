@@ -61,6 +61,8 @@ describe("web locale helpers", () => {
     expect(connectMachineLabel("terminalDescription", Locale.EN)).not.toMatch(
       /entire (PC|computer|filesystem)|full (PC|disk|root)/i,
     );
+    expect(connectMachineLabel("generateRegisterCommand", Locale.EN)).toMatch(/Generate register/i);
+    expect(connectMachineLabel("optionalConnectDescription", Locale.EN)).toMatch(/optional|web access/i);
     expect(agentFormLabel("runtime", Locale.EN)).toBe("Runtime");
     expect(agentFormLabel("nameRequired", Locale.EN)).toBe("Name is required");
     expect(agentFormLabel("removeMemberAccess", Locale.EN)).toBe("Remove Member Access");

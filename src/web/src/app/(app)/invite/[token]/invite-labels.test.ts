@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { INVITE_LABELS, invitedByLabel, joinedWorkspaceLabel } from "./invite-labels";
+import {
+  INVITE_LABELS,
+  invitedByLabel,
+  joinedWorkspaceAccessNote,
+  joinedWorkspaceLabel,
+} from "./invite-labels";
 
 const KHMER = /[ក-៿]/;
 
@@ -23,5 +28,11 @@ describe("invite labels", () => {
     expect(joinedWorkspaceLabel("Acme")).toBe("បានចូលរួម Acme");
     expect(invitedByLabel("Sok")).toMatch(KHMER);
     expect(joinedWorkspaceLabel("Acme")).toMatch(KHMER);
+  });
+
+  it("notes that web access is enough after join", () => {
+    const note = joinedWorkspaceAccessNote();
+    expect(note).toMatch(KHMER);
+    expect(note).toMatch(/CLI|គេហទំព័រ/);
   });
 });

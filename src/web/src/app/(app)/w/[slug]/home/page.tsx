@@ -643,7 +643,13 @@ function MobileAgentList({ onAgentClick }: { onAgentClick?: (agent: Agent) => vo
   );
 }
 
-function ConnectComputerCard({ workspaceId }: { workspaceId: string }) {
+function ConnectComputerCard({
+  workspaceId,
+  autoGenerate = true,
+}: {
+  workspaceId: string;
+  autoGenerate?: boolean;
+}) {
   const [token, setToken] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -663,7 +669,28 @@ function ConnectComputerCard({ workspaceId }: { workspaceId: string }) {
         onGenerateToken={onGenerateToken}
         registered={false}
         chhlatOnline={false}
+        autoGenerate={autoGenerate}
       />
+    </div>
+  );
+}
+
+function MemberOptionalConnect({ workspaceId }: { workspaceId: string }) {
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <div className="space-y-3">
+      <Button
+        size="sm"
+        variant="outline"
+        className="w-full"
+        onClick={() => setExpanded((v) => !v)}
+      >
+        {expanded ? HOME_LABELS.hideOptionalConnect : HOME_LABELS.showOptionalConnect}
+      </Button>
+      {expanded && (
+        <ConnectComputerCard workspaceId={workspaceId} autoGenerate={false} />
+      )}
     </div>
   );
 }
@@ -671,9 +698,10 @@ function ConnectComputerCard({ workspaceId }: { workspaceId: string }) {
 export default function HomePage() {
   const router = useRouter();
   const { agents, runtimes, loading } = useAgentContext();
-  const { workspaceId } = useWorkspace();
+  const { workspaceId, memberRole } = useWorkspace();
   const isMobile = useIsMobile();
   const { openAgentChat } = useAgentChatSheet();
+  const isOwner = memberRole === "owner";
 
   const handleAgentClick = useCallback((agent: Agent) => {
     openAgentChat(agent.id);
@@ -694,19 +722,34 @@ export default function HomePage() {
     return (
       <div className="flex flex-1 items-center justify-center">
         <div className="w-full max-w-sm space-y-6 animate-[fade-up_400ms_ease-out_both]">
-          {!hasComputer && (
-            <ConnectComputerCard workspaceId={workspaceId} />
+          {isOwner && !hasComputer && (
+            <ConnectComputerCard workspaceId={workspaceId} autoGenerate />
           )}
-          <div className="text-center">
-            <p className="text-muted-foreground text-sm">{HOME_LABELS.buildYourCompany}</p>
-            <Button
-              size="sm"
-              className="mt-4 glow-border"
-              onClick={() => router.push(`/studio/new?workspace_id=${workspaceId}`)}
-            >
-              {HOME_LABELS.getStarted}
-            </Button>
-          </div>
+          {!isOwner && !hasComputer && (
+            <div className="space-y-3">
+              <p className="text-muted-foreground text-sm text-center leading-relaxed">
+                {HOME_LABELS.waitingForTeamComputer}
+              </p>
+              <MemberOptionalConnect workspaceId={workspaceId} />
+            </div>
+          )}
+          {!isOwner && hasComputer && (
+            <p className="text-muted-foreground text-sm text-center leading-relaxed">
+              {HOME_LABELS.waitingForAgents}
+            </p>
+          )}
+          {isOwner && (
+            <div className="text-center">
+              <p className="text-muted-foreground text-sm">{HOME_LABELS.buildYourCompany}</p>
+              <Button
+                size="sm"
+                className="mt-4 glow-border"
+                onClick={() => router.push(`/studio/new?workspace_id=${workspaceId}`)}
+              >
+                {HOME_LABELS.getStarted}
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     );

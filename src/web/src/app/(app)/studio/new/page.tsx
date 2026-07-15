@@ -4,6 +4,7 @@ import { queries } from "@phneakngar/shared";
 import { getDb } from "@/lib/db";
 import { requireSession } from "@/lib/session";
 import { getTemplateById } from "@/lib/templates";
+import { normalizeMemberRole } from "@/contexts/workspace-context";
 import { StudioOnboardingClient } from "./client";
 
 export default async function StudioNewPage({
@@ -39,6 +40,7 @@ export default async function StudioNewPage({
     <StudioOnboardingClient
       workspaceId={workspaceId}
       workspaceSlug={workspace.slug}
+      memberRole={normalizeMemberRole(membership.role)}
       initialTemplate={initialTemplate}
     />
   );

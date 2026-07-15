@@ -56,6 +56,8 @@ export const SETTINGS_LABELS = {
     generating: "កំពុងបង្កើត...",
     generateInvite: "បង្កើតតំណអញ្ជើញ",
     noInvites: "គ្មានតំណអញ្ជើញសកម្មទេ។ បង្កើតមួយដើម្បីអញ្ជើញនរណាម្នាក់ចូល workspace នេះ។",
+    inviteWebAccessNote:
+      "អ្នកដែលត្រូវបានអញ្ជើញត្រូវការតែគេហទំព័រ (email + កូដ)។ CLI ត្រូវការតែបើពួកគេចង់រត់ភ្នាក់ងារលើកុំព្យូទ័ររបស់ខ្លួន។",
     expired: "ផុតកំណត់",
     copyInvite: "ចម្លងតំណអញ្ជើញ",
     revokeInvite: "ដកហូតតំណអញ្ជើញ",

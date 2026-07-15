@@ -37,12 +37,15 @@ export function ConnectMachineSteps({
   onGenerateToken,
   registered,
   chhlatOnline,
+  autoGenerate = true,
 }: {
   generatedToken: string;
   generatingToken: boolean;
   onGenerateToken: () => void;
   registered: boolean;
   chhlatOnline: boolean;
+  /** When false, wait for an explicit user click before minting a machine token. */
+  autoGenerate?: boolean;
 }) {
   const hasTriggered = useRef(false);
   const mode = getAppMode();
@@ -61,11 +64,12 @@ export function ConnectMachineSteps({
   }, [isDesktopApp]);
 
   useEffect(() => {
+    if (!autoGenerate) return;
     if (!generatedToken && !generatingToken && !hasTriggered.current) {
       hasTriggered.current = true;
       onGenerateToken();
     }
-  }, [generatedToken, generatingToken, onGenerateToken]);
+  }, [autoGenerate, generatedToken, generatingToken, onGenerateToken]);
 
   const command = `${cliCmd()} register --token ${generatedToken}`;
 
@@ -150,6 +154,10 @@ export function ConnectMachineSteps({
           )}
           <ConnectMachineNextSteps isDesktopApp={isDesktopApp} />
         </div>
+      ) : !autoGenerate ? (
+        <Button size="sm" onClick={onGenerateToken} className="w-full" variant="outline">
+          {connectMachineLabel("generateRegisterCommand")}
+        </Button>
       ) : null}
     </div>
   );

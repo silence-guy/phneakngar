@@ -24,6 +24,7 @@ import { isTauri, isDesktop, tauriInvoke } from "@phneakngar/shared";
 import { listRuntimes, createMachineToken } from "@/lib/api";
 import { useUserWs } from "@/lib/use-user-ws";
 import { ConnectMachineSteps } from "@/components/connect-machine-steps";
+import type { MemberRole } from "@/contexts/workspace-context";
 import { DEFAULT_WEB_LOCALE, onboardingLabel } from "@/lib/locale";
 import { STUDIO_ONBOARDING_LABELS } from "@/components/studio-onboarding/studio-onboarding-labels";
 import type { TemplatePreset } from "@/lib/templates";
@@ -31,13 +32,16 @@ import type { TemplatePreset } from "@/lib/templates";
 export function StudioOnboardingClient({
   workspaceId,
   workspaceSlug,
+  memberRole = "owner",
   initialTemplate,
 }: {
   workspaceId: string;
   workspaceSlug: string;
+  memberRole?: MemberRole;
   initialTemplate?: TemplatePreset;
 }) {
   const router = useRouter();
+  const isOwner = memberRole === "owner";
 
   const [runtimes, setRuntimes] = useState<Runtime[]>([]);
   const [loadingRuntimes, setLoadingRuntimes] = useState(true);
@@ -405,7 +409,9 @@ export function StudioOnboardingClient({
                 ) : (
                   <>
                     <p className="text-xs text-muted-foreground">
-                      {STUDIO_ONBOARDING_LABELS.build.needsComputer}
+                      {isOwner
+                        ? STUDIO_ONBOARDING_LABELS.build.needsComputer
+                        : STUDIO_ONBOARDING_LABELS.build.needsComputerMember}
                     </p>
                     <div className="rounded-xl bg-muted/40 p-5">
                       <ConnectMachineSteps
@@ -414,6 +420,7 @@ export function StudioOnboardingClient({
                         onGenerateToken={handleGenerateToken}
                         registered={machineRegistered}
                         chhlatOnline={chhlatOnline}
+                        autoGenerate={isOwner}
                       />
                     </div>
                   </>

@@ -35,6 +35,7 @@ import { Loader2, RefreshCw } from "lucide-react";
 
 import { ConnectMachineSteps } from "@/components/connect-machine-steps";
 import { trackRuntimeConnected } from "@/lib/analytics";
+import { useWorkspace } from "@/contexts/workspace-context";
 import {
   RUNTIMES_LABELS,
   runtimeStatusLabel,
@@ -44,6 +45,8 @@ import {
 } from "./runtimes-labels";
 
 export default function RuntimesPage() {
+  const { memberRole } = useWorkspace();
+  const isOwner = memberRole === "owner";
   const { agents, runtimes, loading, handleGenerateToken, handleDeleteMachine, subscribeWs, workspaceId } =
     useAgentContext();
   const searchParams = useSearchParams();
@@ -310,7 +313,9 @@ export default function RuntimesPage() {
               <p className="text-muted-foreground text-sm">
                 {hideNewMachine
                   ? RUNTIMES_LABELS.noMachinesManaged
-                  : RUNTIMES_LABELS.connectToStart}
+                  : isOwner
+                    ? RUNTIMES_LABELS.connectToStart
+                    : RUNTIMES_LABELS.connectToStartMember}
               </p>
               {!hideNewMachine && (
                 <Button
@@ -521,7 +526,9 @@ export default function RuntimesPage() {
           <SheetHeader>
             <SheetTitle>{RUNTIMES_LABELS.connectMachineSheetTitle}</SheetTitle>
             <SheetDescription>
-              {RUNTIMES_LABELS.connectMachineSheetDescription}
+              {isOwner
+                ? RUNTIMES_LABELS.connectMachineSheetDescription
+                : RUNTIMES_LABELS.connectMachineSheetDescriptionMember}
             </SheetDescription>
           </SheetHeader>
           <SheetBody>
@@ -531,6 +538,7 @@ export default function RuntimesPage() {
               onGenerateToken={onGenerateToken}
               registered={!!registeredChhlatId}
               chhlatOnline={chhlatOnline}
+              autoGenerate={isOwner}
             />
           </SheetBody>
         </SheetContent>

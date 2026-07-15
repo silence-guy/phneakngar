@@ -202,6 +202,20 @@ export const connectMachineCopy = {
     [Locale.KM]:
       "ភ្នាក់ងារប្រើតែថត workspace របស់ភ្នាក់ងារ (sandboxed) លើកុំព្យូទ័រនេះ—មិនមែនប្រព័ន្ធឯកសារទាំងមូលទេ។",
   },
+  generateRegisterCommand: {
+    [Locale.EN]: "Generate register command",
+    [Locale.KM]: "បង្កើតពាក្យបញ្ជា register",
+  },
+  optionalConnectTitle: {
+    [Locale.EN]: "Optional: connect this computer",
+    [Locale.KM]: "ស្រេចចិត្ត៖ ភ្ជាប់កុំព្យូទ័រនេះ",
+  },
+  optionalConnectDescription: {
+    [Locale.EN]:
+      "You already have web access. Connect only if you want agents to run on this machine.",
+    [Locale.KM]:
+      "អ្នកមានសិទ្ធិប្រើតាមគេហទំព័ររួចហើយ។ ភ្ជាប់តែបើអ្នកចង់ឱ្យភ្នាក់ងាររត់លើម៉ាស៊ីននេះ។",
+  },
 } as const satisfies Record<string, LocaleLabels>;
 
 export const agentFormCopy = {

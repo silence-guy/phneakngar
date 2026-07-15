@@ -19,3 +19,8 @@ export function invitedByLabel(name: string): string {
 export function joinedWorkspaceLabel(workspaceName: string): string {
   return `បានចូលរួម ${workspaceName}`;
 }
+
+/** After invite accept: membership is complete; CLI is optional. */
+export function joinedWorkspaceAccessNote(): string {
+  return "អ្នកអាចប្រើកន្លែងធ្វើការតាមគេហទំព័របានហើយ។ ការដំឡើង CLI ត្រូវការតែបើអ្នកចង់រត់ភ្នាក់ងារលើកុំព្យូទ័ររបស់អ្នក។";
+}

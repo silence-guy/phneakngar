@@ -3,7 +3,7 @@ import { getCloudflareContext } from "@opennextjs/cloudflare"
 import { queries } from "@phneakngar/shared"
 import { getDb } from "@/lib/db"
 import { getSession } from "@/lib/session"
-import { WorkspaceProvider } from "@/contexts/workspace-context"
+import { WorkspaceProvider, normalizeMemberRole } from "@/contexts/workspace-context"
 import { AgentProvider } from "@/contexts/agent-context"
 import { ChannelProvider } from "@/contexts/channel-context"
 import { InboxCountProvider } from "@/contexts/inbox-count-context"
@@ -39,7 +39,11 @@ export default async function WorkspaceLayout({
   }
 
   return (
-    <WorkspaceProvider workspaceId={ws.id} slug={slug}>
+    <WorkspaceProvider
+      workspaceId={ws.id}
+      slug={slug}
+      memberRole={normalizeMemberRole(membership.role)}
+    >
       <AgentProvider workspaceId={ws.id}>
         <InboxCountProvider>
           <FlagCountProvider>
