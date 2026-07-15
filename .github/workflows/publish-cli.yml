@@ -4,6 +4,12 @@ on:
   push:
     branches: [main]
     paths: [src/cli/package.json]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Existing package version to publish"
+        required: true
+        type: string
 
 concurrency:
   group: publish-cli
@@ -12,7 +18,7 @@ concurrency:
 jobs:
   publish:
     name: Publish @phneakngar/cli to npm
-    if: "${{ startsWith(github.event.head_commit.message, 'release: v') }}"
+    if: "${{ github.event_name == 'workflow_dispatch' || startsWith(github.event.head_commit.message, 'release: v') }}"
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -25,9 +31,15 @@ jobs:
         id: version
         env:
           COMMIT_MSG: ${{ github.event.head_commit.message }}
+          DISPATCH_VERSION: ${{ inputs.version }}
+          EVENT_NAME: ${{ github.event_name }}
         run: |
           VERSION=$(node -p "require('./src/cli/package.json').version")
-          RELEASE_VERSION=$(printf '%s' "$COMMIT_MSG" | sed -nE 's/^release: v([0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?).*/\1/p')
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            RELEASE_VERSION="$DISPATCH_VERSION"
+          else
+            RELEASE_VERSION=$(printf '%s' "$COMMIT_MSG" | sed -nE 's/^release: v([0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?).*/\1/p')
+          fi
           if [ -z "$RELEASE_VERSION" ] || [ "$VERSION" != "$RELEASE_VERSION" ]; then
             echo "CLI version $VERSION does not match release commit version ${RELEASE_VERSION:-missing}" >&2
             exit 1
@@ -62,7 +74,7 @@ jobs:
       - name: Upgrade npm for Trusted Publishers
         if: steps.check.outputs.skip == 'false'
         run: |
-          npm install -g --prefix="$RUNNER_TEMP/npm-new" npm@12.0.0
+          npm install -g --prefix="$RUNNER_TEMP/npm-new" npm@12.0.1 sigstore@5.0.0
           echo "$RUNNER_TEMP/npm-new/bin" >> "$GITHUB_PATH"
 
       - run: pnpm install --frozen-lockfile
