@@ -16,6 +16,7 @@ docs/*
 .phneakngar/
 .dev.vars
 plans/
+.omo/
 .agents/
 .codex/
 .context_timeline/
