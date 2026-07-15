@@ -61,6 +61,7 @@ import { ActiveTasksFloat } from "@/components/canvas/active-tasks-float";
 import { UpcomingEventsFloat } from "@/components/canvas/upcoming-events-float";
 import { getAutoLayout, type LayoutType } from "@/components/canvas/auto-layout";
 import { ConnectMachineSteps } from "@/components/connect-machine-steps";
+import { resolveHomeEmptyPresentation } from "./home-empty-state";
 import { HOME_LABELS, homeLayoutLabel } from "./home-labels";
 
 const nodeTypes = { agent: AgentNode };
@@ -701,7 +702,6 @@ export default function HomePage() {
   const { workspaceId, memberRole } = useWorkspace();
   const isMobile = useIsMobile();
   const { openAgentChat } = useAgentChatSheet();
-  const isOwner = memberRole === "owner";
 
   const handleAgentClick = useCallback((agent: Agent) => {
     openAgentChat(agent.id);
@@ -716,29 +716,35 @@ export default function HomePage() {
   }
 
   const onlineRuntimes = runtimes.filter((r) => r.status === "online");
-  const hasComputer = onlineRuntimes.length > 0;
+  const emptyPresentation = resolveHomeEmptyPresentation({
+    memberRole,
+    agentCount: agents.length,
+    onlineRuntimeCount: onlineRuntimes.length,
+  });
 
-  if (agents.length === 0) {
+  if (emptyPresentation) {
     return (
       <div className="flex flex-1 items-center justify-center">
         <div className="w-full max-w-sm space-y-6 animate-[fade-up_400ms_ease-out_both]">
-          {isOwner && !hasComputer && (
+          {emptyPresentation.showOwnerConnectRequired && (
             <ConnectComputerCard workspaceId={workspaceId} autoGenerate />
           )}
-          {!isOwner && !hasComputer && (
+          {emptyPresentation.showMemberWaitingForTeamComputer && (
             <div className="space-y-3">
               <p className="text-muted-foreground text-sm text-center leading-relaxed">
                 {HOME_LABELS.waitingForTeamComputer}
               </p>
-              <MemberOptionalConnect workspaceId={workspaceId} />
+              {emptyPresentation.showMemberOptionalConnect && (
+                <MemberOptionalConnect workspaceId={workspaceId} />
+              )}
             </div>
           )}
-          {!isOwner && hasComputer && (
+          {emptyPresentation.showMemberWaitingForAgents && (
             <p className="text-muted-foreground text-sm text-center leading-relaxed">
               {HOME_LABELS.waitingForAgents}
             </p>
           )}
-          {isOwner && (
+          {emptyPresentation.showOwnerGetStarted && (
             <div className="text-center">
               <p className="text-muted-foreground text-sm">{HOME_LABELS.buildYourCompany}</p>
               <Button
