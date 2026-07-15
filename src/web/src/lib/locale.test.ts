@@ -40,6 +40,8 @@ describe("web locale helpers", () => {
     expect(appShellLabel("newAgent")).toBe("ភ្នាក់ងារថ្មី");
     expect(appShellLabel("switchWorkspace")).toBe("ប្តូរកន្លែងធ្វើការ");
     expect(connectMachineLabel("copyCommand")).toBe("ចម្លងពាក្យបញ្ជា");
+    expect(connectMachineLabel("nextStepsTitle")).toBe("ជំហានបន្ទាប់");
+    expect(connectMachineLabel("agentWorkdirNote")).toContain("sandboxed");
     expect(agentFormLabel("runtime")).toBe("បរិស្ថានដំណើរការ (Runtime)");
     expect(agentFormLabel("nameRequired")).toBe("ត្រូវបញ្ចូលឈ្មោះ");
     expect(agentFormLabel("removeMemberAccess")).toBe("ដកសិទ្ធិសមាជិក");
@@ -50,6 +52,15 @@ describe("web locale helpers", () => {
   it("keeps English fallbacks for app shell, machine connection, and agent form labels", () => {
     expect(appShellLabel("newAgent", Locale.EN)).toBe("New agent");
     expect(connectMachineLabel("copyCommand", Locale.EN)).toBe("Copy Command");
+    expect(connectMachineLabel("nextStepsTitle", Locale.EN)).toBe("Next steps");
+    expect(connectMachineLabel("nextStepRegisterTerminal", Locale.EN)).toContain("register");
+    expect(connectMachineLabel("nextStepChhlat", Locale.EN)).toContain("chhlat start");
+    expect(connectMachineLabel("agentWorkdirNote", Locale.EN)).toMatch(
+      /sandboxed agent workspace|not your entire filesystem/i,
+    );
+    expect(connectMachineLabel("terminalDescription", Locale.EN)).not.toMatch(
+      /entire (PC|computer|filesystem)|full (PC|disk|root)/i,
+    );
     expect(agentFormLabel("runtime", Locale.EN)).toBe("Runtime");
     expect(agentFormLabel("nameRequired", Locale.EN)).toBe("Name is required");
     expect(agentFormLabel("removeMemberAccess", Locale.EN)).toBe("Remove Member Access");

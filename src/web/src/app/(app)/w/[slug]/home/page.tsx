@@ -52,7 +52,6 @@ import {
   createMachineToken,
 } from "@/lib/api";
 import { toast } from "sonner";
-import { cliCmd } from "@/lib/utils";
 import { ApiError } from "@/lib/errors";
 import { trackAgentLinkCreated, trackCanvasLayoutChanged } from "@/lib/analytics";
 import { AgentNode, type AgentNodeData } from "@/components/canvas/agent-node";
@@ -61,8 +60,8 @@ import { LinkSidecar } from "@/components/canvas/link-sidecar";
 import { ActiveTasksFloat } from "@/components/canvas/active-tasks-float";
 import { UpcomingEventsFloat } from "@/components/canvas/upcoming-events-float";
 import { getAutoLayout, type LayoutType } from "@/components/canvas/auto-layout";
+import { ConnectMachineSteps } from "@/components/connect-machine-steps";
 import { HOME_LABELS, homeLayoutLabel } from "./home-labels";
-import { connectMachineLabel } from "@/lib/locale";
 
 const nodeTypes = { agent: AgentNode };
 const edgeTypes = { link: LinkEdge };
@@ -646,45 +645,25 @@ function MobileAgentList({ onAgentClick }: { onAgentClick?: (agent: Agent) => vo
 
 function ConnectComputerCard({ workspaceId }: { workspaceId: string }) {
   const [token, setToken] = useState("");
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
+  const onGenerateToken = useCallback(() => {
+    setLoading(true);
     createMachineToken("cli", workspaceId)
       .then((res) => setToken(res.token))
       .catch(() => toast.error(HOME_LABELS.generateTokenFailed))
       .finally(() => setLoading(false));
   }, [workspaceId]);
 
-  const command = `${cliCmd()} register --token ${token}`;
-
-  const copy = () => {
-    navigator.clipboard.writeText(command);
-    toast.success(connectMachineLabel("copiedToClipboard"));
-  };
-
   return (
-    <div className="rounded-xl bg-muted/40 p-5 space-y-3">
-      <h3 className="text-sm font-semibold">{connectMachineLabel("connectComputer")}</h3>
-      <p className="text-xs text-muted-foreground">
-        {connectMachineLabel("terminalDescription")}
-      </p>
-      {loading ? (
-        <div className="rounded-md bg-muted p-2.5 font-mono text-xs text-muted-foreground animate-pulse">
-          {connectMachineLabel("generatingToken")}
-        </div>
-      ) : (
-        <>
-          <div
-            className="rounded-md bg-muted p-2.5 font-mono text-xs text-muted-foreground cursor-pointer hover:bg-muted/80 transition-colors break-all"
-            onClick={copy}
-          >
-            {command}
-          </div>
-          <Button size="sm" onClick={copy} className="w-full">
-            {connectMachineLabel("copyCommand")}
-          </Button>
-        </>
-      )}
+    <div className="rounded-xl bg-muted/40 p-5">
+      <ConnectMachineSteps
+        generatedToken={token}
+        generatingToken={loading}
+        onGenerateToken={onGenerateToken}
+        registered={false}
+        chhlatOnline={false}
+      />
     </div>
   );
 }

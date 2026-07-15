@@ -149,12 +149,12 @@ export const connectMachineCopy = {
     [Locale.KM]: "ភ្ជាប់កុំព្យូទ័រ",
   },
   desktopDescription: {
-    [Locale.EN]: "Click to register your machine with ភ្នាក់ងារ.",
-    [Locale.KM]: "ចុចដើម្បីចុះឈ្មោះម៉ាស៊ីនរបស់អ្នកជាមួយ ភ្នាក់ងារ។",
+    [Locale.EN]: "Click to register this machine for the current workspace.",
+    [Locale.KM]: "ចុចដើម្បីចុះឈ្មោះម៉ាស៊ីននេះសម្រាប់កន្លែងធ្វើការបច្ចុប្បន្ន។",
   },
   terminalDescription: {
-    [Locale.EN]: "Run this in your terminal to link your machine.",
-    [Locale.KM]: "ដំណើរការពាក្យបញ្ជានេះក្នុង terminal ដើម្បីភ្ជាប់ម៉ាស៊ីនរបស់អ្នក។",
+    [Locale.EN]: "Run this in your terminal to register this machine for the current workspace.",
+    [Locale.KM]: "ដំណើរការពាក្យបញ្ជានេះក្នុង terminal ដើម្បីចុះឈ្មោះម៉ាស៊ីននេះសម្រាប់កន្លែងធ្វើការបច្ចុប្បន្ន។",
   },
   generatingToken: {
     [Locale.EN]: "Generating token...",
@@ -175,6 +175,32 @@ export const connectMachineCopy = {
   copyCommand: {
     [Locale.EN]: "Copy Command",
     [Locale.KM]: "ចម្លងពាក្យបញ្ជា",
+  },
+  nextStepsTitle: {
+    [Locale.EN]: "Next steps",
+    [Locale.KM]: "ជំហានបន្ទាប់",
+  },
+  nextStepRegisterTerminal: {
+    [Locale.EN]: "Paste and run the register command above.",
+    [Locale.KM]: "បិទភ្ជាប់ និងដំណើរការពាក្យបញ្ជា register ខាងលើ។",
+  },
+  nextStepRegisterDesktop: {
+    [Locale.EN]: "Click Register above to link this machine.",
+    [Locale.KM]: "ចុច «ចុះឈ្មោះ» ខាងលើដើម្បីភ្ជាប់ម៉ាស៊ីននេះ។",
+  },
+  nextStepChhlat: {
+    [Locale.EN]: "If needed, start the local bridge (chhlat start).",
+    [Locale.KM]: "បើចាំបាច់ ចាប់ផ្តើមស្ពានក្នុងម៉ាស៊ីន (chhlat start)។",
+  },
+  nextStepWait: {
+    [Locale.EN]: "Wait until this page shows Computer connected.",
+    [Locale.KM]: "រង់ចាំរហូតទាល់តែទំព័រនេះបង្ហាញ «កុំព្យូទ័របានភ្ជាប់»។",
+  },
+  agentWorkdirNote: {
+    [Locale.EN]:
+      "Agents only use a sandboxed agent workspace folder on this computer—not your entire filesystem.",
+    [Locale.KM]:
+      "ភ្នាក់ងារប្រើតែថត workspace របស់ភ្នាក់ងារ (sandboxed) លើកុំព្យូទ័រនេះ—មិនមែនប្រព័ន្ធឯកសារទាំងមូលទេ។",
   },
 } as const satisfies Record<string, LocaleLabels>;
 

@@ -9,6 +9,28 @@ import { connectMachineLabel } from "@/lib/locale";
 import { cliCmd, getAppMode } from "@/lib/utils";
 import { isTauri, tauriInvoke } from "@phneakngar/shared";
 
+function ConnectMachineNextSteps({ isDesktopApp }: { isDesktopApp: boolean }) {
+  return (
+    <div className="space-y-2 pt-1">
+      <p className="text-xs font-medium text-foreground/80">
+        {connectMachineLabel("nextStepsTitle")}
+      </p>
+      <ol className="list-decimal list-outside ml-4 space-y-1 text-xs text-muted-foreground">
+        <li>
+          {isDesktopApp
+            ? connectMachineLabel("nextStepRegisterDesktop")
+            : connectMachineLabel("nextStepRegisterTerminal")}
+        </li>
+        <li>{connectMachineLabel("nextStepChhlat")}</li>
+        <li>{connectMachineLabel("nextStepWait")}</li>
+      </ol>
+      <p className="text-xs text-muted-foreground leading-relaxed">
+        {connectMachineLabel("agentWorkdirNote")}
+      </p>
+    </div>
+  );
+}
+
 export function ConnectMachineSteps({
   generatedToken,
   generatingToken,
@@ -126,6 +148,7 @@ export function ConnectMachineSteps({
               </Button>
             </>
           )}
+          <ConnectMachineNextSteps isDesktopApp={isDesktopApp} />
         </div>
       ) : null}
     </div>
