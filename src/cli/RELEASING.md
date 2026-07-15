@@ -15,7 +15,9 @@ A commit message of the form `release: vX.Y.Z` triggers:
 3. **Publish CLI** (`publish-cli.yml`) when `src/cli/package.json` changes on that release commit
 4. **Publish app** (`publish-app.yml`) similarly for `@phneakngar/app`
 
-Publishing uses **npm Trusted Publishers (OIDC)** — no long-lived npm token in CI.
+Publishing from the private GitHub repository uses the GitHub Actions secret `NPM_TOKEN`.
+Create a granular npm access token that can publish `@phneakngar/cli` and `@phneakngar/app`, enable 2FA bypass for automation, then store it as `NPM_TOKEN` in the repository secrets before running the publish workflows.
+The npm package 2FA setting must allow token-based publishing; do not select a package setting that disallows tokens.
 
 ## Pre-publish verification (required for client readiness)
 

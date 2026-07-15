@@ -27,7 +27,6 @@ jobs:
       NEXT_PUBLIC_PHNEAKNGAR_ENVIRONMENT: development
     permissions:
       contents: read
-      id-token: write
     steps:
       - uses: actions/checkout@v7
 
@@ -75,12 +74,6 @@ jobs:
           registry-url: https://registry.npmjs.org
           cache: pnpm
 
-      - name: Upgrade npm for Trusted Publishers
-        if: steps.check.outputs.skip == 'false'
-        run: |
-          npm install -g --prefix="$RUNNER_TEMP/npm-new" npm@12.0.1 sigstore@5.0.0
-          echo "$RUNNER_TEMP/npm-new/bin" >> "$GITHUB_PATH"
-
       - run: pnpm install --frozen-lockfile
         if: steps.check.outputs.skip == 'false'
 
@@ -88,7 +81,11 @@ jobs:
         if: steps.check.outputs.skip == 'false'
         run: node scripts/verify-app-package.mjs
 
-      - name: Publish to npm (OIDC)
+      - name: Publish to npm
         if: steps.check.outputs.skip == 'false'
         working-directory: src/app
-        run: npm publish --access public --tag latest
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          : "${NODE_AUTH_TOKEN:?NPM_TOKEN GitHub secret is required for npm publish}"
+          npm publish --access public --tag latest
