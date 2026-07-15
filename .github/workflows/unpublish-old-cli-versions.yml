@@ -1,0 +1,59 @@
+# One-shot helper: remove pre-reset high patch versions from npm after line reset to 0.0.1/0.0.2.
+# Safe to re-run; missing versions are skipped.
+name: Unpublish old npm versions
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "If true, only print actions"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
+
+jobs:
+  unpublish:
+    name: Unpublish 0.0.149 and 0.0.150
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          registry-url: https://registry.npmjs.org
+
+      - name: Unpublish superseded versions
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          set -euo pipefail
+          : "${NODE_AUTH_TOKEN:?NPM_TOKEN is required}"
+          packages=("@phneakngar/cli" "@phneakngar/app")
+          versions=("0.0.149" "0.0.150")
+          for pkg in "${packages[@]}"; do
+            for ver in "${versions[@]}"; do
+              if npm view "${pkg}@${ver}" version >/dev/null 2>&1; then
+                echo "Found ${pkg}@${ver}"
+                if [ "$DRY_RUN" = "true" ]; then
+                  echo "dry-run: would unpublish ${pkg}@${ver}"
+                else
+                  npm unpublish "${pkg}@${ver}" --force || {
+                    echo "unpublish failed for ${pkg}@${ver}; trying deprecate"
+                    npm deprecate "${pkg}@${ver}" "Superseded: version line reset to 0.0.1/0.0.2. Use @latest (>=0.0.2)."
+                  }
+                fi
+              else
+                echo "skip missing ${pkg}@${ver}"
+              fi
+            done
+          done
+          echo "--- cli tags ---"
+          npm view @phneakngar/cli dist-tags versions --json || true
+          echo "--- app tags ---"
+          npm view @phneakngar/app dist-tags versions --json || true
