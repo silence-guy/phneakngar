@@ -19,11 +19,14 @@ phneakngar version
 npx @phneakngar/cli <command>
 ```
 
-### From a local pack (pre-publish / offline)
+### From a local pack (pre-publish / operator distribution)
+
+The tarball contains the CLI build, but npm still resolves its runtime dependencies from the configured registry unless they are already cached. It is not a fully offline bundle.
 
 ```bash
 # built by an operator from the monorepo
-npm install --global ./phneakngar-cli-0.0.149.tgz
+npm install --global ./phneakngar-cli-X.Y.Z.tgz
+phneakngar version
 ```
 
 ## Quick Start

@@ -76,15 +76,55 @@ npm install --global @phneakngar/cli@0.0.1
 phneakngar version
 ```
 
+### Alternative: install an operator-provided tarball
+
+This path still requires Node.js `>=20.19.0`. Unless the runtime dependencies are already cached, npm also needs access to the configured npm registry; the CLI tarball is not a fully offline bundle.
+
+```bash
+npm install --global ./phneakngar-cli-X.Y.Z.tgz
+phneakngar version
+```
+
+Replace `X.Y.Z` with the tarball version supplied by the operator.
+
+### Alternative: build the tarball from this repository
+
+This build path requires the repository toolchain: Node.js `>=20.19.0`, pnpm `10.33.0`, and Bun `1.3.14`.
+
+macOS/Linux:
+
+```bash
+cd /path/to/phneakngar
+pnpm install --frozen-lockfile
+pnpm pack:cli
+npm install --global "./src/cli/phneakngar-cli-$(node -p "require('./src/cli/package.json').version").tgz"
+phneakngar version
+```
+
+Windows PowerShell:
+
+```powershell
+Set-Location C:\path\to\phneakngar
+pnpm install --frozen-lockfile
+pnpm pack:cli
+$version = node -p "require('./src/cli/package.json').version"
+npm install --global "./src/cli/phneakngar-cli-$version.tgz"
+phneakngar version
+```
+
 If `phneakngar` is not found after install, check npm's global binary path:
 
 ```bash
-printf '%s\n' "$(npm prefix --global)/bin"
+export PATH="$(npm prefix --global)/bin:$PATH"
 ```
+
+The `export` updates only the current shell. Add the same line to the appropriate shell profile if the change must persist.
 
 ```powershell
 npm prefix --global
 ```
+
+On Windows, add the returned directory to the user `PATH` if Node.js installation did not configure it automatically.
 
 ## Initialize, diagnose, register, and start
 
