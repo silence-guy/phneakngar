@@ -1,0 +1,5 @@
+
+> phneakngar@ check:project /Users/privexus/Project/ភ្នាក់ងារ
+> node scripts/check-project-guardrails.mjs
+
+Project guardrail check passed.

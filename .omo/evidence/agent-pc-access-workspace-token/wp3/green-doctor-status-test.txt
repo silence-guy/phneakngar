@@ -1,0 +1,18 @@
+
+ RUN  v4.1.9 /Users/privexus/Project/ភ្នាក់ងារ/src/cli
+
+ ✓ commands/status.test.ts (3 tests) 1123ms
+     ✓ reports not registered when config empty  373ms
+     ✓ reports empty watched_workspaces when present but empty  375ms
+     ✓ reports registered workspace  374ms
+ ✓ commands/doctor.test.ts (13 tests) 1477ms
+     ✓ returns pass or fail based on PATH detections  367ms
+     ✓ returns fail exit when not registered (skip network)  375ms
+     ✓ passes registration when token present (skip network) and still includes workdir info  374ms
+     ✓ includes network checks when enabled  355ms
+
+ Test Files  2 passed (2)
+      Tests  16 passed (16)
+   Start at  18:53:43
+   Duration  1.90s (transform 290ms, setup 0ms, import 710ms, tests 2.60s, environment 0ms)
+

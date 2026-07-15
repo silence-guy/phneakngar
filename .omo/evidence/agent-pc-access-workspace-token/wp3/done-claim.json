@@ -1,0 +1,63 @@
+{
+  "work_package": "WP3-doctor",
+  "goal": "agent-pc-access-workspace-token",
+  "commit_message": "feat(cli): doctor checks for machine registration gaps",
+  "commit": "b9e74ba6",
+  "status": "green",
+  "summary": "Doctor Registration fails closed with empty/unusable watched_workspaces diagnostics and register --token al_... hint; INFO Agent workdir scope documents workdir-only access; status mirrors al_ hint. No invented server-online heartbeat API.",
+  "files_changed": [
+    "src/cli/commands/doctor.ts",
+    "src/cli/commands/doctor.test.ts",
+    "src/cli/commands/status.ts",
+    "src/cli/commands/status.test.ts"
+  ],
+  "success_criteria": [
+    {
+      "id": "SC1_empty_watched_workspaces_fail",
+      "scenario": "config with watched_workspaces: []",
+      "invocation": "pnpm --filter @phneakngar/cli exec vitest run commands/doctor.test.ts",
+      "binary_observable": "checkRegistration status=fail; detail mentions empty; hint matches register --token al_",
+      "artifact": ".omo/evidence/agent-pc-access-workspace-token/wp3/green-doctor-status-test.txt"
+    },
+    {
+      "id": "SC2_deleted_tokenless_fail",
+      "scenario": "only deleted or empty-token entries",
+      "invocation": "same doctor.test.ts",
+      "binary_observable": "status=fail; detail no active/none usable; hint al_",
+      "artifact": ".omo/evidence/agent-pc-access-workspace-token/wp3/green-doctor-status-test.txt"
+    },
+    {
+      "id": "SC3_token_present_pass",
+      "scenario": "active al_ token in watched_workspaces",
+      "invocation": "same doctor.test.ts",
+      "binary_observable": "Registration status=pass; Agent workdir scope status=info",
+      "artifact": ".omo/evidence/agent-pc-access-workspace-token/wp3/green-doctor-status-test.txt"
+    },
+    {
+      "id": "SC4_workdir_info_only",
+      "scenario": "checkAgentWorkdirScope()",
+      "invocation": "same doctor.test.ts",
+      "binary_observable": "status=info; detail mentions workdir, workspaces, not whole PC",
+      "artifact": ".omo/evidence/agent-pc-access-workspace-token/wp3/green-doctor-status-test.txt"
+    },
+    {
+      "id": "SC5_full_cli_suite",
+      "scenario": "full @phneakngar/cli package tests",
+      "invocation": "pnpm --filter @phneakngar/cli test",
+      "binary_observable": "Test Files 69 passed | 1 skipped; Tests 1146 passed | 4 skipped",
+      "artifact": ".omo/evidence/agent-pc-access-workspace-token/wp3/green-cli-full-test.txt"
+    }
+  ],
+  "tdd": {
+    "red_artifact": ".omo/evidence/agent-pc-access-workspace-token/wp3/red-doctor-test.txt",
+    "red_summary": "4 failed before impl (empty detail, missing checkAgentWorkdirScope, runDoctor missing Agent workdir scope)"
+  },
+  "skipped": [
+    {
+      "item": "server-online heartbeat API in doctor",
+      "reason": "No such API exists; reachability = Registration fail-closed + Chhlat running/health (documented in checkRegistration comment)"
+    }
+  ],
+  "no_version_bump": true,
+  "timestamp": "2026-07-15T18:54:00Z"
+}

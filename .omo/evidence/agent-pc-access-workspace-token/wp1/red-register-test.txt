@@ -1,0 +1,78 @@
+
+ RUN  v4.1.9 /Users/privexus/Project/ភ្នាក់ងារ/src/cli
+
+ ❯ commands/register.test.ts (7 tests | 4 failed) 9ms
+     × activates pending machine token that fails pre-activate GET /api/me 4ms
+     × activates token and saves workspace to config 1ms
+     × still succeeds when post-activate GET /api/me fails 1ms
+     × rejects non-al_ token before any network call 1ms
+     ✓ preserves existing watched_workspaces and updates matching entry 1ms
+     ✓ sends SIGHUP when chhlat is running 0ms
+     ✓ auto-starts chhlat when not running 0ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 4 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  commands/register.test.ts > phneakngar register > activates pending machine token that fails pre-activate GET /api/me
+TypeError: Cannot read properties of undefined (reading 'email')
+ ❯ Command.<anonymous> commands/register.ts:56:41
+     54|       const result = await activateAndSave({ token, serverUrl, profile…
+     55|
+     56|       console.log(`\nRegistered as ${me.email}`);
+       |                                         ^
+     57|       console.log(`Workspace: ${result.workspaceName} (${result.worksp…
+     58|       console.log(`Runtimes: ${result.runtimeProviders.join(", ")}`);
+ ❯ Command.parseAsync ../../node_modules/.pnpm/commander@14.0.3/node_modules/commander/lib/command.js:1122:5
+ ❯ commands/register.test.ts:147:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯
+
+ FAIL  commands/register.test.ts > phneakngar register > activates token and saves workspace to config
+AssertionError: expected 1 to be less than 0
+ ❯ commands/register.test.ts:216:27
+    214|     expect(activateIdx).toBeGreaterThanOrEqual(0);
+    215|     if (meIdx >= 0) {
+    216|       expect(activateIdx).toBeLessThan(meIdx);
+       |                           ^
+    217|     }
+    218|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/4]⎯
+
+ FAIL  commands/register.test.ts > phneakngar register > still succeeds when post-activate GET /api/me fails
+TypeError: Cannot read properties of undefined (reading 'email')
+ ❯ Command.<anonymous> commands/register.ts:56:41
+     54|       const result = await activateAndSave({ token, serverUrl, profile…
+     55|
+     56|       console.log(`\nRegistered as ${me.email}`);
+       |                                         ^
+     57|       console.log(`Workspace: ${result.workspaceName} (${result.worksp…
+     58|       console.log(`Runtimes: ${result.runtimeProviders.join(", ")}`);
+ ❯ Command.parseAsync ../../node_modules/.pnpm/commander@14.0.3/node_modules/commander/lib/command.js:1122:5
+ ❯ commands/register.test.ts:245:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/4]⎯
+
+ FAIL  commands/register.test.ts > phneakngar register > rejects non-al_ token before any network call
+TypeError: Cannot read properties of undefined (reading 'length')
+ ❯ activateAndSave lib/activate.ts:86:19
+     84|   }
+     85|
+     86|   if (!workspaces.length) {
+       |                   ^
+     87|     console.error("Error: no workspaces found for this user");
+     88|     process.exit(1);
+ ❯ Command.<anonymous> commands/register.ts:54:22
+ ❯ Command.parseAsync ../../node_modules/.pnpm/commander@14.0.3/node_modules/commander/lib/command.js:1122:5
+ ❯ commands/register.test.ts:277:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/4]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  4 failed | 3 passed (7)
+   Start at  18:50:57
+   Duration  567ms (transform 229ms, setup 0ms, import 482ms, tests 9ms, environment 0ms)
+
+undefined
+/Users/privexus/Project/ភ្នាក់ងារ/src/cli:
+ ERR_PNPM_RECURSIVE_EXEC_FIRST_FAIL  Command failed with exit code 1: vitest run commands/register.test.ts

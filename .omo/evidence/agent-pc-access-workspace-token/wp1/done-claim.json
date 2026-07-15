@@ -1,0 +1,26 @@
+{
+  "DoneClaim": {
+    "task": "WP1-register-pending",
+    "changed_files": [
+      "src/cli/commands/register.ts",
+      "src/cli/commands/register.test.ts"
+    ],
+    "tests": [
+      "pnpm --filter @phneakngar/cli exec vitest run commands/register.test.ts → RED 4 failed / 3 passed",
+      "pnpm --filter @phneakngar/cli exec vitest run commands/register.test.ts → GREEN 7 passed",
+      "pnpm --filter @phneakngar/cli test → GREEN 1127 passed | 4 skipped"
+    ],
+    "red_then_green": "RED: pending /api/me 401 + activate-first order + post-me fail + non-al_ failed on old code. GREEN after activate-first + non-fatal me.",
+    "manual_qa": [
+      ".omo/evidence/agent-pc-access-workspace-token/wp1/red-register-test.txt",
+      ".omo/evidence/agent-pc-access-workspace-token/wp1/green-register-test.txt",
+      ".omo/evidence/agent-pc-access-workspace-token/wp1/green-cli-full-test.txt"
+    ],
+    "diff_summary": "register.ts: al_ check kept; activateAndSave first; optional non-fatal GET /api/me after for email display; return after process.exit for validation.",
+    "risks": [
+      "If activate succeeds but later workspace fetch fails inside activateAndSave, behavior unchanged (still exits).",
+      "Users no longer get early 'failed to verify token' for pending tokens (by design)."
+    ],
+    "commit": "791ee742"
+  }
+}

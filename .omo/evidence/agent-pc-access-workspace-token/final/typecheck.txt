@@ -1,0 +1,50 @@
+
+> phneakngar@ typecheck /Users/privexus/Project/ភ្នាក់ងារ
+> turbo run typecheck
+
+• turbo 2.9.18
+
+   • Packages in scope: @phneakngar/app, @phneakngar/cli, @phneakngar/desktop, @phneakngar/email-worker, @phneakngar/shared, @phneakngar/test-utils, @phneakngar/web, @phneakngar/ws-do
+   • Running typecheck in 8 packages
+   • Remote caching disabled
+
+@phneakngar/cli:typecheck: cache miss, executing 6599282be2bc4a3f
+@phneakngar/web:typecheck: cache miss, executing 27660714bc50275c
+@phneakngar/shared:typecheck: cache hit, replaying logs b85a2bb05a33ec31
+@phneakngar/test-utils:typecheck: cache hit, replaying logs 76221db7c123ffa7
+@phneakngar/app:typecheck: cache hit, replaying logs e1855e0f9c29fedb
+@phneakngar/test-utils:typecheck: 
+@phneakngar/test-utils:typecheck: > @phneakngar/test-utils@0.0.103 typecheck /Users/privexus/Project/ភ្នាក់ងារ/tests/utils
+@phneakngar/test-utils:typecheck: > tsc --noEmit
+@phneakngar/test-utils:typecheck: 
+@phneakngar/shared:typecheck: 
+@phneakngar/shared:typecheck: > @phneakngar/shared@0.0.1 typecheck /Users/privexus/Project/ភ្នាក់ងារ/src/shared
+@phneakngar/shared:typecheck: > tsc --noEmit
+@phneakngar/shared:typecheck: 
+@phneakngar/ws-do:typecheck: cache hit, replaying logs 137ff4e4a8434c53
+@phneakngar/app:typecheck: 
+@phneakngar/app:typecheck: > @phneakngar/app@0.0.1 typecheck /Users/privexus/Project/ភ្នាក់ងារ/src/app
+@phneakngar/app:typecheck: > tsc --noEmit
+@phneakngar/email-worker:typecheck: cache hit, replaying logs 3895b8e064810797
+@phneakngar/app:typecheck: 
+@phneakngar/ws-do:typecheck: 
+@phneakngar/ws-do:typecheck: > @phneakngar/ws-do@0.0.1 typecheck /Users/privexus/Project/ភ្នាក់ងារ/src/ws-do
+@phneakngar/ws-do:typecheck: > tsc --noEmit -p tsconfig.build.json
+@phneakngar/ws-do:typecheck: 
+@phneakngar/email-worker:typecheck: 
+@phneakngar/email-worker:typecheck: > @phneakngar/email-worker@0.0.1 typecheck /Users/privexus/Project/ភ្នាក់ងារ/src/email-worker
+@phneakngar/email-worker:typecheck: > tsc --noEmit
+@phneakngar/email-worker:typecheck: 
+@phneakngar/cli:typecheck: 
+@phneakngar/cli:typecheck: > @phneakngar/cli@0.0.1 typecheck /Users/privexus/Project/ភ្នាក់ងារ/src/cli
+@phneakngar/cli:typecheck: > tsc --noEmit -p tsconfig.build.json
+@phneakngar/cli:typecheck: 
+@phneakngar/web:typecheck: 
+@phneakngar/web:typecheck: > @phneakngar/web@0.0.1 typecheck /Users/privexus/Project/ភ្នាក់ងារ/src/web
+@phneakngar/web:typecheck: > tsc --noEmit
+@phneakngar/web:typecheck: 
+
+ Tasks:    7 successful, 7 total
+Cached:    5 cached, 7 total
+  Time:    6.404s 
+
