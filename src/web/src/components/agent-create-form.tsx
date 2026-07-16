@@ -43,6 +43,8 @@ interface AgentCreateFormProps {
     name: string;
     description: string;
     instructions: string;
+    role_title?: string;
+    responsibility?: string;
     runtime_id: string;
     email_handle?: string;
     runtime_config?: Record<string, unknown>;
@@ -134,6 +136,8 @@ export function AgentCreateForm({
   const { workspaceId } = useWorkspace();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [roleTitle, setRoleTitle] = useState("");
+  const [responsibility, setResponsibility] = useState("");
   const [instructions, setInstructions] = useState("");
   const [runtimeId, setRuntimeId] = useState(defaultRuntimeId);
   const [emailHandle, setEmailHandle] = useState("");
@@ -215,6 +219,8 @@ export function AgentCreateForm({
       name: name.trim(),
       description,
       instructions,
+      role_title: roleTitle.trim() || undefined,
+      responsibility: responsibility.trim() || undefined,
       runtime_id: runtimeId,
       email_handle: emailHandle || derivedHandle || undefined,
       runtime_config: buildRuntimeConfigWithHeadroom({}, model, headroomSettings),
@@ -236,6 +242,10 @@ export function AgentCreateForm({
           setName={updateName}
           description={description}
           setDescription={setDescription}
+          roleTitle={roleTitle}
+          setRoleTitle={setRoleTitle}
+          responsibility={responsibility}
+          setResponsibility={setResponsibility}
           instructions={instructions}
           setInstructions={setInstructions}
           model={model}
@@ -260,6 +270,14 @@ export function AgentCreateForm({
                 value={headroomSettings}
                 onChange={setHeadroomSettings}
               />
+              <div className="space-y-0.5 rounded-lg border border-border/50 px-3 py-3">
+                <p className="text-xs font-medium text-muted-foreground">
+                  {agentFormLabel("mcpTools")}
+                </p>
+                <p className="text-xs text-muted-foreground/70 leading-relaxed">
+                  {agentFormLabel("mcpToolsHint")}
+                </p>
+              </div>
               <CustomEmailForm
                 workspaceId={workspaceId}
                 onDataChange={setCustomEmailData}

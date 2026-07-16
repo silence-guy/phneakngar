@@ -62,6 +62,9 @@ export function AgentPreviewCard({
               <span className="text-xs text-muted-foreground truncate">{email}</span>
             )}
           </div>
+          {agent.role_title ? (
+            <p className="text-xs text-muted-foreground truncate">{agent.role_title}</p>
+          ) : null}
           {isOnline !== undefined && (
             <div className="pointer-events-none mt-0.5">
               <AgentStatusBadge
@@ -91,6 +94,9 @@ export function AgentPreviewCard({
           </span>
         )}
       </div>
+      {agent.role_title ? (
+        <p className="text-xs text-muted-foreground truncate">{agent.role_title}</p>
+      ) : null}
       {email && (
         <div className="flex items-center gap-1">
           <span className="text-xs text-muted-foreground truncate">{email}</span>

@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { queries, AgentDmRequestSchema, truncateTitle } from "@phneakngar/shared"
+import { queries, AgentDmRequestSchema, truncateTitle, MessageKind } from "@phneakngar/shared"
 import { getDb } from "@/lib/db"
 import { withAuth } from "@/lib/middleware/auth";
 import { writeJSON, writeError, parseBody } from "@/lib/middleware/helpers";
@@ -47,7 +47,7 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
     role: "assistant",
     content: body.content,
     taskId: body.task_id ?? null,
-    metadata: JSON.stringify({ kind: "dm" }),
+    metadata: JSON.stringify({ kind: MessageKind.DM }),
   });
 
   // Auto-title if still untitled — parity with the user-send route. The query's

@@ -179,6 +179,33 @@ describe("ClaudeBackend", () => {
     expect(parsed.response.response.updatedInput).toEqual({ command: "ls" });
   });
 
+  it("denies high-stakes control_request tools via shared approval policy", async () => {
+    const session = backend.execute("hello", { cwd: "/tmp" });
+    const mock = getMock();
+
+    mock.stdout.push(
+      JSON.stringify({
+        type: "control_request",
+        request_id: "req_email",
+        payload: {
+          tool_name: "send_email",
+          input: { to: "a@b.c", subject: "hi" },
+        },
+      }) + "\n",
+    );
+    await tick();
+    mock.proc.emit("close", 0);
+
+    await session.result;
+
+    const approvalWrite = mock.stdinWrites.find((w) => w.includes("control_response"));
+    expect(approvalWrite).toBeDefined();
+    const parsed = JSON.parse(approvalWrite!.trim());
+    expect(parsed.response.request_id).toBe("req_email");
+    expect(parsed.response.response.behavior).toBe("deny");
+    expect(String(parsed.response.response.message)).toMatch(/approval|outbound_email/i);
+  });
+
   it("does not write approval when request_id is missing", async () => {
     const session = backend.execute("hello", { cwd: "/tmp" });
     const mock = getMock();

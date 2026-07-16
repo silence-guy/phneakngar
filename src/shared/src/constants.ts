@@ -43,6 +43,7 @@ export const TASK_TYPES = {
   EMAIL_NOTIFICATION: "email_notification",
   CALENDAR_EVENT: "calendar_event",
   ISSUE_EVENT: "issue_event",
+  AUTOMATION_EVENT: "automation_event",
   KILL_TASK: "kill_task",
 } as const;
 
@@ -52,6 +53,7 @@ export const IssueStatus = {
   TODO: "todo",
   IN_PROGRESS: "in_progress",
   REVIEW: "review",
+  BLOCKED: "blocked",
   DONE: "done",
   CLOSED: "closed",
   CANCELED: "canceled",
@@ -64,6 +66,7 @@ export const ACTIVE_ISSUE_STATUSES: readonly IssueStatusType[] = [
   IssueStatus.TODO,
   IssueStatus.IN_PROGRESS,
   IssueStatus.REVIEW,
+  IssueStatus.BLOCKED,
 ] as const;
 
 export const TERMINAL_ISSUE_STATUSES: readonly IssueStatusType[] = [
@@ -84,6 +87,15 @@ export const MessageRole = {
 } as const;
 
 export type MessageRoleType = (typeof MessageRole)[keyof typeof MessageRole];
+
+/** Metadata.kind values for assistant/event message chrome. */
+export const MessageKind = {
+  DM: "dm",
+  LIFECYCLE: "lifecycle",
+  CHANNEL_DELIVERY: "channel_delivery",
+} as const;
+
+export type MessageKindType = (typeof MessageKind)[keyof typeof MessageKind];
 
 // Timing constants
 export const POLL_INTERVAL_MS = Number(process.env.POLL_INTERVAL_MS) || 3_000;
@@ -128,10 +140,13 @@ export const IDEMPOTENCY_KEY_HEADER = "Idempotency-Key";
 /** Durable outbound send claim states on `emails.status` (direction=outbound). */
 export const OutboundEmailDeliveryStatus = {
   PENDING: "pending",
+  /** Awaiting human approve/edit before send (Helio-style high-stakes gate). */
+  PENDING_APPROVAL: "pending_approval",
   SENDING: "sending",
   SENT: "sent",
   FAILED: "failed",
   AMBIGUOUS: "ambiguous",
+  REJECTED: "rejected",
 } as const;
 
 export type OutboundEmailDeliveryStatusType =
@@ -140,3 +155,63 @@ export type OutboundEmailDeliveryStatusType =
 export function buildOutboundDeliveryKey(agentId: string, idempotencyKey: string): string {
   return `outbound:${agentId}:${idempotencyKey}`;
 }
+
+/** Generic high-stakes approval queue (email, tool write-back, skill install). */
+export const ApprovalKind = {
+  OUTBOUND_EMAIL: "outbound_email",
+  TOOL_ACTION: "tool_action",
+  SKILL_INSTALL: "skill_install",
+  AUTOMATION_PROMOTE: "automation_promote",
+} as const;
+
+export type ApprovalKindType = (typeof ApprovalKind)[keyof typeof ApprovalKind];
+
+export const ApprovalStatus = {
+  PENDING: "pending",
+  APPROVED: "approved",
+  REJECTED: "rejected",
+  EXPIRED: "expired",
+} as const;
+
+export type ApprovalStatusType = (typeof ApprovalStatus)[keyof typeof ApprovalStatus];
+
+export const MemoryKind = {
+  PREFERENCE: "preference",
+  DECISION: "decision",
+  FACT: "fact",
+  ROLE: "role",
+  /** Written by the memory compaction job only. */
+  SUMMARY: "summary",
+} as const;
+
+export type MemoryKindType = (typeof MemoryKind)[keyof typeof MemoryKind];
+
+export const AutomationDeliveryMode = {
+  CHANNEL: "channel",
+  DM: "dm",
+  EMAIL_DRAFT: "email_draft",
+  ISSUE: "issue",
+} as const;
+
+export type AutomationDeliveryModeType =
+  (typeof AutomationDeliveryMode)[keyof typeof AutomationDeliveryMode];
+
+/** How an artifact row was produced (chat upload vs delivery product surface). */
+export const ArtifactSource = {
+  AGENT: "agent",
+  ATTACHMENT: "attachment",
+  DELIVERY: "delivery",
+} as const;
+
+export type ArtifactSourceType = (typeof ArtifactSource)[keyof typeof ArtifactSource];
+
+/** Delivery product kinds stored under source=delivery. */
+export const DeliveryArtifactKind = {
+  DELIVERY: "delivery",
+  DIGEST: "digest",
+  DRAFT: "draft",
+  REPORT: "report",
+} as const;
+
+export type DeliveryArtifactKindType =
+  (typeof DeliveryArtifactKind)[keyof typeof DeliveryArtifactKind];

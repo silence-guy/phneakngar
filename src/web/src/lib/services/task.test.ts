@@ -11,6 +11,7 @@ vi.mock("@phneakngar/shared", async (importOriginal) => {
     EMAIL_NOTIFICATION: "email_notification",
     CALENDAR_EVENT: "calendar_event",
     ISSUE_EVENT: "issue_event",
+    AUTOMATION_EVENT: "automation_event",
     KILL_TASK: "kill_task",
   },
   MAX_TASKS_PER_TRACE: 256,
@@ -61,6 +62,9 @@ vi.mock("@phneakngar/shared", async (importOriginal) => {
       upsertUnreadEntry: vi.fn().mockResolvedValue(undefined),
       findLatestAssistantMessageId: vi.fn().mockResolvedValue(null),
     },
+    agentMemory: {
+      listMemoryForAgent: vi.fn().mockResolvedValue([]),
+    },
   },
   };
 });
@@ -77,6 +81,12 @@ vi.mock("@/lib/broadcast", () => ({
 vi.mock("@/lib/api/responses", () => ({
   messageToResponse: (m: unknown) => m,
   taskToResponse: (t: unknown) => t,
+}));
+
+const mockDeliverTaskResultToChannel = vi.fn().mockResolvedValue(null);
+
+vi.mock("@/lib/services/channel-delivery", () => ({
+  deliverTaskResultToChannel: (...a: unknown[]) => mockDeliverTaskResultToChannel(...a),
 }));
 
 import { TaskAlreadyTerminalError, TaskService } from "./task";
@@ -104,6 +114,9 @@ const issueQ = (queries as any).issue as {
 const runtimeQ = (queries as any).runtime as {
   getAgentRuntime: ReturnType<typeof vi.fn>;
 };
+const agentMemoryQ = (queries as any).agentMemory as {
+  listMemoryForAgent: ReturnType<typeof vi.fn>;
+};
 
 const service = new TaskService({} as any);
 
@@ -112,6 +125,7 @@ describe("TaskService", () => {
     vi.clearAllMocks();
     // Default: no kill tasks to claim
     taskQ.claimKillTasks.mockResolvedValue([]);
+    agentMemoryQ.listMemoryForAgent.mockResolvedValue([]);
     taskQ.detectTaskVisibleOutcome.mockResolvedValue("completed_without_visible_output");
     taskQ.updateTaskVisibleOutcomeStatus.mockImplementation(
       async (_db: unknown, id: string, workspaceId: string, visibleOutcomeStatus: string) => ({
@@ -164,7 +178,70 @@ describe("TaskService", () => {
         localeOverride: null,
         retryOfTaskId: null,
       });
+      expect(agentMemoryQ.listMemoryForAgent).not.toHaveBeenCalled();
       expect(result).toEqual({ id: "t1" });
+    });
+
+    it("injects agent memory into context for issue_event", async () => {
+      agentQ.getAgent.mockResolvedValue({ id: "a1", runtimeId: "r1" });
+      taskQ.createTask.mockResolvedValue({ id: "t1" });
+      agentMemoryQ.listMemoryForAgent.mockResolvedValue([
+        { kind: "preference", content: "Prefer short replies" },
+        { kind: "fact", content: "Owner is Beacon" },
+      ]);
+
+      await service.enqueueTask("a1", "c1", "w1", "fix bug", "issue_event", {
+        context: { issue_id: "iss_1" },
+      });
+
+      expect(agentMemoryQ.listMemoryForAgent).toHaveBeenCalledWith({}, "w1", "a1", 12);
+      const created = taskQ.createTask.mock.calls[0]![1] as {
+        context: { issue_id: string; memories: unknown[]; memory_prompt: string };
+      };
+      expect(created.context.issue_id).toBe("iss_1");
+      expect(created.context.memories).toEqual([
+        { kind: "preference", content: "Prefer short replies" },
+        { kind: "fact", content: "Owner is Beacon" },
+      ]);
+      expect(created.context.memory_prompt).toContain("Prefer short replies");
+      expect(created.context.memory_prompt).toContain("[preference]");
+    });
+
+    it("injects agent memory into context for automation_event", async () => {
+      agentQ.getAgent.mockResolvedValue({ id: "a1", runtimeId: "r1" });
+      taskQ.createTask.mockResolvedValue({ id: "t1" });
+      agentMemoryQ.listMemoryForAgent.mockResolvedValue([
+        { kind: "role", content: "Day planner" },
+      ]);
+
+      await service.enqueueTask("a1", "c1", "w1", "Morning brief", "automation_event", {
+        context: { automation_id: "auto_1" },
+      });
+
+      const created = taskQ.createTask.mock.calls[0]![1] as {
+        context: { automation_id: string; memories: unknown[]; memory_prompt: string };
+      };
+      expect(created.context.automation_id).toBe("auto_1");
+      expect(created.context.memories).toEqual([{ kind: "role", content: "Day planner" }]);
+      expect(created.context.memory_prompt).toContain("Day planner");
+    });
+
+    it("does not overwrite caller-supplied memories", async () => {
+      agentQ.getAgent.mockResolvedValue({ id: "a1", runtimeId: "r1" });
+      taskQ.createTask.mockResolvedValue({ id: "t1" });
+
+      await service.enqueueTask("a1", "c1", "w1", "fix bug", "issue_event", {
+        context: {
+          issue_id: "iss_1",
+          memories: [{ kind: "fact", content: "preloaded" }],
+        },
+      });
+
+      expect(agentMemoryQ.listMemoryForAgent).not.toHaveBeenCalled();
+      const created = taskQ.createTask.mock.calls[0]![1] as {
+        context: { memories: unknown[] };
+      };
+      expect(created.context.memories).toEqual([{ kind: "fact", content: "preloaded" }]);
     });
   });
 
@@ -537,6 +614,147 @@ describe("TaskService", () => {
 
       // Agent now controls issue status via CLI — completeTask no longer auto-syncs
       expect(issueQ.updateIssue).not.toHaveBeenCalled();
+    });
+
+    it("invokes channel delivery with task context + parsed result (C3)", async () => {
+      const task = {
+        id: "t1",
+        agentId: "a1",
+        workspaceId: "w1",
+        conversationId: "c1",
+        status: "completed",
+        context: { deliver_to_channel: true, delivery_channel_id: "ch_1" },
+      };
+      taskQ.completeTask.mockResolvedValue(task);
+      taskQ.countRunningTasks.mockResolvedValue(0);
+      agentQ.updateAgentStatus.mockResolvedValue(undefined);
+      mockDeliverTaskResultToChannel.mockResolvedValue({
+        created: true,
+        message: { id: "channel-delivery-t1" },
+      });
+
+      const completed = await service.completeTask(
+        "t1",
+        "w1",
+        JSON.stringify({ output: "Digest ready" }),
+        "sess-1",
+      );
+
+      expect(mockDeliverTaskResultToChannel).toHaveBeenCalledWith(
+        {},
+        expect.objectContaining({
+          id: "t1",
+          agentId: "a1",
+          workspaceId: "w1",
+          conversationId: "c1",
+          context: { deliver_to_channel: true, delivery_channel_id: "ch_1" },
+        }),
+        { result: { output: "Digest ready" } },
+      );
+      // C3 result is returned so C9 can link artifacts to the channel conversation.
+      expect(completed.channelDelivery).toEqual({
+        created: true,
+        message: { id: "channel-delivery-t1" },
+      });
+      expect(completed.task).toMatchObject({ id: "t1", status: "completed" });
+      // Ordinary DM auto-bubble still not created from output.
+      expect(messageQ.createMessage).not.toHaveBeenCalled();
+    });
+
+    it("does not fail completion when channel delivery throws", async () => {
+      const task = {
+        id: "t1",
+        agentId: "a1",
+        workspaceId: "w1",
+        conversationId: "c1",
+        status: "completed",
+        context: { delivery_mode: "channel" },
+      };
+      taskQ.completeTask.mockResolvedValue(task);
+      taskQ.countRunningTasks.mockResolvedValue(0);
+      agentQ.updateAgentStatus.mockResolvedValue(undefined);
+      mockDeliverTaskResultToChannel.mockRejectedValue(new Error("boom"));
+
+      await expect(
+        service.completeTask("t1", "w1", JSON.stringify({ output: "x" }), "sess-1"),
+      ).resolves.toMatchObject({
+        task: { id: "t1", status: "completed" },
+        channelDelivery: null,
+      });
+      expect(log.warn).toHaveBeenCalledWith(
+        "completeTask: channel delivery failed",
+        expect.objectContaining({ taskId: "t1" }),
+      );
+    });
+
+    it("does not use channel delivery message id for source conversation unread", async () => {
+      const inboxQ = (queries as any).inbox as {
+        isUnreadEligible: ReturnType<typeof vi.fn>;
+        upsertUnreadEntry: ReturnType<typeof vi.fn>;
+        findLatestAssistantMessageId: ReturnType<typeof vi.fn>;
+      };
+      const task = {
+        id: "t1",
+        agentId: "a1",
+        workspaceId: "w1",
+        conversationId: "c_src",
+        type: "user_dm_message",
+        status: "completed",
+        completedAt: "2026-07-16T00:00:00.000Z",
+        prompt: "digest",
+        context: { deliver_to_channel: true, delivery_channel_id: "ch_1" },
+        parentTaskId: null,
+        traceId: "tr1",
+      };
+      taskQ.completeTask.mockResolvedValue(task);
+      // Preserve full task fields — default mock returns a slim shape without completedAt.
+      taskQ.updateTaskVisibleOutcomeStatus.mockImplementation(
+        async (_db: unknown, id: string, workspaceId: string, visibleOutcomeStatus: string) => ({
+          ...task,
+          id,
+          workspaceId,
+          visibleOutcomeStatus,
+        }),
+      );
+      taskQ.countRunningTasks.mockResolvedValue(0);
+      agentQ.updateAgentStatus.mockResolvedValue(undefined);
+      mockDeliverTaskResultToChannel.mockResolvedValue({
+        created: true,
+        message: { id: "channel-delivery-t1" },
+        conversationId: "c_channel",
+      });
+      inboxQ.isUnreadEligible.mockReturnValue(true);
+      inboxQ.findLatestAssistantMessageId.mockResolvedValue("msg_src_latest");
+      conversationQ.getConversation.mockResolvedValue({
+        id: "c_src",
+        userId: "u1",
+        agentId: "a1",
+        workspaceId: "w1",
+      });
+
+      await service.completeTask(
+        "t1",
+        "w1",
+        JSON.stringify({ output: "Digest ready" }),
+        "sess-1",
+      );
+
+      // Flush fire-and-forget maybeUpsertUnread.
+      await new Promise((r) => setTimeout(r, 0));
+
+      expect(inboxQ.findLatestAssistantMessageId).toHaveBeenCalledWith({}, "c_src");
+      expect(inboxQ.upsertUnreadEntry).toHaveBeenCalledWith(
+        {},
+        expect.objectContaining({
+          conversationId: "c_src",
+          latestMessageId: "msg_src_latest",
+        }),
+      );
+      // Channel delivery message must not be stamped onto source unread.
+      expect(inboxQ.upsertUnreadEntry).not.toHaveBeenCalledWith(
+        {},
+        expect.objectContaining({ latestMessageId: "channel-delivery-t1" }),
+      );
     });
   });
 

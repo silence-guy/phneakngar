@@ -43,7 +43,16 @@ export const GET = withAuth(async (req: NextRequest, ctx) => {
   }
 
   let emailList;
-  if (folder === "inbox" && agentEmail) {
+  if (folder === "pending_approval") {
+    // Outbound claims waiting for human approve/reject (compose requiresApproval path).
+    emailList = await queries.email.getEmailsByAgent(
+      db,
+      agentId,
+      ws.workspaceId,
+      "pending_approval",
+      pagination,
+    );
+  } else if (folder === "inbox" && agentEmail) {
     emailList = await queries.email.getTrustedEmails(db, agentId, agentEmail, ws.workspaceId, status, pagination);
   } else if (folder === "sent" && agentEmail) {
     emailList = await queries.email.getSentEmails(db, agentId, agentEmail, ws.workspaceId, status, pagination);

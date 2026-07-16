@@ -128,8 +128,12 @@ describe("locale foundation", () => {
       "user",
       "workspace",
       "agent",
+      "teammate",
       "runtime",
       "memory",
+      "automation",
+      "approval",
+      "routine",
       "template",
       "owner",
       "conversation",
@@ -150,9 +154,16 @@ describe("locale foundation", () => {
       "workspaceFile",
     ]);
 
+    expect(coreEntityLabels.teammate[Locale.EN]).toBe("Teammate");
+    expect(coreEntityLabels.teammate[Locale.KM]).toBe("មិត្តរួមការងារ");
+    expect(coreEntityLabels.automation[Locale.EN]).toBe("Automation");
+    expect(coreEntityLabels.approval[Locale.EN]).toBe("Approval");
+    expect(coreEntityLabels.routine[Locale.EN]).toBe("Routine");
     expect(coreEntityLabels.memory[Locale.KM]).toBe("សតិចងចាំ");
     expect(coreEntityLabels.template[Locale.KM]).toBe("គំរូ");
     expect(coreEntityLabels.inbox[Locale.KM]).toBe("ប្រអប់សារ");
+    expect(issueStatusLabels.blocked[Locale.EN]).toBe("Blocked");
+    expect(issueStatusLabels.blocked[Locale.KM]).toBe("ជាប់គាំង");
 
     for (const labels of Object.values(coreEntityLabels)) {
       expect(labels[Locale.KM]).not.toBe("");

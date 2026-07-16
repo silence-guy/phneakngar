@@ -124,6 +124,10 @@ export interface WorkspaceOverview {
   members: OverviewMember[];
   pending_invites: number;
   calendar_events: OverviewCalendarEvent[];
+  /** High-stakes items waiting on a human decision. */
+  pending_approvals: number;
+  /** Issues currently in blocked status (workspace-wide). */
+  blocked_issues: number;
 }
 
 export const getWorkspaceOverview = (workspaceId: string) =>

@@ -21,6 +21,11 @@ describe("overview query module exports", () => {
   it("exports getConversationCountsByAgent", () => {
     expect(typeof overviewQueries.getConversationCountsByAgent).toBe("function");
   });
+
+  it("exports attention counts", () => {
+    expect(typeof overviewQueries.countPendingApprovals).toBe("function");
+    expect(typeof overviewQueries.countBlockedIssues).toBe("function");
+  });
 });
 
 describe("getRecentTerminalTasks", () => {

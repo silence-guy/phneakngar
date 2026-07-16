@@ -1,4 +1,8 @@
 import { createHash } from "crypto";
+import {
+  buildJudgmentPolicyContextBlock,
+  readJudgmentPolicy,
+} from "@phneakngar/shared";
 import { tempDir } from "../../lib/platform.js";
 import { cmdPrefix } from "../../lib/env.js";
 import {
@@ -140,12 +144,21 @@ The CLI auto-detects your identity from the environment. No need to pass \`--age
 | Capability | Command |
 |---|---|
 | Send a message to the user | \`${cmdPrefix()} sync send-dm\` |
+| Create / update / claim issues | \`${cmdPrefix()} issue create\` (also list, show, update, comment, claim, handback) |
 | Schedule / list / edit tasks | \`${cmdPrefix()} calendar set\` (also list, show, update, delete) |
 | Upload a file for your owner | \`${cmdPrefix()} sync upload-artifact\` |
 | Recruit a colleague agent | \`${cmdPrefix()} agent recruit\` |
 
 Detailed usage for each capability follows below.
 `;
+
+  const judgmentBlock = buildJudgmentPolicyContextBlock(
+    readJudgmentPolicy(task.agent?.runtimeConfig),
+    cmdPrefix(),
+  );
+  if (judgmentBlock) {
+    content += `\n${judgmentBlock}`;
+  }
 
   const emailLines: string[] = [];
   if (phneakngarAddr) emailLines.push(`- '${phneakngarAddr}' (default, ភ្នាក់ងារ platform address)`);

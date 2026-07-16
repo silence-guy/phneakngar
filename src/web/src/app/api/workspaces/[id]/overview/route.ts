@@ -38,6 +38,7 @@ export const GET = withAuth(async (req, ctx) => {
     members,
     invites,
     calendarEvents,
+    attention,
   ] = await Promise.all([
     cached(cacheKeys.overviewEmailStats(ws.workspaceId), 60, () => queries.overview.getEmailStatsByWorkspace(db, ws.workspaceId)),
     cached(cacheKeys.overviewEmailAccounts(ws.workspaceId), 300, () => queries.overview.getEmailAccountsByWorkspace(db, ws.workspaceId)),
@@ -50,6 +51,13 @@ export const GET = withAuth(async (req, ctx) => {
       userId: ctx.userId,
       from: todayISO,
       to: weekEndISO,
+    }),
+    cached(cacheKeys.overviewAttention(ws.workspaceId), 30, async () => {
+      const [pendingApprovals, blockedIssues] = await Promise.all([
+        queries.overview.countPendingApprovals(db, ws.workspaceId),
+        queries.overview.countBlockedIssues(db, ws.workspaceId),
+      ]);
+      return { pendingApprovals, blockedIssues };
     }),
   ]);
 
@@ -100,5 +108,7 @@ export const GET = withAuth(async (req, ctx) => {
       repeat_stop_at: e.repeatStopAt,
       last_triggered_at: e.lastTriggeredAt,
     })),
+    pending_approvals: attention.pendingApprovals,
+    blocked_issues: attention.blockedIssues,
   });
 });

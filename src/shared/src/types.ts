@@ -28,6 +28,10 @@ export interface Agent {
   name: string;
   description: string;
   instructions: string;
+  /** Helio-style teammate role label (e.g. "Day Planner"). */
+  role_title?: string;
+  /** Short ownership statement for the teammate. */
+  responsibility?: string;
   runtime_mode: string;
   runtime_config: Record<string, unknown>;
   status: string;
@@ -113,9 +117,19 @@ export interface Issue {
   creator_user_id: string;
   conversation_id: string | null;
   latest_task_id: string | null;
+  claimed_by_agent_id?: string | null;
+  claimed_at?: string | null;
   title: string;
   description: string;
-  status: "todo" | "in_progress" | "review" | "done" | "closed" | "canceled" | "failed";
+  status:
+    | "todo"
+    | "in_progress"
+    | "blocked"
+    | "review"
+    | "done"
+    | "closed"
+    | "canceled"
+    | "failed";
   created_at: string;
   updated_at: string;
   completed_at: string | null;
@@ -229,6 +243,8 @@ export interface Artifact {
   id: string;
   conversation_id: string;
   agent_id: string;
+  /** Producing task when this is a delivery draft/digest/report; null for chat uploads. */
+  task_id: string | null;
   filename: string;
   content_type: string;
   size: number;
@@ -246,6 +262,8 @@ export interface CreateAgentRequest {
   name: string;
   description?: string;
   instructions?: string;
+  role_title?: string;
+  responsibility?: string;
   runtime_id: string;
   runtime_config?: Record<string, unknown>;
   max_concurrent_tasks?: number;

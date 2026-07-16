@@ -2,6 +2,12 @@ import type { Database } from "@phneakngar/shared";
 import { queries, TASK_TYPES } from "@phneakngar/shared";
 import { nanoid } from "nanoid";
 import { log } from "@/lib/logger";
+import {
+  loadDayCalendarEvents,
+  utcDayWindow,
+  type BriefCalendarEvent,
+  type DayWindow,
+} from "@/lib/services/morning-brief";
 
 const {
   listDueCalendarEvents,
@@ -23,6 +29,24 @@ export function repeatStopDateToStopAt(repeatStopDate: string): string {
   }
   const date = new Date(y, m - 1, d, 23, 59, 59, 999);
   return date.toISOString();
+}
+
+/**
+ * UTC day bounds helper for morning-brief / day-planner calendar context.
+ * Re-exported from morning-brief so calendar callers share one definition.
+ */
+export { utcDayWindow };
+
+/**
+ * Workspace-scoped calendar events for the UTC day containing `nowIso`.
+ * Used by Day Planner morning brief path (and other day digests).
+ */
+export async function listCalendarEventsForUtcDay(
+  db: Database,
+  workspaceId: string,
+  opts?: { agentId?: string; nowIso?: string },
+): Promise<{ day: DayWindow; events: BriefCalendarEvent[] }> {
+  return loadDayCalendarEvents(db, workspaceId, opts);
 }
 
 /**

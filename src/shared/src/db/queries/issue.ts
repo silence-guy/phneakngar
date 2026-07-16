@@ -1,9 +1,9 @@
-import { and, asc, desc, eq, inArray } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNotNull, isNull, or, sql } from "drizzle-orm";
 import { issue, message } from "../schema";
 import type { Database } from "../index";
-import { TERMINAL_ISSUE_STATUSES, type IssueStatusType } from "../../constants";
+import { ACTIVE_ISSUE_STATUSES, TERMINAL_ISSUE_STATUSES, type IssueStatusType } from "../../constants";
 
-const ACTIVE_STATUSES: IssueStatusType[] = ["todo", "in_progress", "review"];
+const ACTIVE_STATUSES: IssueStatusType[] = [...ACTIVE_ISSUE_STATUSES];
 
 export async function createIssue(
   db: Database,
@@ -88,6 +88,8 @@ export async function updateIssue(
     latestTaskId?: string | null;
     agentId?: string;
     conversationId?: string;
+    claimedByAgentId?: string | null;
+    claimedAt?: string | null;
   }
 ) {
   const now = new Date().toISOString();
@@ -101,6 +103,8 @@ export async function updateIssue(
     latestTaskId?: string | null;
     agentId?: string;
     conversationId?: string;
+    claimedByAgentId?: string | null;
+    claimedAt?: string | null;
     updatedAt: string;
     completedAt?: string | null;
   } = { updatedAt: now };
@@ -110,11 +114,71 @@ export async function updateIssue(
   if (patch.latestTaskId !== undefined) values.latestTaskId = patch.latestTaskId;
   if (patch.agentId !== undefined) values.agentId = patch.agentId;
   if (patch.conversationId !== undefined) values.conversationId = patch.conversationId;
+  if (patch.claimedByAgentId !== undefined) values.claimedByAgentId = patch.claimedByAgentId;
+  if (patch.claimedAt !== undefined) values.claimedAt = patch.claimedAt;
   if (terminal !== undefined) values.completedAt = terminal ? now : null;
   const rows = await db
     .update(issue)
     .set(values)
     .where(and(eq(issue.id, id), eq(issue.workspaceId, workspaceId)))
+    .returning();
+  return rows[0] ?? null;
+}
+
+/**
+ * Atomic claim: only succeeds when unclaimed or already held by the same agent.
+ * Scoped by workspaceId first (never claim-then-check).
+ */
+export async function claimIssue(
+  db: Database,
+  id: string,
+  workspaceId: string,
+  agentId: string
+) {
+  const now = new Date().toISOString();
+  const rows = await db
+    .update(issue)
+    .set({
+      claimedByAgentId: agentId,
+      claimedAt: now,
+      agentId,
+      status: sql`CASE WHEN ${issue.status} = 'todo' THEN 'in_progress' ELSE ${issue.status} END`,
+      updatedAt: now,
+    })
+    .where(
+      and(
+        eq(issue.id, id),
+        eq(issue.workspaceId, workspaceId),
+        or(isNull(issue.claimedByAgentId), eq(issue.claimedByAgentId, agentId)),
+        inArray(issue.status, [...ACTIVE_ISSUE_STATUSES])
+      )
+    )
+    .returning();
+  return rows[0] ?? null;
+}
+
+/** Clear claim so another teammate can take ownership. Requires an active claim. */
+export async function handBackIssue(
+  db: Database,
+  id: string,
+  workspaceId: string,
+  agentId?: string
+) {
+  const now = new Date().toISOString();
+  const conditions = [
+    eq(issue.id, id),
+    eq(issue.workspaceId, workspaceId),
+    isNotNull(issue.claimedByAgentId),
+  ];
+  if (agentId) conditions.push(eq(issue.claimedByAgentId, agentId));
+  const rows = await db
+    .update(issue)
+    .set({
+      claimedByAgentId: null,
+      claimedAt: null,
+      updatedAt: now,
+    })
+    .where(and(...conditions))
     .returning();
   return rows[0] ?? null;
 }

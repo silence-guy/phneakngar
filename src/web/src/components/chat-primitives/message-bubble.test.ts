@@ -1,124 +1,103 @@
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { describe, it, expect } from "vitest";
+import { MessageBubble } from "./message-bubble";
+import {
+  TIMELINE_BODY_CLASS,
+  TIMELINE_BODY_QUIET_CLASS,
+  toTimelineActor,
+} from "./timeline-chrome";
 
-// Since we're in a node environment without jsdom, we test the logic/mapping
-// directly by importing the radius constants and verifying the component's
-// class composition logic.
+type BubbleVariant = "agent" | "user" | "human" | "ai" | "system";
 
-// Re-implement the mapping logic from the component to test in isolation.
-type BubbleVariant = "agent" | "user";
-type BubblePosition = "first" | "middle" | "last" | "single";
-
-const USER_RADIUS: Record<BubblePosition, string> = {
-  single: "rounded-[1.05rem]",
-  first: "rounded-[1.05rem] rounded-br-[0.35rem]",
-  middle: "rounded-[1.05rem] rounded-tr-[0.35rem] rounded-br-[0.35rem]",
-  last: "rounded-[1.05rem] rounded-tr-[0.35rem]",
-};
-
-const AGENT_RADIUS: Record<BubblePosition, string> = {
-  single: "rounded-[1.05rem]",
-  first: "rounded-[1.05rem] rounded-bl-[0.35rem]",
-  middle: "rounded-[1.05rem] rounded-tl-[0.35rem] rounded-bl-[0.35rem]",
-  last: "rounded-[1.05rem] rounded-tl-[0.35rem]",
-};
-
-function getRadius(variant: BubbleVariant, position: BubblePosition): string {
-  return variant === "user" ? USER_RADIUS[position] : AGENT_RADIUS[position];
+function renderBubble(variant: BubbleVariant, position?: "first" | "middle" | "last" | "single") {
+  return renderToStaticMarkup(
+    createElement(
+      MessageBubble,
+      { variant, position: position ?? "single" },
+      "hello",
+    ),
+  );
 }
 
-function getColors(variant: BubbleVariant): string {
-  return variant === "user"
-    ? "bg-primary text-primary-foreground"
-    : "bg-muted text-foreground";
+function getBodyClass(variant: BubbleVariant): string {
+  const actor = toTimelineActor(variant);
+  return actor === "system" ? TIMELINE_BODY_QUIET_CLASS : TIMELINE_BODY_CLASS;
 }
 
-describe("MessageBubble radius logic", () => {
-  describe("user variant", () => {
-    it("single position has full rounding", () => {
-      expect(getRadius("user", "single")).toBe("rounded-[1.05rem]");
-    });
-
-    it("first position tucks bottom-right corner", () => {
-      expect(getRadius("user", "first")).toContain("rounded-br-[0.35rem]");
-    });
-
-    it("middle position tucks top-right and bottom-right corners", () => {
-      const radius = getRadius("user", "middle");
-      expect(radius).toContain("rounded-tr-[0.35rem]");
-      expect(radius).toContain("rounded-br-[0.35rem]");
-    });
-
-    it("last position tucks top-right corner only", () => {
-      const radius = getRadius("user", "last");
-      expect(radius).toContain("rounded-tr-[0.35rem]");
-      expect(radius).not.toContain("rounded-br-[0.35rem]");
-    });
+describe("MessageBubble body chrome (B4 shared timeline)", () => {
+  it("user and agent share the same flat body class", () => {
+    expect(getBodyClass("user")).toBe(getBodyClass("agent"));
+    expect(getBodyClass("human")).toBe(getBodyClass("ai"));
   });
 
-  describe("agent variant", () => {
-    it("single position has full rounding", () => {
-      expect(getRadius("agent", "single")).toBe("rounded-[1.05rem]");
-    });
+  it("renders human and ai with identical flat body class and actor data attrs", () => {
+    const human = renderBubble("human");
+    const ai = renderBubble("ai");
+    const user = renderBubble("user");
+    const agent = renderBubble("agent");
 
-    it("first position tucks bottom-left corner", () => {
-      expect(getRadius("agent", "first")).toContain("rounded-bl-[0.35rem]");
-    });
+    expect(human).toContain('data-timeline-body="human"');
+    expect(ai).toContain('data-timeline-body="ai"');
+    expect(user).toContain('data-timeline-body="human"');
+    expect(agent).toContain('data-timeline-body="ai"');
 
-    it("middle position tucks top-left and bottom-left corners", () => {
-      const radius = getRadius("agent", "middle");
-      expect(radius).toContain("rounded-tl-[0.35rem]");
-      expect(radius).toContain("rounded-bl-[0.35rem]");
-    });
+    // Shared flat body token — not colored bubbles.
+    for (const markup of [human, ai, user, agent]) {
+      expect(markup).toContain("timeline-body");
+      expect(markup).not.toContain("bg-primary");
+      expect(markup).not.toContain("text-primary-foreground");
+      expect(markup).not.toMatch(/\bbg-muted\b/);
+      expect(markup).not.toContain("rounded-2xl");
+      expect(markup).not.toContain("justify-end");
+      expect(markup).toContain("hello");
+    }
 
-    it("last position tucks top-left corner only", () => {
-      const radius = getRadius("agent", "last");
-      expect(radius).toContain("rounded-tl-[0.35rem]");
-      expect(radius).not.toContain("rounded-bl-[0.35rem]");
-    });
+    // Class strings for human/ai must match (aside from data-timeline-body).
+    const humanClass = human.match(/class="([^"]*)"/)?.[1] ?? "";
+    const aiClass = ai.match(/class="([^"]*)"/)?.[1] ?? "";
+    expect(humanClass).toBe(aiClass);
+    expect(humanClass).toContain("timeline-body");
+    expect(humanClass).not.toContain("timeline-body-quiet");
   });
 
-  describe("color mapping", () => {
-    it("user variant uses primary colors", () => {
-      const colors = getColors("user");
-      expect(colors).toContain("bg-primary");
-      expect(colors).toContain("text-primary-foreground");
-    });
-
-    it("agent variant uses muted colors", () => {
-      const colors = getColors("agent");
-      expect(colors).toContain("bg-muted");
-      expect(colors).toContain("text-foreground");
-    });
+  it("does not use primary-fill chatbot bubble colors for user", () => {
+    const markup = renderBubble("user");
+    expect(markup).not.toContain("bg-primary");
+    expect(markup).not.toContain("text-primary-foreground");
+    expect(getBodyClass("user")).not.toContain("bg-primary");
   });
 
-  describe("all positions are unique per variant", () => {
-    it("user has 4 distinct radius values", () => {
-      const positions: BubblePosition[] = ["single", "first", "middle", "last"];
-      const radii = positions.map((p) => getRadius("user", p));
-      expect(new Set(radii).size).toBe(4);
-    });
-
-    it("agent has 4 distinct radius values", () => {
-      const positions: BubblePosition[] = ["single", "first", "middle", "last"];
-      const radii = positions.map((p) => getRadius("agent", p));
-      expect(new Set(radii).size).toBe(4);
-    });
+  it("does not use muted-fill second-class colors for agent", () => {
+    const markup = renderBubble("agent");
+    expect(getBodyClass("agent")).toBe(TIMELINE_BODY_CLASS);
+    expect(markup).not.toMatch(/\bbg-muted\b/);
   });
 
-  describe("symmetry — user tucks RIGHT, agent tucks LEFT", () => {
-    it("first: user=br, agent=bl", () => {
-      expect(getRadius("user", "first")).toContain("br");
-      expect(getRadius("agent", "first")).toContain("bl");
-    });
+  it("system uses quiet body still in the timeline-body family", () => {
+    const markup = renderBubble("system");
+    expect(markup).toContain('data-timeline-body="system"');
+    expect(markup).toContain("timeline-body");
+    expect(markup).toContain("timeline-body-quiet");
+    expect(markup).not.toContain("bg-primary");
+  });
 
-    it("middle: user=tr+br, agent=tl+bl", () => {
-      expect(getRadius("user", "middle")).toMatch(/tr.*br/);
-      expect(getRadius("agent", "middle")).toMatch(/tl.*bl/);
+  it("position prop does not reintroduce asymmetric bubble radii", () => {
+    const positions = ["first", "middle", "last", "single"] as const;
+    const classes = positions.map((position) => {
+      const markup = renderBubble("human", position);
+      return markup.match(/class="([^"]*)"/)?.[1] ?? "";
     });
+    // All positions share the same class — position is API-compat only.
+    expect(new Set(classes).size).toBe(1);
+    for (const cls of classes) {
+      expect(cls).not.toMatch(/rounded-(tl|tr|bl|br)/);
+      expect(cls).not.toContain("rounded-2xl");
+    }
+  });
 
-    it("last: user=tr, agent=tl", () => {
-      expect(getRadius("user", "last")).toContain("tr");
-      expect(getRadius("agent", "last")).toContain("tl");
-    });
+  it("legacy user/agent aliases map to human/ai actors", () => {
+    expect(toTimelineActor("user")).toBe("human");
+    expect(toTimelineActor("agent")).toBe("ai");
   });
 });

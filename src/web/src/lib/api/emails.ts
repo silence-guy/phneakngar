@@ -53,17 +53,70 @@ export const uploadEmailAttachment = async (
   return res.json();
 };
 
+export type SendEmailOptions = {
+  attachments?: { key: string; filename: string; size: number; contentType: string }[];
+  threading?: { inReplyTo?: string; references?: string };
+  customAccountId?: string;
+  requiresApproval?: boolean;
+};
+
+/** 202 body when POST /api/email/send queues for human approval. */
+export type SendEmailPendingApprovalResponse = {
+  email: Email;
+  approval: { id: string; kind?: string; status?: string };
+  status: "pending_approval";
+};
+
+export type SendEmailResult = Email | SendEmailPendingApprovalResponse;
+
+export function isSendEmailPendingApproval(
+  result: SendEmailResult,
+): result is SendEmailPendingApprovalResponse {
+  return (
+    typeof result === "object" &&
+    result !== null &&
+    "status" in result &&
+    (result as SendEmailPendingApprovalResponse).status === "pending_approval" &&
+    "email" in result
+  );
+}
+
 export const sendEmail = (
   agentId: string,
   to: string,
   subject: string,
   htmlBody: string,
   workspaceId: string,
-  attachments?: { key: string; filename: string; size: number; contentType: string }[],
+  attachmentsOrOptions?:
+    | { key: string; filename: string; size: number; contentType: string }[]
+    | SendEmailOptions,
   threading?: { inReplyTo?: string; references?: string },
   customAccountId?: string,
-) =>
-  apiFetch<Email>(`/api/email/send${wsQuery(workspaceId)}`, {
+): Promise<SendEmailResult> => {
+  const opts: SendEmailOptions = Array.isArray(attachmentsOrOptions)
+    ? {
+        attachments: attachmentsOrOptions,
+        threading,
+        customAccountId,
+      }
+    : (attachmentsOrOptions ?? {});
+  const {
+    attachments,
+    threading: threadOpts = threading,
+    customAccountId: accountId = customAccountId,
+    requiresApproval,
+  } = opts;
+  return apiFetch<SendEmailResult>(`/api/email/send${wsQuery(workspaceId)}`, {
     method: "POST",
-    body: JSON.stringify({ agentId, to, subject, htmlBody, attachments, ...threading, customAccountId }),
+    body: JSON.stringify({
+      agentId,
+      to,
+      subject,
+      htmlBody,
+      attachments,
+      ...threadOpts,
+      customAccountId: accountId,
+      ...(requiresApproval ? { requiresApproval: true } : {}),
+    }),
   });
+};

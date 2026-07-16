@@ -47,6 +47,12 @@ describe("web locale helpers", () => {
     expect(agentFormLabel("removeMemberAccess")).toBe("ដកសិទ្ធិសមាជិក");
     expect(agentFormLabel("customEmail")).toBe("អ៊ីមែលផ្ទាល់ខ្លួន");
     expect(agentFormLabel("imapHostRequired")).toBe("ត្រូវបញ្ចូល IMAP host");
+    expect(agentFormLabel("roleTitle")).toBe("តួនាទីសហការី");
+    expect(agentFormLabel("responsibility")).toBe("ការទទួលខុសត្រូវ");
+    expect(agentFormLabel("mcpTools")).toBe("ឧបករណ៍ MCP");
+    expect(agentFormLabel("mcpToolsHint")).toContain("runtime/config");
+    expect(agentFormLabel("ambiguousToIssue")).toContain("issue");
+    expect(agentFormLabel("ambiguousToIssueHint")).toMatch(/issue|DM/i);
   });
 
   it("keeps English fallbacks for app shell, machine connection, and agent form labels", () => {
@@ -68,6 +74,12 @@ describe("web locale helpers", () => {
     expect(agentFormLabel("removeMemberAccess", Locale.EN)).toBe("Remove Member Access");
     expect(agentFormLabel("customEmail", Locale.EN)).toBe("Custom Email");
     expect(agentFormLabel("imapHostRequired", Locale.EN)).toBe("IMAP host is required");
+    expect(agentFormLabel("roleTitle", Locale.EN)).toBe("Teammate role");
+    expect(agentFormLabel("responsibility", Locale.EN)).toBe("Responsibility");
+    expect(agentFormLabel("mcpTools", Locale.EN)).toBe("MCP tools");
+    expect(agentFormLabel("mcpToolsHint", Locale.EN)).toMatch(/runtime\/config/i);
+    expect(agentFormLabel("ambiguousToIssue", Locale.EN)).toBe("Ambiguous DMs → issue");
+    expect(agentFormLabel("ambiguousToIssueHint", Locale.EN)).toMatch(/owned issue/i);
   });
 
   it("formats agent counts without changing the stable entity concept", () => {

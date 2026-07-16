@@ -39,10 +39,22 @@ export const PATCH = withAuth(async (req, ctx) => {
   const [body, valErr] = await parseBody(req, UpdateAgentRequestSchema);
   if (valErr) return valErr;
 
-  const data: Record<string, unknown> = {};
+  const data: {
+    name?: string;
+    description?: string;
+    instructions?: string;
+    roleTitle?: string;
+    responsibility?: string;
+    runtimeId?: string;
+    runtimeConfig?: unknown;
+    visibility?: string;
+    avatarUrl?: string | null;
+  } = {};
   if (body.name !== undefined) data.name = body.name;
   if (body.description !== undefined) data.description = body.description;
   if (body.instructions !== undefined) data.instructions = body.instructions;
+  if (body.role_title !== undefined) data.roleTitle = body.role_title;
+  if (body.responsibility !== undefined) data.responsibility = body.responsibility;
   if (body.runtime_id !== undefined) {
     const runtime = await queries.runtime.getAgentRuntimeForWorkspace(db, body.runtime_id, ws.workspaceId, ctx.userId);
     if (!runtime) {
@@ -60,7 +72,7 @@ export const PATCH = withAuth(async (req, ctx) => {
   if (!existing) return writeError("agent not found", 404);
   if (existing.ownerId !== ctx.userId) return writeError("agent owner access required", 403);
 
-  const updated = await queries.agent.updateAgent(db, id, ws.workspaceId, data as { name?: string; description?: string; instructions?: string; runtimeId?: string; runtimeConfig?: unknown; visibility?: string; avatarUrl?: string | null }, ctx.userId);
+  const updated = await queries.agent.updateAgent(db, id, ws.workspaceId, data, ctx.userId);
   if (!updated) {
     return writeError("agent not found", 404);
   }

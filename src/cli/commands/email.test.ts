@@ -284,16 +284,18 @@ describe("email send subcommand shape", () => {
     expect(mandatory).toContain("--body-file");
   });
 
-  it("accepts --attachment, --workspace, and --from as optional", () => {
+  it("accepts --attachment, --workspace, --from, and --requires-approval as optional", () => {
     const opts = (send as unknown as { options: { long: string; mandatory?: boolean }[] }).options;
     const longs = opts.map((o) => o.long);
     const mandatory = opts.filter((o) => o.mandatory).map((o) => o.long);
     expect(longs).toContain("--attachment");
     expect(longs).toContain("--workspace");
     expect(longs).toContain("--from");
+    expect(longs).toContain("--requires-approval");
     expect(mandatory).not.toContain("--attachment");
     expect(mandatory).not.toContain("--workspace");
     expect(mandatory).not.toContain("--from");
+    expect(mandatory).not.toContain("--requires-approval");
   });
 });
 
@@ -391,6 +393,47 @@ describe("email send behavior", () => {
     expect(payload.attachments[1].key).toBe("emails/drafts/def/chart.png");
 
     expect(out.join("\n")).toContain("Sent email to foo@bar.com");
+  });
+
+  it("passes requiresApproval when --requires-approval is set", async () => {
+    const bodyPath = join(SEND_TMP, "body.html");
+    writeFileSync(bodyPath, "<p>Needs review</p>");
+    postJSONMock.mockResolvedValueOnce({
+      status: "pending_approval",
+      email: { id: "em_pa", to_email: "a@b.com" },
+      approval: { id: "ap_1" },
+    });
+
+    const { exitCode, out } = await runSend([
+      "--agent_id", "ag_1",
+      "--to", "a@b.com",
+      "--subject", "Needs review",
+      "--body-file", bodyPath,
+      "--requires-approval",
+    ]);
+
+    expect(exitCode).toBeNull();
+    expect(postJSONMock).toHaveBeenCalledTimes(1);
+    const payload = postJSONMock.mock.calls[0][1] as { requiresApproval?: boolean };
+    expect(payload.requiresApproval).toBe(true);
+    expect(out.join("\n")).toContain("Queued email to a@b.com for approval (id: em_pa)");
+    expect(out.join("\n")).toContain("approval: ap_1");
+  });
+
+  it("omits requiresApproval when --requires-approval is not set", async () => {
+    const bodyPath = join(SEND_TMP, "body.html");
+    writeFileSync(bodyPath, "<p>Direct send</p>");
+    postJSONMock.mockResolvedValueOnce({ id: "em_direct", to_email: "a@b.com" });
+
+    await runSend([
+      "--agent_id", "ag_1",
+      "--to", "a@b.com",
+      "--subject", "Direct",
+      "--body-file", bodyPath,
+    ]);
+
+    const payload = postJSONMock.mock.calls[0][1] as Record<string, unknown>;
+    expect(payload).not.toHaveProperty("requiresApproval");
   });
 
   it("sends with empty attachments when none provided", async () => {

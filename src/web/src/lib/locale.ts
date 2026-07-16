@@ -36,6 +36,14 @@ export const webNavigationLabels = {
     [Locale.EN]: "Issues",
     [Locale.KM]: "បញ្ហា",
   },
+  approvals: {
+    [Locale.EN]: "Approvals",
+    [Locale.KM]: "ការអនុម័ត",
+  },
+  automations: {
+    [Locale.EN]: "Automations",
+    [Locale.KM]: "ស្វ័យប្រវត្តិកម្ម",
+  },
   settings: {
     [Locale.EN]: "Settings",
     [Locale.KM]: "ការកំណត់",
@@ -80,6 +88,8 @@ export const appShellCopy = {
   },
   calendar: webNavigationLabels.calendar,
   issues: webNavigationLabels.issues,
+  approvals: webNavigationLabels.approvals,
+  automations: webNavigationLabels.automations,
   runtimes: {
     [Locale.EN]: "Runtimes",
     [Locale.KM]: "បរិស្ថានដំណើរការ",
@@ -231,6 +241,22 @@ export const agentFormCopy = {
     [Locale.EN]: "Add a description...",
     [Locale.KM]: "បន្ថែមការពិពណ៌នា...",
   },
+  roleTitle: {
+    [Locale.EN]: "Teammate role",
+    [Locale.KM]: "តួនាទីសហការី",
+  },
+  roleTitlePlaceholder: {
+    [Locale.EN]: "e.g. Day Planner",
+    [Locale.KM]: "ឧ. អ្នករៀបចំផែនការប្រចាំថ្ងៃ",
+  },
+  responsibility: {
+    [Locale.EN]: "Responsibility",
+    [Locale.KM]: "ការទទួលខុសត្រូវ",
+  },
+  responsibilityPlaceholder: {
+    [Locale.EN]: "What this teammate owns...",
+    [Locale.KM]: "អ្វីដែលសហការីនេះទទួលខុសត្រូវ...",
+  },
   runtime: {
     [Locale.EN]: "Runtime",
     [Locale.KM]: "បរិស្ថានដំណើរការ (Runtime)",
@@ -271,6 +297,14 @@ export const agentFormCopy = {
     [Locale.EN]: "Route this agent through a local Headroom proxy to reduce repeated tool, log, and file context.",
     [Locale.KM]: "បញ្ជូនភ្នាក់ងារនេះតាម Headroom proxy ក្នុងម៉ាស៊ីន ដើម្បីកាត់បន្ថយបរិបទ tool, log និង file ដែលស្ទួន។",
   },
+  ambiguousToIssue: {
+    [Locale.EN]: "Ambiguous DMs → issue",
+    [Locale.KM]: "DM មិនច្បាស់ → issue",
+  },
+  ambiguousToIssueHint: {
+    [Locale.EN]: "When a request lacks a clear owner or outcome, file an owned issue instead of freeform chat only.",
+    [Locale.KM]: "នៅពេលសំណើមិនមានម្ចាស់ ឬលទ្ធផលច្បាស់ បង្កើត issue ដែលមានម្ចាស់ ជំនួសការជជែកសេរីតែប៉ុណ្ណោះ។",
+  },
   requireContextOptimization: {
     [Locale.EN]: "Require optimization",
     [Locale.KM]: "តម្រូវឱ្យប្រើការបង្កើនប្រសិទ្ធភាព",
@@ -286,6 +320,14 @@ export const agentFormCopy = {
   shapeOutputHint: {
     [Locale.EN]: "Ask Headroom to trim repetitive response text. Keep off until you have verified the agent's style.",
     [Locale.KM]: "ឱ្យ Headroom កាត់អត្ថបទចម្លើយដែលស្ទួន។ ទុកបិទរហូតដល់អ្នកបានផ្ទៀងផ្ទាត់រចនាបថរបស់ភ្នាក់ងារ។",
+  },
+  mcpTools: {
+    [Locale.EN]: "MCP tools",
+    [Locale.KM]: "ឧបករណ៍ MCP",
+  },
+  mcpToolsHint: {
+    [Locale.EN]: "MCP tools are configured in the local runtime/config for this agent — not managed here. Edit the runtime's MCP servers so tools appear during chhlat sessions.",
+    [Locale.KM]: "ឧបករណ៍ MCP ត្រូវបានកំណត់នៅក្នុង runtime/config មូលដ្ឋានសម្រាប់ភ្នាក់ងារនេះ — មិនគ្រប់គ្រងនៅទីនេះទេ។ កែ MCP servers របស់ Runtime ដើម្បីឱ្យ tools បង្ហាញក្នុងសម័យ chhlat។",
   },
   advanced: {
     [Locale.EN]: "Advanced",

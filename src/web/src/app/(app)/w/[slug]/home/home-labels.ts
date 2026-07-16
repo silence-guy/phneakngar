@@ -23,7 +23,20 @@ export const HOME_LABELS = {
     "កុំព្យូទ័ររបស់ក្រុមបានភ្ជាប់ហើយ។ កំពុងរង់ចាំម្ចាស់បង្កើតភ្នាក់ងារ—អ្នកអាចរុករកតាមគេហទំព័របាន។",
   showOptionalConnect: "ភ្ជាប់កុំព្យូទ័រនេះ (ស្រេចចិត្ត)",
   hideOptionalConnect: "លាក់ការភ្ជាប់ស្រេចចិត្ត",
+  /** Compact attention strip on the canvas home */
+  attentionAria: "ការយកចិត្តទុកដាក់",
+  pendingApprovals: "រង់ចាំអនុម័ត",
+  blockedIssues: "ជាប់គាំង",
 } as const;
+
+/** Compact chip label helpers (stable height via reserved digits when needed by callers). */
+export function pendingApprovalsLabel(count: number): string {
+  return `${HOME_LABELS.pendingApprovals} ${count}`;
+}
+
+export function blockedIssuesLabel(count: number): string {
+  return `${HOME_LABELS.blockedIssues} ${count}`;
+}
 
 export const HOME_LAYOUT_LABELS: Record<LayoutType, string> = {
   star: HOME_LABELS.star,

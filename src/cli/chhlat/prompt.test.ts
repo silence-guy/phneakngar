@@ -386,6 +386,28 @@ describe("buildPrompt", () => {
     expect(parsed.notice).toContain("in_progress");
   });
 
+  it("surfaces memory_prompt from task context", () => {
+    const task = makeTask("Issue: ship notes", "issue_event");
+    task.context = {
+      issue_id: "iss_1",
+      memory_prompt: "Agent memory (apply when relevant):\n- [fact] Prefer markdown",
+    };
+    const parsed = JSON.parse(buildPrompt(task));
+    expect(parsed.issue_id).toBe("iss_1");
+    expect(parsed.memory).toContain("Prefer markdown");
+  });
+
+  it("formats structured memories from context when memory_prompt is absent", () => {
+    const task = makeTask("Morning brief", "automation_event");
+    task.context = {
+      automation_id: "auto_1",
+      memories: [{ kind: "role", content: "Day planner" }],
+    };
+    const parsed = JSON.parse(buildPrompt(task));
+    expect(parsed.automation_id).toBe("auto_1");
+    expect(parsed.memory).toContain("[role] Day planner");
+  });
+
   it("includes sender for DM tasks when sender is present", () => {
     const task: Task = {
       ...makeTask("Fix the login bug"),
@@ -483,5 +505,107 @@ describe("buildMergedPrompt", () => {
     expect(result.tasks[0].type).toBe("user_dm_message");
     expect(result.tasks[0].instruction).toBe("Single task");
     expect(result.tasks[0].language_policy.default_user_facing_language).toBe("km-KH");
+  });
+});
+
+describe("judgment policy (ambiguous → create issue)", () => {
+  const AMBIGUOUS =
+    "Can you look into this? Not sure who owns it or what the right outcome is.";
+
+  it("omits judgment_policy when agent setting is off", () => {
+    const task = makeTask(AMBIGUOUS);
+    task.agent = {
+      name: "Ada",
+      instructions: "",
+      runtimeConfig: {},
+    };
+    const parsed = JSON.parse(buildPrompt(task));
+    expect(parsed.judgment_policy).toBeUndefined();
+    expect(parsed.notice).not.toContain("Judgment policy ENABLED");
+  });
+
+  it("omits judgment_policy when agent / runtimeConfig is missing", () => {
+    const task = makeTask(AMBIGUOUS);
+    const parsed = JSON.parse(buildPrompt(task));
+    expect(parsed.judgment_policy).toBeUndefined();
+  });
+
+  it("injects issue draft for ambiguous fixture when policy enabled", () => {
+    const task = makeTask(AMBIGUOUS);
+    task.agentId = "ag_owner";
+    task.conversationId = "conv_dm_1";
+    task.agent = {
+      name: "Ada",
+      instructions: "",
+      runtimeConfig: { judgment: { ambiguousToIssue: true } },
+    };
+    task.sender = { name: "Beacon", email: "b@example.com", isOwner: true };
+
+    const parsed = JSON.parse(buildPrompt(task));
+    expect(parsed.judgment_policy).toMatchObject({
+      ambiguous_to_issue: true,
+      recommended_action: "create_issue",
+    });
+    expect(parsed.judgment_policy.issue_draft).toMatchObject({
+      agent_id: "ag_owner",
+      title: expect.stringMatching(/Clarify/i),
+    });
+    expect(parsed.judgment_policy.issue_draft.description).toContain(AMBIGUOUS);
+    expect(parsed.judgment_policy.issue_draft.description).toContain("Beacon");
+    expect(parsed.judgment_policy.issue_draft.description).toContain("conv_dm_1");
+    expect(parsed.notice).toContain("Judgment policy ENABLED");
+    expect(parsed.notice).toContain("issue create");
+    expect(parsed.notice).toContain("send-dm");
+  });
+
+  it("supports snake_case runtime_config flag", () => {
+    const task = makeTask(AMBIGUOUS);
+    task.agentId = "ag_snake";
+    task.agent = {
+      name: "Ada",
+      instructions: "",
+      runtimeConfig: { judgment: { ambiguous_to_issue: true } },
+    };
+    const parsed = JSON.parse(buildPrompt(task));
+    expect(parsed.judgment_policy.recommended_action).toBe("create_issue");
+    expect(parsed.judgment_policy.issue_draft.agent_id).toBe("ag_snake");
+  });
+
+  it("recommends continue for clear DMs even when policy enabled", () => {
+    const task = makeTask(
+      "Fix the login bug in auth.ts and open a PR with a regression test.",
+    );
+    task.agent = {
+      name: "Ada",
+      instructions: "",
+      runtimeConfig: { judgment: { ambiguousToIssue: true } },
+    };
+    const parsed = JSON.parse(buildPrompt(task));
+    expect(parsed.judgment_policy.recommended_action).toBe("continue");
+    expect(parsed.judgment_policy.issue_draft).toBeUndefined();
+  });
+
+  it("does not inject judgment_policy for non-DM task types", () => {
+    const task = makeTask(AMBIGUOUS, "email_notification");
+    task.agent = {
+      name: "Ada",
+      instructions: "",
+      runtimeConfig: { judgment: { ambiguousToIssue: true } },
+    };
+    const parsed = JSON.parse(buildPrompt(task));
+    expect(parsed.judgment_policy).toBeUndefined();
+  });
+
+  it("preserves judgment_policy on merged DM sub-tasks", () => {
+    const task = makeTask(AMBIGUOUS);
+    task.agentId = "ag_merge";
+    task.agent = {
+      name: "Ada",
+      instructions: "",
+      runtimeConfig: { judgment: { ambiguousToIssue: true } },
+    };
+    const parsed = JSON.parse(buildMergedPrompt([task], new Map()));
+    expect(parsed.tasks[0].judgment_policy.recommended_action).toBe("create_issue");
+    expect(parsed.tasks[0].judgment_policy.issue_draft.agent_id).toBe("ag_merge");
   });
 });

@@ -171,6 +171,34 @@ describe("PATCH /api/email/[id]", () => {
     expect(body.details).toContainEqual(expect.stringContaining("status"));
   });
 
+  it("rejects PATCH to gated outbound statuses", async () => {
+    mockGetEmailById.mockResolvedValue({ id: "e1", agentId: "a1", status: "unread" });
+    mockGetAgent.mockResolvedValue({ id: "a1" });
+    const req = new NextRequest("http://localhost/api/email/e1", {
+      method: "PATCH",
+      body: JSON.stringify({ status: "pending_approval" }),
+    });
+    const res = await PATCH(req, { params: Promise.resolve({ id: "e1" }) } as any);
+    expect(res.status).toBe(400);
+    expect(mockUpdateEmailStatus).not.toHaveBeenCalled();
+  });
+
+  it("rejects PATCH when email is already pending_approval", async () => {
+    mockGetEmailById.mockResolvedValue({
+      id: "e1",
+      agentId: "a1",
+      status: "pending_approval",
+    });
+    mockGetAgent.mockResolvedValue({ id: "a1" });
+    const req = new NextRequest("http://localhost/api/email/e1", {
+      method: "PATCH",
+      body: JSON.stringify({ status: "read" }),
+    });
+    const res = await PATCH(req, { params: Promise.resolve({ id: "e1" }) } as any);
+    expect(res.status).toBe(409);
+    expect(mockUpdateEmailStatus).not.toHaveBeenCalled();
+  });
+
   it("returns 400 for missing status", async () => {
     mockGetEmailById.mockResolvedValue({ id: "e1", agentId: "a1" });
     mockGetAgent.mockResolvedValue({ id: "a1" });

@@ -104,6 +104,81 @@ describe("updateIssue", () => {
   });
 });
 
+describe("claimIssue", () => {
+  it("exports claimIssue and handBackIssue", () => {
+    expect(typeof issueQueries.claimIssue).toBe("function");
+    expect(typeof issueQueries.handBackIssue).toBe("function");
+  });
+  it("returns null when claim lost race", async () => {
+    const chain: any = {};
+    chain.update = vi.fn(() => chain);
+    chain.set = vi.fn(() => chain);
+    chain.where = vi.fn(() => chain);
+    chain.returning = vi.fn(() => Promise.resolve([]));
+    expect(await issueQueries.claimIssue(chain, "iss_1", "w", "a1")).toBeNull();
+  });
+  it("claims for agent and scopes by workspace", async () => {
+    const i = { id: "iss_1", claimedByAgentId: "a1" };
+    const chain: any = {};
+    chain.update = vi.fn(() => chain);
+    chain.set = vi.fn(() => chain);
+    chain.where = vi.fn(() => chain);
+    chain.returning = vi.fn(() => Promise.resolve([i]));
+    const result = await issueQueries.claimIssue(chain, "iss_1", "w", "a1");
+    expect(result).toEqual(i);
+    expect(chain.set).toHaveBeenCalledWith(
+      expect.objectContaining({ claimedByAgentId: "a1", agentId: "a1" })
+    );
+  });
+  it("dual-agent race: first winner claims, second concurrent claim fails cleanly", async () => {
+    // Simulates two agents racing claimIssue on the same issue. Only one
+    // UPDATE returns a row (D1/SQLite compare-and-set); the loser gets null.
+    const winner = { id: "iss_race", claimedByAgentId: "agent_a", workspaceId: "w" };
+    const chainA: any = {};
+    chainA.update = vi.fn(() => chainA);
+    chainA.set = vi.fn(() => chainA);
+    chainA.where = vi.fn(() => chainA);
+    chainA.returning = vi.fn(() => Promise.resolve([winner]));
+
+    const chainB: any = {};
+    chainB.update = vi.fn(() => chainB);
+    chainB.set = vi.fn(() => chainB);
+    chainB.where = vi.fn(() => chainB);
+    chainB.returning = vi.fn(() => Promise.resolve([]));
+
+    const [a, b] = await Promise.all([
+      issueQueries.claimIssue(chainA, "iss_race", "w", "agent_a"),
+      issueQueries.claimIssue(chainB, "iss_race", "w", "agent_b"),
+    ]);
+
+    const results = [a, b];
+    const winners = results.filter((r) => r != null);
+    const losers = results.filter((r) => r == null);
+    expect(winners).toHaveLength(1);
+    expect(losers).toHaveLength(1);
+    expect(winners[0]?.claimedByAgentId).toBe("agent_a");
+    expect(chainA.set).toHaveBeenCalledWith(
+      expect.objectContaining({ claimedByAgentId: "agent_a", agentId: "agent_a" })
+    );
+    expect(chainB.set).toHaveBeenCalledWith(
+      expect.objectContaining({ claimedByAgentId: "agent_b", agentId: "agent_b" })
+    );
+  });
+  it("handBack clears claim", async () => {
+    const i = { id: "iss_1", claimedByAgentId: null };
+    const chain: any = {};
+    chain.update = vi.fn(() => chain);
+    chain.set = vi.fn(() => chain);
+    chain.where = vi.fn(() => chain);
+    chain.returning = vi.fn(() => Promise.resolve([i]));
+    const result = await issueQueries.handBackIssue(chain, "iss_1", "w", "a1");
+    expect(result).toEqual(i);
+    expect(chain.set).toHaveBeenCalledWith(
+      expect.objectContaining({ claimedByAgentId: null, claimedAt: null })
+    );
+  });
+});
+
 describe("deleteIssue", () => {
   it("returns null when not found", async () => {
     const chain: any = {};

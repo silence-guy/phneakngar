@@ -1,7 +1,7 @@
 import { eq, and, count, desc, inArray, ne, sql } from "drizzle-orm";
-import { emails, agentEmailAccount, agentTaskQueue, conversation } from "../schema";
+import { emails, agentEmailAccount, agentTaskQueue, conversation, approval, issue } from "../schema";
 import type { Database } from "../index";
-import { TASK_TYPES } from "../../constants";
+import { ApprovalStatus, IssueStatus, TASK_TYPES } from "../../constants";
 
 export async function getEmailStatsByWorkspace(db: Database, workspaceId: string) {
   const [stats] = await db
@@ -109,4 +109,24 @@ export async function getConversationCountsByAgent(db: Database, workspaceId: st
       )
     )
     .groupBy(conversation.agentId);
+}
+
+/** Workspace-scoped pending approvals (high-stakes gate). */
+export async function countPendingApprovals(db: Database, workspaceId: string) {
+  const rows = await db
+    .select({ value: count() })
+    .from(approval)
+    .where(
+      and(eq(approval.workspaceId, workspaceId), eq(approval.status, ApprovalStatus.PENDING))
+    );
+  return Number(rows[0]?.value ?? 0);
+}
+
+/** Workspace-scoped blocked issues (needs human/teammate attention). */
+export async function countBlockedIssues(db: Database, workspaceId: string) {
+  const rows = await db
+    .select({ value: count() })
+    .from(issue)
+    .where(and(eq(issue.workspaceId, workspaceId), eq(issue.status, IssueStatus.BLOCKED)));
+  return Number(rows[0]?.value ?? 0);
 }

@@ -1,7 +1,29 @@
-export type { TemplatePreset, TemplateCategory } from "./types";
-export { TEMPLATE_CATEGORIES } from "./types";
+export type {
+  TemplatePreset,
+  TemplateCategory,
+  TemplateScenarioGroupId,
+  TemplateFilterId,
+  HelioScenarioTemplateId,
+} from "./types";
+export {
+  TEMPLATE_CATEGORIES,
+  HELIO_SCENARIO_TEMPLATE_IDS,
+  TEMPLATE_SCENARIO_GROUP_ORDER,
+} from "./types";
+export {
+  isHelioScenario,
+  getTemplateGroups,
+  filterTemplatesByChip,
+  type TemplateGroup,
+} from "./groups";
 
 import { Locale, defaultLocale, resolveLocale } from "@phneakngar/shared";
+import { dayPlanner } from "./presets/day-planner";
+import { taskDigest } from "./presets/task-digest";
+import { inboxAi } from "./presets/inbox-ai";
+import { feedbackLoop } from "./presets/feedback-loop";
+import { contentPipeline } from "./presets/content-pipeline";
+import { researchBrief } from "./presets/research-brief";
 import { openSourceMaintainer } from "./presets/open-source-maintainer";
 import { indieHackerShipCrew } from "./presets/indie-hacker-ship-crew";
 import { devopsMonitor } from "./presets/devops-monitor";
@@ -22,6 +44,12 @@ import {
 } from "@/lib/agent-instruction-km";
 
 export const TEMPLATES: TemplatePreset[] = [
+  dayPlanner,
+  taskDigest,
+  inboxAi,
+  feedbackLoop,
+  contentPipeline,
+  researchBrief,
   openSourceMaintainer,
   indieHackerShipCrew,
   devopsMonitor,
@@ -39,9 +67,115 @@ type TemplateCopy = Pick<
   "name" | "description" | "longDescription" | "features" | "useCases"
 >;
 
-type TemplateMemberRole = TemplatePreset["members"][number]["role"];
-
 const KHMER_TEMPLATE_COPY = {
+  "day-planner": {
+    name: "អ្នករៀបចំថ្ងៃ",
+    description: "ទទួលខុសត្រូវ morning brief៖ កាលវិភាគ អាទិភាព និង digest មុនចាប់ផ្តើមថ្ងៃ។",
+    longDescription:
+      "ភ្នាក់ងារ Day Planner ដែលភ្ជាប់នឹង calendar រៀបចំ morning brief និងផ្ញើ digest ទៅ channel ដើម្បីឱ្យម្ចាស់ចាប់ផ្តើមថ្ងៃដោយច្បាស់អាទិភាព ការប្រជុំ និងការត្រៀម។",
+    features: [
+      "Morning brief ផ្អែកលើ calendar",
+      "អាទិភាព ការប្រជុំ និង prep ច្បាស់",
+      "ផ្ញើ digest ទៅ channel",
+      "តាមដាន commitment មុនៗ",
+      "កាត់សំឡេងរំខានក្នុងកាលវិភាគ",
+      "លើកឡើងតែពេលត្រូវការសម្រេចចិត្ត",
+    ],
+    useCases: [
+      { title: "Founder", description: "ចាប់ផ្តើមថ្ងៃដោយ brief តែមួយ ជំនួសការបើកឧបករណ៍ច្រើន។" },
+      { title: "អ្នកប្រតិបត្តិការ", description: "មើលការប្រជុំ និងការងារសំខាន់ក្នុង channel post តែមួយ។" },
+      { title: "ក្រុមតូច", description: "មានរូបភាពព្រឹករួម ដោយមិនចាំបាច់ standup យូរ។" },
+    ],
+  },
+  "task-digest": {
+    name: "សង្ខេបភារកិច្ច",
+    description: "ស្កេន issue ផ្ញើ digest ទៅ channel និងទទួលខុសត្រូវការងារដែល blocked។",
+    longDescription:
+      "ភ្នាក់ងារ Task Digest ដែលមើល board ជាប្រចាំ claim ការងារដែលខ្លួនកំពុងដឹកនាំ តាមដាន blocked items និងផ្ញើ digest ច្បាស់អំពី progress, risk និងការសម្រេចចិត្តដែលត្រូវការ។",
+    features: [
+      "ស្កេន board តាម status រួមទាំង blocked",
+      "ផ្ញើ digest progress និង risk ទៅ channel",
+      "ទទួលខុសត្រូវ blocked items",
+      "Claim ការងារដែលកំពុងដឹកនាំ",
+      "រំលឹកការងារដែលឈប់ផ្លាស់ទី",
+      "Handback ច្បាស់ពេលមនុស្សត្រូវសម្រេច",
+    ],
+    useCases: [
+      { title: "ក្រុម product", description: "ជំនួស status meeting ដោយ task digest ជាប់លាប់។" },
+      { title: "Founder ម្នាក់ឯង", description: "ដឹងថាអ្វីជាប់គាំងដោយមិនបើក board ជានិច្ច។" },
+      { title: "Ops lead", description: "លើកឡើងតែពេលខ្វះ ownership ឬសេចក្តីសម្រេច។" },
+    ],
+  },
+  "inbox-ai": {
+    name: "Inbox AI",
+    description: "តម្រៀបអ៊ីមែល ព្រាងចម្លើយ និងមិនផ្ញើអ៊ីមែលសំខាន់ដោយគ្មានការអនុម័ត។",
+    longDescription:
+      "ភ្នាក់ងារ Inbox AI ដែលមានអត្តសញ្ញាណអ៊ីមែលពិត តម្រៀបសារចូល ព្រាងចម្លើយ តាមដាន follow-up និងដាក់ outbound mail ក្នុង approval queue មុនផ្ញើ។",
+    features: [
+      "តម្រៀបអ៊ីមែលតាម urgency និង importance",
+      "ព្រាងចម្លើយតាម tone របស់អ្នកផ្ញើ",
+      "ផ្ញើ outbound តែបន្ទាប់ពី human approval",
+      "តាមដាន thread ដែលត្រូវ follow-up",
+      "Daily inbox digest",
+      "លើកឡើង pricing, legal និងហានិភ័យទំនាក់ទំនង",
+    ],
+    useCases: [
+      { title: "Founder", description: "ឱ្យ inbox រត់បន្ត ដោយមិនជាប់អ៊ីមែលពេញមួយថ្ងៃ។" },
+      { title: "តួនាទីបម្រើ client", description: "មាន draft រង់ចាំ approve ជំនួសភាពស្ងៀម។" },
+      { title: "ក្រុមតូច", description: "មានស្តង់ដារ triage និង approval gate ច្បាស់។" },
+    ],
+  },
+  "feedback-loop": {
+    name: "រង្វិលជុំមតិ",
+    description: "ប្រមូលមតិផលិតផល ក្រុមតាម theme និងផ្ញើ digest សម្រេចចិត្តទៅ channel។",
+    longDescription:
+      "ភ្នាក់ងារ Feedback Loop ដែលស្កេនមតិ និង issue ជាប្រចាំ ក្រុម theme តាម frequency និង severity រួចផ្ញើ digest ច្បាស់ទៅ channel ដើម្បីឱ្យមនុស្សសម្រេចចិត្តដោយមិនលង់ក្នុង noise។",
+    features: [
+      "ប្រមូល និងក្រុមមតិផលិតផល",
+      "Theme និង severity callout",
+      "Channel digest សម្រាប់សម្រេចចិត្ត",
+      "ស្នើ owner / issue ថ្មី",
+      "លុបសញ្ញា weak-signal ស្ងៀម",
+    ],
+    useCases: [
+      { title: "ក្រុម product", description: "មើល theme មតិដោយមិនអាន ticket រាល់ថ្ងៃ។" },
+      { title: "Founder", description: "រក្សារង្វិលជុំពីសំឡេងអ្នកប្រើទៅសម្រេចចិត្ត។" },
+    ],
+  },
+  "content-pipeline": {
+    name: "បំពង់ខ្លឹមសារ",
+    description: "តាមដាន research → draft → review → publish និងផ្ញើ digest editorial ទៅ channel។",
+    longDescription:
+      "ភ្នាក់ងារ Content Pipeline ដែលធ្វើឱ្យ board editorial ច្បាស់៖ អ្វីរួចស្រេច publish អ្វីជាប់ review និងអ្វីនៅតែ research — ជា channel post ដែលអាចស្កេនបាន។",
+    features: [
+      "Digest តាម stage editorial",
+      "Ready-to-publish callout",
+      "Flag draft ចាស់/ជាប់",
+      "Channel delivery សម្រាប់ visibility",
+      "Escalate តែពេលត្រូវ human review",
+    ],
+    useCases: [
+      { title: "Content lead", description: "មើលសុខភាព pipeline ដោយមិនបើក draft រាល់ឯកសារ។" },
+      { title: "Creator ម្នាក់ឯង", description: "រក្សា cadence publish ជាមួយ board check ប្រចាំថ្ងៃ។" },
+    ],
+  },
+  "research-brief": {
+    name: "សង្ខេបស្រាវជ្រាវ",
+    description: "បង្កើត brief មានប្រភព និងផ្ញើសំណួរ/next probe ទៅ channel។",
+    longDescription:
+      "ភ្នាក់ងារ Research Brief ដែលបំលែងសំណួរបើកទៅជា brief ខ្លីមានប្រភព — findings, contradiction និង next probe — ដើម្បីឱ្យមនុស្សសម្រេចចិត្តដោយមិនអាន note ទាំងអស់ឡើងវិញ។",
+    features: [
+      "រចនាសម្ព័ន្ធ research brief",
+      "Finding មានប្រភពពេល context ផ្តល់",
+      "Open question និង next probe",
+      "Channel delivery សម្រាប់ orientation",
+      "មិនបង្កើត citation ក្លែង",
+    ],
+    useCases: [
+      { title: "Analyst", description: "បំលែង note រញ៉េរញ៉ៃទៅ brief សម្រេចចិត្ត។" },
+      { title: "Founder", description: "ទទួល pulse ស្រាវជ្រាវប្រចាំសប្តាហ៍ដោយមិនត្រូវ report ពេញ។" },
+    ],
+  },
   "open-source-maintainer": {
     name: "អ្នកថែទាំគម្រោង Open Source",
     description: "ជួយតម្រៀបបញ្ហា ពិនិត្យ PR សរសេរ changelog និងគ្រប់គ្រង release។",

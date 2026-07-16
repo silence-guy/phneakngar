@@ -6,9 +6,11 @@ import { buttonVariants } from "@/components/ui/button";
 import { PublicLayout } from "@/components/public-layout";
 import { MemberCard } from "./_components/member-card";
 import type { TemplatePreset } from "@/lib/templates";
+import { isHelioScenario } from "@/lib/templates";
 import {
   TEMPLATES_LABELS,
   templateCategoryLabel,
+  templateGroupLabel,
   templateRoleLabel,
   templateAgentsWorkingLabel,
 } from "../templates-labels";
@@ -82,9 +84,19 @@ export function TemplateDetailClient({
                 {template.icon}
               </span>
               <div>
-                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                  {templateCategoryLabel(template.category)}
-                </p>
+                {isHelioScenario(template) ? (
+                  <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    {templateGroupLabel("helio-scenarios")}
+                    <span className="mx-1.5 text-muted-foreground/40">·</span>
+                    <span className="font-normal normal-case tracking-normal">
+                      {templateCategoryLabel(template.category)}
+                    </span>
+                  </p>
+                ) : (
+                  <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    {templateCategoryLabel(template.category)}
+                  </p>
+                )}
                 <h1 className="mt-0.5 font-khmer text-2xl font-semibold tracking-normal leading-[1.4]">
                   {template.name}
                 </h1>

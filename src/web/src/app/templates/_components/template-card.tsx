@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import type { TemplatePreset } from "@/lib/templates";
+import { isHelioScenario } from "@/lib/templates";
 import { trackTemplateUsed } from "@/lib/analytics";
 import { TEMPLATES_LABELS, templateAgentCountLabel } from "../templates-labels";
 
@@ -40,10 +41,17 @@ export function TemplateCard({
       href={detailUrl}
       className="group relative flex flex-col rounded-xl bg-card p-5 transition-all duration-200 hover:bg-accent/40 border border-transparent hover:border-border"
     >
-      {/* Icon */}
-      <span className="flex size-10 items-center justify-center rounded-lg bg-muted/60 text-xl">
-        {template.icon}
-      </span>
+      {/* Icon + optional Helio scenario badge */}
+      <div className="flex items-start justify-between gap-2">
+        <span className="flex size-10 items-center justify-center rounded-lg bg-muted/60 text-xl">
+          {template.icon}
+        </span>
+        {isHelioScenario(template) ? (
+          <span className="shrink-0 rounded-full bg-muted/70 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+            {TEMPLATES_LABELS.card.scenarioBadge}
+          </span>
+        ) : null}
+      </div>
 
       {/* Name */}
       <h3 className="mt-4 text-sm font-semibold leading-tight tracking-tight">

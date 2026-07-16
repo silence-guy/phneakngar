@@ -1,4 +1,12 @@
-import { buildAgentPromptLanguagePolicy, type AgentPromptLanguagePolicy } from "@phneakngar/shared";
+import {
+  buildAgentPromptLanguagePolicy,
+  buildJudgmentPolicyNotice,
+  formatMemoryForPrompt,
+  readJudgmentPolicy,
+  resolveAmbiguousDmJudgment,
+  type AgentPromptLanguagePolicy,
+  type MemoryPromptItem,
+} from "@phneakngar/shared";
 import type { Task, Attachment } from "./types.js";
 import { localISOString } from "./execenv/timeline.js";
 
@@ -81,6 +89,32 @@ export function buildTaskObject(task: Task, attachments?: Attachment[]): Record<
         ...(ctx.conversation_history ? { history: ctx.conversation_history } : {}),
       };
     }
+
+    // D6: judgment policy (ambiguous → create issue) from agent runtime_config.
+    const judgment = readJudgmentPolicy(task.agent?.runtimeConfig);
+    const judgmentNotice = buildJudgmentPolicyNotice(judgment);
+    if (judgmentNotice) {
+      const decision = resolveAmbiguousDmJudgment({
+        policy: judgment,
+        prompt: task.prompt,
+        agentId: task.agentId,
+        senderName: task.sender?.name ?? null,
+        conversationId: task.conversationId,
+      });
+      obj.judgment_policy = {
+        ambiguous_to_issue: true,
+        guidance: judgmentNotice,
+        recommended_action: decision.action,
+        reason: decision.reason,
+        ...(decision.action === "create_issue"
+          ? {
+              issue_draft: decision.issue,
+            }
+          : {}),
+      };
+      // Append guidance so the model sees it even if it only reads notice.
+      obj.notice = `${DM_RESPONSE_NOTICE} ${judgmentNotice}`;
+    }
   }
   if (task.type === "email_notification") {
     const ctx = task.context as Record<string, unknown> | undefined;
@@ -121,6 +155,29 @@ export function buildTaskObject(task: Task, attachments?: Attachment[]): Record<
     const ctx = task.context as Record<string, unknown> | undefined;
     if (ctx?.issue_id) {
       obj.issue_id = ctx.issue_id;
+    }
+  }
+  if (task.type === "automation_event") {
+    const ctx = task.context as Record<string, unknown> | undefined;
+    if (ctx?.automation_id != null) {
+      obj.automation_id = ctx.automation_id;
+    }
+    if (ctx?.delivery_mode != null) {
+      obj.delivery_mode = ctx.delivery_mode;
+    }
+    if (ctx?.skill_name != null) {
+      obj.skill_name = ctx.skill_name;
+    }
+  }
+  // Memory snippets attached at web enqueue (issue_event / automation_event).
+  const memoryCtx = task.context as Record<string, unknown> | undefined;
+  if (memoryCtx) {
+    if (typeof memoryCtx.memory_prompt === "string" && memoryCtx.memory_prompt.trim()) {
+      obj.memory = memoryCtx.memory_prompt;
+    } else if (Array.isArray(memoryCtx.memories) && memoryCtx.memories.length > 0) {
+      const items = memoryCtx.memories as MemoryPromptItem[];
+      const formatted = formatMemoryForPrompt(items);
+      if (formatted) obj.memory = formatted;
     }
   }
   if (task.sender) {

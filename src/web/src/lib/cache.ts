@@ -176,6 +176,7 @@ export const cacheKeys = {
   overviewEmailAccounts: (workspaceId: string) => `ov_ea:${workspaceId}`,
   overviewEmailStats: (workspaceId: string) => `ov_email:${workspaceId}`,
   overviewTaskStats: (workspaceId: string, dateStr: string) => `ov_task:${workspaceId}:${dateStr}`,
+  overviewAttention: (workspaceId: string) => `ov_attn:${workspaceId}`,
   allAgentAccess: (workspaceId: string) => `aa:${workspaceId}`,
   allRuntimes: (workspaceId: string) => `runtimes:${workspaceId}`,
   allMembers: (workspaceId: string) => `members:${workspaceId}`,

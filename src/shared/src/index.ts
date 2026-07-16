@@ -80,6 +80,7 @@ export {
   TERMINAL_ISSUE_STATUSES,
   isTerminalIssueStatus,
   MessageRole,
+  MessageKind,
   POLL_INTERVAL_MS,
   OFFLINE_THRESHOLD_MS,
   EVENT_POLL_INTERVAL_MS,
@@ -101,6 +102,12 @@ export {
   TERMINAL_MEETING_STATUSES,
   OutboundEmailDeliveryStatus,
   buildOutboundDeliveryKey,
+  ApprovalKind,
+  ApprovalStatus,
+  MemoryKind,
+  AutomationDeliveryMode,
+  ArtifactSource,
+  DeliveryArtifactKind,
 } from "./constants";
 
 export type {
@@ -110,8 +117,15 @@ export type {
   TaskType,
   IssueStatusType,
   MessageRoleType,
+  MessageKindType,
   MeetingStatusType,
   OutboundEmailDeliveryStatusType,
+  ApprovalKindType,
+  ApprovalStatusType,
+  MemoryKindType,
+  AutomationDeliveryModeType,
+  ArtifactSourceType,
+  DeliveryArtifactKindType,
 } from "./constants";
 
 // Locale
@@ -197,6 +211,8 @@ export {
   IssueStatusSchema,
   CreateIssueRequestSchema,
   UpdateIssueRequestSchema,
+  ClaimIssueRequestSchema,
+  HandBackIssueRequestSchema,
   CreateIssueCommentRequestSchema,
   CreateIssueCommentBodySchema,
   IssueCommentApiSchema,
@@ -207,6 +223,18 @@ export {
   AddWhitelistRequestSchema,
   CreateAgentRequestSchema,
   UpdateAgentRequestSchema,
+  AutomationDeliveryModeSchema,
+  CreateAutomationRequestSchema,
+  UpdateAutomationRequestSchema,
+  MemoryKindSchema,
+  CreateMemoryRequestSchema,
+  UpdateMemoryRequestSchema,
+  CompactMemoryRequestSchema,
+  DecideApprovalRequestSchema,
+  ProposeSkillFromTaskRequestSchema,
+  CreateIntegrationRequestSchema,
+  ChannelMemberRequestSchema,
+  ConversationMemberRequestSchema,
   CreateConversationRequestSchema,
   CreateMessageRequestSchema,
   AgentDmRequestSchema,
@@ -265,10 +293,22 @@ export type {
   CalendarEventApi,
   CreateIssueRequestInput,
   UpdateIssueRequestInput,
+  ClaimIssueRequestInput,
+  HandBackIssueRequestInput,
   CreateIssueCommentRequestInput,
   CreateIssueCommentBody,
   IssueCommentApi,
   IssueApi,
+  CreateAutomationRequestInput,
+  UpdateAutomationRequestInput,
+  CreateMemoryRequestInput,
+  UpdateMemoryRequestInput,
+  CompactMemoryRequestInput,
+  DecideApprovalRequestInput,
+  ProposeSkillFromTaskRequestInput,
+  CreateIntegrationRequestInput,
+  ChannelMemberRequestInput,
+  ConversationMemberRequestInput,
   CreateAgentLinkRequestInput,
   UpdateAgentLinkRequestInput,
   UpsertAgentLinkRequestInput,
@@ -306,6 +346,78 @@ export { parseIcs } from "./lib/ics-parser";
 export type { MeetingInfo } from "./lib/ics-parser";
 export { buildMimeMessage, extractAttachmentMeta, filterDownloadableAttachments } from "./lib/mime";
 export type { MimeAttachment, BuildMimeOptions, InboundAttachmentMeta } from "./lib/mime";
+export { compactMemoryNotes, MEMORY_SUMMARY_KIND } from "./lib/memory-compact";
+export type { CompactableMemoryNote, CompactMemoryOptions } from "./lib/memory-compact";
+export { proposeSkillFromSuccess } from "./lib/skill-proposal";
+export type { TaskSuccessMetadata, SkillProposal } from "./lib/skill-proposal";
+export {
+  shouldDeliverToChannel,
+  parseDeliveryChannelId,
+  extractChannelDeliveryContent,
+  channelDeliveryMessageId,
+  isChannelDeliveryMessage,
+  buildChannelDeliveryMetadata,
+} from "./lib/channel-delivery";
+export type { ChannelDeliveryContext } from "./lib/channel-delivery";
+export {
+  ToolClass,
+  HIGH_STAKES_TOOL_CLASSES,
+  LOW_STAKES_TOOL_CLASSES,
+  classifyToolName,
+  normalizeToolClass,
+  mapToolClassToApprovalKind,
+  approvalKindRequiresSideEffect,
+  isHighStakesToolClass,
+  isToolAllowListed,
+  extractCommandFromInput,
+  maybeDowngradeShellClass,
+  evaluateApprovalPolicy,
+  extractToolPermissionRequest,
+  gateToolPermission,
+} from "./lib/approval-policy";
+export type {
+  ToolClassType,
+  ApprovalPolicyInput,
+  ApprovalPolicyDecision,
+  ToolGateBehavior,
+  ToolGateDecision,
+} from "./lib/approval-policy";
+export {
+  buildDeliveryArtifactId,
+  buildDeliveryArtifactFilename,
+  buildDeliveryArtifactR2Key,
+  utf8ByteLength,
+  extractDeliveryContent,
+  isDeliveryArtifactSource,
+  isTimelineArtifactSource,
+} from "./lib/delivery-artifact";
+export type { DeliveryContent } from "./lib/delivery-artifact";
+export {
+  DEFAULT_JUDGMENT_POLICY,
+  applyJudgmentPolicyToRuntimeConfig,
+  buildAmbiguousIssueDraft,
+  buildJudgmentPolicyContextBlock,
+  buildJudgmentPolicyNotice,
+  isAmbiguousRequest,
+  readJudgmentPolicy,
+  resolveAmbiguousDmJudgment,
+} from "./lib/judgment-policy";
+export type {
+  AmbiguousIssueDraft,
+  AmbiguousJudgmentResult,
+  JudgmentPolicySettings,
+} from "./lib/judgment-policy";
+export {
+  DEFAULT_PATTERN_MIN_COUNT,
+  DEFAULT_SUGGESTED_SCHEDULE,
+  detectAutomationPatterns,
+  normalizeTaskPatternKey,
+} from "./lib/pattern-automation-suggest";
+export type {
+  PatternTaskInput,
+  AutomationPatternSuggestion,
+  DetectAutomationPatternsOptions,
+} from "./lib/pattern-automation-suggest";
 export {
   addRepeatInterval,
   computeNextScheduledAt,
@@ -331,6 +443,12 @@ export { isOnline, formatStatus } from "./utils/status";
 export { isUniqueConstraintError } from "./utils/db-errors";
 export { generateWorkspaceSlug } from "./utils/slug";
 export { truncateTitle, truncateGraphemes, sliceGraphemes, toGraphemes } from "./utils/title";
+export {
+  DEFAULT_AGENT_MEMORY_PROMPT_LIMIT,
+  formatMemoryForPrompt,
+  toMemoryPromptItems,
+} from "./utils/memory-prompt";
+export type { MemoryPromptItem } from "./utils/memory-prompt";
 export { semverGte } from "./semver";
 export { resolveChhlatId, withChhlatIdFields } from "./chhlat-id";
 export {

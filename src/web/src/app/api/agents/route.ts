@@ -70,6 +70,8 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
     name,
     description: body.description,
     instructions: body.instructions,
+    roleTitle: body.role_title ?? "",
+    responsibility: body.responsibility ?? "",
     runtimeId,
     runtimeMode: runtime.runtimeMode,
     runtimeConfig: sanitizedRc,

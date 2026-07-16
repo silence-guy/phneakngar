@@ -18,9 +18,9 @@
 
 ## What is ភ្នាក់ងារ?
 
-**ភ្នាក់ងារ** is an open-source, self-hostable platform that turns local AI coding agents into a collaborating team. Each agent has a role, an email address, and an always-on local runtime.
+**ភ្នាក់ងារ** is an open-source, self-hostable platform that turns local AI coding agents into AI teammates you can assign recurring work to. Each teammate has a role, an email address, and an always-on local runtime.
 
-Agents execute on your machines with access to the tools and codebases you permit. ភ្នាក់ងារ connects them to email, a dashboard, calendars, tasks, and each other.
+Teammates run on your machines with the tools and codebases you permit. ភ្នាក់ងារ connects them to email, a dashboard, calendars, tasks, approvals, and each other — so ownership and delivery stay explicit, not one-off chat prompts.
 
 <p align="center">
   <img src="./assets/phneakngar-org_rounded.png" alt="ភ្នាក់ងារ organization view" width="700" />

@@ -10,7 +10,7 @@ import { FlagPopover } from "@/components/flag-popover";
 import { Logo } from "@/components/logo";
 import { appShellLabel } from "@/lib/locale";
 import { cn } from "@/lib/utils";
-import { Monitor, SunMoon, Plus, CalendarDays, Settings, ArrowLeftRight, Home, CircleDot, Folder, Ungroup, ArrowRightToLine } from "lucide-react";
+import { Monitor, SunMoon, Plus, CalendarDays, Settings, ArrowLeftRight, Home, CircleDot, Folder, Ungroup, ArrowRightToLine, ShieldCheck, Repeat } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { useTheme } from "next-themes";
@@ -252,6 +252,8 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void } = {}) {
   const isInbox = pathname.startsWith(`${prefix}/unread`);
   const isFlags = pathname.startsWith(`${prefix}/flags`);
   const isIssues = pathname.startsWith(`${prefix}/issues`);
+  const isApprovals = pathname.startsWith(`${prefix}/approvals`);
+  const isAutomations = pathname.startsWith(`${prefix}/automations`);
   const isSettings = pathname === `${prefix}/settings`;
   const isCreateAgent = pathname === `${prefix}/agents/new`;
 
@@ -449,6 +451,40 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void } = {}) {
             <CalendarDays className="size-4" />
           </TooltipTrigger>
           <TooltipContent side="right">{appShellLabel("calendar")}</TooltipContent>
+        </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger render={
+            <button
+              type="button"
+              onClick={() => { router.push(`${prefix}/approvals`); onNavigate?.(); }}
+              className={cn(
+                "flex items-center justify-center size-10 rounded-xl transition-colors duration-200 cursor-pointer",
+                "text-muted-foreground hover:text-foreground hover:bg-accent",
+                isApprovals && "bg-accent text-foreground"
+              )}
+            />
+          }>
+            <ShieldCheck className="size-4" />
+          </TooltipTrigger>
+          <TooltipContent side="right">{appShellLabel("approvals")}</TooltipContent>
+        </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger render={
+            <button
+              type="button"
+              onClick={() => { router.push(`${prefix}/automations`); onNavigate?.(); }}
+              className={cn(
+                "flex items-center justify-center size-10 rounded-xl transition-colors duration-200 cursor-pointer",
+                "text-muted-foreground hover:text-foreground hover:bg-accent",
+                isAutomations && "bg-accent text-foreground"
+              )}
+            />
+          }>
+            <Repeat className="size-4" />
+          </TooltipTrigger>
+          <TooltipContent side="right">{appShellLabel("automations")}</TooltipContent>
         </Tooltip>
 
       </div>

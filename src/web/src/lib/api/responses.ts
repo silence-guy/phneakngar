@@ -52,6 +52,8 @@ export function agentToResponse(a: AgentRow) {
     name: a.name,
     description: a.description,
     instructions: a.instructions,
+    role_title: a.roleTitle ?? "",
+    responsibility: a.responsibility ?? "",
     runtime_mode: a.runtimeMode,
     runtime_config: rc,
     status: a.status,
@@ -291,6 +293,8 @@ export function issueToResponse(row: IssueRow) {
     creator_user_id: row.creatorUserId,
     conversation_id: row.conversationId,
     latest_task_id: row.latestTaskId ?? null,
+    claimed_by_agent_id: row.claimedByAgentId ?? null,
+    claimed_at: formatTimestampNullable(row.claimedAt),
     title: row.title,
     description: row.description ?? "",
     status: row.status,
@@ -362,5 +366,85 @@ export function inviteToResponse(inv: {
     used_by: inv.usedBy,
     expires_at: formatTimestamp(inv.expiresAt),
     created_at: formatTimestamp(inv.createdAt),
+  };
+}
+
+type AgentMemoryRow = typeof schema.agentMemory.$inferSelect;
+type ApprovalRow = typeof schema.approval.$inferSelect;
+type AutomationRow = typeof schema.automation.$inferSelect;
+
+export function automationToResponse(row: AutomationRow) {
+  return {
+    id: row.id,
+    workspace_id: row.workspaceId,
+    agent_id: row.agentId,
+    title: row.title,
+    sop_markdown: row.sopMarkdown ?? "",
+    schedule: row.schedule,
+    next_run_at: formatTimestamp(row.nextRunAt),
+    delivery_mode: row.deliveryMode,
+    delivery_channel_id: row.deliveryChannelId ?? null,
+    skill_name: row.skillName ?? null,
+    enabled: !!row.enabled,
+    last_run_at: formatTimestampNullable(row.lastRunAt),
+    last_task_id: row.lastTaskId ?? null,
+    created_at: formatTimestamp(row.createdAt),
+    updated_at: formatTimestamp(row.updatedAt),
+  };
+}
+
+export function memoryToResponse(row: AgentMemoryRow) {
+  return {
+    id: row.id,
+    workspace_id: row.workspaceId,
+    agent_id: row.agentId ?? null,
+    kind: row.kind,
+    content: row.content,
+    source_task_id: row.sourceTaskId ?? null,
+    created_at: formatTimestamp(row.createdAt),
+    updated_at: formatTimestamp(row.updatedAt),
+  };
+}
+
+export function approvalToResponse(row: ApprovalRow) {
+  return {
+    id: row.id,
+    workspace_id: row.workspaceId,
+    agent_id: row.agentId ?? null,
+    kind: row.kind,
+    status: row.status,
+    title: row.title,
+    summary: row.summary,
+    payload: row.payload ?? null,
+    decided_by_user_id: row.decidedByUserId ?? null,
+    decided_at: formatTimestampNullable(row.decidedAt),
+    created_at: formatTimestamp(row.createdAt),
+    updated_at: formatTimestamp(row.updatedAt),
+  };
+}
+
+type ChannelMemberRow = typeof schema.channelMember.$inferSelect;
+
+export function channelMemberToResponse(row: ChannelMemberRow) {
+  return {
+    id: row.id,
+    workspace_id: row.workspaceId,
+    channel_id: row.channelId,
+    member_type: row.memberType,
+    member_id: row.memberId,
+    created_at: formatTimestamp(row.createdAt),
+  };
+}
+
+type ConversationMemberRow = typeof schema.conversationMember.$inferSelect;
+
+export function conversationMemberToResponse(row: ConversationMemberRow) {
+  return {
+    id: row.id,
+    workspace_id: row.workspaceId,
+    conversation_id: row.conversationId,
+    member_type: row.memberType,
+    member_id: row.memberId,
+    created_at: formatTimestamp(row.createdAt),
   };
 }

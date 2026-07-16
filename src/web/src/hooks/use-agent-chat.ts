@@ -54,15 +54,16 @@ import {
 } from "@/components/agent-chat/chat-message-utils";
 import type { NapMarker } from "@/components/agent-chat/chat-message-utils";
 import type { PreviousConversation } from "@/lib/api";
-import type {
-  Agent,
-  Artifact,
-  Conversation,
-  Message,
-  SkillEntry,
-  TaskApi as Task,
-  TaskMessageResponse,
-  WsMessage,
+import {
+  isTimelineArtifactSource,
+  type Agent,
+  type Artifact,
+  type Conversation,
+  type Message,
+  type SkillEntry,
+  type TaskApi as Task,
+  type TaskMessageResponse,
+  type WsMessage,
 } from "@phneakngar/shared";
 import { toast } from "sonner";
 import type { PendingFile } from "@/hooks/use-file-attachments";
@@ -209,7 +210,9 @@ export function useAgentChat(
   }, [conversation, agentId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const agentArtifacts = useMemo(
-    () => artifacts.filter((a) => a.source === "agent"),
+    // Include agent uploads and delivery products (drafts/digests/reports).
+    // User message attachments stay out of the agent timeline cluster.
+    () => artifacts.filter((a) => isTimelineArtifactSource(a.source)),
     [artifacts],
   );
 

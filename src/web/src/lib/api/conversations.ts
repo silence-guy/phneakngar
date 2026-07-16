@@ -211,6 +211,48 @@ export const cancelActiveTask = (conversationId: string, workspaceId: string) =>
     method: "DELETE",
   });
 
+// Multi-party DM membership (conversation_member)
+export type ConversationMemberItem = {
+  id: string;
+  workspace_id: string;
+  conversation_id: string;
+  member_type: "user" | "agent" | string;
+  member_id: string;
+  created_at: string;
+};
+
+export const listConversationMembers = (conversationId: string, workspaceId: string) =>
+  apiFetch<{ items: ConversationMemberItem[] }>(
+    `/api/conversations/${conversationId}/members${wsQuery(workspaceId)}`,
+  );
+
+export const addConversationMember = (
+  conversationId: string,
+  workspaceId: string,
+  body: { member_type: "user" | "agent"; member_id: string },
+) =>
+  apiFetch<{ member: ConversationMemberItem }>(
+    `/api/conversations/${conversationId}/members${wsQuery(workspaceId)}`,
+    {
+      method: "POST",
+      body: JSON.stringify(body),
+    },
+  );
+
+export const removeConversationMember = (
+  conversationId: string,
+  workspaceId: string,
+  memberType: "user" | "agent",
+  memberId: string,
+) =>
+  apiFetch<{ ok: boolean; member: ConversationMemberItem }>(
+    `/api/conversations/${conversationId}/members${wsQuery(workspaceId, {
+      member_type: memberType,
+      member_id: memberId,
+    })}`,
+    { method: "DELETE" },
+  );
+
 // Threads
 export interface ThreadSummary {
   thread_id: string;

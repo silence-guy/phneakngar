@@ -18,7 +18,16 @@ import type { PendingFile } from "@/hooks/use-file-attachments";
 import { EmailCard } from "@/components/agent-chat/event-cards/email-card";
 import { CalendarCard } from "@/components/agent-chat/event-cards/calendar-card";
 import { IssueCard } from "@/components/agent-chat/event-cards/issue-card";
-import { MessageBubble, MessageCluster, AVATAR_SIZE, type BubblePosition } from "@/components/chat-primitives";
+import {
+  MessageBubble,
+  MessageCluster,
+  AVATAR_SIZE,
+  TIMELINE_EVENT_CLASS,
+  TIMELINE_BODY_QUIET_CLASS,
+  TIMELINE_GUTTER_CLASS,
+  timelineChromeAttrs,
+  type BubblePosition,
+} from "@/components/chat-primitives";
 
 import { eventTypeFromMessage, type GroupPosition } from "@/components/agent-chat/chat-message-utils";
 import { toast } from "sonner";
@@ -32,6 +41,19 @@ const MENTION_LITERAL_TAGS = ["mention"];
 
 function toBubblePosition(gp: GroupPosition): BubblePosition {
   return gp === "solo" ? "single" : gp;
+}
+
+/** Simple monogram avatar for the human side of the shared timeline. */
+function HumanAvatar({ size = AVATAR_SIZE }: { size?: number }) {
+  return (
+    <div
+      className="flex items-center justify-center rounded-md bg-muted text-muted-foreground text-[0.7rem] font-semibold select-none"
+      style={{ width: size, height: size }}
+      aria-hidden
+    >
+      {AGENT_CHAT_LABELS.messageList.you.slice(0, 1)}
+    </div>
+  );
 }
 
 /**
@@ -200,7 +222,7 @@ function AttachmentChips({
           key={a.id}
           type="button"
           onClick={(e) => { e.stopPropagation(); onArtifactClick(a); }}
-          className="inline-flex items-center gap-1 rounded-md bg-primary-foreground/10 border border-primary-foreground/20 px-2 py-0.5 text-xs text-primary-foreground/80 hover:bg-primary-foreground/20 transition-colors cursor-pointer"
+          className="inline-flex items-center gap-1 rounded-md bg-muted/60 border border-border px-2 py-0.5 text-xs text-muted-foreground hover:bg-muted transition-colors cursor-pointer"
         >
           <FileText className="size-3 shrink-0" />
           <span className="truncate max-w-37.5">{a.filename}</span>
@@ -247,7 +269,7 @@ function ImageAttachmentCards({
             key={a.id}
             type="button"
             onClick={(e) => { e.stopPropagation(); onArtifactClick(a); }}
-            className="inline-flex items-center gap-1 rounded-md bg-primary-foreground/10 border border-primary-foreground/20 px-2 py-0.5 text-xs text-primary-foreground/80 hover:bg-primary-foreground/20 transition-colors cursor-pointer"
+            className="inline-flex items-center gap-1 rounded-md bg-muted/60 border border-border px-2 py-0.5 text-xs text-muted-foreground hover:bg-muted transition-colors cursor-pointer"
           >
             <ImageIcon className="size-3 shrink-0" aria-hidden="true" />
             <span className="truncate max-w-37.5">{a.filename}</span>
@@ -258,8 +280,8 @@ function ImageAttachmentCards({
   );
 }
 
-// Slack/Discord cluster model: delegates to <MessageCluster> from
-// chat-primitives. This wrapper adapts the product's AnimatedAvatar + the
+// Shared timeline cluster model (B4): human / AI / system use the same left
+// stream chrome via <MessageCluster>. This wrapper adapts AnimatedAvatar + the
 // `forceSpacer` concept into the primitive's props interface.
 
 export function AgentRow({
@@ -278,6 +300,7 @@ export function AgentRow({
   const effectivePosition: GroupPosition = forceSpacer ? "middle" : groupPosition;
   return (
     <MessageCluster
+      actor="ai"
       avatar={
         config ? (
           <AnimatedAvatar
@@ -289,6 +312,31 @@ export function AgentRow({
         ) : null
       }
       name={agentName}
+      position={effectivePosition}
+    >
+      {children}
+    </MessageCluster>
+  );
+}
+
+/** Human-side cluster — same chrome as AgentRow, actor=human. */
+export function HumanRow({
+  groupPosition,
+  name = AGENT_CHAT_LABELS.messageList.you,
+  forceSpacer = false,
+  children,
+}: {
+  groupPosition: GroupPosition;
+  name?: string;
+  forceSpacer?: boolean;
+  children: React.ReactNode;
+}) {
+  const effectivePosition: GroupPosition = forceSpacer ? "middle" : groupPosition;
+  return (
+    <MessageCluster
+      actor="human"
+      avatar={<HumanAvatar />}
+      name={name}
       position={effectivePosition}
     >
       {children}
@@ -590,58 +638,93 @@ export const MessageItem = memo(function MessageItem({
         const slashMatch = msg.content.match(/^\/(\S+)\s?([\s\S]*)$/);
         const skillName = slashMatch?.[1] ?? null;
         const messageBody = slashMatch ? (slashMatch[2] || "") : msg.content;
+        // B4: human messages share the same left stream chrome as AI — no
+        // right-aligned primary chatbot bubbles.
         return (
-          <div className="group/msg flex flex-col items-end" data-message-id={msg.id} {...(msg.task_id ? { "data-task-id": msg.task_id } : {})}>
-            {(() => {
-              const quote = msg.metadata?.quote as { messageId?: string; excerpt?: string } | undefined;
-              const quoteId = quote?.messageId;
-              if (!quoteId) return null;
-              return (
-                <button
-                  type="button"
-                  onClick={() => {
-                    const target = document.querySelector(`[data-message-id="${CSS.escape(quoteId)}"]`);
-                    target?.scrollIntoView({ behavior: "smooth", block: "center" });
-                  }}
-                  className="max-w-[50%] mb-0.5 flex items-center gap-1.5 rounded-lg bg-muted/60 px-2.5 py-1 text-left"
-                >
-                  <MessageSquareQuote className="size-3 shrink-0 text-muted-foreground" />
-                  <span className="text-xs text-muted-foreground truncate">{quote.excerpt}</span>
-                </button>
-              );
-            })()}
-            <MessageBubble
-              variant="user"
-              position={toBubblePosition(groupPosition)}
-              className={cn(
-                "max-w-[80%] relative",
-                isSendFailed && "opacity-60",
-              )}
-              {...bubblePressHandlers}
-            >
-              {skillName && (
-                <span className="inline-flex items-center rounded px-1.5 py-0.5 text-xs font-medium bg-primary-foreground/15 text-primary-foreground mb-1">
-                  /{skillName}
-                </span>
-              )}
-              {messageBody && (
-                <div className="markdown markdown-user">
-                  <Streamdown plugins={{ mermaid, cjk, math }} controls={{ code: { copy: true, download: false }, table: { copy: false, download: false, fullscreen: false } }} linkSafety={{ enabled: false }} allowedTags={MENTION_ALLOWED_TAGS} literalTagContent={MENTION_LITERAL_TAGS} components={mentionComponents}>{highlightMentions(messageBody, agents)}</Streamdown>
-                </div>
-              )}
+          <div
+            className="group/msg"
+            data-message-id={msg.id}
+            {...(msg.task_id ? { "data-task-id": msg.task_id } : {})}
+          >
+            <HumanRow groupPosition={groupPosition}>
               {(() => {
-                // Non-image file chips inside the bubble.
-                // Prefer local pending pills (instant) to avoid flash on transition.
+                const quote = msg.metadata?.quote as { messageId?: string; excerpt?: string } | undefined;
+                const quoteId = quote?.messageId;
+                if (!quoteId) return null;
+                return (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const target = document.querySelector(`[data-message-id="${CSS.escape(quoteId)}"]`);
+                      target?.scrollIntoView({ behavior: "smooth", block: "center" });
+                    }}
+                    className="max-w-full mb-0.5 flex items-center gap-1.5 rounded-lg bg-muted/60 px-2.5 py-1 text-left"
+                  >
+                    <MessageSquareQuote className="size-3 shrink-0 text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground truncate">{quote.excerpt}</span>
+                  </button>
+                );
+              })()}
+              <div
+                className={cn("relative min-w-0 w-fit max-w-full", isSendFailed && "opacity-60")}
+                {...bubblePressHandlers}
+              >
+                <MessageBubble
+                  variant="human"
+                  position={toBubblePosition(groupPosition)}
+                  className="markdown min-w-0 max-w-full"
+                >
+                  {skillName && (
+                    <span className="inline-flex items-center rounded px-1.5 py-0.5 text-xs font-medium bg-muted text-muted-foreground mb-1">
+                      /{skillName}
+                    </span>
+                  )}
+                  {messageBody && (
+                    <Streamdown plugins={{ mermaid, cjk, math }} controls={{ code: { copy: true, download: false }, table: { copy: false, download: false, fullscreen: false } }} linkSafety={{ enabled: false }} allowedTags={MENTION_ALLOWED_TAGS} literalTagContent={MENTION_LITERAL_TAGS} components={mentionComponents}>{highlightMentions(messageBody, agents)}</Streamdown>
+                  )}
+                  {(() => {
+                    // Non-image file chips — neutral chips (no primary-bubble palette).
+                    const pfs = pendingFilesByMessage.get(msg.id);
+                    const nonImagePfs = pfs?.filter((pf) => !pf.thumbnailUrl);
+                    if (nonImagePfs && nonImagePfs.length > 0) {
+                      return (
+                        <div className="flex flex-wrap gap-1.5 mt-1.5">
+                          {nonImagePfs.map((pf, i) => (
+                            <span key={i} className="inline-flex items-center gap-1 rounded-md bg-muted/60 border border-border px-2 py-0.5 text-xs text-muted-foreground">
+                              <FileText className="size-3 shrink-0" />
+                              <span className="truncate max-w-37.5">{pf.file.name}</span>
+                            </span>
+                          ))}
+                        </div>
+                      );
+                    }
+                    const ids = msg.attachment_ids;
+                    if (ids && ids.length > 0) {
+                      const resolved = ids.map((id: string) => artifacts.find((a) => a.id === id)).filter((a): a is Artifact => !!a);
+                      const nonImageResolved = resolved.filter((a) => !a.content_type.startsWith("image/"));
+                      if (nonImageResolved.length > 0) return <AttachmentChips attachmentIds={nonImageResolved.map((a) => a.id)} artifacts={artifacts} onArtifactClick={onArtifactClick} />;
+                    }
+                    return null;
+                  })()}
+                </MessageBubble>
+                {toolbar}
+              </div>
+              {(() => {
+                // Image thumbnail cards below the body.
                 const pfs = pendingFilesByMessage.get(msg.id);
-                const nonImagePfs = pfs?.filter((pf) => !pf.thumbnailUrl);
-                if (nonImagePfs && nonImagePfs.length > 0) {
+                const imagePfs = pfs?.filter((pf) => pf.thumbnailUrl);
+                if (imagePfs && imagePfs.length > 0) {
                   return (
                     <div className="flex flex-wrap gap-1.5 mt-1.5">
-                      {nonImagePfs.map((pf, i) => (
-                        <span key={i} className="inline-flex items-center gap-1 rounded-md bg-primary-foreground/10 border border-primary-foreground/20 px-2 py-0.5 text-xs text-primary-foreground/80">
-                          <FileText className="size-3 shrink-0" />
-                          <span className="truncate max-w-37.5">{pf.file.name}</span>
-                        </span>
+                      {imagePfs.map((pf, i) => (
+                        <button
+                          key={i}
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); onPendingImageClick?.(pf.file); }}
+                          className="max-w-48 overflow-hidden rounded-(--radius) border border-(--border) cursor-pointer [transition:translate_.2s_cubic-bezier(.2,.8,.2,1),box-shadow_.2s_ease] hover:-translate-y-0.5 [box-shadow:var(--e1)] hover:[box-shadow:var(--e2)]"
+                        >
+                          <img src={pf.thumbnailUrl!} alt={pf.file.name} className="block w-full h-auto" />
+                        </button>
                       ))}
                     </div>
                   );
@@ -649,69 +732,38 @@ export const MessageItem = memo(function MessageItem({
                 const ids = msg.attachment_ids;
                 if (ids && ids.length > 0) {
                   const resolved = ids.map((id: string) => artifacts.find((a) => a.id === id)).filter((a): a is Artifact => !!a);
-                  const nonImageResolved = resolved.filter((a) => !a.content_type.startsWith("image/"));
-                  if (nonImageResolved.length > 0) return <AttachmentChips attachmentIds={nonImageResolved.map((a) => a.id)} artifacts={artifacts} onArtifactClick={onArtifactClick} />;
+                  const imageResolved = resolved.filter((a) => a.content_type.startsWith("image/"));
+                  if (imageResolved.length > 0) return <ImageAttachmentCards attachmentIds={imageResolved.map((a) => a.id)} artifacts={artifacts} workspaceId={workspaceId} onArtifactClick={onArtifactClick} />;
                 }
                 return null;
               })()}
-              {toolbar}
-            </MessageBubble>
-            {(() => {
-              // Image thumbnail cards below the bubble.
-              // Prefer local blob thumbnails (instant, no network fetch) over
-              // server thumbnails to avoid a flash when transitioning sources.
-              const pfs = pendingFilesByMessage.get(msg.id);
-              const imagePfs = pfs?.filter((pf) => pf.thumbnailUrl);
-              if (imagePfs && imagePfs.length > 0) {
-                return (
-                  <div className="flex flex-wrap gap-1.5 mt-1.5">
-                    {imagePfs.map((pf, i) => (
-                      <button
-                        key={i}
-                        type="button"
-                        onClick={(e) => { e.stopPropagation(); onPendingImageClick?.(pf.file); }}
-                        className="max-w-48 overflow-hidden rounded-(--radius) border border-(--border) cursor-pointer [transition:translate_.2s_cubic-bezier(.2,.8,.2,1),box-shadow_.2s_ease] hover:-translate-y-0.5 [box-shadow:var(--e1)] hover:[box-shadow:var(--e2)]"
-                      >
-                        <img src={pf.thumbnailUrl!} alt={pf.file.name} className="block w-full h-auto" />
-                      </button>
-                    ))}
-                  </div>
-                );
-              }
-              const ids = msg.attachment_ids;
-              if (ids && ids.length > 0) {
-                const resolved = ids.map((id: string) => artifacts.find((a) => a.id === id)).filter((a): a is Artifact => !!a);
-                const imageResolved = resolved.filter((a) => a.content_type.startsWith("image/"));
-                if (imageResolved.length > 0) return <ImageAttachmentCards attachmentIds={imageResolved.map((a) => a.id)} artifacts={artifacts} workspaceId={workspaceId} onArtifactClick={onArtifactClick} />;
-              }
-              return null;
-            })()}
-            {actionSheet}
-            {isSendFailed && (
-              <button
-                type="button"
-                onClick={() => onRetrySend?.(msg.id)}
-                className="mt-1 px-1 text-xs text-destructive hover:underline"
-              >
-                {AGENT_CHAT_LABELS.messageList.notDeliveredTapToRetry}
-              </button>
-            )}
-            {threadSummary && threadSummary.reply_count > 0 && (
-              <button
-                type="button"
-                onClick={() => onReplyInThread?.(msg.id)}
-                className="flex items-center gap-1.5 pt-1 cursor-pointer hover:opacity-75 transition-opacity"
-              >
-                <span className="text-[11px] font-semibold text-[oklch(0.72_0.19_145)]">
-                  {repliesLabel(threadSummary.reply_count)}
-                </span>
-                {threadSummary.last_reply_at && (
-                  <span className="text-[10px] text-muted-foreground">
-                    {lastReplyLabel(new Date(threadSummary.last_reply_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }))}
+              {isSendFailed && (
+                <button
+                  type="button"
+                  onClick={() => onRetrySend?.(msg.id)}
+                  className="mt-1 px-1 text-xs text-destructive hover:underline"
+                >
+                  {AGENT_CHAT_LABELS.messageList.notDeliveredTapToRetry}
+                </button>
+              )}
+              {threadSummary && threadSummary.reply_count > 0 && (
+                <button
+                  type="button"
+                  onClick={() => onReplyInThread?.(msg.id)}
+                  className="flex items-center gap-1.5 pt-1 cursor-pointer hover:opacity-75 transition-opacity"
+                >
+                  <span className="text-[11px] font-semibold text-[oklch(0.72_0.19_145)]">
+                    {repliesLabel(threadSummary.reply_count)}
                   </span>
-                )}
-              </button>
-            )}
+                  {threadSummary.last_reply_at && (
+                    <span className="text-[10px] text-muted-foreground">
+                      {lastReplyLabel(new Date(threadSummary.last_reply_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }))}
+                    </span>
+                  )}
+                </button>
+              )}
+            </HumanRow>
+            {actionSheet}
           </div>
         );
       })() : msg.role === "event" ? (() => {
@@ -773,10 +825,16 @@ export const MessageItem = memo(function MessageItem({
           </div>
         );
       })() : isLifecycleNote && msg.metadata?.error_source !== "runtime" ? (
-        // Lifecycle note (e.g. "Task cancelled by user") — a quiet centered
-        // system line, not agent speech. No bubble, no avatar gutter.
-        <div className="flex justify-center" data-message-id={msg.id} {...(msg.task_id ? { "data-task-id": msg.task_id } : {})}>
-          <span className="text-xs text-muted-foreground/70 text-center px-2 py-1">
+        // Lifecycle note (e.g. "Task cancelled by user") — system stream chrome
+        // (B4). Same timeline-event class family as human/AI; quiet body tone.
+        <div
+          className={cn(TIMELINE_EVENT_CLASS, "py-1")}
+          data-message-id={msg.id}
+          {...timelineChromeAttrs("system")}
+          {...(msg.task_id ? { "data-task-id": msg.task_id } : {})}
+        >
+          <div className={cn(TIMELINE_GUTTER_CLASS, "shrink-0")} aria-hidden />
+          <span className={cn(TIMELINE_BODY_QUIET_CLASS, "px-0 py-1")}>
             {msg.content}
           </span>
         </div>
@@ -825,7 +883,7 @@ export const MessageItem = memo(function MessageItem({
                 {...bubblePressHandlers}
               >
                 <MessageBubble
-                  variant="agent"
+                  variant="ai"
                   position={toBubblePosition(groupPosition)}
                   className={cn(
                     "markdown min-w-0 max-w-full",

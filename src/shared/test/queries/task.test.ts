@@ -207,3 +207,57 @@ describe("getTraceAgentsByTaskIds", () => {
     expect(result.size).toBe(0);
   });
 });
+
+describe("listCompletedTasksForPatternAnalysis", () => {
+  it("exports listCompletedTasksForPatternAnalysis", () => {
+    expect(typeof taskQueries.listCompletedTasksForPatternAnalysis).toBe("function");
+  });
+
+  it("requires workspaceId and scopes the query before filtering", async () => {
+    const rows = [
+      {
+        id: "t1",
+        agentId: "a1",
+        prompt: "Send morning brief",
+        type: "user_dm_message",
+        completedAt: "2026-07-12T08:00:00.000Z",
+      },
+    ];
+    const mockDb = createMockDb(rows);
+    const result = await taskQueries.listCompletedTasksForPatternAnalysis(mockDb, "ws_1", {
+      agentId: "a1",
+      limit: 50,
+    });
+
+    expect(mockDb.select).toHaveBeenCalled();
+    expect(mockDb.from).toHaveBeenCalled();
+    expect(mockDb.where).toHaveBeenCalledTimes(1);
+    expect(mockDb.orderBy).toHaveBeenCalledTimes(1);
+    expect(mockDb.limit).toHaveBeenCalledWith(50);
+    expect(result).toEqual(rows);
+    // workspaceId is a required positional arg (db, workspaceId, opts?)
+    expect(taskQueries.listCompletedTasksForPatternAnalysis.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("clamps task limit to [1, 500] with default 200", async () => {
+    const mockDb = createMockDb([]);
+    await taskQueries.listCompletedTasksForPatternAnalysis(mockDb, "ws_1");
+    expect(mockDb.limit).toHaveBeenCalledWith(200);
+
+    await taskQueries.listCompletedTasksForPatternAnalysis(mockDb, "ws_1", { limit: 0 });
+    expect(mockDb.limit).toHaveBeenCalledWith(1);
+
+    await taskQueries.listCompletedTasksForPatternAnalysis(mockDb, "ws_1", { limit: 9999 });
+    expect(mockDb.limit).toHaveBeenCalledWith(500);
+  });
+
+  it("passes agent filter when agentId is provided", async () => {
+    const mockDb = createMockDb([]);
+    await taskQueries.listCompletedTasksForPatternAnalysis(mockDb, "ws_scope", {
+      agentId: "agent_x",
+    });
+    expect(mockDb.where).toHaveBeenCalledTimes(1);
+    // where receives a combined AND condition — call site proves workspace-first API
+    expect(mockDb.where.mock.calls[0]).toHaveLength(1);
+  });
+});

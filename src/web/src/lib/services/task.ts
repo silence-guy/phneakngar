@@ -1,10 +1,23 @@
 import type { Database } from "@phneakngar/shared";
-import { queries, TASK_TYPES, MAX_TASKS_PER_TRACE, MAX_POLL_TASKS, isTerminalTaskStatus } from "@phneakngar/shared";
+import {
+  queries,
+  TASK_TYPES,
+  MAX_TASKS_PER_TRACE,
+  MAX_POLL_TASKS,
+  isTerminalTaskStatus,
+  DEFAULT_AGENT_MEMORY_PROMPT_LIMIT,
+  formatMemoryForPrompt,
+  toMemoryPromptItems,
+} from "@phneakngar/shared";
 import { log } from "@/lib/logger";
 import { broadcastToUser, broadcastToChhlat } from "@/lib/broadcast";
 import { messageToResponse } from "@/lib/api/responses";
 import { invalidate, cacheKeys } from "@/lib/cache";
 import { TaskPayloadBuilder } from "@/lib/services/task-payload-builder";
+import {
+  deliverTaskResultToChannel,
+  type DeliverTaskToChannelResult,
+} from "@/lib/services/channel-delivery";
 
 const taskQueries = queries.task;
 const agentQueries = queries.agent;
@@ -12,6 +25,13 @@ const messageQueries = queries.message;
 const conversationQueries = queries.conversation;
 const issueQueries = queries.issue;
 const inboxQueries = queries.inbox;
+const agentMemoryQueries = queries.agentMemory;
+
+/** Task types that receive top-N agent memory snippets in the durable context bag. */
+const MEMORY_INJECT_TASK_TYPES = new Set<string>([
+  TASK_TYPES.ISSUE_EVENT,
+  TASK_TYPES.AUTOMATION_EVENT,
+]);
 
 export const TASK_ALREADY_TERMINAL_CODE = "TASK_ALREADY_TERMINAL";
 
@@ -26,6 +46,48 @@ export class TaskAlreadyTerminalError extends Error {
 
 export class TaskService {
   constructor(private db: Database, private emailDomain?: string) {}
+
+  /**
+   * Attach top-N agent (+ workspace-wide) memory notes into the task context bag
+   * for issue/automation events so chhlat can surface them in the agent prompt.
+   * Best-effort: failures leave context unchanged so enqueue still succeeds.
+   * Callers that already set `memories` / `memory_prompt` are left as-is.
+   */
+  private async withAgentMemoryContext(
+    agentId: string,
+    workspaceId: string,
+    type: string,
+    context?: Record<string, unknown>,
+  ): Promise<Record<string, unknown> | undefined> {
+    if (!MEMORY_INJECT_TASK_TYPES.has(type)) return context;
+    if (context?.memories != null || context?.memory_prompt != null) return context;
+
+    try {
+      const rows = await agentMemoryQueries.listMemoryForAgent(
+        this.db,
+        workspaceId,
+        agentId,
+        DEFAULT_AGENT_MEMORY_PROMPT_LIMIT,
+      );
+      const memories = toMemoryPromptItems(rows, DEFAULT_AGENT_MEMORY_PROMPT_LIMIT);
+      if (memories.length === 0) return context;
+
+      const memory_prompt = formatMemoryForPrompt(memories);
+      return {
+        ...(context ?? {}),
+        memories,
+        memory_prompt,
+      };
+    } catch (err) {
+      log.warn("enqueueTask: memory inject failed", {
+        agentId,
+        workspaceId,
+        type,
+        err: String(err),
+      });
+      return context;
+    }
+  }
 
   async enqueueTask(
     agentId: string,
@@ -58,6 +120,13 @@ export class TaskService {
       }
     }
 
+    const context = await this.withAgentMemoryContext(
+      agentId,
+      workspaceId,
+      type,
+      opts?.context,
+    );
+
     const taskData = {
       agentId,
       runtimeId: agent.runtimeId,
@@ -67,7 +136,7 @@ export class TaskService {
       type,
       contextKey: opts?.contextKey ?? null,
       priority: 0,
-      context: opts?.context,
+      context,
       traceId: opts?.traceId ?? null,
       parentTaskId: opts?.parentTaskId ?? null,
       localeOverride: opts?.localeOverride ?? null,
@@ -162,12 +231,20 @@ export class TaskService {
     return task;
   }
 
+  /**
+   * Settle a running task and optionally post channel delivery (C3).
+   * Returns the completed task plus channel-delivery result so callers (C9)
+   * can attach artifacts to the channel conversation when delivery landed there.
+   */
   async completeTask(
     taskId: string,
     workspaceId: string,
     result: string,
     sessionId: string
-  ) {
+  ): Promise<{
+    task: NonNullable<Awaited<ReturnType<typeof taskQueries.completeTask>>>;
+    channelDelivery: DeliverTaskToChannelResult | null;
+  }> {
     let parsed: unknown;
     try {
       parsed = JSON.parse(result);
@@ -190,10 +267,30 @@ export class TaskService {
 
     // The agent owns its voice: the success reply bubble is now authored
     // explicitly via `phneakngar sync send-dm` (the agent-DM endpoint), NOT extracted
-    // from the task's final `output`. So completeTask no longer creates a
-    // `role:"assistant"` message — it only settles the task lifecycle. `output`
-    // is still persisted on the task row (in `result`) for debugging.
-    // (failTask still surfaces an error bubble — a failed run must not go silent.)
+    // from the task's final `output` for ordinary DMs. completeTask only settles
+    // the task lifecycle for those paths. `output` is still persisted on the task
+    // row (in `result`) for debugging. (failTask still surfaces an error bubble —
+    // a failed run must not go silent.)
+    //
+    // Exception (C3): when task context requests channel delivery
+    // (`deliver_to_channel` or `delivery_mode: "channel"`), post a channel-visible
+    // assistant message from the result so automations/digests land on the timeline.
+    // Delivery may land on a different conversation (channel thread) than the task's
+    // source conversation — do not reuse the delivery message id for source unread.
+    let channelDelivery: DeliverTaskToChannelResult | null = null;
+    try {
+      channelDelivery = await deliverTaskResultToChannel(this.db, {
+        id: task.id,
+        agentId: task.agentId,
+        workspaceId: task.workspaceId,
+        conversationId: task.conversationId,
+        context: task.context,
+        result: parsed,
+      }, { result: parsed });
+    } catch (err) {
+      log.warn("completeTask: channel delivery failed", { taskId, err });
+    }
+
     let taskWithOutcome = task;
     try {
       const visibleOutcomeStatus = await taskQueries.detectTaskVisibleOutcome(this.db, taskId, workspaceId);
@@ -209,7 +306,7 @@ export class TaskService {
 
     await this.reconcileAgentStatus(taskWithOutcome.agentId, taskWithOutcome.workspaceId);
     this.maybeUpsertUnread(taskWithOutcome, workspaceId, null).catch(() => {});
-    return taskWithOutcome;
+    return { task: taskWithOutcome, channelDelivery };
   }
 
   async failTask(taskId: string, workspaceId: string, error: string) {

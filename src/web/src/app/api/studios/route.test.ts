@@ -102,6 +102,15 @@ vi.mock("@/lib/services/task", () => {
   return { TaskService: Svc };
 });
 
+const mockEnsureScenarioRuntimePath = vi.fn();
+vi.mock("@/lib/services/scenario-runtime", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/services/scenario-runtime")>();
+  return {
+    ...actual,
+    ensureScenarioRuntimePath: (...args: unknown[]) => mockEnsureScenarioRuntimePath(...args),
+  };
+});
+
 import { POST } from "./route";
 
 beforeEach(() => {
@@ -133,6 +142,13 @@ beforeEach(() => {
   mockCreateConversation.mockResolvedValue({ id: "conv1" });
   mockEnqueueTask.mockResolvedValue({ id: "task-welcome" });
   mockCreateMessage.mockResolvedValue({ id: "msg-seed" });
+  mockEnsureScenarioRuntimePath.mockResolvedValue({
+    scenarioId: "day-planner",
+    automation: { id: "auto_1" },
+    automationCreated: true,
+    calendarEvent: { id: "cal_1" },
+    calendarCreated: true,
+  });
 });
 
 describe("POST /api/studios", () => {
@@ -169,6 +185,99 @@ describe("POST /api/studios", () => {
     expect(body.leader_agent_id).toBe("agent-1");
     expect(body.agents).toHaveLength(3);
     expect(body.links).toHaveLength(2);
+    // Non-Helio scenario must not call ensureScenarioRuntimePath
+    expect(mockEnsureScenarioRuntimePath).not.toHaveBeenCalled();
+    expect(body.scenario_path).toBeNull();
+  });
+
+  it("wires ensureScenarioRuntimePath for Helio day-planner scenario", async () => {
+    mockListAgents
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([{ id: "agent-1", name: "Planner", emailHandle: "planner" }]);
+
+    const req = new NextRequest("http://localhost/api/studios", {
+      method: "POST",
+      body: JSON.stringify({
+        scenario: "day-planner",
+        members: [{ name: "Planner", role: "leader", runtime_id: "rt1" }],
+      }),
+    });
+
+    const res = await POST(req, {});
+    const body = await res.json();
+
+    expect(res.status).toBe(201);
+    expect(mockEnsureScenarioRuntimePath).toHaveBeenCalledTimes(1);
+    expect(mockEnsureScenarioRuntimePath).toHaveBeenCalledWith(
+      {},
+      expect.objectContaining({
+        workspaceId: "w1",
+        agentId: "agent-1",
+        scenarioId: "day-planner",
+      }),
+    );
+    expect(body.scenario_path).toEqual({
+      scenarioId: "day-planner",
+      automationCreated: true,
+      calendarCreated: true,
+    });
+  });
+
+  it("wires ensureScenarioRuntimePath for Helio task-digest without calendar", async () => {
+    mockEnsureScenarioRuntimePath.mockResolvedValueOnce({
+      scenarioId: "task-digest",
+      automation: { id: "auto_td" },
+      automationCreated: true,
+      calendarEvent: null,
+      calendarCreated: false,
+    });
+    mockListAgents
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([{ id: "agent-1", name: "Digest", emailHandle: "digest" }]);
+
+    const req = new NextRequest("http://localhost/api/studios", {
+      method: "POST",
+      body: JSON.stringify({
+        scenario: "task-digest",
+        members: [{ name: "Digest", role: "leader", runtime_id: "rt1" }],
+      }),
+    });
+
+    const res = await POST(req, {});
+    const body = await res.json();
+
+    expect(res.status).toBe(201);
+    expect(mockEnsureScenarioRuntimePath).toHaveBeenCalledWith(
+      {},
+      expect.objectContaining({ scenarioId: "task-digest", agentId: "agent-1" }),
+    );
+    expect(body.scenario_path).toEqual({
+      scenarioId: "task-digest",
+      automationCreated: true,
+      calendarCreated: false,
+    });
+  });
+
+  it("still creates studio when ensureScenarioRuntimePath throws", async () => {
+    mockEnsureScenarioRuntimePath.mockRejectedValueOnce(new Error("d1 down"));
+    mockListAgents
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([{ id: "agent-1", name: "Planner", emailHandle: "planner" }]);
+
+    const req = new NextRequest("http://localhost/api/studios", {
+      method: "POST",
+      body: JSON.stringify({
+        scenario: "inbox-ai",
+        members: [{ name: "Inbox", role: "leader", runtime_id: "rt1" }],
+      }),
+    });
+
+    const res = await POST(req, {});
+    const body = await res.json();
+
+    expect(res.status).toBe(201);
+    expect(body.leader_agent_id).toBe("agent-1");
+    expect(body.scenario_path).toBeNull();
   });
 
   it("creates a single agent studio (no links)", async () => {

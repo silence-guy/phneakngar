@@ -17,6 +17,10 @@ import {
   WELCOME_EMAIL_SEED_EVENT,
 } from "@/lib/welcome-prompts";
 import { resolveServerEmailDomain } from "@/lib/email-domain";
+import {
+  ensureScenarioRuntimePath,
+  isScenarioRuntimeId,
+} from "@/lib/services/scenario-runtime";
 
 function slugify(name: string): string {
   return name
@@ -298,6 +302,30 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
     }
   }
 
+  // Helio scenario install: wire automation (+ Day Planner calendar) for the leader.
+  // Best-effort — agent creation must not fail if ensure path errors.
+  let scenarioPath: {
+    scenarioId: string;
+    automationCreated: boolean;
+    calendarCreated: boolean;
+  } | null = null;
+  if (body.scenario && isScenarioRuntimeId(body.scenario) && leaderAgent) {
+    try {
+      const path = await ensureScenarioRuntimePath(db, {
+        workspaceId: ws.workspaceId,
+        agentId: leaderAgent.id,
+        scenarioId: body.scenario,
+      });
+      scenarioPath = {
+        scenarioId: path.scenarioId,
+        automationCreated: path.automationCreated,
+        calendarCreated: path.calendarCreated,
+      };
+    } catch {
+      // Best-effort
+    }
+  }
+
   // Fetch final agents for response
   const agents = await queries.agent.listAgents(db, ws.workspaceId, ctx.userId);
   const createdIdSet = new Set(createdAgents.map((ca) => ca.id));
@@ -313,5 +341,6 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
       email: agent.emailHandle ? toPhneakngarAddress(agent.emailHandle, emailDomain) : null,
     })),
     links: createdLinks.map(agentLinkToResponse),
+    scenario_path: scenarioPath,
   }, 201);
 });

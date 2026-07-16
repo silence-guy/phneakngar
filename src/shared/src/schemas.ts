@@ -427,6 +427,7 @@ export type CalendarEventApi = z.infer<typeof CalendarEventApiSchema>;
 export const IssueStatusSchema = z.enum([
   IssueStatus.TODO,
   IssueStatus.IN_PROGRESS,
+  IssueStatus.BLOCKED,
   IssueStatus.REVIEW,
   IssueStatus.DONE,
   IssueStatus.CLOSED,
@@ -458,6 +459,16 @@ export const UpdateIssueRequestSchema = z
   );
 export type UpdateIssueRequestInput = z.infer<typeof UpdateIssueRequestSchema>;
 
+export const ClaimIssueRequestSchema = z.object({
+  agent_id: z.string().min(1, "agent_id is required"),
+});
+export type ClaimIssueRequestInput = z.infer<typeof ClaimIssueRequestSchema>;
+
+export const HandBackIssueRequestSchema = z.object({
+  agent_id: z.string().min(1).optional(),
+});
+export type HandBackIssueRequestInput = z.infer<typeof HandBackIssueRequestSchema>;
+
 export const CreateIssueCommentBodySchema = z.object({
   content: z.string().min(1, "content is required").max(20_000),
 });
@@ -485,6 +496,8 @@ export const IssueApiSchema = z.object({
   creator_user_id: z.string(),
   conversation_id: z.string().nullable(),
   latest_task_id: z.string().nullable(),
+  claimed_by_agent_id: z.string().nullable().optional(),
+  claimed_at: z.string().nullable().optional(),
   title: z.string(),
   description: z.string(),
   status: IssueStatusSchema,
@@ -553,6 +566,8 @@ export const CreateAgentRequestSchema = z.object({
   name: z.string().min(1, "name is required"),
   description: z.string().optional().default(""),
   instructions: z.string().optional().default(""),
+  role_title: z.string().max(120).optional().default(""),
+  responsibility: z.string().max(2000).optional().default(""),
   runtime_id: z.string().min(1, "runtime_id is required"),
   runtime_config: RuntimeConfigSchema,
   max_concurrent_tasks: z.number().int().optional(),
@@ -566,6 +581,8 @@ export const UpdateAgentRequestSchema = z
     name: z.string().min(1).optional(),
     description: z.string().optional(),
     instructions: z.string().optional(),
+    role_title: z.string().max(120).optional(),
+    responsibility: z.string().max(2000).optional(),
     runtime_id: z.string().min(1).optional(),
     runtime_config: RuntimeConfigSchema,
     visibility: z.enum(["public", "private"]).optional(),
@@ -576,6 +593,8 @@ export const UpdateAgentRequestSchema = z
       v.name !== undefined ||
       v.description !== undefined ||
       v.instructions !== undefined ||
+      v.role_title !== undefined ||
+      v.responsibility !== undefined ||
       v.runtime_id !== undefined ||
       v.runtime_config !== undefined ||
       v.visibility !== undefined ||
@@ -583,6 +602,126 @@ export const UpdateAgentRequestSchema = z
     { message: "at least one field is required" },
   );
 export type UpdateAgentRequest = z.infer<typeof UpdateAgentRequestSchema>;
+
+// ---------------------------------------------------------------------------
+// Automation / memory / approval / integration schemas (Helio parity)
+// ---------------------------------------------------------------------------
+
+export const AutomationDeliveryModeSchema = z.enum([
+  "channel",
+  "dm",
+  "email_draft",
+  "issue",
+]);
+
+export const CreateAutomationRequestSchema = z.object({
+  agent_id: z.string().min(1, "agent_id is required"),
+  title: z.string().min(1).max(200),
+  sop_markdown: z.string().max(50_000).optional().default(""),
+  schedule: z.string().min(1).max(200),
+  next_run_at: z.string().min(1),
+  delivery_mode: AutomationDeliveryModeSchema.optional().default("channel"),
+  delivery_channel_id: z.string().min(1).nullable().optional(),
+  skill_name: z.string().max(200).nullable().optional(),
+  enabled: z.boolean().optional().default(true),
+});
+export type CreateAutomationRequestInput = z.infer<typeof CreateAutomationRequestSchema>;
+
+export const UpdateAutomationRequestSchema = z
+  .object({
+    title: z.string().min(1).max(200).optional(),
+    sop_markdown: z.string().max(50_000).optional(),
+    schedule: z.string().min(1).max(200).optional(),
+    next_run_at: z.string().min(1).optional(),
+    delivery_mode: AutomationDeliveryModeSchema.optional(),
+    delivery_channel_id: z.string().min(1).nullable().optional(),
+    skill_name: z.string().max(200).nullable().optional(),
+    enabled: z.boolean().optional(),
+  })
+  .refine(
+    (v) =>
+      v.title !== undefined ||
+      v.sop_markdown !== undefined ||
+      v.schedule !== undefined ||
+      v.next_run_at !== undefined ||
+      v.delivery_mode !== undefined ||
+      v.delivery_channel_id !== undefined ||
+      v.skill_name !== undefined ||
+      v.enabled !== undefined,
+    { message: "at least one field is required" }
+  );
+export type UpdateAutomationRequestInput = z.infer<typeof UpdateAutomationRequestSchema>;
+
+export const MemoryKindSchema = z.enum(["preference", "decision", "fact", "role"]);
+
+export const CreateMemoryRequestSchema = z.object({
+  agent_id: z.string().min(1).nullable().optional(),
+  kind: MemoryKindSchema,
+  content: z.string().min(1).max(10_000),
+  source_task_id: z.string().min(1).nullable().optional(),
+});
+export type CreateMemoryRequestInput = z.infer<typeof CreateMemoryRequestSchema>;
+
+export const UpdateMemoryRequestSchema = z
+  .object({
+    kind: MemoryKindSchema.optional(),
+    content: z.string().min(1).max(10_000).optional(),
+  })
+  .refine((v) => v.kind !== undefined || v.content !== undefined, {
+    message: "at least one field is required",
+  });
+export type UpdateMemoryRequestInput = z.infer<typeof UpdateMemoryRequestSchema>;
+
+/** Stateless memory compaction job request (writes one summary note to D1). */
+export const CompactMemoryRequestSchema = z.object({
+  /**
+   * Compact only this agent's notes.
+   * Null/omitted = shared workspace notes only (`agent_id IS NULL`), not every agent.
+   */
+  agent_id: z.string().min(1).nullable().optional(),
+  /** Skip compaction when fewer than this many non-summary notes exist (default 2). */
+  min_notes: z.number().int().min(1).max(500).optional(),
+  /** Cap distinct notes included in the summary after dedupe. */
+  max_notes: z.number().int().min(1).max(500).optional(),
+  /** Cap summary character length (default 10000). */
+  max_length: z.number().int().min(0).max(50_000).optional(),
+  /** When true, compute summary without writing or deleting rows. */
+  dry_run: z.boolean().optional(),
+});
+export type CompactMemoryRequestInput = z.infer<typeof CompactMemoryRequestSchema>;
+
+export const DecideApprovalRequestSchema = z.object({
+  decision: z.enum(["approved", "rejected"]),
+});
+export type DecideApprovalRequestInput = z.infer<typeof DecideApprovalRequestSchema>;
+
+/** Propose a skill install from a successful (completed) task trace. */
+export const ProposeSkillFromTaskRequestSchema = z.object({
+  task_id: z.string().min(1),
+  agent_id: z.string().min(1).optional(),
+  runtime: z.enum(["claude", "codex", "opencode", "grok"]).optional(),
+});
+export type ProposeSkillFromTaskRequestInput = z.infer<
+  typeof ProposeSkillFromTaskRequestSchema
+>;
+
+export const CreateIntegrationRequestSchema = z.object({
+  provider: z.string().min(1).max(80),
+  status: z.enum(["active", "disabled", "error"]).optional().default("active"),
+  config: z.unknown().optional(),
+  secret_ref: z.string().max(500).nullable().optional(),
+});
+export type CreateIntegrationRequestInput = z.infer<typeof CreateIntegrationRequestSchema>;
+
+export const ChannelMemberRequestSchema = z.object({
+  member_type: z.enum(["user", "agent"]),
+  member_id: z.string().min(1),
+});
+export type ChannelMemberRequestInput = z.infer<typeof ChannelMemberRequestSchema>;
+
+/** Same shape as channel members — conversation multi-party DM membership. */
+export const ConversationMemberRequestSchema = ChannelMemberRequestSchema;
+export type ConversationMemberRequestInput = ChannelMemberRequestInput;
 
 // ---------------------------------------------------------------------------
 // Conversation request schemas
@@ -641,11 +780,21 @@ export const SendEmailRequestSchema = z.object({
   sourceTaskId: z.string().optional(),
   /** Client-stable key for at-most-once outbound delivery. Prefer also sending Idempotency-Key. */
   idempotencyKey: z.string().min(1).max(128).optional(),
+  /**
+   * When true, durable-claim as pending_approval and create an approval row instead of sending.
+   * Existing happy-path sends (flag absent/false) are unchanged.
+   */
+  requiresApproval: z.boolean().optional().default(false),
 });
 export type SendEmailRequest = z.infer<typeof SendEmailRequestSchema>;
 
+/** Mailbox UX only. Outbound delivery/approval transitions use dedicated paths. */
 export const UpdateEmailStatusRequestSchema = z.object({
-  status: z.enum(["unread", "read", "archived", "sent", "pending", "sending", "failed", "ambiguous"]),
+  status: z.enum([
+    "unread",
+    "read",
+    "archived",
+  ]),
 });
 export type UpdateEmailStatusRequest = z.infer<
   typeof UpdateEmailStatusRequestSchema

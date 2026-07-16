@@ -120,6 +120,27 @@ describe("GET /api/email", () => {
     expect(mockGetSentEmails).toHaveBeenCalledWith({}, "a1", "test@phneakngar.ai", "ws1", "read", undefined);
   });
 
+  it("filters by folder=pending_approval via getEmailsByAgent status", async () => {
+    mockGetAgent.mockResolvedValue({ id: "a1", emailHandle: "test" });
+    mockGetEmailsByAgent.mockResolvedValue([{ id: "e-pending", status: "pending_approval" }]);
+
+    const req = new NextRequest(
+      "http://localhost/api/email?agentId=a1&folder=pending_approval",
+    );
+    const res = await GET(req, {} as any);
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body).toHaveLength(1);
+    expect(mockGetEmailsByAgent).toHaveBeenCalledWith(
+      {},
+      "a1",
+      "ws1",
+      "pending_approval",
+      undefined,
+    );
+  });
+
   it("returns 400 for invalid status value", async () => {
     mockGetAgent.mockResolvedValue({ id: "a1", emailHandle: "test" });
 

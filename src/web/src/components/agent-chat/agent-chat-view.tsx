@@ -78,6 +78,7 @@ import {
 } from "@/components/artifact-content-renderer";
 import { ScrollToBottomButton } from "@/components/ui/scroll-to-bottom-button";
 import { MessageItem, AgentRow } from "@/components/agent-chat/message-list";
+import { TIMELINE_EVENT_CLASS, TIMELINE_CONTENT_CLASS, TIMELINE_GUTTER_CLASS } from "@/components/chat-primitives";
 import { useAgentChatSheet } from "@/contexts/agent-chat-sheet-context";
 import { PresenceLine } from "@/components/agent-chat/presence-line";
 import { MenuToggleIcon } from "@/components/agent-chat/menu-toggle-icon";
@@ -101,6 +102,7 @@ import {
   isActiveTaskStuck,
   resolveChatEmptyState,
 } from "@/components/agent-chat/chat-empty-state";
+import { ConversationMembersPanel } from "@/components/conversation-members-panel";
 
 export function AgentChatView({
   agentId: propAgentId,
@@ -121,7 +123,6 @@ export function AgentChatView({
     agents,
     runtimes,
     agentLinks,
-    activeTaskCounts,
     subscribeWs,
     subscribeReconnect,
   } = useAgentContext();
@@ -679,27 +680,31 @@ export function AgentChatView({
       <>
         <div className="flex-1 overflow-y-auto thin-scrollbar px-3 md:px-5">
           <div className="mx-auto max-w-3xl py-6 space-y-6 motion-safe:animate-[fade-up_200ms_ease-out_both]">
-            {/* Agent cluster — top [avatar][name] header, bubbles stacked below
-                in the gutter (mirrors AgentRow's Slack/Discord layout). */}
-            <div className="flex justify-start items-start gap-2">
-              <Skeleton className="size-7.5 shrink-0 rounded-md" />
-              <div className="flex flex-col items-start gap-1 max-w-[86%]">
+            {/* Shared timeline chrome (B4) — human/AI both left-stream clusters
+                with avatar + name header. Skeleton mirrors loaded layout tokens. */}
+            <div className={TIMELINE_EVENT_CLASS}>
+              <Skeleton className={cn(TIMELINE_GUTTER_CLASS, "size-7.5 shrink-0 rounded-md")} />
+              <div className={cn(TIMELINE_CONTENT_CLASS, "gap-1")}>
                 <Skeleton className="h-3 w-20 rounded mb-0.5" />
-                <Skeleton className="h-9 w-64 rounded-[1.05rem]" />
-                <Skeleton className="h-9 w-48 rounded-[1.05rem]" />
+                <Skeleton className="h-5 w-64 rounded" />
+                <Skeleton className="h-5 w-48 rounded" />
               </div>
             </div>
-            {/* User cluster — right pills, no avatar/name */}
-            <div className="flex flex-col items-end gap-1">
-              <Skeleton className="h-9 w-44 rounded-[1.05rem]" />
-              <Skeleton className="h-9 w-32 rounded-[1.05rem]" />
+            {/* Human cluster — same left chrome as AI (no right pills) */}
+            <div className={TIMELINE_EVENT_CLASS}>
+              <Skeleton className={cn(TIMELINE_GUTTER_CLASS, "size-7.5 shrink-0 rounded-md")} />
+              <div className={cn(TIMELINE_CONTENT_CLASS, "gap-1")}>
+                <Skeleton className="h-3 w-14 rounded mb-0.5" />
+                <Skeleton className="h-5 w-44 rounded" />
+                <Skeleton className="h-5 w-32 rounded" />
+              </div>
             </div>
-            {/* Another agent cluster */}
-            <div className="flex justify-start items-start gap-2">
-              <Skeleton className="size-7.5 shrink-0 rounded-md" />
-              <div className="flex flex-col items-start gap-1 max-w-[86%]">
+            {/* Another AI cluster */}
+            <div className={TIMELINE_EVENT_CLASS}>
+              <Skeleton className={cn(TIMELINE_GUTTER_CLASS, "size-7.5 shrink-0 rounded-md")} />
+              <div className={cn(TIMELINE_CONTENT_CLASS, "gap-1")}>
                 <Skeleton className="h-3 w-20 rounded mb-0.5" />
-                <Skeleton className="h-9 w-56 rounded-[1.05rem]" />
+                <Skeleton className="h-5 w-56 rounded" />
               </div>
             </div>
           </div>
@@ -751,6 +756,15 @@ export function AgentChatView({
       )}
       {/* Messages */}
       <div className="relative flex-1 min-h-0">
+        {conversation?.id && (
+          <div className="absolute top-2 right-2 md:right-4 z-10">
+            <ConversationMembersPanel
+              conversationId={conversation.id}
+              preferAgentId={agentId}
+              className="rounded-md bg-background/80 backdrop-blur-sm border border-border/40"
+            />
+          </div>
+        )}
         <div
           className="h-full overflow-y-auto overflow-x-hidden px-3 md:px-5 thin-scrollbar"
           ref={scrollRef}
@@ -827,7 +841,7 @@ export function AgentChatView({
                 isTaskActive && activeTask?.type === "email_notification";
               const activeTaskAgeMs =
                 activeTask?.created_at != null
-                  ? Date.now() - new Date(activeTask.created_at).getTime()
+                  ? renderNow - new Date(activeTask.created_at).getTime()
                   : null;
               const emptyKind = resolveChatEmptyState({
                 messageCount: messages.length,
@@ -914,7 +928,7 @@ export function AgentChatView({
             {(() => {
               if (!isTaskActive || !activeTask?.created_at) return null;
               const ageMs =
-                Date.now() - new Date(activeTask.created_at).getTime();
+                renderNow - new Date(activeTask.created_at).getTime();
               if (!isActiveTaskStuck(activeTask.status, ageMs)) return null;
               // Empty frame already shows the full stuck UI when no messages.
               if (messages.length === 0) return null;

@@ -7,6 +7,8 @@ import {
   taskToResponse,
   conversationToResponse,
   channelToResponse,
+  channelMemberToResponse,
+  conversationMemberToResponse,
   messageToResponse,
   runtimeToResponse,
   machineTokenToResponse,
@@ -328,7 +330,7 @@ describe("AgentResponse shape", () => {
     });
     expect(Object.keys(res).sort()).toEqual([
       "avatar_url", "created_at", "description", "email_handle", "id", "instructions", "language_policy", "max_concurrent_tasks",
-      "name", "owner_id", "preferred_locale", "runtime_config", "runtime_id", "runtime_mode", "status",
+      "name", "owner_id", "preferred_locale", "responsibility", "role_title", "runtime_config", "runtime_id", "runtime_mode", "status",
       "updated_at", "visibility", "workspace_id",
     ]);
   });
@@ -396,6 +398,48 @@ describe("channelToResponse", () => {
   it("has expected keys: id, workspace_id, name, created_at", () => {
     const res = channelToResponse({ id: "ch_1", workspaceId: "w1", name: "personal", position: 1, createdAt: ts });
     expect(Object.keys(res).sort()).toEqual(["created_at", "id", "name", "position", "workspace_id"]);
+  });
+});
+
+describe("channelMemberToResponse", () => {
+  it("maps DB fields to API response format", () => {
+    const res = channelMemberToResponse({
+      id: "cm_1",
+      workspaceId: "w1",
+      channelId: "ch_1",
+      memberType: "agent",
+      memberId: "a1",
+      createdAt: ts,
+    });
+    expect(res).toEqual({
+      id: "cm_1",
+      workspace_id: "w1",
+      channel_id: "ch_1",
+      member_type: "agent",
+      member_id: "a1",
+      created_at: tsFormatted,
+    });
+  });
+});
+
+describe("conversationMemberToResponse", () => {
+  it("maps DB fields to API response format", () => {
+    const res = conversationMemberToResponse({
+      id: "cvm_1",
+      workspaceId: "w1",
+      conversationId: "c1",
+      memberType: "user",
+      memberId: "u1",
+      createdAt: ts,
+    });
+    expect(res).toEqual({
+      id: "cvm_1",
+      workspace_id: "w1",
+      conversation_id: "c1",
+      member_type: "user",
+      member_id: "u1",
+      created_at: tsFormatted,
+    });
   });
 });
 

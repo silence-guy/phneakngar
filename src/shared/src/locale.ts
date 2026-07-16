@@ -74,8 +74,12 @@ export type CoreEntity =
   | "user"
   | "workspace"
   | "agent"
+  | "teammate"
   | "runtime"
   | "memory"
+  | "automation"
+  | "approval"
+  | "routine"
   | "template"
   | "owner"
   | "conversation"
@@ -108,6 +112,10 @@ export const coreEntityLabels = {
     [Locale.EN]: "Agent",
     [Locale.KM]: "ភ្នាក់ងារ",
   },
+  teammate: {
+    [Locale.EN]: "Teammate",
+    [Locale.KM]: "មិត្តរួមការងារ",
+  },
   runtime: {
     [Locale.EN]: "Runtime",
     [Locale.KM]: "បរិស្ថានដំណើរការ",
@@ -115,6 +123,18 @@ export const coreEntityLabels = {
   memory: {
     [Locale.EN]: "Memory",
     [Locale.KM]: "សតិចងចាំ",
+  },
+  automation: {
+    [Locale.EN]: "Automation",
+    [Locale.KM]: "ស្វ័យប្រវត្តិកម្ម",
+  },
+  approval: {
+    [Locale.EN]: "Approval",
+    [Locale.KM]: "ការអនុម័ត",
+  },
+  routine: {
+    [Locale.EN]: "Routine",
+    [Locale.KM]: "ទម្លាប់ការងារ",
   },
   template: {
     [Locale.EN]: "Template",
@@ -268,6 +288,10 @@ export const taskTypeLabels = {
     [Locale.EN]: "Issue event",
     [Locale.KM]: "ព្រឹត្តិការណ៍បញ្ហា",
   },
+  automation_event: {
+    [Locale.EN]: "Automation",
+    [Locale.KM]: "ស្វ័យប្រវត្តិកម្ម",
+  },
   kill_task: {
     [Locale.EN]: "Stop task",
     [Locale.KM]: "បញ្ឈប់ភារកិច្ច",
@@ -286,6 +310,10 @@ export const issueStatusLabels = {
   review: {
     [Locale.EN]: "Review",
     [Locale.KM]: "រង់ចាំពិនិត្យ",
+  },
+  blocked: {
+    [Locale.EN]: "Blocked",
+    [Locale.KM]: "ជាប់គាំង",
   },
   done: {
     [Locale.EN]: "Done",

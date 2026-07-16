@@ -14,19 +14,20 @@ import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, Loader2, Mail, Inbox, Send, Plus, Trash2, Forward, Reply, Paperclip, File as FileIcon, Copy, Check, ShieldAlert, ShieldCheck, ChevronDown } from "lucide-react";
+import { ArrowLeft, Loader2, Mail, Inbox, Send, Plus, Trash2, Forward, Reply, Paperclip, File as FileIcon, Copy, Check, ShieldAlert, ShieldCheck, ChevronDown, Clock } from "lucide-react";
+import Link from "next/link";
 import { trackEmailComposed, trackEmailReceived } from "@/lib/analytics";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { EmailBodyFrame } from "@/components/email-body-frame";
 import { EMAIL_LABELS, emailAttachmentsLabel, relativeTime } from "@/components/email-labels";
 
-type Folder = "inbox" | "sent" | "untrust";
+type Folder = "inbox" | "sent" | "untrust" | "pending_approval";
 
 export default function AgentEmailPage() {
   const params = useParams();
   const agentId = params.id as string;
-  const { workspaceId } = useWorkspace();
+  const { workspaceId, slug } = useWorkspace();
   const { agents, subscribeWs } = useAgentContext();
 
   const agent = agents.find((a) => a.id === agentId);
@@ -185,11 +186,27 @@ export default function AgentEmailPage() {
     }
   };
 
-  const handleSend = async (to: string, subject: string, htmlBody: string, attachments: EmailAttachment[], threading?: { inReplyTo?: string; references?: string }): Promise<boolean> => {
+  const handleSend = async (
+    to: string,
+    subject: string,
+    htmlBody: string,
+    attachments: EmailAttachment[],
+    threading?: { inReplyTo?: string; references?: string },
+    options?: { requiresApproval?: boolean },
+  ): Promise<boolean> => {
     try {
-      await sendEmail(agentId, to, subject, htmlBody, workspaceId, attachments.length > 0 ? attachments : undefined, threading, activeAccountId);
+      await sendEmail(agentId, to, subject, htmlBody, workspaceId, {
+        attachments: attachments.length > 0 ? attachments : undefined,
+        threading,
+        customAccountId: activeAccountId,
+        requiresApproval: options?.requiresApproval === true,
+      });
       trackEmailComposed({ agent_id: agentId, has_attachments: attachments.length > 0 });
-      toast.success(EMAIL_LABELS.page.sent3);
+      toast.success(
+        options?.requiresApproval
+          ? EMAIL_LABELS.page.queuedForApproval
+          : EMAIL_LABELS.page.sent3,
+      );
       setComposing(false);
       switchFolder("sent");
       return true;
@@ -401,6 +418,29 @@ export default function AgentEmailPage() {
           <ShieldAlert className="size-4 shrink-0" />
           {EMAIL_LABELS.page.untrust}
         </button>
+        <button
+          type="button"
+          onClick={() => switchFolder("pending_approval")}
+          className={cn(
+            "flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm transition-colors cursor-pointer",
+            folder === "pending_approval"
+              ? "bg-accent text-foreground font-medium"
+              : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
+          )}
+          data-testid="email-folder-pending-approval"
+        >
+          <Clock className="size-4 shrink-0" />
+          {EMAIL_LABELS.page.pendingApproval}
+        </button>
+        {slug && (
+          <Link
+            href={`/w/${slug}/approvals`}
+            className="mt-1 flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-muted-foreground hover:bg-accent/50 hover:text-foreground transition-colors"
+          >
+            <ShieldCheck className="size-3.5 shrink-0" />
+            {EMAIL_LABELS.page.openApprovals}
+          </Link>
+        )}
       </nav>
     </div>
   );
@@ -424,7 +464,13 @@ export default function AgentEmailPage() {
         <div className="flex flex-col items-center justify-center h-full animate-[fade-up_400ms_ease-out_both]">
           <Mail className="size-8 text-muted-foreground mb-3" />
           <p className="text-sm text-muted-foreground">
-            {folder === "inbox" ? EMAIL_LABELS.page.noTrustedEmails : folder === "sent" ? EMAIL_LABELS.page.noSentEmails : EMAIL_LABELS.page.noUntrustedEmails}
+            {folder === "inbox"
+              ? EMAIL_LABELS.page.noTrustedEmails
+              : folder === "sent"
+                ? EMAIL_LABELS.page.noSentEmails
+                : folder === "pending_approval"
+                  ? EMAIL_LABELS.page.noPendingApprovalEmails
+                  : EMAIL_LABELS.page.noUntrustedEmails}
           </p>
         </div>
       ) : (
@@ -445,7 +491,9 @@ export default function AgentEmailPage() {
                 "text-sm truncate",
                 email.status === "unread" ? "font-semibold" : "font-medium text-muted-foreground"
               )}>
-                {folder === "sent" ? email.to_email : email.from_email}
+                {folder === "sent" || folder === "pending_approval"
+                  ? email.to_email
+                  : email.from_email}
               </p>
               <div className="flex items-center gap-1.5 shrink-0">
                 {folder !== "sent" && (
@@ -764,6 +812,7 @@ export default function AgentEmailPage() {
               { id: "inbox" as Folder, label: EMAIL_LABELS.page.inbox },
               { id: "sent" as Folder, label: EMAIL_LABELS.page.sent },
               { id: "untrust" as Folder, label: EMAIL_LABELS.page.untrust },
+              { id: "pending_approval" as Folder, label: EMAIL_LABELS.page.pendingApproval },
             ]).map((f) => (
               <button
                 key={f.id}

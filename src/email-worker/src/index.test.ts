@@ -48,6 +48,7 @@ const mockGetAgent = vi.fn<(db: unknown, id: unknown, workspaceId: unknown) => u
 const mockIsWhitelisted = vi.fn<(db: unknown, agentId: unknown, workspaceId: unknown, email: unknown) => unknown>()
 const mockGetUser = vi.fn<(db: unknown, id: unknown) => unknown>()
 const mockGetEmailAccount = vi.fn()
+const mockGetEmailById = vi.fn()
 const mockCreateDb = vi.fn<(d1: unknown) => Record<string, unknown>>().mockReturnValue({})
 
 vi.mock("@phneakngar/shared", async () => {
@@ -65,6 +66,7 @@ vi.mock("@phneakngar/shared", async () => {
     filterDownloadableAttachments: real.filterDownloadableAttachments,
     isEmailDraftAttachmentKeyForScope: real.isEmailDraftAttachmentKeyForScope,
     EMAIL_NOTIFY_SECRET_HEADER: real.EMAIL_NOTIFY_SECRET_HEADER,
+    OutboundEmailDeliveryStatus: real.OutboundEmailDeliveryStatus,
     createDb: (d1: unknown) => mockCreateDb(d1),
     createLogger: () => noopLogger,
     parseEmailHandle: real.parseEmailHandle,
@@ -81,6 +83,7 @@ vi.mock("@phneakngar/shared", async () => {
       whitelist: { isWhitelisted: (db: unknown, agentId: unknown, workspaceId: unknown, email: unknown) => mockIsWhitelisted(db, agentId, workspaceId, email) },
       user: { getUser: (db: unknown, id: unknown) => mockGetUser(db, id) },
       emailAccount: { getEmailAccount: (...args: unknown[]) => mockGetEmailAccount(...args), getEmailAccountById: (...args: unknown[]) => mockGetEmailAccount(...args) },
+      email: { getEmailById: (...args: unknown[]) => mockGetEmailById(...args) },
     },
   }
 })
@@ -620,6 +623,213 @@ describe("POST /send/agent", () => {
     expect(body).toContain("To: user@example.com")
     expect(body).toContain("Subject: Hello")
     expect(body).toContain("Content-Type: text/html; charset=utf-8")
+  })
+
+  it("rejects send when emailId claim is pending_approval (409 pre_send)", async () => {
+    mockGetAgent.mockResolvedValue({ id: "agent-1", workspaceId: "ws-1", emailHandle: "jarvis" })
+    mockGetEmailById.mockResolvedValue({
+      id: "em_1",
+      agentId: "agent-1",
+      workspaceId: "ws-1",
+      status: "pending_approval",
+    })
+    const { env, send } = agentSendEnv()
+
+    const res = await handler.fetch(
+      makeAgentSendRequest({
+        agentId: "agent-1",
+        workspaceId: "ws-1",
+        to: "user@example.com",
+        subject: "Needs approval",
+        htmlBody: "<p>Hi</p>",
+        emailId: "em_1",
+      }),
+      env,
+    )
+
+    expect(res.status).toBe(409)
+    const json = await res.json() as { error: string; phase: string }
+    expect(json.phase).toBe("pre_send")
+    expect(json.error).toContain("pending_approval")
+    expect(send).not.toHaveBeenCalled()
+    expect(mockGetEmailById).toHaveBeenCalledWith(expect.anything(), "em_1", "ws-1")
+  })
+
+  it("allows send when emailId claim status is sending", async () => {
+    mockGetAgent.mockResolvedValue({ id: "agent-1", workspaceId: "ws-1", emailHandle: "jarvis" })
+    mockGetEmailById.mockResolvedValue({
+      id: "em_2",
+      agentId: "agent-1",
+      workspaceId: "ws-1",
+      status: "sending",
+    })
+    const { env, send } = agentSendEnv()
+
+    const res = await handler.fetch(
+      makeAgentSendRequest({
+        agentId: "agent-1",
+        workspaceId: "ws-1",
+        to: "user@example.com",
+        subject: "Claimed",
+        htmlBody: "<p>Go</p>",
+        emailId: "em_2",
+      }),
+      env,
+    )
+
+    expect(res.status).toBe(200)
+    expect(send).toHaveBeenCalledOnce()
+  })
+
+  it("returns 404 pre_send when emailId claim is missing", async () => {
+    mockGetAgent.mockResolvedValue({ id: "agent-1", workspaceId: "ws-1", emailHandle: "jarvis" })
+    mockGetEmailById.mockResolvedValue(null)
+    const { env, send } = agentSendEnv()
+
+    const res = await handler.fetch(
+      makeAgentSendRequest({
+        agentId: "agent-1",
+        workspaceId: "ws-1",
+        to: "user@example.com",
+        subject: "Missing claim",
+        htmlBody: "<p>x</p>",
+        emailId: "em_missing",
+      }),
+      env,
+    )
+
+    expect(res.status).toBe(404)
+    const json = await res.json() as { phase: string; error: string }
+    expect(json.phase).toBe("pre_send")
+    expect(json.error).toContain("not found")
+    expect(send).not.toHaveBeenCalled()
+  })
+
+  it("returns 403 pre_send when emailId claim agent mismatches", async () => {
+    mockGetAgent.mockResolvedValue({ id: "agent-1", workspaceId: "ws-1", emailHandle: "jarvis" })
+    mockGetEmailById.mockResolvedValue({
+      id: "em_3",
+      agentId: "agent-other",
+      workspaceId: "ws-1",
+      status: "sending",
+    })
+    const { env, send } = agentSendEnv()
+
+    const res = await handler.fetch(
+      makeAgentSendRequest({
+        agentId: "agent-1",
+        workspaceId: "ws-1",
+        to: "user@example.com",
+        subject: "Wrong agent",
+        htmlBody: "<p>x</p>",
+        emailId: "em_3",
+      }),
+      env,
+    )
+
+    expect(res.status).toBe(403)
+    const json = await res.json() as { phase: string; error: string }
+    expect(json.phase).toBe("pre_send")
+    expect(json.error).toContain("mismatch")
+    expect(send).not.toHaveBeenCalled()
+  })
+
+  it("skips status gate for legacy callers without emailId", async () => {
+    mockGetAgent.mockResolvedValue({ id: "agent-1", workspaceId: "ws-1", emailHandle: "jarvis" })
+    const { env, send } = agentSendEnv()
+
+    const res = await handler.fetch(
+      makeAgentSendRequest({
+        agentId: "agent-1",
+        workspaceId: "ws-1",
+        to: "user@example.com",
+        subject: "Legacy",
+        htmlBody: "<p>legacy</p>",
+      }),
+      env,
+    )
+
+    expect(res.status).toBe(200)
+    expect(send).toHaveBeenCalledOnce()
+    expect(mockGetEmailById).not.toHaveBeenCalled()
+  })
+
+  it("skips status gate for whitespace-only emailId", async () => {
+    mockGetAgent.mockResolvedValue({ id: "agent-1", workspaceId: "ws-1", emailHandle: "jarvis" })
+    const { env, send } = agentSendEnv()
+
+    const res = await handler.fetch(
+      makeAgentSendRequest({
+        agentId: "agent-1",
+        workspaceId: "ws-1",
+        to: "user@example.com",
+        subject: "Blank id",
+        htmlBody: "<p>x</p>",
+        emailId: "   ",
+      }),
+      env,
+    )
+
+    expect(res.status).toBe(200)
+    expect(send).toHaveBeenCalledOnce()
+    expect(mockGetEmailById).not.toHaveBeenCalled()
+  })
+
+  it("rejects send when emailId claim is already sent or rejected", async () => {
+    mockGetAgent.mockResolvedValue({ id: "agent-1", workspaceId: "ws-1", emailHandle: "jarvis" })
+    const { env, send } = agentSendEnv()
+
+    for (const status of ["sent", "rejected", "failed", "ambiguous", "pending"] as const) {
+      mockGetEmailById.mockResolvedValue({
+        id: "em_term",
+        agentId: "agent-1",
+        workspaceId: "ws-1",
+        status,
+      })
+      const res = await handler.fetch(
+        makeAgentSendRequest({
+          agentId: "agent-1",
+          workspaceId: "ws-1",
+          to: "user@example.com",
+          subject: `Status ${status}`,
+          htmlBody: "<p>x</p>",
+          emailId: "em_term",
+        }),
+        env,
+      )
+      expect(res.status).toBe(409)
+      const json = await res.json() as { phase: string; error: string }
+      expect(json.phase).toBe("pre_send")
+      expect(json.error).toContain(status)
+    }
+    expect(send).not.toHaveBeenCalled()
+  })
+
+  it("allows send when claim status has surrounding whitespace around sending", async () => {
+    mockGetAgent.mockResolvedValue({ id: "agent-1", workspaceId: "ws-1", emailHandle: "jarvis" })
+    mockGetEmailById.mockResolvedValue({
+      id: "em_pad",
+      agentId: "agent-1",
+      workspaceId: "ws-1",
+      status: "  sending  ",
+    })
+    const { env, send } = agentSendEnv()
+
+    const res = await handler.fetch(
+      makeAgentSendRequest({
+        agentId: "agent-1",
+        workspaceId: "ws-1",
+        to: "user@example.com",
+        subject: "Padded",
+        htmlBody: "<p>Go</p>",
+        emailId: "  em_pad  ",
+      }),
+      env,
+    )
+
+    expect(res.status).toBe(200)
+    expect(send).toHaveBeenCalledOnce()
+    expect(mockGetEmailById).toHaveBeenCalledWith(expect.anything(), "em_pad", "ws-1")
   })
 
   it("sends agent email with attachments from R2", async () => {

@@ -28,9 +28,12 @@ import { ISSUE_LABELS, issueColumnLabel, showCompletedCountLabel } from "@/compo
 const COLUMNS = [
   { id: "todo", statuses: ["todo"] },
   { id: "in_progress", statuses: ["in_progress"] },
+  { id: "blocked", statuses: ["blocked"] },
   { id: "review", statuses: ["review"] },
   { id: "completed", statuses: ["done", "closed", "canceled", "failed"] },
 ] as const;
+
+const COMPLETED_STATUSES = COLUMNS.find((c) => c.id === "completed")!.statuses;
 
 function formatDate(value: string | null) {
   if (!value) return "";
@@ -101,6 +104,9 @@ function IssueCard({
               <span className="flex shrink-0 items-center gap-0.5 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
                 <Loader2 className="size-2.5 animate-spin" /> {ISSUE_LABELS.working}
               </span>
+            )}
+            {issue.status === "blocked" && (
+              <span className="shrink-0 rounded bg-orange-500/10 px-1.5 py-0.5 text-[10px] font-medium text-orange-600 dark:text-orange-400">{ISSUE_LABELS.blockedBadge}</span>
             )}
             {issue.status === "review" && (
               <span className="shrink-0 rounded bg-yellow-500/10 px-1.5 py-0.5 text-[10px] font-medium text-yellow-600 dark:text-yellow-400">{ISSUE_LABELS.reviewBadge}</span>
@@ -523,6 +529,14 @@ export default function IssuesPage() {
     }
   }, [workspaceId, issues, detail]);
 
+  const handleClaimChange = useCallback((updated: Issue) => {
+    setIssues((prev) => prev.map((i) => i.id === updated.id ? { ...i, ...updated } : i));
+    setDetail((prev) =>
+      prev && prev.issue.id === updated.id
+        ? { ...prev, issue: { ...prev.issue, ...updated } }
+        : prev
+    );
+  }, []);
 
   const handleDeleteIssue = useCallback(async (issueId: string) => {
     try {
@@ -621,8 +635,8 @@ export default function IssuesPage() {
 
       <div className="hidden min-h-0 flex-1 lg:block overflow-y-auto thin-scrollbar p-4">
         {boardLoading ? (
-          <div className={cn("grid h-full gap-4", showCompleted ? "grid-cols-4" : "grid-cols-[1fr_1fr_1fr_36px]")}>
-            {[3, 2, 2, ...(showCompleted ? [2] : [])].map((cardCount, colIdx) => (
+          <div className={cn("grid h-full gap-4", showCompleted ? "grid-cols-5" : "grid-cols-[1fr_1fr_1fr_1fr_36px]")}>
+            {[3, 2, 2, 1, ...(showCompleted ? [2] : [])].map((cardCount, colIdx) => (
               <div key={colIdx} className="flex min-h-0 flex-col rounded-lg border border-border/60 bg-card/60">
                 <div className="border-b border-border/60 bg-muted/30 px-3 py-2">
                   <Skeleton className="h-3 w-16" />
@@ -650,7 +664,7 @@ export default function IssuesPage() {
           </div>
         ) : (
           <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-            <div className={cn("grid h-full gap-4 animate-[fade-up_200ms_ease-out_both]", showCompleted ? "grid-cols-4" : "grid-cols-[1fr_1fr_1fr_36px]")}>
+            <div className={cn("grid h-full gap-4 animate-[fade-up_200ms_ease-out_both]", showCompleted ? "grid-cols-5" : "grid-cols-[1fr_1fr_1fr_1fr_36px]")}>
               {COLUMNS.filter(col => col.id !== "completed" || showCompleted).map((col) => {
                 const columnIssues = issues.filter((issue) => (col.statuses as readonly string[]).includes(issue.status));
                 return (
@@ -696,7 +710,7 @@ export default function IssuesPage() {
               {!showCompleted && (
                 <CollapsedCompletedStrip
                   activeDragId={activeDragId}
-                  completedCount={issues.filter(i => (COLUMNS[3].statuses as readonly string[]).includes(i.status)).length}
+                  completedCount={issues.filter(i => (COMPLETED_STATUSES as readonly string[]).includes(i.status)).length}
                   onExpand={() => setShowCompleted(true)}
                 />
               )}
@@ -790,7 +804,7 @@ export default function IssuesPage() {
                 className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-border/60 px-3 py-2.5 text-sm text-muted-foreground transition-colors hover:bg-muted/30"
               >
                 <Eye className="size-3.5" />
-                <span>{showCompletedCountLabel(issues.filter(i => (COLUMNS[3].statuses as readonly string[]).includes(i.status)).length)}</span>
+                <span>{showCompletedCountLabel(issues.filter(i => (COMPLETED_STATUSES as readonly string[]).includes(i.status)).length)}</span>
               </div>
             )}
           </div>
@@ -815,6 +829,7 @@ export default function IssuesPage() {
         onCreate={handleCreate}
         onUpdate={handleUpdate}
         onStatusChange={handleStatusChange}
+        onClaimChange={handleClaimChange}
         onCommented={() => selectedId && openIssue(selectedId)}
         onDispatched={(id) => { silentReload(); openIssue(id); }}
         onArtifactClick={handleArtifactClick}

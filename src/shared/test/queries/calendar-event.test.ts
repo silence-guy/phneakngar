@@ -403,3 +403,76 @@ describe("expandOccurrences", () => {
     ]);
   });
 });
+
+describe("claimCalendarEvent / revertCalendarEventClaim", () => {
+  function createUpdateMock(rows: any[]) {
+    const chain: any = {};
+    chain.update = vi.fn(() => chain);
+    chain.set = vi.fn(() => chain);
+    chain.where = vi.fn(() => chain);
+    chain.returning = vi.fn(() => Promise.resolve(rows));
+    return chain;
+  }
+
+  it("returns claimed row when lastTriggeredAt guard passes", async () => {
+    const claimed = {
+      id: "ce_1",
+      scheduledAt: "2026-04-17T09:00:00.000Z",
+      lastTriggeredAt: "2026-04-17T09:05:00.000Z",
+    };
+    const db = createUpdateMock([claimed]);
+    const result = await calendarQueries.claimCalendarEvent(
+      db,
+      "ce_1",
+      "2026-04-17T09:00:00.000Z",
+      "2026-04-17T09:05:00.000Z"
+    );
+    expect(result).toEqual(claimed);
+    expect(db.set).toHaveBeenCalledWith(
+      expect.objectContaining({ lastTriggeredAt: "2026-04-17T09:05:00.000Z" })
+    );
+  });
+
+  it("returns null when second concurrent claim loses the guard", async () => {
+    // First fire already set lastTriggeredAt ≥ scheduledAt → second UPDATE matches 0 rows.
+    const db = createUpdateMock([]);
+    const result = await calendarQueries.claimCalendarEvent(
+      db,
+      "ce_1",
+      "2026-04-17T09:00:00.000Z",
+      "2026-04-17T09:05:01.000Z"
+    );
+    expect(result).toBeNull();
+  });
+
+  it("dual fire: only one claim wins under concurrent callers", async () => {
+    const winner = { id: "ce_1", lastTriggeredAt: "2026-04-17T09:05:00.000Z" };
+    const dbWin = createUpdateMock([winner]);
+    const dbLose = createUpdateMock([]);
+    const [a, b] = await Promise.all([
+      calendarQueries.claimCalendarEvent(
+        dbWin,
+        "ce_1",
+        "2026-04-17T09:00:00.000Z",
+        "2026-04-17T09:05:00.000Z"
+      ),
+      calendarQueries.claimCalendarEvent(
+        dbLose,
+        "ce_1",
+        "2026-04-17T09:00:00.000Z",
+        "2026-04-17T09:05:00.000Z"
+      ),
+    ]);
+    const results = [a, b];
+    expect(results.filter((r) => r != null)).toHaveLength(1);
+    expect(results.filter((r) => r == null)).toHaveLength(1);
+  });
+
+  it("revertCalendarEventClaim restores previous lastTriggeredAt", async () => {
+    const db = createUpdateMock([]);
+    await calendarQueries.revertCalendarEventClaim(db, "ce_1", "2026-04-16T09:00:00.000Z");
+    expect(db.set).toHaveBeenCalledWith(
+      expect.objectContaining({ lastTriggeredAt: "2026-04-16T09:00:00.000Z" })
+    );
+  });
+});

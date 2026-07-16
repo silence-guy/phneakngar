@@ -1,4 +1,5 @@
 mod commands;
+mod shell;
 
 #[cfg(target_os = "macos")]
 mod macos_window;
@@ -60,6 +61,11 @@ pub fn run() {
             commands::set_window_theme,
             commands::is_chhlat_online,
             commands::close_splashscreen,
+            commands::notify_pending_approval,
+            commands::report_pending_approvals,
+            commands::set_shell_state,
+            commands::get_shell_state,
+            commands::open_shell_path,
         ]);
     }
 
@@ -80,6 +86,10 @@ pub fn run() {
                 std::thread::sleep(std::time::Duration::from_millis(1000));
                 commands::mark_splash_min_elapsed(&h1);
             });
+
+            // F5: deep links (phneakngar:// → workspace routes) + initial shell chrome
+            commands::setup_deep_links(app)?;
+            commands::refresh_shell_chrome(app.handle());
 
             // macOS: inset the webview with rounded corners, window bg as frame
             #[cfg(target_os = "macos")]

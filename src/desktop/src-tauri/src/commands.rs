@@ -11,7 +11,13 @@ use tauri_plugin_notification::NotificationExt;
 use std::path::PathBuf;
 
 #[cfg(desktop)]
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
+
+use crate::shell::{
+    extract_workspace_slug_from_path, format_approvals_menu_label, format_runtime_menu_label,
+    format_tray_tooltip, format_window_title, normalize_workspace_slug, parse_deep_link,
+    resolve_approvals_nav, resolve_runtimes_nav, web_origin, web_url, ShellState,
+};
 
 
 #[derive(Serialize)]
@@ -485,6 +491,178 @@ pub fn is_chhlat_online() -> bool {
 #[cfg(desktop)]
 pub static CHHLAT_ONLINE: AtomicBool = AtomicBool::new(false);
 
+// --- Workspace shell chrome (Helio parity F5) ---
+
+#[cfg(desktop)]
+static PENDING_APPROVALS: AtomicU32 = AtomicU32::new(0);
+
+#[cfg(desktop)]
+static WORKSPACE_SLUG: std::sync::Mutex<Option<String>> = std::sync::Mutex::new(None);
+
+/// Tray menu items that show runtime status + approval badge (updated in place).
+#[cfg(desktop)]
+struct ShellTrayMenu {
+    runtime: tauri::menu::MenuItem<tauri::Wry>,
+    approvals: tauri::menu::MenuItem<tauri::Wry>,
+}
+
+#[cfg(desktop)]
+static SHELL_TRAY_MENU: std::sync::Mutex<Option<ShellTrayMenu>> = std::sync::Mutex::new(None);
+
+#[cfg(desktop)]
+fn store_pending_approvals(count: u32) {
+    PENDING_APPROVALS.store(count, Ordering::Relaxed);
+}
+
+#[cfg(desktop)]
+fn store_workspace_slug(slug: Option<String>) {
+    let normalized = slug.and_then(|s| normalize_workspace_slug(&s));
+    *WORKSPACE_SLUG.lock().unwrap_or_else(|e| e.into_inner()) = normalized;
+}
+
+#[cfg(desktop)]
+fn current_workspace_slug() -> Option<String> {
+    WORKSPACE_SLUG
+        .lock()
+        .unwrap_or_else(|e| e.into_inner())
+        .clone()
+}
+
+#[cfg(desktop)]
+fn current_shell_state() -> ShellState {
+    ShellState {
+        runtime_online: CHHLAT_ONLINE.load(Ordering::Relaxed),
+        pending_approvals: PENDING_APPROVALS.load(Ordering::Relaxed),
+        workspace_slug: current_workspace_slug(),
+    }
+}
+
+/// Refresh tray tooltip, window title, and status menu labels from shell state.
+#[cfg(desktop)]
+pub fn refresh_shell_chrome(handle: &AppHandle) {
+    let state = current_shell_state();
+    let tip = format_tray_tooltip(&state);
+
+    if let Some(tray) = handle.tray_by_id("main") {
+        let _ = tray.set_tooltip(Some(&tip));
+    }
+
+    if let Some(window) = handle.get_webview_window("main") {
+        let _ = window.set_title(&format_window_title(state.pending_approvals));
+    }
+
+    if let Ok(guard) = SHELL_TRAY_MENU.lock() {
+        if let Some(menu) = guard.as_ref() {
+            let _ = menu
+                .runtime
+                .set_text(format_runtime_menu_label(state.runtime_online));
+            let _ = menu
+                .approvals
+                .set_text(format_approvals_menu_label(state.pending_approvals));
+        }
+    }
+}
+
+#[cfg(desktop)]
+fn focus_main_window(handle: &AppHandle) {
+    if let Some(window) = handle.get_webview_window("main") {
+        let _ = window.show();
+        let _ = window.unminimize();
+        let _ = window.set_focus();
+    }
+}
+
+/// Navigate the main webview to an absolute app path (e.g. `/w/acme/approvals`).
+#[cfg(desktop)]
+pub fn navigate_main_to_path(handle: &AppHandle, path: &str) {
+    let origin = web_origin(cfg!(debug_assertions));
+    let url = web_url(origin, path);
+    focus_main_window(handle);
+    if let Some(window) = handle.get_webview_window("main") {
+        if let Ok(json) = serde_json::to_string(&url) {
+            let _ = window.eval(&format!("window.location.assign({json})"));
+        }
+    }
+}
+
+#[cfg(desktop)]
+pub fn handle_deep_link_url(handle: &AppHandle, raw: &str) {
+    if let Some(nav) = parse_deep_link(raw) {
+        // Capture slug when the deep link is workspace-scoped (query-safe).
+        if let Some(slug) = extract_workspace_slug_from_path(&nav.path) {
+            store_workspace_slug(Some(slug));
+        }
+        navigate_main_to_path(handle, &nav.path);
+        refresh_shell_chrome(handle);
+    }
+}
+
+/// Register deep-link handlers (cold start + runtime).
+#[cfg(desktop)]
+pub fn setup_deep_links(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
+    use tauri_plugin_deep_link::DeepLinkExt;
+
+    // Linux / Windows debug: register schemes at runtime so deep links work in dev.
+    #[cfg(any(target_os = "linux", all(debug_assertions, windows)))]
+    {
+        let _ = app.deep_link().register_all();
+    }
+
+    let handle = app.handle().clone();
+    app.deep_link().on_open_url(move |event| {
+        for url in event.urls() {
+            handle_deep_link_url(&handle, url.as_str());
+        }
+    });
+
+    // Cold-start: app launched via deep link.
+    // API: get_current() -> Result<Option<Vec<Url>>>
+    if let Ok(Some(urls)) = app.deep_link().get_current() {
+        for url in urls {
+            handle_deep_link_url(app.handle(), url.as_str());
+        }
+    }
+
+    Ok(())
+}
+
+/// IPC: web shell pushes pending-approval badge + active workspace slug.
+#[cfg(desktop)]
+#[tauri::command]
+pub fn set_shell_state(
+    app: AppHandle,
+    pending_approvals: Option<u32>,
+    workspace_slug: Option<String>,
+    runtime_online: Option<bool>,
+) -> Result<ShellState, String> {
+    if let Some(count) = pending_approvals {
+        store_pending_approvals(count);
+    }
+    if workspace_slug.is_some() {
+        store_workspace_slug(workspace_slug);
+    }
+    if let Some(online) = runtime_online {
+        CHHLAT_ONLINE.store(online, Ordering::Relaxed);
+    }
+    refresh_shell_chrome(&app);
+    Ok(current_shell_state())
+}
+
+/// IPC: read current shell chrome snapshot.
+#[cfg(desktop)]
+#[tauri::command]
+pub fn get_shell_state() -> ShellState {
+    current_shell_state()
+}
+
+/// IPC: open a deep-link path or absolute app path in the main webview.
+#[cfg(desktop)]
+#[tauri::command]
+pub fn open_shell_path(app: AppHandle, path: String) -> Result<(), String> {
+    let nav = parse_deep_link(&path).ok_or_else(|| format!("unsupported deep link: {path}"))?;
+    handle_deep_link_url(&app, &nav.path);
+    Ok(())
+}
 
 #[cfg(desktop)]
 static QUIT_BEHAVIOR: std::sync::Mutex<Option<QuitBehavior>> = std::sync::Mutex::new(None);
@@ -553,6 +731,18 @@ pub fn setup_tray(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     use tauri::menu::CheckMenuItemBuilder;
 
     let show = MenuItemBuilder::with_id("show", "Show").build(app)?;
+    let runtime_item = MenuItemBuilder::with_id(
+        "runtime_status",
+        format_runtime_menu_label(CHHLAT_ONLINE.load(Ordering::Relaxed)),
+    )
+    .enabled(false)
+    .build(app)?;
+    let approvals_item = MenuItemBuilder::with_id(
+        "open_approvals",
+        format_approvals_menu_label(PENDING_APPROVALS.load(Ordering::Relaxed)),
+    )
+    .build(app)?;
+    let runtimes_item = MenuItemBuilder::with_id("open_runtimes", "Runtimes").build(app)?;
     let version = MenuItemBuilder::with_id("version", format!("Version {}", app.package_info().version)).enabled(false).build(app)?;
     let update_item = MenuItemBuilder::with_id("update", "Check for Updates").build(app)?;
     let stop_on_quit_checked = get_quit_behavior(app.handle()) == Some(QuitBehavior::StopChhlat);
@@ -564,6 +754,10 @@ pub fn setup_tray(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     let menu = MenuBuilder::new(app)
         .item(&show)
         .separator()
+        .item(&runtime_item)
+        .item(&approvals_item)
+        .item(&runtimes_item)
+        .separator()
         .item(&version)
         .item(&update_item)
         .item(&stop_on_quit)
@@ -571,20 +765,29 @@ pub fn setup_tray(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
         .item(&quit)
         .build()?;
 
-    let tray = TrayIconBuilder::new()
+    *SHELL_TRAY_MENU.lock().unwrap_or_else(|e| e.into_inner()) = Some(ShellTrayMenu {
+        runtime: runtime_item,
+        approvals: approvals_item,
+    });
+
+    let tray = TrayIconBuilder::with_id("main")
         .icon(Image::from_bytes(include_bytes!("../icons/tray-default.png"))
             .expect("tray icon"))
         .icon_as_template(true)
         .menu(&menu)
         .show_menu_on_left_click(false)
-        .tooltip("ភ្នាក់ងារ")
+        .tooltip(&format_tray_tooltip(&current_shell_state()))
         .on_menu_event(move |app, event| match event.id().as_ref() {
             "show" => {
-                if let Some(window) = app.get_webview_window("main") {
-                    let _ = window.show();
-                    let _ = window.unminimize();
-                    let _ = window.set_focus();
-                }
+                focus_main_window(app);
+            }
+            "open_approvals" => {
+                let path = resolve_approvals_nav(current_workspace_slug().as_deref());
+                navigate_main_to_path(app, &path);
+            }
+            "open_runtimes" => {
+                let path = resolve_runtimes_nav(current_workspace_slug().as_deref());
+                navigate_main_to_path(app, &path);
             }
             "update" => {
                 let handle = app.clone();
@@ -607,11 +810,7 @@ pub fn setup_tray(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
             if let tauri::tray::TrayIconEvent::Click {
                 button: tauri::tray::MouseButton::Left, ..
             } = event {
-                if let Some(window) = tray.app_handle().get_webview_window("main") {
-                    let _ = window.show();
-                    let _ = window.unminimize();
-                    let _ = window.set_focus();
-                }
+                focus_main_window(tray.app_handle());
             }
         })
         .build(app)?;
@@ -677,6 +876,9 @@ pub fn setup_tray(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
                 let _ = tray.set_icon(Some(img));
                 let _ = tray.set_icon_as_template(true);
             }
+
+            // Keep F5 shell chrome (runtime + approval badge) in sync with chhlat.
+            refresh_shell_chrome(&handle);
         }
     });
 
@@ -876,6 +1078,184 @@ pub fn auto_check_updates(handle: AppHandle) {
     });
 }
 
+// --- Approval notifications (Helio parity F4) ---
+//
+// Event source: web (desktop shell) polls pending approvals and reports via
+// `report_pending_approvals`. Pure helpers stay network-free for unit tests.
+
+const APPROVAL_NOTIFY_FALLBACK: &str =
+    "An agent action is waiting for your approval.";
+const APPROVAL_NOTIFY_TITLE: &str = "ភ្នាក់ងារ — Approval needed";
+
+/// Format OS notification body for a pending approval.
+pub fn format_approval_notification_body(summary: &str) -> String {
+    let trimmed = summary.trim();
+    if trimmed.is_empty() {
+        APPROVAL_NOTIFY_FALLBACK.to_string()
+    } else {
+        trimmed.to_string()
+    }
+}
+
+/// Prefer title → summary → kind → fallback.
+pub fn compose_approval_item_summary(
+    title: Option<&str>,
+    summary: Option<&str>,
+    kind: Option<&str>,
+) -> String {
+    for candidate in [title, summary, kind] {
+        if let Some(value) = candidate {
+            let trimmed = value.trim();
+            if !trimmed.is_empty() {
+                return trimmed.to_string();
+            }
+        }
+    }
+    APPROVAL_NOTIFY_FALLBACK.to_string()
+}
+
+/// Return current IDs that were not previously seen (stable order of `current_ids`).
+pub fn diff_new_pending_approval_ids(
+    previously_seen: &[String],
+    current_ids: &[String],
+) -> Vec<String> {
+    current_ids
+        .iter()
+        .filter(|id| !previously_seen.iter().any(|seen| seen == *id))
+        .cloned()
+        .collect()
+}
+
+/// Pure seed-or-diff planner for F4.
+///
+/// - `previous == None` (first snapshot or workspace change): seed only, no notify.
+/// - otherwise: notify only newly appeared ids; next seen set is the current snapshot.
+pub fn plan_pending_approval_notifications(
+    previous: Option<&[String]>,
+    current_ids: &[String],
+) -> (Vec<String>, Vec<String>, bool) {
+    match previous {
+        None => (Vec::new(), current_ids.to_vec(), true),
+        Some(prev) => {
+            let new_ids = diff_new_pending_approval_ids(prev, current_ids);
+            (new_ids, current_ids.to_vec(), false)
+        }
+    }
+}
+
+/// Normalize optional workspace slug into a stable seen-set key (empty when unset).
+pub fn approval_seen_workspace_key(workspace_slug: Option<&str>) -> String {
+    workspace_slug
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .unwrap_or("")
+        .to_string()
+}
+
+#[derive(Clone, serde::Deserialize)]
+pub struct PendingApprovalReport {
+    pub id: String,
+    pub title: Option<String>,
+    pub summary: Option<String>,
+    pub kind: Option<String>,
+}
+
+#[derive(Serialize)]
+pub struct ReportPendingApprovalsResult {
+    pub notified: usize,
+    pub pending: usize,
+    pub seeded: bool,
+}
+
+/// Per-workspace seen approval ids: (workspace_key, ids). Local desktop memory only.
+#[cfg(desktop)]
+static SEEN_PENDING_APPROVAL_IDS: std::sync::Mutex<Option<(String, std::collections::HashSet<String>)>> =
+    std::sync::Mutex::new(None);
+
+/// Show an OS notification for a human approval prompt (email send, skill install, etc.).
+#[cfg(desktop)]
+pub fn show_pending_approval_notification(handle: &AppHandle, summary: &str) {
+    let body = format_approval_notification_body(summary);
+    let _ = handle
+        .notification()
+        .builder()
+        .title(APPROVAL_NOTIFY_TITLE)
+        .body(&body)
+        .show();
+}
+
+/// IPC: frontend / tests can request a single approval notification.
+#[cfg(desktop)]
+#[tauri::command]
+pub fn notify_pending_approval(app: AppHandle, summary: Option<String>) -> Result<(), String> {
+    show_pending_approval_notification(&app, summary.as_deref().unwrap_or(""));
+    Ok(())
+}
+
+/// IPC: report the current pending-approval snapshot.
+///
+/// First call (or first call after workspace change) seeds the seen set without
+/// notifying (avoids a storm of historical toasts). Later calls notify only for
+/// newly appeared IDs. Always refreshes the F5 shell approval badge from the
+/// snapshot length.
+#[cfg(desktop)]
+#[tauri::command]
+pub fn report_pending_approvals(
+    app: AppHandle,
+    items: Vec<PendingApprovalReport>,
+    workspace_slug: Option<String>,
+) -> Result<ReportPendingApprovalsResult, String> {
+    let current_ids: Vec<String> = items.iter().map(|item| item.id.clone()).collect();
+    let pending_count = current_ids.len() as u32;
+    store_pending_approvals(pending_count);
+
+    let workspace_key = approval_seen_workspace_key(workspace_slug.as_deref());
+    if !workspace_key.is_empty() {
+        store_workspace_slug(Some(workspace_key.clone()));
+    }
+    refresh_shell_chrome(&app);
+
+    let mut guard = SEEN_PENDING_APPROVAL_IDS
+        .lock()
+        .unwrap_or_else(|e| e.into_inner());
+
+    let previous: Option<Vec<String>> = match guard.as_ref() {
+        Some((key, set)) if key == &workspace_key => Some(set.iter().cloned().collect()),
+        // First snapshot for this process, or workspace switched → re-seed.
+        _ => None,
+    };
+
+    let (new_ids, next_seen, seeded) =
+        plan_pending_approval_notifications(previous.as_deref(), &current_ids);
+
+    let mut notified = 0usize;
+    if !seeded {
+        for id in &new_ids {
+            if let Some(item) = items.iter().find(|item| &item.id == id) {
+                let summary = compose_approval_item_summary(
+                    item.title.as_deref(),
+                    item.summary.as_deref(),
+                    item.kind.as_deref(),
+                );
+                show_pending_approval_notification(&app, &summary);
+                notified += 1;
+            }
+        }
+    }
+
+    // Remember only currently pending IDs so decided ones can re-appear later.
+    *guard = Some((
+        workspace_key,
+        next_seen.into_iter().collect(),
+    ));
+
+    Ok(ReportPendingApprovalsResult {
+        notified,
+        pending: current_ids.len(),
+        seeded,
+    })
+}
+
 // --- Chhlat helpers ---
 
 #[cfg(desktop)]
@@ -891,6 +1271,7 @@ pub fn auto_start_chhlat(handle: AppHandle) {
     tauri::async_runtime::spawn(async move {
         if check_chhlat_online(&handle).await {
             CHHLAT_ONLINE.store(true, Ordering::Relaxed);
+            refresh_shell_chrome(&handle);
             mark_chhlat_ready(&handle);
             return;
         }
@@ -898,6 +1279,7 @@ pub fn auto_start_chhlat(handle: AppHandle) {
         match run_cli(&handle, &["chhlat", "start"]).await {
             Ok(output) if output.success => {
                 CHHLAT_ONLINE.store(true, Ordering::Relaxed);
+                refresh_shell_chrome(&handle);
                 mark_chhlat_ready(&handle);
             }
             Ok(output) => {
@@ -1043,5 +1425,113 @@ mod tests {
         } else {
             assert_eq!(args, vec!["@phneakngar/cli", "--version"]);
         }
+    }
+
+    #[test]
+    fn format_approval_body_uses_summary() {
+        assert_eq!(
+            format_approval_notification_body("  Send draft to alice@example.com  "),
+            "Send draft to alice@example.com"
+        );
+    }
+
+    #[test]
+    fn format_approval_body_falls_back_when_empty() {
+        assert_eq!(
+            format_approval_notification_body("   "),
+            "An agent action is waiting for your approval."
+        );
+        assert_eq!(
+            format_approval_notification_body(""),
+            "An agent action is waiting for your approval."
+        );
+    }
+
+    #[test]
+    fn compose_approval_prefers_title_then_summary_then_kind() {
+        assert_eq!(
+            compose_approval_item_summary(
+                Some("Outbound email"),
+                Some("to bob"),
+                Some("email_send")
+            ),
+            "Outbound email"
+        );
+        assert_eq!(
+            compose_approval_item_summary(Some("  "), Some("to bob"), Some("email_send")),
+            "to bob"
+        );
+        assert_eq!(
+            compose_approval_item_summary(None, None, Some("skill_install")),
+            "skill_install"
+        );
+        assert_eq!(
+            compose_approval_item_summary(None, None, None),
+            "An agent action is waiting for your approval."
+        );
+    }
+
+    #[test]
+    fn diff_new_pending_ids_returns_only_unseen() {
+        let prev = vec!["a".to_string(), "b".to_string()];
+        let current = vec!["b".to_string(), "c".to_string(), "d".to_string()];
+        assert_eq!(
+            diff_new_pending_approval_ids(&prev, &current),
+            vec!["c".to_string(), "d".to_string()]
+        );
+    }
+
+    #[test]
+    fn diff_new_pending_ids_all_new_when_unseen_empty() {
+        let current = vec!["x".to_string()];
+        assert_eq!(
+            diff_new_pending_approval_ids(&[], &current),
+            vec!["x".to_string()]
+        );
+    }
+
+    #[test]
+    fn diff_new_pending_ids_empty_when_no_new() {
+        let prev = vec!["a".to_string()];
+        let current = vec!["a".to_string()];
+        assert!(diff_new_pending_approval_ids(&prev, &current).is_empty());
+    }
+
+    #[test]
+    fn plan_pending_seed_on_first_snapshot() {
+        let current = vec!["a".to_string(), "b".to_string()];
+        let (notify, next, seeded) = plan_pending_approval_notifications(None, &current);
+        assert!(seeded);
+        assert!(notify.is_empty());
+        assert_eq!(next, current);
+    }
+
+    #[test]
+    fn plan_pending_notifies_only_new_ids() {
+        let prev = vec!["a".to_string()];
+        let current = vec!["a".to_string(), "b".to_string()];
+        let (notify, next, seeded) =
+            plan_pending_approval_notifications(Some(prev.as_slice()), &current);
+        assert!(!seeded);
+        assert_eq!(notify, vec!["b".to_string()]);
+        assert_eq!(next, current);
+    }
+
+    #[test]
+    fn plan_pending_clears_decided_ids_from_next_seen() {
+        let prev = vec!["a".to_string(), "b".to_string()];
+        let current = vec!["b".to_string()];
+        let (notify, next, seeded) =
+            plan_pending_approval_notifications(Some(prev.as_slice()), &current);
+        assert!(!seeded);
+        assert!(notify.is_empty());
+        assert_eq!(next, vec!["b".to_string()]);
+    }
+
+    #[test]
+    fn approval_seen_workspace_key_trims_and_defaults() {
+        assert_eq!(approval_seen_workspace_key(None), "");
+        assert_eq!(approval_seen_workspace_key(Some("  ")), "");
+        assert_eq!(approval_seen_workspace_key(Some(" acme ")), "acme");
     }
 }

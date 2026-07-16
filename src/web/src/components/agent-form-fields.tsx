@@ -63,6 +63,10 @@ interface GeneralFieldsProps {
   setName: (v: string) => void;
   description: string;
   setDescription: (v: string) => void;
+  roleTitle?: string;
+  setRoleTitle?: (v: string) => void;
+  responsibility?: string;
+  setResponsibility?: (v: string) => void;
   instructions?: string;
   setInstructions?: (v: string) => void;
   model: string;
@@ -86,6 +90,10 @@ export function GeneralFields({
   setName,
   description,
   setDescription,
+  roleTitle,
+  setRoleTitle,
+  responsibility,
+  setResponsibility,
   instructions,
   setInstructions,
   model,
@@ -143,6 +151,39 @@ export function GeneralFields({
         rows={1}
         className="w-full border-0 bg-transparent px-0 py-0.5 text-sm text-foreground shadow-none outline-none placeholder:text-muted-foreground/40 focus-visible:ring-0"
       />
+
+      {setRoleTitle && (
+        <div className="space-y-1">
+          <Label htmlFor="agent-role-title" className="text-xs text-muted-foreground">
+            {agentFormLabel("roleTitle")}
+          </Label>
+          <Input
+            id="agent-role-title"
+            value={roleTitle ?? ""}
+            onChange={(e) => setRoleTitle(e.target.value)}
+            placeholder={agentFormLabel("roleTitlePlaceholder")}
+            maxLength={120}
+            className="h-8"
+          />
+        </div>
+      )}
+
+      {setResponsibility && (
+        <div className="space-y-1">
+          <Label htmlFor="agent-responsibility" className="text-xs text-muted-foreground">
+            {agentFormLabel("responsibility")}
+          </Label>
+          <AutoResizeTextarea
+            id="agent-responsibility"
+            value={responsibility ?? ""}
+            onChange={(e) => setResponsibility(e.target.value)}
+            placeholder={agentFormLabel("responsibilityPlaceholder")}
+            rows={2}
+            maxLength={2000}
+            className="w-full border-0 bg-transparent px-0 py-0.5 text-sm text-foreground shadow-none outline-none placeholder:text-muted-foreground/40 focus-visible:ring-0"
+          />
+        </div>
+      )}
 
       {emailHandleSlot}
 

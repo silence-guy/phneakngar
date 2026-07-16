@@ -3,14 +3,44 @@ import { Locale } from "@phneakngar/shared";
 import {
   TEMPLATES,
   TEMPLATES_KM,
+  HELIO_SCENARIO_TEMPLATE_IDS,
   getTemplateById,
   getTemplates,
 } from "./index";
 
 describe("template localization", () => {
   it("keeps the raw template registry in English", () => {
-    expect(TEMPLATES[0]?.name).toBe("Open Source Maintainer");
+    expect(TEMPLATES[0]?.name).toBe("Day Planner");
     expect(getTemplates(Locale.EN)).toBe(TEMPLATES);
+  });
+
+  it("registers Helio scenario presets near the top of the registry", () => {
+    expect(TEMPLATES.slice(0, HELIO_SCENARIO_TEMPLATE_IDS.length).map((t) => t.id)).toEqual([
+      ...HELIO_SCENARIO_TEMPLATE_IDS,
+    ]);
+
+    for (const id of HELIO_SCENARIO_TEMPLATE_IDS) {
+      const template = getTemplateById(id, Locale.EN);
+      expect(template?.baseScenario).toBeTruthy();
+      expect(template?.tags).toEqual(expect.arrayContaining(["helio", "scenario"]));
+      expect(template?.members.length).toBeGreaterThan(0);
+      expect(template?.members[0]?.instructions.length).toBeGreaterThan(80);
+      // Studio deep-link ids remain the stable registry ids
+      expect([...HELIO_SCENARIO_TEMPLATE_IDS]).toContain(template!.id);
+    }
+  });
+
+  it("still loads Helio scenario presets after grouping exports exist", () => {
+    // Grouping layer must not break getTemplates / getTemplateById resolution
+    const list = getTemplates(Locale.EN);
+    for (const id of HELIO_SCENARIO_TEMPLATE_IDS) {
+      expect(list.some((t) => t.id === id)).toBe(true);
+      const t = getTemplateById(id, Locale.EN);
+      expect(t).toBeDefined();
+      expect(t!.features.length).toBeGreaterThan(0);
+      expect(t!.useCases.length).toBeGreaterThan(0);
+      expect(t!.longDescription.length).toBeGreaterThan(40);
+    }
   });
 
   it("returns Khmer templates by default with Khmer instruction body", () => {
@@ -39,6 +69,15 @@ describe("template localization", () => {
         template.members.map((member) => member.role),
       );
     }
+  });
+
+  it("localizes Helio scenario names in Khmer", () => {
+    expect(getTemplateById("day-planner")?.name).toBe("អ្នករៀបចំថ្ងៃ");
+    expect(getTemplateById("task-digest")?.name).toBe("សង្ខេបភារកិច្ច");
+    expect(getTemplateById("inbox-ai")?.name).toBe("Inbox AI");
+    expect(getTemplateById("feedback-loop")?.name).toBe("រង្វិលជុំមតិ");
+    expect(getTemplateById("content-pipeline")?.name).toBe("បំពង់ខ្លឹមសារ");
+    expect(getTemplateById("research-brief")?.name).toBe("សង្ខេបស្រាវជ្រាវ");
   });
 
   it("preserves English template access for compatibility", () => {

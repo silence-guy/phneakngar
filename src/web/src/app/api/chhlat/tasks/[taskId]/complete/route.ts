@@ -13,6 +13,7 @@ import {
 import { CompleteTaskRequestSchema } from "@phneakngar/shared";
 import { broadcastToUser } from "@/lib/broadcast";
 import { invalidate, invalidateInboxCounts, cacheKeys } from "@/lib/cache";
+import { maybeCreateTaskDeliveryArtifact } from "@/lib/services/delivery-artifact";
 
 export const POST = withAuth(async (req: NextRequest, ctx) => {
   if (!ctx.workspaceId) {
@@ -37,7 +38,7 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
 
   const taskService = new TaskService(db);
   try {
-    const task = await taskService.completeTask(
+    const { task, channelDelivery } = await taskService.completeTask(
       taskId,
       ctx.workspaceId,
       result,
@@ -50,6 +51,22 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
       invalidateInboxCounts(conv.userId, ctx.workspaceId).catch(() => {});
       broadcastToUser(conv.userId, { type: "task.updated", taskId, agentId: task.agentId, status: "completed" }).catch(() => {});
     }
+
+    // C9: productize task output as a delivery artifact (draft/digest/report)
+    // linked to the task. Prefer the channel conversation when C3 channel
+    // delivery landed there so channel timelines can list the artifact.
+    // Best-effort — never blocks complete.
+    const artifactConversationId =
+      channelDelivery?.conversationId?.trim() || task.conversationId;
+    await maybeCreateTaskDeliveryArtifact(db, ctx.env.EMAIL_BUCKET, {
+      workspaceId: ctx.workspaceId,
+      agentId: task.agentId,
+      conversationId: artifactConversationId,
+      taskId: task.id,
+      result: body,
+      ownerUserId: conv?.userId ?? null,
+    });
+
     return writeJSON(taskToResponse(task));
   } catch (e: unknown) {
     if (e instanceof TaskAlreadyTerminalError) {

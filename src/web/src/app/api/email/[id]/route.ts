@@ -1,9 +1,24 @@
-import { queries, UpdateEmailStatusRequestSchema } from "@phneakngar/shared";
+import {
+  OutboundEmailDeliveryStatus,
+  queries,
+  UpdateEmailStatusRequestSchema,
+} from "@phneakngar/shared";
 import { getDb } from "@/lib/db"
 import { withAuth } from "@/lib/middleware/auth";
 import { withWorkspaceMember } from "@/lib/middleware/workspace";
 import { writeJSON, writeError, parseBody } from "@/lib/middleware/helpers";
 import { emailToResponse } from "@/lib/api/responses";
+
+/** Delivery/approval pipeline statuses — never mutate via mailbox PATCH. */
+const OUTBOUND_PIPELINE_STATUSES = new Set<string>([
+  OutboundEmailDeliveryStatus.PENDING,
+  OutboundEmailDeliveryStatus.PENDING_APPROVAL,
+  OutboundEmailDeliveryStatus.SENDING,
+  OutboundEmailDeliveryStatus.SENT,
+  OutboundEmailDeliveryStatus.FAILED,
+  OutboundEmailDeliveryStatus.AMBIGUOUS,
+  OutboundEmailDeliveryStatus.REJECTED,
+]);
 
 export const GET = withAuth(async (req, ctx) => {
   const ws = await withWorkspaceMember(req, ctx);
@@ -60,6 +75,14 @@ export const PATCH = withAuth(async (req, ctx) => {
 
   const [body, valErr] = await parseBody(req, UpdateEmailStatusRequestSchema);
   if (valErr) return valErr;
+
+  // Hard fence: approval/outbound state machine is not reachable via PATCH.
+  if (OUTBOUND_PIPELINE_STATUSES.has(email.status)) {
+    return writeError(
+      "outbound delivery status cannot be changed via PATCH; use the approval decide path",
+      409,
+    );
+  }
 
   const updated = await queries.email.updateEmailStatus(db, id, ws.workspaceId, body.status);
   if (!updated) return writeError("not found", 404);

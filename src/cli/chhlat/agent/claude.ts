@@ -12,6 +12,7 @@ import type {
   EncodeOpts,
 } from "../types.js";
 import { killProcessTree } from "../kill-tree.js";
+import { handleToolControlRequest } from "../tool-gate.js";
 
 export class ClaudeBackend implements AgentBackend {
   name = "claude";
@@ -520,41 +521,16 @@ function handleControlRequest(
   event: Record<string, unknown>,
   enqueueStdinWrite?: (data: string) => void,
 ): void {
-  const requestId = event.request_id as string | undefined;
-  if (!requestId) return;
+  // Shared approval policy gates high-stakes tool classes; low-stakes auto-allow.
+  const gated = handleToolControlRequest(event);
+  if (!gated) return;
 
-  let updatedInput: unknown = undefined;
-  const payload = event.payload as Record<string, unknown> | undefined;
-  if (payload) {
-    const input = payload.input;
-    if (typeof input === "string") {
-      try {
-        updatedInput = JSON.parse(input);
-      } catch {
-        updatedInput = input;
-      }
-    } else if (input !== undefined) {
-      updatedInput = input;
-    }
-  }
-
-  const approval = JSON.stringify({
-    type: "control_response",
-    response: {
-      subtype: "success",
-      request_id: requestId,
-      response: {
-        behavior: "allow",
-        updatedInput,
-      },
-    },
-  });
-
+  // enqueueStdinWrite already appends "\n"; direct writes must include it.
   if (enqueueStdinWrite) {
-    enqueueStdinWrite(approval);
+    enqueueStdinWrite(gated.line);
   } else {
     try {
-      proc.stdin?.write(approval + "\n");
+      proc.stdin?.write(gated.line + "\n");
     } catch {
       // stdin may be closed
     }

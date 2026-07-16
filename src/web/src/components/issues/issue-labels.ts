@@ -1,6 +1,7 @@
 export const ISSUE_STATUS_LABELS: Record<string, string> = {
   todo: "ត្រូវធ្វើ",
   in_progress: "កំពុងដំណើរការ",
+  blocked: "ត្រូវបានទប់",
   review: "រង់ចាំពិនិត្យ",
   done: "រួចរាល់",
   closed: "បានបិទ",
@@ -52,7 +53,16 @@ export const ISSUE_LABELS = {
   createToGetStarted: "បង្កើតមួយដើម្បីចាប់ផ្តើម។",
   empty: "ទទេ",
   reviewBadge: "ពិនិត្យ",
+  blockedBadge: "ទប់",
   failedBadge: "បរាជ័យ",
+  claim: "ទទួលយក",
+  handBack: "ប្រគល់វិញ",
+  claiming: "កំពុងទទួលយក...",
+  handingBack: "កំពុងប្រគល់វិញ...",
+  claimed: "បានទទួល",
+  selectAgentToClaim: "ជ្រើសរើសភ្នាក់ងារដើម្បីទទួលយក",
+  claimFailed: "មិនអាចទទួលយកបញ្ហាបានទេ",
+  handBackFailed: "មិនអាចប្រគល់បញ្ហាវិញបានទេ",
   hideCompleted: "លាក់ការងាររួចរាល់",
   showCompleted: "បង្ហាញការងាររួចរាល់",
   hideCompletedColumn: "លាក់ជួរឈររួចរាល់",
@@ -73,9 +83,14 @@ export const ISSUE_LABELS = {
 export const ISSUE_COLUMN_LABELS: Record<string, string> = {
   todo: "ត្រូវធ្វើ",
   in_progress: "កំពុងដំណើរការ",
+  blocked: "ត្រូវបានទប់",
   review: "ពិនិត្យ",
   completed: "រួចរាល់",
 };
+
+export function issueClaimedByLabel(agentName: string): string {
+  return `${ISSUE_LABELS.claimed} · ${agentName}`;
+}
 
 function fallbackLabel(value: string): string {
   return value.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());

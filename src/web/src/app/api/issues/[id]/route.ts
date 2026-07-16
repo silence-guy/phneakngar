@@ -144,18 +144,24 @@ export const PATCH = withAuth(async (req: NextRequest, ctx) => {
   });
   if (!updated) return writeError("issue not found", 404);
 
-  if (body.status && body.status !== existing.status && existing.conversationId) {
-    const eventMsg = await queries.message.createMessage(db, {
-      conversationId: existing.conversationId,
-      role: "event",
-      content: `Issue status changed: ${existing.status} -> ${body.status}`,
-      metadata: JSON.stringify({ issueId: existing.id, title: existing.title, event: "status_changed" as const, fromStatus: existing.status, toStatus: body.status }),
-    });
-    broadcastToUser(ctx.userId, {
-      type: "conversation.message",
-      conversationId: existing.conversationId,
-      message: messageToResponse(eventMsg),
-    }).catch(() => {});
+  if (body.status && body.status !== existing.status) {
+    // Blocked counts feed the home attention strip.
+    if (body.status === "blocked" || existing.status === "blocked") {
+      invalidate(cacheKeys.overviewAttention(ws.workspaceId)).catch(() => {});
+    }
+    if (existing.conversationId) {
+      const eventMsg = await queries.message.createMessage(db, {
+        conversationId: existing.conversationId,
+        role: "event",
+        content: `Issue status changed: ${existing.status} -> ${body.status}`,
+        metadata: JSON.stringify({ issueId: existing.id, title: existing.title, event: "status_changed" as const, fromStatus: existing.status, toStatus: body.status }),
+      });
+      broadcastToUser(ctx.userId, {
+        type: "conversation.message",
+        conversationId: existing.conversationId,
+        message: messageToResponse(eventMsg),
+      }).catch(() => {});
+    }
   }
 
   return writeJSON(issueToResponse(updated));

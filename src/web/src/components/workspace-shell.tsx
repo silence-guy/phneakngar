@@ -6,6 +6,7 @@ import { MobileTopBar } from "@/components/mobile-top-bar";
 import { GradientBackground } from "@/components/gradient-background";
 import { WorkspacePetLayer } from "@/components/home-pet/workspace-pet-layer";
 import { RuntimeVersionGate } from "@/components/runtime-version-gate";
+import { TauriApprovalNotify } from "@/components/tauri-approval-notify";
 import { useWorkspace } from "@/contexts/workspace-context";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
@@ -44,6 +45,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
             </Sheet>
             <WorkspacePetLayer boundaryRef={shellRef} slug={slug} />
             <RuntimeVersionGate />
+            <TauriApprovalNotify />
           </div>
         </AgentChatSheetProvider>
       </SidebarTriggerContext.Provider>
@@ -62,6 +64,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
         </div>
         <WorkspacePetLayer boundaryRef={shellRef} slug={slug} />
         <RuntimeVersionGate />
+        <TauriApprovalNotify />
       </div>
     </AgentChatSheetProvider>
   );

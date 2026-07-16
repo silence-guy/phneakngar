@@ -48,6 +48,7 @@ describe("IssueStatus", () => {
   it("has all expected status values", () => {
     expect(IssueStatus.TODO).toBe("todo")
     expect(IssueStatus.IN_PROGRESS).toBe("in_progress")
+    expect(IssueStatus.BLOCKED).toBe("blocked")
     expect(IssueStatus.REVIEW).toBe("review")
     expect(IssueStatus.DONE).toBe("done")
     expect(IssueStatus.CLOSED).toBe("closed")
@@ -58,6 +59,7 @@ describe("IssueStatus", () => {
   it("ACTIVE_ISSUE_STATUSES contains non-terminal statuses", () => {
     expect(ACTIVE_ISSUE_STATUSES).toContain("todo")
     expect(ACTIVE_ISSUE_STATUSES).toContain("in_progress")
+    expect(ACTIVE_ISSUE_STATUSES).toContain("blocked")
     expect(ACTIVE_ISSUE_STATUSES).toContain("review")
     expect(ACTIVE_ISSUE_STATUSES).not.toContain("done")
   })

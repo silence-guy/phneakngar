@@ -18,6 +18,8 @@ const q = {
   members: vi.fn(),
   invites: vi.fn(),
   calendar: vi.fn(),
+  pendingApprovals: vi.fn(),
+  blockedIssues: vi.fn(),
 };
 
 vi.mock("@phneakngar/shared", async (importOriginal) => {
@@ -33,6 +35,8 @@ vi.mock("@phneakngar/shared", async (importOriginal) => {
       getTaskStatsByWorkspace: (...a: unknown[]) => q.taskStats(...a),
       getRecentTerminalTasks: (...a: unknown[]) => q.recentTasks(...a),
       getConversationCountsByAgent: (...a: unknown[]) => q.convCounts(...a),
+      countPendingApprovals: (...a: unknown[]) => q.pendingApprovals(...a),
+      countBlockedIssues: (...a: unknown[]) => q.blockedIssues(...a),
     },
     member: { listMembers: (...a: unknown[]) => q.members(...a) },
     workspaceInvite: { listActiveInvites: (...a: unknown[]) => q.invites(...a) },
@@ -54,7 +58,9 @@ vi.mock("@/lib/cache", () => ({
   cacheKeys: {
     allAgents: (w: string) => `ag:${w}`, allAgentAccess: (w: string) => `aa:${w}`,
     overviewEmailStats: (w: string) => `es:${w}`, overviewEmailAccounts: (w: string) => `ea:${w}`,
-    overviewTaskStats: (w: string, d: string) => `ts:${w}:${d}`, allMembers: (w: string) => `mem:${w}`,
+    overviewTaskStats: (w: string, d: string) => `ts:${w}:${d}`,
+    overviewAttention: (w: string) => `attn:${w}`,
+    allMembers: (w: string) => `mem:${w}`,
   },
 }));
 vi.mock("@/lib/agent-visibility", () => ({ filterVisibleAgents: vi.fn((a: any[]) => a) }));
@@ -73,6 +79,8 @@ beforeEach(() => {
   q.members.mockResolvedValue([{ id: "m1", userId: "u1", role: "owner", userName: "U", userEmail: "u@t.com", userImage: null, createdAt: "d" }]);
   q.invites.mockResolvedValue([{ id: "i1" }, { id: "i2" }]);
   q.calendar.mockResolvedValue([{ id: "c1", agentId: "a1", title: "T", description: "", scheduledAt: "d", repeatInterval: null, repeatStopAt: null, lastTriggeredAt: null }]);
+  q.pendingApprovals.mockResolvedValue(3);
+  q.blockedIssues.mockResolvedValue(1);
 });
 
 describe("GET /api/workspaces/[id]/overview", () => {
@@ -85,7 +93,11 @@ describe("GET /api/workspaces/[id]/overview", () => {
     expect(body.pending_invites).toBe(2);
     expect(body.recent_tasks[0].id).toBe("t1");
     expect(body.calendar_events[0].title).toBe("T");
+    expect(body.pending_approvals).toBe(3);
+    expect(body.blocked_issues).toBe(1);
     // visible-agent scoping passed to recent tasks / conv counts
     expect(q.recentTasks).toHaveBeenCalledWith({}, "w1", ["a1"], 15);
+    expect(q.pendingApprovals).toHaveBeenCalledWith({}, "w1");
+    expect(q.blockedIssues).toHaveBeenCalledWith({}, "w1");
   });
 });

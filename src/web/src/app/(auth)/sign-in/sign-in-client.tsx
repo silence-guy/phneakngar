@@ -154,11 +154,11 @@ function SignInForm({ postLoginUrl, isProd }: { postLoginUrl: string; isProd: bo
     <FieldGroup>
       <div className="flex flex-col items-center gap-2 text-center">
         <h1 className="text-2xl font-semibold tracking-tight">{SIGN_IN_LABELS.title}</h1>
-        <p className="max-w-64 text-sm leading-relaxed text-muted-foreground [overflow-wrap:anywhere]">
+        <p className="max-w-64 text-sm leading-relaxed text-muted-foreground wrap-anywhere">
           {SIGN_IN_LABELS.subtitle}
         </p>
         {subtitle && (
-          <p className="text-balance text-sm leading-relaxed text-muted-foreground [overflow-wrap:anywhere]">{subtitle}</p>
+          <p className="text-balance text-sm leading-relaxed text-muted-foreground wrap-anywhere">{subtitle}</p>
         )}
       </div>
 
@@ -378,7 +378,7 @@ export default function SignInPageClient({ isProd }: { isProd: boolean }) {
         </div>
         <Card className="rounded-lg border border-foreground/10 bg-card/92 p-0 shadow-[0_24px_80px_-55px_oklch(0.2_0.01_60/65%)] backdrop-blur">
           <CardContent className="grid p-0 md:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)]">
-            <div className="flex min-h-[430px] min-w-0 flex-col justify-center p-6 sm:p-8">
+            <div className="flex min-h-107.5 min-w-0 flex-col justify-center p-6 sm:p-8">
               <div className="mb-7 space-y-3">
                 <p className="text-sm font-medium text-muted-foreground">
                   {SIGN_IN_LABELS.surface.status}
@@ -387,7 +387,7 @@ export default function SignInPageClient({ isProd }: { isProd: boolean }) {
                   <h2 className="text-balance text-2xl font-semibold tracking-tight text-foreground">
                     {SIGN_IN_LABELS.surface.heading}
                   </h2>
-                  <p className="text-sm leading-7 text-muted-foreground [overflow-wrap:anywhere]">
+                  <p className="text-sm leading-7 text-muted-foreground wrap-anywhere">
                     {SIGN_IN_LABELS.surface.detail}
                   </p>
                 </div>
@@ -400,7 +400,7 @@ export default function SignInPageClient({ isProd }: { isProd: boolean }) {
                 <SignInForm postLoginUrl={postLoginUrl} isProd={isProd} />
               </div>
             </div>
-            <div className="relative hidden min-h-[430px] overflow-hidden border-l border-border/70 bg-muted/55 md:block">
+            <div className="relative hidden min-h-107.5 overflow-hidden border-l border-border/70 bg-muted/55 md:block">
               <ProductGallery />
             </div>
           </CardContent>

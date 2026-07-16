@@ -15,6 +15,12 @@ import {
   readHeadroomSettings,
   type HeadroomSettingsValue,
 } from "@/components/headroom-runtime-settings";
+import {
+  JudgmentPolicySettingsPanel,
+  buildRuntimeConfigWithJudgment,
+  readJudgmentSettings,
+  type JudgmentPolicySettings,
+} from "@/components/judgment-policy-settings";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { MarkdownEditor } from "@/components/ui/markdown-editor";
@@ -75,6 +81,8 @@ function RuntimeTab({
   providerModels,
   headroomSettings,
   setHeadroomSettings,
+  judgmentSettings,
+  setJudgmentSettings,
 }: {
   model: string;
   setModel: (v: string) => void;
@@ -84,6 +92,8 @@ function RuntimeTab({
   providerModels: string[];
   headroomSettings: HeadroomSettingsValue;
   setHeadroomSettings: (value: HeadroomSettingsValue) => void;
+  judgmentSettings: JudgmentPolicySettings;
+  setJudgmentSettings: (value: JudgmentPolicySettings) => void;
 }) {
   return (
     <>
@@ -127,6 +137,18 @@ function RuntimeTab({
         value={headroomSettings}
         onChange={setHeadroomSettings}
       />
+
+      <JudgmentPolicySettingsPanel
+        value={judgmentSettings}
+        onChange={setJudgmentSettings}
+      />
+
+      <div className="space-y-0.5 rounded-lg border border-border/50 px-3 py-3">
+        <Label className="text-xs text-muted-foreground">{agentFormLabel("mcpTools")}</Label>
+        <p className="text-xs text-muted-foreground/70 leading-relaxed">
+          {agentFormLabel("mcpToolsHint")}
+        </p>
+      </div>
     </>
   );
 }
@@ -138,6 +160,8 @@ interface AgentEditFormProps {
   onSave: (data: {
     name: string;
     description: string;
+    role_title?: string;
+    responsibility?: string;
     runtime_id: string;
     runtime_config?: Record<string, unknown>;
     avatar_url?: string | null;
@@ -161,6 +185,8 @@ export function AgentEditForm({
   const [activeTab, setActiveTab] = useState<TabId>("general");
   const [name, setName] = useState(agent.name ?? "");
   const [description, setDescription] = useState(agent.description ?? "");
+  const [roleTitle, setRoleTitle] = useState(agent.role_title ?? "");
+  const [responsibility, setResponsibility] = useState(agent.responsibility ?? "");
   const [runtimeId, setRuntimeId] = useState(agent.runtime_id ?? "");
   const [avatarConfig, setAvatarConfig] = useState<AvatarConfig>(
     () => parseAvatarUrl(agent.avatar_url) ?? DEFAULT_CONFIG
@@ -171,6 +197,9 @@ export function AgentEditForm({
   });
   const [headroomSettings, setHeadroomSettings] = useState(() =>
     readHeadroomSettings(agent.runtime_config),
+  );
+  const [judgmentSettings, setJudgmentSettings] = useState(() =>
+    readJudgmentSettings(agent.runtime_config),
   );
 
   // Instruction tab state — auto-saves independently
@@ -280,8 +309,13 @@ export function AgentEditForm({
     await onSave({
       name,
       description,
+      role_title: roleTitle.trim(),
+      responsibility: responsibility.trim(),
       runtime_id: runtimeId,
-      runtime_config: buildRuntimeConfigWithHeadroom(agent.runtime_config, model, headroomSettings),
+      runtime_config: buildRuntimeConfigWithJudgment(
+        buildRuntimeConfigWithHeadroom(agent.runtime_config, model, headroomSettings),
+        judgmentSettings,
+      ),
       avatar_url: serializeAvatarConfig(avatarConfig),
     });
   };
@@ -371,6 +405,10 @@ export function AgentEditForm({
                       setName={setName}
                       description={description}
                       setDescription={setDescription}
+                      roleTitle={roleTitle}
+                      setRoleTitle={setRoleTitle}
+                      responsibility={responsibility}
+                      setResponsibility={setResponsibility}
                       model={model}
                       setModel={setModel}
                       runtimeId={runtimeId}
@@ -391,6 +429,8 @@ export function AgentEditForm({
                     providerModels={providerModels}
                     headroomSettings={headroomSettings}
                     setHeadroomSettings={setHeadroomSettings}
+                    judgmentSettings={judgmentSettings}
+                    setJudgmentSettings={setJudgmentSettings}
                   />
                 )}
 

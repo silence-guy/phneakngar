@@ -30,6 +30,7 @@ import {
   Loader2,
   MessageSquare,
   User,
+  UserCheck,
   XIcon,
 } from "lucide-react";
 import Link from "next/link";
@@ -43,12 +44,12 @@ import { formatSize } from "@/components/agent-chat/artifact-sheet";
 import { isTerminalIssueStatus } from "@phneakngar/shared";
 import { toPublicPhneakngarAddress } from "@/lib/email-domain";
 import type { TraceTask } from "@/lib/api";
-import { updateIssue } from "@/lib/api";
+import { claimIssue, handBackIssue, updateIssue } from "@/lib/api";
 import { AvatarRenderer, parseAvatarUrl } from "@/components/avatar";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Kbd } from "@/components/ui/kbd";
 import { AutoResizeTextarea } from "@/components/ui/auto-resize-textarea";
-import { ISSUE_LABELS, issueDispatchDescription, issueStatusLabel } from "./issue-labels";
+import { ISSUE_LABELS, issueClaimedByLabel, issueDispatchDescription, issueStatusLabel } from "./issue-labels";
 
 // --- Constants ---
 
@@ -59,7 +60,7 @@ const GHOST_CONTROL =
   "h-7 border-0 bg-transparent px-1.5 text-xs text-foreground hover:bg-accent transition-colors -ml-1.5";
 
 
-const SELECTOR_STATUSES = ["todo", "in_progress", "review", "done"] as const;
+const SELECTOR_STATUSES = ["todo", "in_progress", "blocked", "review", "done"] as const;
 
 // --- Sub-components ---
 
@@ -204,6 +205,7 @@ export interface IssueSheetProps {
   onCreate?: (values: { agent_id?: string; title: string; description: string }) => Promise<void>;
   onUpdate?: (issueId: string, patch: { title?: string; description?: string }) => void;
   onStatusChange?: (issueId: string, status: string) => Promise<void>;
+  onClaimChange?: (issue: Issue) => void;
   onCommented?: () => void;
   onDispatched?: (issueId: string) => void;
   onArtifactClick?: (artifact: Artifact) => void;
@@ -227,6 +229,7 @@ export function IssueSheet({
   onCreate,
   onUpdate,
   onStatusChange,
+  onClaimChange,
   onCommented,
   onDispatched,
   onArtifactClick,
@@ -238,10 +241,13 @@ export function IssueSheet({
   const [description, setDescription] = useState("");
   const [agentId, setAgentId] = useState(defaultAgentId ?? "");
   const [assigneeOpen, setAssigneeOpen] = useState(false);
+  const [claimOpen, setClaimOpen] = useState(false);
   const [commentContent, setCommentContent] = useState("");
   const [commentSubmitting, setCommentSubmitting] = useState(false);
   const [confirmAgent, setConfirmAgent] = useState<Agent | null>(null);
   const [dispatching, setDispatching] = useState(false);
+  const [claiming, setClaiming] = useState(false);
+  const [handingBack, setHandingBack] = useState(false);
 
   const descriptionRef = useRef<HTMLDivElement>(null);
   const timelineRef = useRef<HTMLDivElement>(null);
@@ -342,6 +348,33 @@ export function IssueSheet({
     onStatusChange?.(issue.id, newStatus);
   };
 
+  const handleClaim = async (agent: Agent) => {
+    if (!issue || claiming) return;
+    setClaiming(true);
+    try {
+      const res = await claimIssue(workspaceId, issue.id, agent.id);
+      onClaimChange?.(res.issue);
+      setClaimOpen(false);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : ISSUE_LABELS.claimFailed);
+    } finally {
+      setClaiming(false);
+    }
+  };
+
+  const handleHandBack = async () => {
+    if (!issue || handingBack) return;
+    setHandingBack(true);
+    try {
+      const res = await handBackIssue(workspaceId, issue.id, issue.claimed_by_agent_id ?? undefined);
+      onClaimChange?.(res.issue);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : ISSUE_LABELS.handBackFailed);
+    } finally {
+      setHandingBack(false);
+    }
+  };
+
   const handleCommentSubmit = async () => {
     if (!commentContent.trim() || commentSubmitting || !issue) return;
     setCommentSubmitting(true);
@@ -382,9 +415,17 @@ export function IssueSheet({
   };
 
   const isTodoDraft = mode === "detail" && issue?.status === "todo";
+  const canClaimOrHandBack = mode === "detail" && issue && !isTerminalIssueStatus(issue.status);
 
   const selectedAgent = agents.find((a) => a.id === agentId) ?? null;
   const detailAgent = issue?.agent_id ? agents.find((a) => a.id === issue.agent_id) ?? null : null;
+  const claimedAgent = issue?.claimed_by_agent_id
+    ? agents.find((a) => a.id === issue.claimed_by_agent_id) ?? null
+    : null;
+  const claimAgentCandidates = agents.length > 0
+    ? agents
+    : [];
+  const defaultClaimAgent = detailAgent ?? selectedAgent ?? claimAgentCandidates[0] ?? null;
 
   // Mobile tab state (only used below lg breakpoint)
   const [mobileTab, setMobileTab] = useState<"issue" | "activity">("issue");
@@ -588,6 +629,91 @@ export function IssueSheet({
                 ))}
               </SelectContent>
             </Select>
+          </PropertyRow>
+        )}
+
+        {/* Claim / hand-back row */}
+        {canClaimOrHandBack && issue && (
+          <PropertyRow icon={<UserCheck className="size-3.5" />}>
+            {issue.claimed_by_agent_id ? (
+              <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+                <span className="inline-flex max-w-full items-center gap-1 rounded-md bg-primary/10 px-1.5 py-0.5 text-[11px] font-medium text-primary">
+                  {issueClaimedByLabel(claimedAgent?.name ?? ISSUE_LABELS.agent)}
+                </span>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 px-1.5 text-xs"
+                  disabled={handingBack || claiming}
+                  onClick={handleHandBack}
+                >
+                  {handingBack ? (
+                    <>
+                      <Loader2 className="size-3 animate-spin" />
+                      {ISSUE_LABELS.handingBack}
+                    </>
+                  ) : (
+                    ISSUE_LABELS.handBack
+                  )}
+                </Button>
+              </div>
+            ) : claimAgentCandidates.length === 0 ? (
+              <span className="text-xs text-muted-foreground/70">{ISSUE_LABELS.selectAgentToClaim}</span>
+            ) : defaultClaimAgent && claimAgentCandidates.length === 1 ? (
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                className="h-7 px-1.5 text-xs"
+                disabled={claiming || handingBack}
+                onClick={() => handleClaim(defaultClaimAgent)}
+              >
+                {claiming ? (
+                  <>
+                    <Loader2 className="size-3 animate-spin" />
+                    {ISSUE_LABELS.claiming}
+                  </>
+                ) : (
+                  ISSUE_LABELS.claim
+                )}
+              </Button>
+            ) : (
+              <Popover open={claimOpen} onOpenChange={setClaimOpen}>
+                <PopoverTrigger
+                  render={
+                    <button
+                      type="button"
+                      disabled={claiming || handingBack || claimAgentCandidates.length === 0}
+                      className={cn(GHOST_CONTROL, "flex items-center gap-1.5 rounded-md")}
+                    />
+                  }
+                >
+                  {claiming ? (
+                    <>
+                      <Loader2 className="size-3 animate-spin" />
+                      <span>{ISSUE_LABELS.claiming}</span>
+                    </>
+                  ) : (
+                    <span>{ISSUE_LABELS.claim}</span>
+                  )}
+                </PopoverTrigger>
+                <PopoverContent align="start" className="max-h-64 w-72 overflow-y-auto thin-scrollbar p-1">
+                  <div className="px-2 py-1.5 text-[11px] text-muted-foreground">{ISSUE_LABELS.selectAgentToClaim}</div>
+                  {claimAgentCandidates.map((agent) => (
+                    <button
+                      key={agent.id}
+                      type="button"
+                      disabled={claiming}
+                      onClick={() => handleClaim(agent)}
+                      className="flex w-full items-center justify-between gap-2 rounded-md px-2 py-2 text-left text-sm transition-colors hover:bg-accent hover:text-accent-foreground disabled:opacity-50"
+                    >
+                      <AgentIdentity agent={agent} size={18} />
+                    </button>
+                  ))}
+                </PopoverContent>
+              </Popover>
+            )}
           </PropertyRow>
         )}
 

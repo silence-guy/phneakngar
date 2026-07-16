@@ -52,6 +52,8 @@ export async function createAgent(
     name: string;
     description?: string;
     instructions?: string;
+    roleTitle?: string;
+    responsibility?: string;
     avatarUrl?: string | null;
     runtimeId?: string | null;
     runtimeMode?: string;
@@ -72,6 +74,8 @@ export async function createAgent(
       runtimeId: data.runtimeId ?? null,
       description: data.description ?? "",
       instructions: data.instructions ?? "",
+      roleTitle: data.roleTitle ?? "",
+      responsibility: data.responsibility ?? "",
       avatarUrl: data.avatarUrl ?? null,
       runtimeMode: data.runtimeMode ?? "local",
       runtimeConfig: data.runtimeConfig ?? null,
@@ -109,6 +113,8 @@ export async function updateAgent(
     name?: string;
     description?: string;
     instructions?: string;
+    roleTitle?: string;
+    responsibility?: string;
     runtimeId?: string | null;
     runtimeConfig?: unknown;
     visibility?: string;

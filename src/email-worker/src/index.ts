@@ -1,6 +1,6 @@
 import { nanoid } from "nanoid"
 import PostalMime from "postal-mime"
-import { createDb, queries, parseEmailHandle, toPhneakngarAddress, getEmailDomain, createLogger, buildMimeMessage, extractAttachmentMeta, isEmailDraftAttachmentKeyForScope, EMAIL_NOTIFY_SECRET_HEADER, EMAIL_DOMAIN_EXPECTATION_HEADER } from "@phneakngar/shared"
+import { createDb, queries, parseEmailHandle, toPhneakngarAddress, getEmailDomain, createLogger, buildMimeMessage, extractAttachmentMeta, isEmailDraftAttachmentKeyForScope, EMAIL_NOTIFY_SECRET_HEADER, EMAIL_DOMAIN_EXPECTATION_HEADER, OutboundEmailDeliveryStatus } from "@phneakngar/shared"
 import { decrypt } from "@phneakngar/shared/crypto"
 import { safeEqualSecret } from "@phneakngar/shared/secrets"
 import { WorkerMailer, type AuthType } from "worker-mailer"
@@ -153,6 +153,11 @@ export default {
       /** Durable claim identities from web (preferred for idempotent retries). */
       messageId?: string
       r2Key?: string
+      /**
+       * Optional outbound claim id from web. When present, only allow send when
+       * the claim is already in `sending` (defense-in-depth vs pending_approval).
+       */
+      emailId?: string
     }
 
     const preSendError = (error: string, status: number) =>
@@ -168,6 +173,28 @@ export default {
     const agent = await queries.agent.getAgent(db, body.agentId, body.workspaceId)
     if (!agent) {
       return preSendError("agent not found in workspace", 404)
+    }
+
+    // Defense in depth: if web passed emailId, require claim status === sending.
+    // Legacy callers without emailId (or blank/non-string) keep working (status gate skipped).
+    const emailId = typeof body.emailId === "string" ? body.emailId.trim() : ""
+    if (emailId) {
+      const claim = await queries.email.getEmailById(db, emailId, body.workspaceId)
+      if (!claim) {
+        return preSendError("outbound email claim not found", 404)
+      }
+      if (claim.agentId !== body.agentId) {
+        return preSendError("outbound email claim agent mismatch", 403)
+      }
+      // Anything other than `sending` is not sendable (pending_approval, pending,
+      // rejected, failed, sent, ambiguous, empty, etc.).
+      const status = (claim.status ?? "").trim()
+      if (status !== OutboundEmailDeliveryStatus.SENDING) {
+        return preSendError(
+          `outbound email claim not sendable (status=${status || "unknown"})`,
+          409,
+        )
+      }
     }
 
     let fromAddress: string

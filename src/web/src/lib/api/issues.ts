@@ -107,3 +107,15 @@ export const commentIssue = (workspaceId: string, issueId: string, content: stri
 
 export const deleteIssue = (workspaceId: string, issueId: string) =>
   apiFetch<void>(`/api/issues/${issueId}${wsQuery(workspaceId)}`, { method: "DELETE" });
+
+export const claimIssue = (workspaceId: string, issueId: string, agentId: string) =>
+  apiFetch<{ issue: Issue }>(`/api/issues/${issueId}/claim${wsQuery(workspaceId)}`, {
+    method: "POST",
+    body: JSON.stringify({ agent_id: agentId }),
+  });
+
+export const handBackIssue = (workspaceId: string, issueId: string, agentId?: string) =>
+  apiFetch<{ issue: Issue }>(`/api/issues/${issueId}/handback${wsQuery(workspaceId)}`, {
+    method: "POST",
+    body: JSON.stringify(agentId ? { agent_id: agentId } : {}),
+  });

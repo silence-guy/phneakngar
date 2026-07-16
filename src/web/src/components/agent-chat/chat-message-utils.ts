@@ -1,7 +1,22 @@
 import { useEffect, useRef } from "react";
 import type { Artifact, Message, TaskApi as Task } from "@phneakngar/shared";
+import { MessageKind, isChannelDeliveryMessage } from "@phneakngar/shared";
 
 type EventIconType = "issue" | "email" | "calendar";
+
+/** True when an assistant message is a C3 channel delivery post. */
+export function isChannelDeliveryPost(
+  metadata: Record<string, unknown> | null | undefined,
+): boolean {
+  return isChannelDeliveryMessage(metadata);
+}
+
+/** True when metadata marks a lifecycle/system notice (not agent speech). */
+export function isLifecycleMessage(
+  metadata: Record<string, unknown> | null | undefined,
+): boolean {
+  return metadata?.kind === MessageKind.LIFECYCLE;
+}
 
 export function getEventIconType(
   content: string,

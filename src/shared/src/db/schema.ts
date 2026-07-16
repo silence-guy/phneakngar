@@ -242,6 +242,10 @@ export const agent = sqliteTable(
     name: text("name").notNull(),
     description: text("description").notNull().default(""),
     instructions: text("instructions").notNull().default(""),
+    /** Helio-style role title (e.g. "Day Planner", "Inbox AI"). */
+    roleTitle: text("role_title").notNull().default(""),
+    /** Long-term responsibility statement for ownership UX. */
+    responsibility: text("responsibility").notNull().default(""),
     avatarUrl: text("avatar_url"),
     runtimeId: text("runtime_id").references(() => agentRuntime.id),
     runtimeMode: text("runtime_mode").notNull().default("local"),
@@ -432,6 +436,9 @@ export const issue = sqliteTable(
     title: text("title").notNull(),
     description: text("description").notNull().default(""),
     status: text("status").notNull().default("todo"),
+    /** Agent currently holding atomic claim (Helio-style). Null = unclaimed. */
+    claimedByAgentId: text("claimed_by_agent_id"),
+    claimedAt: text("claimed_at"),
     createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
     updatedAt: text("updated_at").notNull().$defaultFn(() => new Date().toISOString()),
     completedAt: text("completed_at"),
@@ -439,6 +446,7 @@ export const issue = sqliteTable(
   (t) => [
     index("idx_issue_workspace_status_agent").on(t.workspaceId, t.status, t.agentId),
     index("idx_issue_workspace_updated").on(t.workspaceId, t.updatedAt),
+    index("idx_issue_workspace_claimed").on(t.workspaceId, t.claimedByAgentId),
     unique("issue_conversation_unique").on(t.conversationId),
     foreignKey({
       columns: [t.agentId, t.workspaceId],
@@ -569,6 +577,8 @@ export const artifact = sqliteTable(
     workspaceId: text("workspace_id")
       .notNull()
       .references(() => workspace.id, { onDelete: "cascade" }),
+    /** Optional link to the producing task (delivery digests/drafts/reports). */
+    taskId: text("task_id").references(() => agentTaskQueue.id, { onDelete: "set null" }),
     filename: text("filename").notNull(),
     contentType: text("content_type").notNull().default("application/octet-stream"),
     size: integer("size").notNull(),
@@ -579,6 +589,8 @@ export const artifact = sqliteTable(
   },
   (t) => [
     index("idx_artifact_conversation").on(t.conversationId),
+    index("idx_artifact_task").on(t.workspaceId, t.taskId),
+    index("idx_artifact_ws_source").on(t.workspaceId, t.source, t.createdAt),
     foreignKey({
       columns: [t.agentId, t.workspaceId],
       foreignColumns: [agent.id, agent.workspaceId],
@@ -834,5 +846,174 @@ export const inboxUnread = sqliteTable(
   (t) => [
     unique("inbox_unread_conv_user").on(t.conversationId, t.userId),
     index("idx_inbox_unread_user_ws").on(t.userId, t.workspaceId, t.taskType, t.completedAt),
+  ]
+);
+
+// ---------------------------------------------------------------------------
+// Helio-parity foundations: automations, memory, approvals, integrations, membership
+// ---------------------------------------------------------------------------
+
+/** Readable SOP automations owned by an agent (schedule + delivery surface). */
+export const automation = sqliteTable(
+  "automation",
+  {
+    id: text("id").primaryKey().$defaultFn(() => "au_" + nanoid()),
+    workspaceId: text("workspace_id")
+      .notNull()
+      .references(() => workspace.id, { onDelete: "cascade" }),
+    agentId: text("agent_id").notNull(),
+    title: text("title").notNull(),
+    sopMarkdown: text("sop_markdown").notNull().default(""),
+    /** Cron-like or ISO interval descriptor interpreted by the runner (e.g. "0 8 * * *", "daily"). */
+    schedule: text("schedule").notNull(),
+    /** Next due time (ISO). Stateless due query uses this. */
+    nextRunAt: text("next_run_at").notNull(),
+    deliveryMode: text("delivery_mode").notNull().default("channel"),
+    deliveryChannelId: text("delivery_channel_id"),
+    skillName: text("skill_name"),
+    enabled: integer("enabled", { mode: "boolean" }).notNull().default(true),
+    lastRunAt: text("last_run_at"),
+    lastTaskId: text("last_task_id"),
+    createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
+    updatedAt: text("updated_at").notNull().$defaultFn(() => new Date().toISOString()),
+  },
+  (t) => [
+    index("idx_automation_ws_next").on(t.workspaceId, t.enabled, t.nextRunAt),
+    index("idx_automation_ws_agent").on(t.workspaceId, t.agentId),
+    foreignKey({
+      columns: [t.agentId, t.workspaceId],
+      foreignColumns: [agent.id, agent.workspaceId],
+    }).onDelete("cascade"),
+  ]
+);
+
+/** Durable agent/workspace memory notes (preferences, decisions, facts). */
+export const agentMemory = sqliteTable(
+  "agent_memory",
+  {
+    id: text("id").primaryKey().$defaultFn(() => "mem_" + nanoid()),
+    workspaceId: text("workspace_id")
+      .notNull()
+      .references(() => workspace.id, { onDelete: "cascade" }),
+    /** Null = workspace-wide memory. */
+    agentId: text("agent_id"),
+    kind: text("kind").notNull().default("fact"),
+    content: text("content").notNull(),
+    sourceTaskId: text("source_task_id"),
+    createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
+    updatedAt: text("updated_at").notNull().$defaultFn(() => new Date().toISOString()),
+  },
+  (t) => [
+    index("idx_agent_memory_ws_agent").on(t.workspaceId, t.agentId, t.kind),
+    foreignKey({
+      columns: [t.agentId, t.workspaceId],
+      foreignColumns: [agent.id, agent.workspaceId],
+    }).onDelete("cascade"),
+  ]
+);
+
+/** High-stakes action approvals (email send, tool write-back, skill install). */
+export const approval = sqliteTable(
+  "approval",
+  {
+    id: text("id").primaryKey().$defaultFn(() => "ap_" + nanoid()),
+    workspaceId: text("workspace_id")
+      .notNull()
+      .references(() => workspace.id, { onDelete: "cascade" }),
+    agentId: text("agent_id"),
+    kind: text("kind").notNull(),
+    status: text("status").notNull().default("pending"),
+    title: text("title").notNull().default(""),
+    summary: text("summary").notNull().default(""),
+    /** JSON payload for the action (email id, tool args, skill pack, …). */
+    payload: text("payload", { mode: "json" }),
+    decidedByUserId: text("decided_by_user_id").references(() => user.id, {
+      onDelete: "set null",
+    }),
+    decidedAt: text("decided_at"),
+    createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
+    updatedAt: text("updated_at").notNull().$defaultFn(() => new Date().toISOString()),
+  },
+  (t) => [
+    index("idx_approval_ws_status").on(t.workspaceId, t.status, t.createdAt),
+    index("idx_approval_ws_agent").on(t.workspaceId, t.agentId),
+    foreignKey({
+      columns: [t.agentId, t.workspaceId],
+      foreignColumns: [agent.id, agent.workspaceId],
+    }).onDelete("cascade"),
+  ]
+);
+
+/** Per-assistant integration connections (not a single shared workspace bot). */
+export const agentIntegration = sqliteTable(
+  "agent_integration",
+  {
+    id: text("id").primaryKey().$defaultFn(() => "ai_" + nanoid()),
+    workspaceId: text("workspace_id")
+      .notNull()
+      .references(() => workspace.id, { onDelete: "cascade" }),
+    agentId: text("agent_id").notNull(),
+    provider: text("provider").notNull(),
+    status: text("status").notNull().default("active"),
+    /** Non-secret config (repo, workspace slug, scopes). */
+    config: text("config", { mode: "json" }),
+    /** Secret reference only — never store raw tokens in list APIs. */
+    secretRef: text("secret_ref"),
+    createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
+    updatedAt: text("updated_at").notNull().$defaultFn(() => new Date().toISOString()),
+  },
+  (t) => [
+    unique("agent_integration_ws_agent_provider").on(t.workspaceId, t.agentId, t.provider),
+    index("idx_agent_integration_ws_agent").on(t.workspaceId, t.agentId),
+    foreignKey({
+      columns: [t.agentId, t.workspaceId],
+      foreignColumns: [agent.id, agent.workspaceId],
+    }).onDelete("cascade"),
+  ]
+);
+
+/** Channel membership for humans and AI teammates (real membership, no shadow bots). */
+export const channelMember = sqliteTable(
+  "channel_member",
+  {
+    id: text("id").primaryKey().$defaultFn(() => "cm_" + nanoid()),
+    workspaceId: text("workspace_id")
+      .notNull()
+      .references(() => workspace.id, { onDelete: "cascade" }),
+    channelId: text("channel_id")
+      .notNull()
+      .references(() => channel.id, { onDelete: "cascade" }),
+    /** "user" | "agent" */
+    memberType: text("member_type").notNull(),
+    memberId: text("member_id").notNull(),
+    createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
+  },
+  (t) => [
+    unique("channel_member_unique").on(t.channelId, t.memberType, t.memberId),
+    index("idx_channel_member_ws").on(t.workspaceId, t.channelId),
+    index("idx_channel_member_member").on(t.workspaceId, t.memberType, t.memberId),
+  ]
+);
+
+/** Conversation membership for multi-party DMs (users + agents). */
+export const conversationMember = sqliteTable(
+  "conversation_member",
+  {
+    id: text("id").primaryKey().$defaultFn(() => "cvm_" + nanoid()),
+    workspaceId: text("workspace_id")
+      .notNull()
+      .references(() => workspace.id, { onDelete: "cascade" }),
+    conversationId: text("conversation_id")
+      .notNull()
+      .references(() => conversation.id, { onDelete: "cascade" }),
+    /** "user" | "agent" */
+    memberType: text("member_type").notNull(),
+    memberId: text("member_id").notNull(),
+    createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
+  },
+  (t) => [
+    unique("conversation_member_unique").on(t.conversationId, t.memberType, t.memberId),
+    index("idx_conversation_member_ws").on(t.workspaceId, t.conversationId),
+    index("idx_conversation_member_member").on(t.workspaceId, t.memberType, t.memberId),
   ]
 );

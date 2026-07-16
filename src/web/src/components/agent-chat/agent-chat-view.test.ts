@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import type { Message, Artifact } from "@phneakngar/shared";
-import { sortMessages, mergeMessages, buildTimeline, computeGroupPositions, getEventIconType, eventTypeFromMessage, shouldPersistPointerForLoad, pointerRefreshTargetForTaskCreated } from "./chat-message-utils";
+import { sortMessages, mergeMessages, buildTimeline, computeGroupPositions, getEventIconType, eventTypeFromMessage, shouldPersistPointerForLoad, pointerRefreshTargetForTaskCreated, isChannelDeliveryPost, isLifecycleMessage } from "./chat-message-utils";
 import type { NapMarker } from "./chat-message-utils";
 
 function msg(id: string, created_at: string, role: "user" | "assistant" | "event" = "user", content = ""): Message {
@@ -193,6 +193,19 @@ describe("mergeMessages", () => {
     ];
     const result = mergeMessages(existing, incoming);
     expect(result.map((m) => m.id)).toEqual(["m1", "m2", "m3", "m4", "m5", "m6"]);
+  });
+});
+
+describe("isChannelDeliveryPost / isLifecycleMessage", () => {
+  it("detects channel_delivery metadata (C3)", () => {
+    expect(isChannelDeliveryPost({ kind: "channel_delivery", channel_name: "ops" })).toBe(true);
+    expect(isChannelDeliveryPost({ kind: "dm" })).toBe(false);
+    expect(isChannelDeliveryPost(null)).toBe(false);
+  });
+
+  it("detects lifecycle metadata", () => {
+    expect(isLifecycleMessage({ kind: "lifecycle" })).toBe(true);
+    expect(isLifecycleMessage({ kind: "channel_delivery" })).toBe(false);
   });
 });
 

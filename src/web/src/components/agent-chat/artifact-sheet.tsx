@@ -9,7 +9,7 @@ import {
   SheetTitle,
   SheetBody,
 } from "@/components/ui/sheet";
-import type { Artifact } from "@phneakngar/shared";
+import { ArtifactSource, type Artifact } from "@phneakngar/shared";
 import { FileText, Download, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ArtifactContentRenderer, getArtifactUrl, isHtmlType } from "@/components/artifact-content-renderer";
@@ -142,9 +142,15 @@ export function ArtifactSheet({ open, onOpenChange, artifacts, workspaceId, init
                               v{versionMap.get(a.id) ?? 1}
                             </span>
                           )}
+                          {a.source === ArtifactSource.DELIVERY && (
+                            <span className="ml-1.5 text-[10px] uppercase tracking-wide text-muted-foreground bg-muted rounded-full px-1.5 py-0.5 font-normal">
+                              delivery
+                            </span>
+                          )}
                         </p>
                         <p className="text-xs text-muted-foreground">
                           {formatSize(a.size)} &middot; {new Date(a.created_at).toLocaleString()}
+                          {a.task_id ? ` · task` : ""}
                         </p>
                       </div>
                     </button>

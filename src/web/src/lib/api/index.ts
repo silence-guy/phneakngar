@@ -22,6 +22,7 @@ export {
   createAgentLink,
   updateAgentLink,
   deleteAgentLink,
+  listAgentIntegrations,
   listEmailAccounts,
   createEmailAccount,
   updateEmailAccount,
@@ -53,6 +54,7 @@ export type {
   ActivityTask,
   WhitelistEntry,
   AgentAccessEntry,
+  AgentIntegrationPublic,
   AgentPin,
   SidebarOrder,
 } from "./agents";
@@ -62,7 +64,11 @@ export {
   renameChannelApi,
   deleteChannelApi,
   reorderChannelsApi,
+  listChannelMembers,
+  addChannelMember,
+  removeChannelMember,
 } from "./channels";
+export type { ChannelMemberItem } from "./channels";
 export {
   listConversations,
   createConversation,
@@ -79,6 +85,9 @@ export {
   sendMessage,
   getActiveTask,
   cancelActiveTask,
+  listConversationMembers,
+  addConversationMember,
+  removeConversationMember,
   createThread,
   getThreadSummaries,
   listAgentThreads,
@@ -90,6 +99,7 @@ export type {
   FreshnessCheckResponse,
   ThreadSummary,
   ThreadListItem,
+  ConversationMemberItem,
 } from "./conversations";
 export {
   listCalendarEvents,
@@ -117,6 +127,8 @@ export {
   updateIssue,
   commentIssue,
   deleteIssue,
+  claimIssue,
+  handBackIssue,
 } from "./issues";
 export type { IssueListItem, IssueDetailResponse } from "./issues";
 export {
@@ -163,3 +175,23 @@ export type { InboxItem, FlaggedItem } from "./inbox";
 export { listTraces, getTrace } from "./traces";
 export type { TraceListItem, TraceTask } from "./traces";
 export { listArtifacts, getArtifactContent } from "./artifacts";
+export {
+  listMemory,
+  createMemory,
+  updateMemory,
+  deleteMemory,
+  compactMemory,
+} from "./memory";
+export type { MemoryItem, CompactMemoryResult } from "./memory";
+export { listApprovals, decideApproval } from "./approvals";
+export type { ApprovalItem } from "./approvals";
+export {
+  listAutomations,
+  getAutomation,
+  createAutomation,
+  updateAutomation,
+  deleteAutomation,
+  runDueAutomations,
+  listAutomationSuggestions,
+} from "./automations";
+export type { AutomationItem, AutomationPatternSuggestionItem } from "./automations";

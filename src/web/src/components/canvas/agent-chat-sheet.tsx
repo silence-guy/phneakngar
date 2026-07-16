@@ -16,6 +16,7 @@ import { AnimatedAvatar, parseAvatarUrl } from "@/components/avatar";
 import { useAgentContext } from "@/contexts/agent-context";
 import { useWorkspace } from "@/contexts/workspace-context";
 import { ChannelBar } from "@/components/channel-bar";
+import { ChannelMembersPanel } from "@/components/channel-members-panel";
 import { AgentChatView } from "@/components/agent-chat/agent-chat-view";
 import { ArrowUpRight, XIcon } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -123,8 +124,11 @@ export function AgentChatSheet({ open, onOpenChange, agentId, agent, targetConvI
         </SheetHeader>
 
         {!targetConvId && (
-          <div className="px-4 pb-2">
-            <ChannelBar />
+          <div className="px-4 pb-2 flex items-center gap-1 min-w-0">
+            <div className="min-w-0 flex-1">
+              <ChannelBar />
+            </div>
+            <ChannelMembersPanel preferAgentId={agentId} />
           </div>
         )}
 

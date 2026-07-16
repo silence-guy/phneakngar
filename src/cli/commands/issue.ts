@@ -4,11 +4,21 @@ import { printJSON } from "../lib/output.js";
 import { resolveAgentId, readBody } from "../lib/flags.js";
 import { resolveClientOpts } from "../lib/resolve-client.js";
 
-const VALID_STATUSES = ["todo", "in_progress", "review", "done", "closed", "canceled", "failed"];
+const VALID_STATUSES = [
+  "todo",
+  "in_progress",
+  "review",
+  "blocked",
+  "done",
+  "closed",
+  "canceled",
+  "failed",
+];
 const KHMER_STATUS_LABELS: Record<string, string> = {
   todo: "ត្រូវធ្វើ",
   in_progress: "កំពុងដំណើរការ",
   review: "រង់ចាំពិនិត្យ",
+  blocked: "ជាប់គាំង",
   done: "រួចរាល់",
   closed: "បានបិទ",
   canceled: "បានបោះបង់",
@@ -25,6 +35,8 @@ interface IssueResponse {
   creator_user_id: string;
   conversation_id: string;
   latest_task_id: string | null;
+  claimed_by_agent_id?: string | null;
+  claimed_at?: string | null;
   title: string;
   description: string;
   status: string;
@@ -56,6 +68,10 @@ function printIssue(issue: IssueResponse): void {
 function printIssueDetail(issue: IssueResponse, messages?: MessageResponse[], comments?: CommentResponse[]): void {
   console.log(`id:              ${issue.id}`);
   console.log(`agent_id:        ${issue.agent_id}`);
+  if (issue.claimed_by_agent_id) {
+    console.log(`claimed_by:      ${issue.claimed_by_agent_id}`);
+    if (issue.claimed_at) console.log(`claimed_at:      ${issue.claimed_at}`);
+  }
   console.log(`status:          ${issue.status}`);
   console.log(`conversation_id: ${issue.conversation_id}`);
   if (issue.latest_task_id) console.log(`latest_task_id:  ${issue.latest_task_id}`);
@@ -195,6 +211,60 @@ export function issueCommand(): Command {
         const issue = await client.patchJSON<IssueResponse>(`/api/issues/${opts.issue_id}?agentId=${encodeURIComponent(agentId)}`, body);
         if (opts.json) return printJSON(issue);
         printIssue(issue);
+      } catch (err) {
+        console.error(`Error: ${err instanceof Error ? err.message : err}`);
+        process.exit(1);
+      }
+    });
+
+  cmd
+    .command("claim")
+    .description("Atomically claim an issue for an agent")
+    .option("--agent_id <id>", "Agent ID to claim as (or PHNEAKNGAR_AGENT_ID)")
+    .requiredOption("--issue_id <id>", "Issue ID")
+    .option("--json", "Output as JSON")
+    .action(async (opts, command) => {
+      const agentId = resolveAgentId(opts);
+      const { serverUrl, token, workspaceId } = resolveClientOpts(command, { agentId });
+      const client = new APIClient(serverUrl, token, workspaceId);
+      try {
+        const res = await client.postJSON<{ issue: IssueResponse }>(
+          `/api/issues/${opts.issue_id}/claim`,
+          { agent_id: agentId },
+        );
+        if (opts.json) return printJSON(res);
+        const issue = res.issue;
+        console.log(`Claimed ${issue.id} for ${agentId} — ${issue.status}  ${issue.title}`);
+      } catch (err) {
+        console.error(`Error: ${err instanceof Error ? err.message : err}`);
+        process.exit(1);
+      }
+    });
+
+  cmd
+    .command("handback")
+    .description("Release claim so another agent can take the issue")
+    .option("--agent_id <id>", "Only hand back if claimed by this agent (or PHNEAKNGAR_AGENT_ID)")
+    .requiredOption("--issue_id <id>", "Issue ID")
+    .option("--json", "Output as JSON")
+    .action(async (opts, command) => {
+      // Optional agent filter: flag/env only; do not force process.exit when absent.
+      const agentId = opts.agent_id || process.env.PHNEAKNGAR_AGENT_ID || undefined;
+      const { serverUrl, token, workspaceId } = resolveClientOpts(
+        command,
+        agentId ? { agentId } : {},
+      );
+      const client = new APIClient(serverUrl, token, workspaceId);
+      const body: Record<string, string> = {};
+      if (agentId) body.agent_id = agentId;
+      try {
+        const res = await client.postJSON<{ issue: IssueResponse }>(
+          `/api/issues/${opts.issue_id}/handback`,
+          body,
+        );
+        if (opts.json) return printJSON(res);
+        const issue = res.issue;
+        console.log(`Handed back ${issue.id} — ${issue.status}  ${issue.title}`);
       } catch (err) {
         console.error(`Error: ${err instanceof Error ? err.message : err}`);
         process.exit(1);

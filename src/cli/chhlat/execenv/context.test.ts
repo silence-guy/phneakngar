@@ -138,6 +138,62 @@ describe("buildInstructionContent email tool injection", () => {
     expect(content).not.toContain("sync send-dm --agent_id");
   });
 
+  it("includes issue create in the CLI quick reference", () => {
+    const content = buildInstructionContent(
+      makeTask({
+        agent: {
+          name: "test",
+          instructions: "",
+          emailHandle: "handle",
+          emailAddress: "handle@agents.example",
+          emailAddresses: ["handle@agents.example"],
+        },
+      }),
+    );
+    expect(content).toContain("issue create");
+  });
+
+  it("injects judgment policy block only when agent setting is enabled", () => {
+    const off = buildInstructionContent(
+      makeTask({
+        agent: {
+          name: "test",
+          instructions: "",
+          runtimeConfig: {},
+        },
+      }),
+    );
+    expect(off).not.toContain("Judgment policy (ambiguous → issue)");
+
+    const missingAgent = buildInstructionContent(makeTask({}));
+    expect(missingAgent).not.toContain("Judgment policy (ambiguous → issue)");
+
+    const on = buildInstructionContent(
+      makeTask({
+        agent: {
+          name: "test",
+          instructions: "",
+          runtimeConfig: { judgment: { ambiguousToIssue: true } },
+        },
+      }),
+    );
+    expect(on).toContain("Judgment policy (ambiguous → issue)");
+    expect(on).toContain("issue create");
+    expect(on).toContain("ambiguous");
+    expect(on).toContain("send-dm");
+
+    const snake = buildInstructionContent(
+      makeTask({
+        agent: {
+          name: "test",
+          instructions: "",
+          runtimeConfig: { judgment: { ambiguous_to_issue: true } },
+        },
+      }),
+    );
+    expect(snake).toContain("Judgment policy (ambiguous → issue)");
+  });
+
   it("still includes big boss instructions alongside email tools", () => {
     const task = makeTask({
       agent: { name: "test", instructions: "Follow these rules", emailHandle: "myagent", emailAddress: "myagent@agents.example", emailAddresses: ["myagent@agents.example"] },

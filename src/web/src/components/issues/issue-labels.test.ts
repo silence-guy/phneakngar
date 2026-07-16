@@ -4,6 +4,7 @@ import {
   activeTaskCountLabel,
   activeTaskPanelTitle,
   issueAssignedMeta,
+  issueClaimedByLabel,
   issueColumnLabel,
   issueEventLabel,
   issueStampLabel,
@@ -17,6 +18,7 @@ describe("issue labels", () => {
   it("maps stable status ids to Khmer display labels", () => {
     expect(issueStatusLabel("todo")).toBe("ត្រូវធ្វើ");
     expect(issueStatusLabel("in_progress")).toBe("កំពុងដំណើរការ");
+    expect(issueStatusLabel("blocked")).toBe("ត្រូវបានទប់");
     expect(issueStatusLabel("review")).toBe("រង់ចាំពិនិត្យ");
     expect(issueStatusLabel("done")).toBe("រួចរាល់");
     expect(issueStatusLabel("canceled")).toBe("បានបោះបង់");
@@ -30,8 +32,10 @@ describe("issue labels", () => {
     expect(issueEventLabel("created")).toBe("បានបង្កើតបញ្ហា");
     expect(issueStampLabel("created")).toBe("ថ្មី");
     expect(issueStampLabel("status_changed", "done")).toBe("រួចរាល់");
+    expect(issueStampLabel("status_changed", "blocked")).toBe("ត្រូវបានទប់");
     expect(issueAssignedMeta("Sophea")).toBe("បានចាត់តាំងទៅ Sophea");
     expect(issueStatusTransitionMeta("todo", "review")).toBe("ត្រូវធ្វើ → រង់ចាំពិនិត្យ");
+    expect(issueStatusTransitionMeta("in_progress", "blocked")).toBe("កំពុងដំណើរការ → ត្រូវបានទប់");
   });
 
   it("formats active task display copy in Khmer", () => {
@@ -43,12 +47,20 @@ describe("issue labels", () => {
   it("maps board column ids to Khmer labels", () => {
     expect(issueColumnLabel("todo")).toBe("ត្រូវធ្វើ");
     expect(issueColumnLabel("in_progress")).toBe("កំពុងដំណើរការ");
+    expect(issueColumnLabel("blocked")).toBe("ត្រូវបានទប់");
     expect(issueColumnLabel("review")).toBe("ពិនិត្យ");
     expect(issueColumnLabel("completed")).toBe("រួចរាល់");
   });
 
   it("keeps unknown column fallback readable", () => {
     expect(issueColumnLabel("backlog")).toBe("Backlog");
+  });
+
+  it("formats claim badge and action copy", () => {
+    expect(ISSUE_LABELS.claim).toBe("ទទួលយក");
+    expect(ISSUE_LABELS.handBack).toBe("ប្រគល់វិញ");
+    expect(ISSUE_LABELS.blockedBadge).toBe("ទប់");
+    expect(issueClaimedByLabel("Day Planner")).toBe("បានទទួល · Day Planner");
   });
 
   it("provides Khmer board copy and counts", () => {

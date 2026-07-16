@@ -8,6 +8,21 @@ describe("EMAIL_LABELS", () => {
     expect(EMAIL_LABELS.compose.fileTooLarge("brief.pdf")).toContain("10 MB");
   });
 
+  it("provides requires-approval compose + queued toast labels", () => {
+    const KHMER = /[ក-៿]/;
+    expect(EMAIL_LABELS.compose.requiresApproval).toMatch(KHMER);
+    expect(EMAIL_LABELS.compose.sendForApproval).toMatch(KHMER);
+    expect(EMAIL_LABELS.compose.requiresApprovalHint).toMatch(KHMER);
+    expect(EMAIL_LABELS.page.queuedForApproval).toMatch(KHMER);
+  });
+
+  it("provides pending-approval folder labels", () => {
+    const KHMER = /[ក-៿]/;
+    expect(EMAIL_LABELS.page.pendingApproval).toMatch(KHMER);
+    expect(EMAIL_LABELS.page.noPendingApprovalEmails).toMatch(KHMER);
+    expect(EMAIL_LABELS.page.openApprovals).toMatch(KHMER);
+  });
+
   it("keeps technical URL placeholder behavior in components", () => {
     expect(EMAIL_LABELS.toolbar.insertLink).toBe("បញ្ចូលតំណ");
     expect(EMAIL_LABELS.toolbar.validUrl).toContain("URL");

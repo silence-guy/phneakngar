@@ -1,4 +1,4 @@
-import { eq, and, desc, asc, inArray, notInArray, ne, count, lt, or, sql, exists, max, min } from "drizzle-orm";
+import { eq, and, desc, asc, inArray, notInArray, ne, count, lt, or, sql, exists, max, min, isNull } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
 import { agentTaskQueue, taskMessage, conversation, message, agent } from "../schema";
 import type { Database } from "../index";
@@ -1189,4 +1189,41 @@ export async function getTraceTree(
       )
     )
     .orderBy(asc(agentTaskQueue.createdAt));
+}
+
+/**
+ * Recent completed root tasks for pattern → automation suggestion analysis.
+ * Always scopes by workspaceId first.
+ */
+export async function listCompletedTasksForPatternAnalysis(
+  db: Database,
+  workspaceId: string,
+  opts?: {
+    agentId?: string;
+    limit?: number;
+  },
+) {
+  const limit = Math.min(Math.max(opts?.limit ?? 200, 1), 500);
+  const conditions = [
+    eq(agentTaskQueue.workspaceId, workspaceId),
+    eq(agentTaskQueue.status, "completed"),
+    isNull(agentTaskQueue.parentTaskId),
+    ne(agentTaskQueue.type, TASK_TYPES.KILL_TASK),
+  ];
+  if (opts?.agentId) {
+    conditions.push(eq(agentTaskQueue.agentId, opts.agentId));
+  }
+
+  return db
+    .select({
+      id: agentTaskQueue.id,
+      agentId: agentTaskQueue.agentId,
+      prompt: agentTaskQueue.prompt,
+      type: agentTaskQueue.type,
+      completedAt: agentTaskQueue.completedAt,
+    })
+    .from(agentTaskQueue)
+    .where(and(...conditions))
+    .orderBy(desc(agentTaskQueue.completedAt), desc(agentTaskQueue.id))
+    .limit(limit);
 }

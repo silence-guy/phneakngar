@@ -77,6 +77,14 @@ The production-readiness audit validated the complete chain from an empty local 
 - `0046_machine_token_hash.sql`, which adds the token digest index used for lazy migration away from active plaintext machine tokens.
 - `0048_task_message_idempotency.sql`, which removes only byte-identical duplicate task-message deliveries and then installs unique `(task_id, seq)` enforcement.
 - `0049_outbound_email_claim_index.sql`, which indexes `(workspace_id, agent_id, delivery_key)` for outbound send claim recovery. Outbound claims reuse the 0045 unique delivery key with statuses `pending|sending|sent|failed|ambiguous`.
+- `0050_helio_parity_foundations.sql`, which is additive Helio-parity foundation work:
+  - agent profile columns `role_title`, `responsibility`
+  - issue claim columns `claimed_by_agent_id`, `claimed_at` (blocked status is app-level; no enum migration)
+  - new tables `automation`, `agent_memory`, `approval`, `agent_integration`, `channel_member`
+  - composite foreign keys `(agent_id, workspace_id) → agent(id, workspace_id)` on tables that store agent ownership, matching `src/shared/src/db/schema.ts`
+  - outbound email delivery status vocabulary expanded in app code to include `pending_approval` and `rejected` (mailbox PATCH remains limited to `unread|read|archived`; pipeline transitions go through claim/release/decide helpers)
+- `0051_artifact_delivery_task.sql`, which adds nullable `artifact.task_id` and indexes for linking delivery artifacts to producing tasks.
+- `0052_conversation_member.sql`, which is additive multi-party conversation membership (`conversation_member` table + unique/indexes), mirroring `channel_member` for DMs.
 
 Before applying `0048_task_message_idempotency.sql` to production, run this read-only preflight against the target D1 database and review any rows it returns:
 

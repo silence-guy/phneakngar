@@ -17,6 +17,14 @@ declare namespace Cloudflare {
     AUTH_TRUSTED_ORIGINS?: string
     ENCRYPTION_KEY: string
     EMAIL_NOTIFY_SECRET: string
+    /**
+     * Optional JSON map of external chat team/guild/chat ids to workspace bindings.
+     * Shape: { "slack:T123": { "workspaceId": "...", "agentId": "...", "userId": "..." }, ... }
+     * When set, GATEWAY_WEBHOOK_SECRET is required.
+     */
+    GATEWAY_TEAM_MAP?: string
+    /** Shared secret for chat gateway webhooks (header x-gateway-secret or Bearer). */
+    GATEWAY_WEBHOOK_SECRET?: string
     WS_SERVICE_SECRET: string
     RATE_LIMIT_KV: KVNamespace
     CACHE_KV: KVNamespace

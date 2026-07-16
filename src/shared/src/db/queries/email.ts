@@ -36,6 +36,7 @@ export type OutboundClaimOutcome =
   | "claimed"
   | "replay"
   | "in_progress"
+  | "pending_approval"
   | "ambiguous"
   | "failed_terminal";
 
@@ -72,6 +73,7 @@ export async function createEmailIfAbsent(
  * Durably claim an outbound send identity before any external provider side effect.
  * Concurrent callers share workspace-scoped uniqueness on delivery_key.
  * Failed claims may be reclaimed with the same message/R2 identities; ambiguous never resends.
+ * Pass status=pending_approval to gate high-stakes sends behind human approval.
  */
 export async function claimOutboundEmailDelivery(
   db: Database,
@@ -88,9 +90,12 @@ export async function claimOutboundEmailDelivery(
     attachments?: string;
     inReplyTo?: string;
     references?: string;
+    /** Initial claim status. Defaults to pending (immediate send path). */
+    status?: OutboundEmailDeliveryStatusType | string;
   },
 ): Promise<OutboundClaimResult> {
   const deliveryKey = buildOutboundDeliveryKey(data.agentId, data.idempotencyKey);
+  const initialStatus = data.status ?? OutboundEmailDeliveryStatus.PENDING;
   const { email, created } = await createEmailIfAbsent(db, {
     agentId: data.agentId,
     workspaceId: data.workspaceId,
@@ -107,10 +112,11 @@ export async function claimOutboundEmailDelivery(
     references: data.references ?? "",
     htmlBody: data.htmlBody ?? "",
     attachments: data.attachments ?? "[]",
-    status: OutboundEmailDeliveryStatus.PENDING,
+    status: initialStatus,
   });
 
   if (created) {
+    // Fresh insert always wins the claim — including pending_approval drafts.
     return { outcome: "claimed", email };
   }
 
@@ -132,6 +138,12 @@ async function classifyOutboundClaim(
   if (email.status === OutboundEmailDeliveryStatus.AMBIGUOUS) {
     return { outcome: "ambiguous", email };
   }
+  if (email.status === OutboundEmailDeliveryStatus.PENDING_APPROVAL) {
+    return { outcome: "pending_approval", email };
+  }
+  if (email.status === OutboundEmailDeliveryStatus.REJECTED) {
+    return { outcome: "failed_terminal", email };
+  }
   if (email.status === OutboundEmailDeliveryStatus.FAILED) {
     const reclaimed = await transitionOutboundEmailStatus(
       db,
@@ -150,6 +162,12 @@ async function classifyOutboundClaim(
     }
     if (again.status === OutboundEmailDeliveryStatus.AMBIGUOUS) {
       return { outcome: "ambiguous", email: again };
+    }
+    if (again.status === OutboundEmailDeliveryStatus.PENDING_APPROVAL) {
+      return { outcome: "pending_approval", email: again };
+    }
+    if (again.status === OutboundEmailDeliveryStatus.REJECTED) {
+      return { outcome: "failed_terminal", email: again };
     }
     if (
       again.status === OutboundEmailDeliveryStatus.PENDING ||
@@ -202,6 +220,36 @@ export async function markOutboundEmailSending(
     workspaceId,
     [OutboundEmailDeliveryStatus.PENDING],
     OutboundEmailDeliveryStatus.SENDING,
+  );
+}
+
+/** Release a human-approved outbound claim into the normal pending→sending path. */
+export async function releaseOutboundEmailFromApproval(
+  db: Database,
+  id: string,
+  workspaceId: string,
+): Promise<typeof emails.$inferSelect | null> {
+  return transitionOutboundEmailStatus(
+    db,
+    id,
+    workspaceId,
+    [OutboundEmailDeliveryStatus.PENDING_APPROVAL],
+    OutboundEmailDeliveryStatus.PENDING,
+  );
+}
+
+/** Reject a high-stakes outbound claim; terminal for this delivery key. */
+export async function markOutboundEmailRejected(
+  db: Database,
+  id: string,
+  workspaceId: string,
+): Promise<typeof emails.$inferSelect | null> {
+  return transitionOutboundEmailStatus(
+    db,
+    id,
+    workspaceId,
+    [OutboundEmailDeliveryStatus.PENDING_APPROVAL],
+    OutboundEmailDeliveryStatus.REJECTED,
   );
 }
 

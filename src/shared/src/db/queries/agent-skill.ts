@@ -105,3 +105,68 @@ export async function getSkills(
   }
   return deduped;
 }
+
+/**
+ * Install (or refresh) a single agent-scoped skill in the D1 catalog.
+ *
+ * Prefer this over `syncAgentSkills` for human-approved proposals: replace-all
+ * sync would wipe other catalog rows. SQLite UNIQUE treats NULLs as distinct,
+ * so agent-scoped rows with `chhlatId = null` use select→update/insert rather
+ * than `onConflictDoUpdate`.
+ */
+export async function installAgentSkill(
+  db: Database,
+  data: {
+    workspaceId: string;
+    agentId: string;
+    runtime: string;
+    name: string;
+    description: string;
+  },
+) {
+  const now = new Date().toISOString();
+  const existing = await db
+    .select()
+    .from(agentSkill)
+    .where(
+      and(
+        eq(agentSkill.workspaceId, data.workspaceId),
+        eq(agentSkill.agentId, data.agentId),
+        eq(agentSkill.runtime, data.runtime),
+        eq(agentSkill.name, data.name),
+        isNull(agentSkill.chhlatId),
+      ),
+    )
+    .limit(1);
+
+  if (existing[0]) {
+    const rows = await db
+      .update(agentSkill)
+      .set({
+        description: data.description,
+        syncedAt: now,
+      })
+      .where(
+        and(
+          eq(agentSkill.id, existing[0].id),
+          eq(agentSkill.workspaceId, data.workspaceId),
+        ),
+      )
+      .returning();
+    return rows[0]!;
+  }
+
+  const rows = await db
+    .insert(agentSkill)
+    .values({
+      workspaceId: data.workspaceId,
+      agentId: data.agentId,
+      chhlatId: null,
+      runtime: data.runtime,
+      name: data.name,
+      description: data.description,
+      syncedAt: now,
+    })
+    .returning();
+  return rows[0]!;
+}

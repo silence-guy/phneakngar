@@ -41,6 +41,7 @@ describe("AGENT_CHAT_LABELS", () => {
   });
 
   it("provides Khmer message-list action labels", () => {
+    expect(AGENT_CHAT_LABELS.messageList.you).toMatch(KHMER);
     expect(AGENT_CHAT_LABELS.messageList.copy).toMatch(KHMER);
     expect(AGENT_CHAT_LABELS.messageList.quote).toMatch(KHMER);
     expect(AGENT_CHAT_LABELS.messageList.replyInThread).toMatch(KHMER);
@@ -56,6 +57,22 @@ describe("AGENT_CHAT_LABELS", () => {
     expect(AGENT_CHAT_LABELS.channel.cancel).toMatch(KHMER);
     expect(AGENT_CHAT_LABELS.channel.rightClickForOptions).toMatch(KHMER);
     expect(AGENT_CHAT_LABELS.channel.namePlaceholder).toMatch(KHMER);
+  });
+
+  it("provides Khmer channel participants labels (C8)", () => {
+    expect(AGENT_CHAT_LABELS.participants.title).toMatch(KHMER);
+    expect(AGENT_CHAT_LABELS.participants.empty).toMatch(KHMER);
+    expect(AGENT_CHAT_LABELS.participants.addAgent).toMatch(KHMER);
+    expect(AGENT_CHAT_LABELS.participants.agentBadge).toMatch(KHMER);
+    expect(AGENT_CHAT_LABELS.participants.userBadge).toMatch(KHMER);
+    expect(AGENT_CHAT_LABELS.participants.remove).toMatch(KHMER);
+  });
+
+  it("provides Khmer multi-party DM participants labels", () => {
+    expect(AGENT_CHAT_LABELS.dmParticipants.title).toMatch(KHMER);
+    expect(AGENT_CHAT_LABELS.dmParticipants.subtitle).toMatch(KHMER);
+    expect(AGENT_CHAT_LABELS.dmParticipants.empty).toMatch(KHMER);
+    expect(AGENT_CHAT_LABELS.dmParticipants.addAgent).toMatch(KHMER);
   });
 
   it("provides Khmer artifact + runtime-error labels", () => {

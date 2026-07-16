@@ -45,11 +45,13 @@ import {
 } from "@/components/ui/popover";
 import { AgentPreviewCard } from "@/components/agent-preview-card";
 import { AnimatedAvatar, parseAvatarUrl } from "@/components/avatar";
+import Link from "next/link";
 import {
   createAgentLink,
   updateAgentLink,
   deleteAgentLink,
   createMachineToken,
+  getWorkspaceOverview,
 } from "@/lib/api";
 import { toast } from "sonner";
 import { ApiError } from "@/lib/errors";
@@ -62,7 +64,12 @@ import { UpcomingEventsFloat } from "@/components/canvas/upcoming-events-float";
 import { getAutoLayout, type LayoutType } from "@/components/canvas/auto-layout";
 import { ConnectMachineSteps } from "@/components/connect-machine-steps";
 import { resolveHomeEmptyPresentation } from "./home-empty-state";
-import { HOME_LABELS, homeLayoutLabel } from "./home-labels";
+import {
+  HOME_LABELS,
+  blockedIssuesLabel,
+  homeLayoutLabel,
+  pendingApprovalsLabel,
+} from "./home-labels";
 
 const nodeTypes = { agent: AgentNode };
 const edgeTypes = { link: LinkEdge };
@@ -106,6 +113,79 @@ function savePositions(workspaceId: string, nodes: Node[]) {
   try {
     localStorage.setItem(storageKey(workspaceId), JSON.stringify(positions));
   } catch { }
+}
+
+/**
+ * Compact top-left attention strip (approvals + blocked issues).
+ * Absolute-positioned so it never shifts the canvas layout (no CLS).
+ * Fixed chip height; invisible placeholder while loading keeps the slot stable.
+ */
+function HomeAttentionStrip() {
+  const { slug, workspaceId } = useWorkspace();
+  const [pendingApprovals, setPendingApprovals] = useState(0);
+  const [blockedIssues, setBlockedIssues] = useState(0);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    if (!workspaceId) return;
+    let cancelled = false;
+    const load = () => {
+      getWorkspaceOverview(workspaceId)
+        .then((ov) => {
+          if (cancelled) return;
+          setPendingApprovals(ov.pending_approvals ?? 0);
+          setBlockedIssues(ov.blocked_issues ?? 0);
+          setLoaded(true);
+        })
+        .catch(() => {
+          if (!cancelled) setLoaded(true);
+        });
+    };
+    load();
+    const interval = setInterval(load, 60_000);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [workspaceId]);
+
+  const hasAttention = pendingApprovals > 0 || blockedIssues > 0;
+  // Reserve a fixed-height slot so fade-in never reflows surrounding chrome.
+  return (
+    <div
+      className="absolute top-4 left-4 z-40 h-7 flex items-center gap-1.5"
+      aria-label={HOME_LABELS.attentionAria}
+      aria-live="polite"
+    >
+      {!loaded ? (
+        <div
+          className="h-7 w-40 rounded-full bg-muted/50 ring-1 ring-foreground/5 animate-pulse"
+          aria-hidden
+        />
+      ) : hasAttention ? (
+        <div className="flex items-center gap-1.5 animate-[fade-up_200ms_ease-out_both]">
+          {pendingApprovals > 0 && (
+            <Link
+              href={`/w/${slug}/approvals`}
+              className="inline-flex h-7 items-center gap-1.5 px-2.5 rounded-full bg-background/90 backdrop-blur-sm ring-1 ring-foreground/8 shadow-sm text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <span className="size-1.5 rounded-full bg-amber-500/80" />
+              {pendingApprovalsLabel(pendingApprovals)}
+            </Link>
+          )}
+          {blockedIssues > 0 && (
+            <Link
+              href={`/w/${slug}/issues`}
+              className="inline-flex h-7 items-center gap-1.5 px-2.5 rounded-full bg-background/90 backdrop-blur-sm ring-1 ring-foreground/8 shadow-sm text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <span className="size-1.5 rounded-full bg-rose-500/70" />
+              {blockedIssuesLabel(blockedIssues)}
+            </Link>
+          )}
+        </div>
+      ) : null}
+    </div>
+  );
 }
 
 function AgentCanvas({ onAgentClick }: { onAgentClick?: (agent: Agent) => void }) {
@@ -557,6 +637,8 @@ function AgentCanvas({ onAgentClick }: { onAgentClick?: (agent: Agent) => void }
         </TooltipTrigger>
         <TooltipContent>{HOME_LABELS.createNewAgent}</TooltipContent>
       </Tooltip>
+
+      <HomeAttentionStrip />
     </div>
   );
 }

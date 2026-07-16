@@ -157,6 +157,24 @@ export const deleteAgentLink = (id: string, workspaceId: string) =>
     method: "DELETE",
   });
 
+// Agent integrations (GitHub / Linear / …) — secret_ref never returned by API
+export interface AgentIntegrationPublic {
+  id: string;
+  workspace_id: string;
+  agent_id: string;
+  provider: string;
+  status: string;
+  config: unknown;
+  has_secret: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export const listAgentIntegrations = (agentId: string, workspaceId: string) =>
+  apiFetch<{ integrations: AgentIntegrationPublic[] }>(
+    `/api/agents/${agentId}/integrations${wsQuery(workspaceId)}`,
+  );
+
 // Email Accounts
 export const listEmailAccounts = (agentId: string, workspaceId: string) =>
   apiFetch<AgentEmailAccount[]>(`/api/agents/${agentId}/email-accounts${wsQuery(workspaceId)}`);

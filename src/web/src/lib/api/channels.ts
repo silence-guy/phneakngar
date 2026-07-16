@@ -26,3 +26,44 @@ export const reorderChannelsApi = (workspaceId: string, orderedChannelIds: strin
     method: "PUT",
     body: JSON.stringify({ ordered_channel_ids: orderedChannelIds }),
   });
+
+export type ChannelMemberItem = {
+  id: string;
+  workspace_id: string;
+  channel_id: string;
+  member_type: "user" | "agent" | string;
+  member_id: string;
+  created_at: string;
+};
+
+export const listChannelMembers = (channelId: string, workspaceId: string) =>
+  apiFetch<{ items: ChannelMemberItem[] }>(
+    `/api/channels/${channelId}/members${wsQuery(workspaceId)}`,
+  );
+
+export const addChannelMember = (
+  channelId: string,
+  workspaceId: string,
+  body: { member_type: "user" | "agent"; member_id: string },
+) =>
+  apiFetch<{ member: ChannelMemberItem }>(
+    `/api/channels/${channelId}/members${wsQuery(workspaceId)}`,
+    {
+      method: "POST",
+      body: JSON.stringify(body),
+    },
+  );
+
+export const removeChannelMember = (
+  channelId: string,
+  workspaceId: string,
+  memberType: "user" | "agent",
+  memberId: string,
+) =>
+  apiFetch<{ ok: boolean; member: ChannelMemberItem }>(
+    `/api/channels/${channelId}/members${wsQuery(workspaceId, {
+      member_type: memberType,
+      member_id: memberId,
+    })}`,
+    { method: "DELETE" },
+  );

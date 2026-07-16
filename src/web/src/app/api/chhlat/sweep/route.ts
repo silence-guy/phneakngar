@@ -6,6 +6,8 @@ import { withChhlatMachine } from "@/lib/middleware/chhlat";
 import { writeJSON, writeError, parseBody } from "@/lib/middleware/helpers";
 import { sweepStaleState } from "@/lib/services/sweep";
 import { promoteDueCalendarEventsForWorkspace } from "@/lib/services/calendar";
+import { promoteDueAutomationsForWorkspace } from "@/lib/services/automation";
+import { resolveServerEmailDomain } from "@/lib/email-domain";
 import { log } from "@/lib/logger";
 
 export const POST = withAuth(async (req: NextRequest, ctx) => {
@@ -40,6 +42,20 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
     });
   } catch (e) {
     log.warn("calendar: promote failed", { workspaceId: ctx.workspaceId, err: String(e) });
+  }
+
+  try {
+    await throttled(`auto:${ctx.workspaceId}`, 30, async () => {
+      const emailDomain = resolveServerEmailDomain(ctx.env);
+      const enqueued = await promoteDueAutomationsForWorkspace(db, ctx.workspaceId!, {
+        emailDomain,
+      });
+      if (enqueued > 0) {
+        log.info("automation: enqueued", { workspaceId: ctx.workspaceId, enqueued });
+      }
+    });
+  } catch (e) {
+    log.warn("automation: promote failed", { workspaceId: ctx.workspaceId, err: String(e) });
   }
 
   return writeJSON({ ok: true });

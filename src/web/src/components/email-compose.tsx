@@ -17,9 +17,20 @@ import type { EmailAttachment } from "@phneakngar/shared";
 import { toast } from "sonner";
 import { Send, X, Loader2, Paperclip, File as FileIcon } from "lucide-react";
 
+export type EmailComposeSendOptions = {
+  requiresApproval?: boolean;
+};
+
 interface EmailComposeProps {
   fromAddress: string;
-  onSend: (to: string, subject: string, htmlBody: string, attachments: EmailAttachment[], threading?: { inReplyTo?: string; references?: string }) => Promise<boolean>;
+  onSend: (
+    to: string,
+    subject: string,
+    htmlBody: string,
+    attachments: EmailAttachment[],
+    threading?: { inReplyTo?: string; references?: string },
+    options?: EmailComposeSendOptions,
+  ) => Promise<boolean>;
   onDiscard: () => void;
   initialTo?: string;
   initialSubject?: string;
@@ -49,6 +60,7 @@ export function EmailCompose({
   const [to, setTo] = useState(initialTo);
   const [subject, setSubject] = useState(initialSubject);
   const [sending, setSending] = useState(false);
+  const [requiresApproval, setRequiresApproval] = useState(false);
   const [attachments, setAttachments] = useState<EmailAttachment[]>(initialAttachments);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -89,11 +101,14 @@ export function EmailCompose({
     try {
       const html = editor.getHTML();
       const threading = inReplyTo || references ? { inReplyTo, references } : undefined;
-      const ok = await onSend(to.trim(), subject.trim(), html, attachments, threading);
+      const ok = await onSend(to.trim(), subject.trim(), html, attachments, threading, {
+        requiresApproval,
+      });
       if (ok) {
         setTo("");
         setSubject("");
         setAttachments([]);
+        setRequiresApproval(false);
         editor.commands.clearContent();
       }
     } finally {
@@ -131,13 +146,29 @@ export function EmailCompose({
 
   return (
     <div className="flex flex-col h-full w-full min-w-0">
-      <div className="flex items-center justify-between border-b border-border/40 px-4 py-2">
-        <h3 className="text-sm font-heading font-medium tracking-tight">{EMAIL_LABELS.compose.title}</h3>
-        <div className="flex items-center gap-1">
+      <div className="flex items-center justify-between border-b border-border/40 px-4 py-2 gap-3">
+        <h3 className="text-sm font-heading font-medium tracking-tight shrink-0">
+          {EMAIL_LABELS.compose.title}
+        </h3>
+        <div className="flex items-center gap-2 min-w-0">
+          <label
+            className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer select-none shrink min-w-0"
+            title={EMAIL_LABELS.compose.requiresApprovalHint}
+          >
+            <input
+              type="checkbox"
+              className="size-3.5 accent-foreground shrink-0"
+              checked={requiresApproval}
+              onChange={(e) => setRequiresApproval(e.target.checked)}
+              disabled={sending}
+              data-testid="requires-approval-toggle"
+            />
+            <span className="truncate">{EMAIL_LABELS.compose.requiresApproval}</span>
+          </label>
           <Button
             variant="ghost"
             size="sm"
-            className="text-xs text-muted-foreground h-7 px-2"
+            className="text-xs text-muted-foreground h-7 px-2 shrink-0"
             onClick={onDiscard}
             disabled={sending}
           >
@@ -146,7 +177,7 @@ export function EmailCompose({
           </Button>
           <Button
             size="sm"
-            className="text-xs h-7 px-3"
+            className="text-xs h-7 px-3 shrink-0"
             onClick={handleSend}
             disabled={sending || !to.trim() || !subject.trim()}
           >
@@ -155,7 +186,9 @@ export function EmailCompose({
             ) : (
               <Send className="size-3 mr-1" />
             )}
-            {EMAIL_LABELS.compose.send}
+            {requiresApproval
+              ? EMAIL_LABELS.compose.sendForApproval
+              : EMAIL_LABELS.compose.send}
           </Button>
         </div>
       </div>

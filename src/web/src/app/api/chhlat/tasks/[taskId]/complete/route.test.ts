@@ -7,6 +7,7 @@ const mockTaskToResponse = vi.fn();
 const mockGetConversation = vi.fn();
 const mockGetTask = vi.fn();
 const mockGetAgentRuntimeForWorkspace = vi.fn();
+const mockMaybeCreateTaskDeliveryArtifact = vi.fn().mockResolvedValue(null);
 
 let mockAuthCtx: Record<string, unknown> = {
   env: {},
@@ -83,6 +84,10 @@ vi.mock("@/lib/cache", () => ({
   invalidateInboxCounts: vi.fn().mockResolvedValue(undefined),
   cacheKeys: { overviewTaskStats: (w: string, d: string) => `ts:${w}:${d}` },
 }));
+vi.mock("@/lib/services/delivery-artifact", () => ({
+  maybeCreateTaskDeliveryArtifact: (...args: unknown[]) =>
+    mockMaybeCreateTaskDeliveryArtifact(...args),
+}));
 
 import { TaskAlreadyTerminalError } from "@/lib/services/task";
 import { POST } from "./route";
@@ -114,9 +119,13 @@ describe("POST /api/chhlat/tasks/[taskId]/complete", () => {
 
   it("returns completed task and broadcasts to conversation owner", async () => {
     const fakeTask = { id: "t1", agentId: "a1", conversationId: "c1", status: "completed" };
-    mockCompleteTask.mockResolvedValue(fakeTask);
+    mockCompleteTask.mockResolvedValue({ task: fakeTask, channelDelivery: null });
     mockGetConversation.mockResolvedValue({ id: "c1", userId: "owner-u2" });
     mockTaskToResponse.mockReturnValue({ id: "t1", status: "completed" });
+    mockAuthCtx = {
+      ...mockAuthCtx,
+      env: { EMAIL_BUCKET: { put: vi.fn() } },
+    };
 
     const res = await POST(makeReq("t1", { output: "done" }), withParams("t1"));
     const body = await res.json();
@@ -130,6 +139,79 @@ describe("POST /api/chhlat/tasks/[taskId]/complete", () => {
     expect(broadcastToUser).toHaveBeenCalledWith("owner-u2", expect.objectContaining({ type: "task.updated", status: "completed" }));
     const { invalidateInboxCounts } = await import("@/lib/cache");
     expect(invalidateInboxCounts).toHaveBeenCalledWith("owner-u2", "w1");
+    // C9: delivery artifact linked to completed task (workspace-scoped)
+    expect(mockMaybeCreateTaskDeliveryArtifact).toHaveBeenCalledWith(
+      {},
+      expect.objectContaining({ put: expect.any(Function) }),
+      expect.objectContaining({
+        workspaceId: "w1",
+        agentId: "a1",
+        conversationId: "c1",
+        taskId: "t1",
+        result: { output: "done" },
+        ownerUserId: "owner-u2",
+      }),
+    );
+  });
+
+  it("links C9 delivery artifacts to the channel conversation when C3 delivered there", async () => {
+    const fakeTask = {
+      id: "t1",
+      agentId: "a1",
+      conversationId: "c_src",
+      status: "completed",
+    };
+    mockCompleteTask.mockResolvedValue({
+      task: fakeTask,
+      channelDelivery: {
+        conversationId: "c_channel",
+        channelName: "standup",
+        channelId: "ch_1",
+        created: true,
+        message: { id: "channel-delivery-t1" },
+      },
+    });
+    mockGetConversation.mockResolvedValue({ id: "c_src", userId: "owner-u2" });
+    mockTaskToResponse.mockReturnValue({ id: "t1", status: "completed" });
+    mockAuthCtx = {
+      ...mockAuthCtx,
+      env: { EMAIL_BUCKET: { put: vi.fn() } },
+    };
+
+    const res = await POST(makeReq("t1", { output: "Morning brief" }), withParams("t1"));
+    expect(res.status).toBe(200);
+    expect(mockMaybeCreateTaskDeliveryArtifact).toHaveBeenCalledWith(
+      {},
+      expect.objectContaining({ put: expect.any(Function) }),
+      expect.objectContaining({
+        workspaceId: "w1",
+        agentId: "a1",
+        conversationId: "c_channel",
+        taskId: "t1",
+        result: { output: "Morning brief" },
+        ownerUserId: "owner-u2",
+      }),
+    );
+  });
+
+  it("still completes when delivery artifact hook returns null", async () => {
+    const fakeTask = { id: "t1", agentId: "a1", conversationId: "c1", status: "completed" };
+    mockCompleteTask.mockResolvedValue({ task: fakeTask, channelDelivery: null });
+    mockGetConversation.mockResolvedValue({ id: "c1", userId: "owner-u2" });
+    mockTaskToResponse.mockReturnValue({ id: "t1", status: "completed" });
+    mockMaybeCreateTaskDeliveryArtifact.mockResolvedValueOnce(null);
+
+    const res = await POST(makeReq("t1", { output: "done" }), withParams("t1"));
+    expect(res.status).toBe(200);
+    expect(mockMaybeCreateTaskDeliveryArtifact).toHaveBeenCalled();
+  });
+
+  it("does not call delivery artifact hook when complete fails as terminal", async () => {
+    mockCompleteTask.mockRejectedValueOnce(new TaskAlreadyTerminalError("completed"));
+
+    const res = await POST(makeReq("t1", { output: "done" }), withParams("t1"));
+    expect(res.status).toBe(409);
+    expect(mockMaybeCreateTaskDeliveryArtifact).not.toHaveBeenCalled();
   });
 
   it("returns 403 when workspaceId is missing (session auth)", async () => {

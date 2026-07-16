@@ -254,4 +254,65 @@ describe("outbound email delivery claims", () => {
     expect(result?.status).toBe("sending");
     expect(chain.update).toHaveBeenCalled();
   });
+
+  it("claims with pending_approval status on insert", async () => {
+    const email = {
+      id: "em_1",
+      status: "pending_approval",
+      workspaceId: "ws_1",
+      messageId: "<m1@agents.example>",
+      r2Key: "emails/r1/raw",
+    };
+    const chain: any = {};
+    chain.insert = vi.fn(() => chain);
+    chain.values = vi.fn(() => chain);
+    chain.onConflictDoNothing = vi.fn(() => chain);
+    chain.returning = vi.fn(() => Promise.resolve([email]));
+    const result = await emailQueries.claimOutboundEmailDelivery(
+      chain,
+      claimData({ status: "pending_approval" }),
+    );
+    expect(result.outcome).toBe("claimed");
+    expect(result.email.status).toBe("pending_approval");
+  });
+
+  it("returns pending_approval for concurrent approval-gated claims", async () => {
+    const email = {
+      id: "em_1",
+      agentId: "ag_1",
+      status: "pending_approval",
+      workspaceId: "ws_1",
+      deliveryKey: "outbound:ag_1:idem-1",
+    };
+    const chain: any = {};
+    chain.insert = vi.fn(() => chain);
+    chain.values = vi.fn(() => chain);
+    chain.onConflictDoNothing = vi.fn(() => chain);
+    chain.returning = vi.fn(() => Promise.resolve([]));
+    chain.select = vi.fn(() => chain);
+    chain.from = vi.fn(() => chain);
+    chain.where = vi.fn(() => Promise.resolve([email]));
+    const result = await emailQueries.claimOutboundEmailDelivery(chain, claimData());
+    expect(result.outcome).toBe("pending_approval");
+  });
+
+  it("releaseOutboundEmailFromApproval moves pending_approval to pending", async () => {
+    const chain: any = {};
+    chain.update = vi.fn(() => chain);
+    chain.set = vi.fn(() => chain);
+    chain.where = vi.fn(() => chain);
+    chain.returning = vi.fn(() => Promise.resolve([{ id: "em_1", status: "pending" }]));
+    const result = await emailQueries.releaseOutboundEmailFromApproval(chain, "em_1", "ws_1");
+    expect(result?.status).toBe("pending");
+  });
+
+  it("markOutboundEmailRejected moves pending_approval to rejected", async () => {
+    const chain: any = {};
+    chain.update = vi.fn(() => chain);
+    chain.set = vi.fn(() => chain);
+    chain.where = vi.fn(() => chain);
+    chain.returning = vi.fn(() => Promise.resolve([{ id: "em_1", status: "rejected" }]));
+    const result = await emailQueries.markOutboundEmailRejected(chain, "em_1", "ws_1");
+    expect(result?.status).toBe("rejected");
+  });
 });

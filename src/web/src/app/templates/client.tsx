@@ -1,16 +1,34 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import Link from "next/link";
 import { PublicLayout } from "@/components/public-layout";
 import { TemplateCard } from "./_components/template-card";
-import type { TemplatePreset, TemplateCategory } from "@/lib/templates";
+import type { TemplatePreset, TemplateCategory, TemplateFilterId } from "@/lib/templates";
+import {
+  filterTemplatesByChip,
+  getTemplateGroups,
+} from "@/lib/templates";
 import { trackTemplatesBrowsed } from "@/lib/analytics";
-import { TEMPLATES_LABELS, templateCategoryLabel } from "./templates-labels";
+import {
+  TEMPLATES_LABELS,
+  templateFilterLabel,
+  templateGroupLabel,
+  templateGroupBlurb,
+} from "./templates-labels";
+
+const FILTER_CHIPS: TemplateFilterId[] = [
+  "All",
+  "Scenarios",
+  "Developer",
+  "Content Creator",
+  "Knowledge Worker",
+  "Freelancer",
+];
 
 export function TemplatesClient({
   templates,
-  categories,
+  categories: _categories, // reserved for future filter-from-server categories
   isLoggedIn,
   workspaceId,
 }: {
@@ -19,7 +37,8 @@ export function TemplatesClient({
   isLoggedIn: boolean;
   workspaceId?: string;
 }) {
-  const [activeCategory, setActiveCategory] = useState<"All" | TemplateCategory>("All");
+  void _categories;
+  const [activeFilter, setActiveFilter] = useState<TemplateFilterId>("All");
   const tracked = useRef(false);
 
   useEffect(() => {
@@ -29,15 +48,17 @@ export function TemplatesClient({
     }
   }, []);
 
-  const handleCategoryChange = (cat: "All" | TemplateCategory) => {
-    setActiveCategory(cat);
-    trackTemplatesBrowsed({ category_filter: cat });
+  const handleFilterChange = (filter: TemplateFilterId) => {
+    setActiveFilter(filter);
+    // Stable English keys for analytics (Scenarios + role categories + All)
+    trackTemplatesBrowsed({ category_filter: filter });
   };
 
-  const filtered =
-    activeCategory === "All"
-      ? templates
-      : templates.filter((t) => t.category === activeCategory);
+  const groups = useMemo(() => getTemplateGroups(templates), [templates]);
+  const filtered = useMemo(
+    () => filterTemplatesByChip(templates, activeFilter),
+    [templates, activeFilter],
+  );
 
   return (
     <PublicLayout
@@ -84,45 +105,85 @@ export function TemplatesClient({
         </p>
       </div>
 
-      {/* Category Filter */}
+      {/* Category / scenario filter chips */}
       <div className="mx-auto max-w-4xl px-6 pt-8 pb-6">
         <div className="flex flex-wrap gap-2">
-          {["All", ...categories].map((cat) => (
+          {FILTER_CHIPS.map((filter) => (
             <button
-              key={cat}
-              onClick={() => handleCategoryChange(cat as "All" | TemplateCategory)}
+              key={filter}
+              type="button"
+              onClick={() => handleFilterChange(filter)}
               className={`rounded-full px-4 py-1.5 text-xs font-medium transition-colors duration-150 ${
-                activeCategory === cat
+                activeFilter === filter
                   ? "bg-foreground text-background"
                   : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground"
               }`}
             >
-              {cat === "All"
-                ? TEMPLATES_LABELS.list.allCategory
-                : templateCategoryLabel(cat)}
+              {templateFilterLabel(filter)}
             </button>
           ))}
         </div>
       </div>
 
-      {/* Grid */}
+      {/* Grid — sectioned on All, flat when a filter is active */}
       <div className="mx-auto max-w-4xl px-6 pb-20">
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          {filtered.map((template) => (
-            <TemplateCard
-              key={template.id}
-              template={template}
-              isLoggedIn={isLoggedIn}
-              workspaceId={workspaceId}
-            />
-          ))}
-        </div>
-        {filtered.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-20">
-            <p className="text-sm text-muted-foreground">
-              {TEMPLATES_LABELS.list.emptyCategory}
-            </p>
+        {activeFilter === "All" ? (
+          <div className="space-y-10">
+            {groups.map((group) => {
+              const blurb = templateGroupBlurb(group.id);
+              return (
+                <section key={group.id}>
+                  <div className="mb-3">
+                    <h2 className="text-sm font-semibold tracking-tight text-foreground">
+                      {templateGroupLabel(group.id)}
+                    </h2>
+                    {blurb ? (
+                      <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                        {blurb}
+                      </p>
+                    ) : null}
+                  </div>
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    {group.templates.map((template) => (
+                      <TemplateCard
+                        key={template.id}
+                        template={template}
+                        isLoggedIn={isLoggedIn}
+                        workspaceId={workspaceId}
+                      />
+                    ))}
+                  </div>
+                </section>
+              );
+            })}
+            {groups.length === 0 && (
+              <div className="flex flex-col items-center justify-center py-20">
+                <p className="text-sm text-muted-foreground">
+                  {TEMPLATES_LABELS.list.emptyCategory}
+                </p>
+              </div>
+            )}
           </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {filtered.map((template) => (
+                <TemplateCard
+                  key={template.id}
+                  template={template}
+                  isLoggedIn={isLoggedIn}
+                  workspaceId={workspaceId}
+                />
+              ))}
+            </div>
+            {filtered.length === 0 && (
+              <div className="flex flex-col items-center justify-center py-20">
+                <p className="text-sm text-muted-foreground">
+                  {TEMPLATES_LABELS.list.emptyCategory}
+                </p>
+              </div>
+            )}
+          </>
         )}
       </div>
     </PublicLayout>

@@ -40,6 +40,7 @@ export const AGENT_CHAT_LABELS = {
   },
   // message-list.tsx
   messageList: {
+    you: "អ្នក",
     copied: "បានចម្លង",
     copy: "ចម្លង",
     copiedToClipboard: "បានចម្លងទៅ clipboard",
@@ -61,6 +62,39 @@ export const AGENT_CHAT_LABELS = {
     cancel: "បោះបង់",
     rightClickForOptions: "ចុចស្តាំដើម្បីមើលជម្រើស",
     namePlaceholder: "ឈ្មោះ...",
+  },
+  // channel-members-panel.tsx (C8)
+  participants: {
+    title: "អ្នកចូលរួម",
+    loading: "កំពុងផ្ទុក…",
+    empty: "មិនទាន់មានអ្នកចូលរួមនៅឡើយទេ។ បន្ថែមភ្នាក់ងារខាងក្រោម។",
+    addAgent: "បន្ថែមភ្នាក់ងារ",
+    thisAgent: "ភ្នាក់ងារនេះ",
+    agentBadge: "ភ្នាក់ងារ",
+    userBadge: "អ្នកប្រើ",
+    remove: "ដកចេញ",
+    agentAdded: "បានបន្ថែមភ្នាក់ងារ",
+    memberRemoved: "បានដកអ្នកចូលរួម",
+    failedToLoad: "មិនអាចផ្ទុកអ្នកចូលរួមបានទេ",
+    failedToAdd: "មិនអាចបន្ថែមបានទេ",
+    failedToRemove: "មិនអាចដកចេញបានទេ",
+  },
+  // conversation-members-panel.tsx — multi-party DM
+  dmParticipants: {
+    title: "អ្នកចូលរួម DM",
+    subtitle: "ភ្នាក់ងារ និងអ្នកប្រើនៅក្នុងការសន្ទនានេះ",
+    loading: "កំពុងផ្ទុក…",
+    empty: "មិនទាន់មានអ្នកចូលរួមនៅឡើយទេ។ បន្ថែមភ្នាក់ងារខាងក្រោម។",
+    addAgent: "បន្ថែមភ្នាក់ងារ",
+    thisAgent: "ភ្នាក់ងារនេះ",
+    agentBadge: "ភ្នាក់ងារ",
+    userBadge: "អ្នកប្រើ",
+    remove: "ដកចេញ",
+    agentAdded: "បានបន្ថែមភ្នាក់ងារ",
+    memberRemoved: "បានដកអ្នកចូលរួម",
+    failedToLoad: "មិនអាចផ្ទុកអ្នកចូលរួមបានទេ",
+    failedToAdd: "មិនអាចបន្ថែមបានទេ",
+    failedToRemove: "មិនអាចដកចេញបានទេ",
   },
   // artifact-sheet.tsx
   artifact: {

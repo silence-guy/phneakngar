@@ -16,6 +16,7 @@ import { workspaceCommand } from "../commands/workspace.js";
 import { doctorCommand } from "../commands/doctor.js";
 import { logsCommand } from "../commands/logs.js";
 import { initCommand } from "../commands/init.js";
+import { skillCommand } from "../commands/skill.js";
 
 const program = new Command();
 
@@ -36,6 +37,7 @@ program.addCommand(emailCommand());
 program.addCommand(calendarCommand());
 program.addCommand(issueCommand());
 program.addCommand(agentCommand());
+program.addCommand(skillCommand());
 program.addCommand(configCommand());
 program.addCommand(versionCommand());
 program.addCommand(updateCommand());

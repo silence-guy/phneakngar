@@ -64,6 +64,15 @@ vi.mock("@/lib/services/calendar", () => ({
   promoteDueCalendarEventsForWorkspace: (...args: unknown[]) => mockPromoteDue(...args),
 }));
 
+const mockPromoteAutomations = vi.fn();
+vi.mock("@/lib/services/automation", () => ({
+  promoteDueAutomationsForWorkspace: (...args: unknown[]) => mockPromoteAutomations(...args),
+}));
+
+vi.mock("@/lib/email-domain", () => ({
+  resolveServerEmailDomain: () => "example.test",
+}));
+
 vi.mock("@/lib/logger", () => ({
   log: { warn: vi.fn(), info: vi.fn(), error: vi.fn(), debug: vi.fn() },
 }));
@@ -87,6 +96,7 @@ describe("POST /api/chhlat/sweep", () => {
     vi.clearAllMocks();
     mockSweepStaleState.mockResolvedValue(undefined);
     mockPromoteDue.mockResolvedValue(0);
+    mockPromoteAutomations.mockResolvedValue(0);
     mockGetMachineByChhlat.mockResolvedValue(null);
   });
 
@@ -121,6 +131,8 @@ describe("POST /api/chhlat/sweep", () => {
     }));
     vi.doMock("@/lib/services/sweep", () => ({ sweepStaleState: vi.fn() }));
     vi.doMock("@/lib/services/calendar", () => ({ promoteDueCalendarEventsForWorkspace: vi.fn() }));
+    vi.doMock("@/lib/services/automation", () => ({ promoteDueAutomationsForWorkspace: vi.fn() }));
+    vi.doMock("@/lib/email-domain", () => ({ resolveServerEmailDomain: () => "example.test" }));
     vi.doMock("@/lib/logger", () => ({ log: { warn: vi.fn(), info: vi.fn(), error: vi.fn(), debug: vi.fn() } }));
     vi.doMock("@/lib/cache", () => ({ throttled: vi.fn((_k: string, _i: number, fn: () => Promise<any>) => fn()) }));
 
@@ -139,6 +151,14 @@ describe("POST /api/chhlat/sweep", () => {
     await POST(postReq({ chhlat_id: "d1" }));
 
     expect(mockPromoteDue).toHaveBeenCalledWith({}, "w1");
+  });
+
+  it("calls promoteDueAutomationsForWorkspace (throttled)", async () => {
+    await POST(postReq({ chhlat_id: "d1" }));
+
+    expect(mockPromoteAutomations).toHaveBeenCalledWith({}, "w1", {
+      emailDomain: "example.test",
+    });
   });
 
   it("returns { ok: true } on success", async () => {

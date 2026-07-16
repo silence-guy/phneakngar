@@ -8,7 +8,9 @@ import { useWorkspace } from "@/contexts/workspace-context";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { AgentEditForm } from "@/components/agent-edit-form";
+import { LiveAgentContextPanel } from "@/components/live-agent-context-panel";
 import { ChannelBar } from "@/components/channel-bar";
+import { ChannelMembersPanel } from "@/components/channel-members-panel";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AgentStatusBadge } from "@/components/agent-status-badge";
 import { FolderOpen, GitBranch, History, Mail, MessageSquare, MoreHorizontal, Pencil, Trash2, Video, X } from "lucide-react";
@@ -27,7 +29,7 @@ export default function AgentDetailLayout({ children }: { children: ReactNode })
   const params = useParams();
   const router = useRouter();
   const pathname = usePathname();
-  const { slug } = useWorkspace();
+  const { slug, workspaceId } = useWorkspace();
   const searchParams = useSearchParams();
   const agentId = params.id as string;
   const isActivityView = !!searchParams.get("conv");
@@ -84,7 +86,10 @@ export default function AgentDetailLayout({ children }: { children: ReactNode })
               }>
                 {agent.name}
               </TooltipTrigger>
-              <TooltipContent>{agent.description || AGENT_PAGE_LABELS.layout.noDescription}</TooltipContent>
+              <TooltipContent>
+                {[agent.role_title, agent.description].filter(Boolean).join(" · ")
+                  || AGENT_PAGE_LABELS.layout.noDescription}
+              </TooltipContent>
             </Tooltip>
           ) : (
             <Skeleton className="h-3.5 w-24" />
@@ -306,8 +311,30 @@ export default function AgentDetailLayout({ children }: { children: ReactNode })
 
       ) : (
         <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
-          {currentTab === "chat" && <ChannelBar />}
-          {children}
+          {currentTab === "chat" && (
+            <div className="flex items-center gap-1 min-w-0">
+              <div className="min-w-0 flex-1">
+                <ChannelBar />
+              </div>
+              <ChannelMembersPanel preferAgentId={agentId} className="pr-2 md:pr-3" />
+            </div>
+          )}
+          <div className="flex-1 min-h-0 overflow-hidden flex">
+            <div className="flex-1 min-w-0 min-h-0 overflow-hidden flex flex-col">
+              {children}
+            </div>
+            {agent && (
+              <div className="hidden lg:flex shrink-0 items-start border-l border-border/40 p-2.5">
+                {/* Live memory / issues / integrations — shown on agent tabs including channel (chat). */}
+                <LiveAgentContextPanel
+                  workspaceId={workspaceId}
+                  agentId={agent.id}
+                  className="w-56 xl:w-64 max-h-full"
+                  defaultCollapsed
+                />
+              </div>
+            )}
+          </div>
         </div>
       )}
 

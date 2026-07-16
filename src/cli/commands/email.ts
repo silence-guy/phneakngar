@@ -42,6 +42,38 @@ interface SendResponse {
   to_email: string;
 }
 
+/** 202 pending-approval envelope from POST /api/email/send. */
+interface SendPendingApprovalResponse {
+  status: "pending_approval";
+  email: SendResponse;
+  approval?: { id?: string };
+}
+
+type SendEmailApiResponse = SendResponse | SendPendingApprovalResponse;
+
+function normalizeSendResponse(res: SendEmailApiResponse): {
+  email: SendResponse;
+  pendingApproval: boolean;
+  approvalId?: string;
+} {
+  if (
+    res &&
+    typeof res === "object" &&
+    "status" in res &&
+    (res as SendPendingApprovalResponse).status === "pending_approval" &&
+    "email" in res &&
+    (res as SendPendingApprovalResponse).email
+  ) {
+    const pending = res as SendPendingApprovalResponse;
+    return {
+      email: pending.email,
+      pendingApproval: true,
+      approvalId: pending.approval?.id,
+    };
+  }
+  return { email: res as SendResponse, pendingApproval: false };
+}
+
 interface WhitelistEntry {
   id: string;
   email: string;
@@ -263,6 +295,10 @@ export function emailCommand(): Command {
       collectRepeated,
       [] as string[],
     )
+    .option(
+      "--requires-approval",
+      "Queue the send for human approval instead of delivering immediately",
+    )
     .option("--workspace <id>", "Workspace ID")
     .action(async (opts, command) => {
       const agentId = resolveAgentId(opts);
@@ -310,7 +346,7 @@ export function emailCommand(): Command {
         }
 
         const ctx = gatherContextEnvVars();
-        const res = await client.postJSON<SendResponse>("/api/email/send", {
+        const res = await client.postJSON<SendEmailApiResponse>("/api/email/send", {
           agentId,
           to: opts.to,
           subject: opts.subject,
@@ -318,11 +354,22 @@ export function emailCommand(): Command {
           attachments,
           ...(inReplyTo ? { inReplyTo, references } : {}),
           ...(opts.from ? { from: opts.from } : {}),
+          ...(opts.requiresApproval ? { requiresApproval: true } : {}),
           ...(ctx.conversationId ? { conversationId: ctx.conversationId } : {}),
           ...(ctx.traceId ? { traceId: ctx.traceId } : {}),
           ...(ctx.sourceTaskId ? { sourceTaskId: ctx.sourceTaskId } : {}),
         });
-        console.log(`Sent email to ${res.to_email} (id: ${res.id})`);
+        const normalized = normalizeSendResponse(res);
+        if (normalized.pendingApproval) {
+          const approvalSuffix = normalized.approvalId
+            ? ` (approval: ${normalized.approvalId})`
+            : "";
+          console.log(
+            `Queued email to ${normalized.email.to_email} for approval (id: ${normalized.email.id})${approvalSuffix}`,
+          );
+        } else {
+          console.log(`Sent email to ${normalized.email.to_email} (id: ${normalized.email.id})`);
+        }
       } catch (err) {
         console.error(`Error: ${err instanceof Error ? err.message : err}`);
         process.exit(1);
@@ -342,6 +389,10 @@ export function emailCommand(): Command {
       "Extra file to attach (repeatable)",
       collectRepeated,
       [] as string[],
+    )
+    .option(
+      "--requires-approval",
+      "Queue the forward for human approval instead of delivering immediately",
     )
     .option("--workspace <id>", "Workspace ID")
     .action(async (opts, command) => {
@@ -437,18 +488,31 @@ export function emailCommand(): Command {
 
         // 8. Send
         const ctx = gatherContextEnvVars();
-        const res = await client.postJSON<SendResponse>("/api/email/send", {
+        const res = await client.postJSON<SendEmailApiResponse>("/api/email/send", {
           agentId,
           to: opts.to,
           subject,
           htmlBody,
           attachments,
           ...(opts.from ? { from: opts.from } : {}),
+          ...(opts.requiresApproval ? { requiresApproval: true } : {}),
           ...(ctx.conversationId ? { conversationId: ctx.conversationId } : {}),
           ...(ctx.traceId ? { traceId: ctx.traceId } : {}),
           ...(ctx.sourceTaskId ? { sourceTaskId: ctx.sourceTaskId } : {}),
         });
-        console.log(`Forwarded email to ${res.to_email} (id: ${res.id})`);
+        const normalized = normalizeSendResponse(res);
+        if (normalized.pendingApproval) {
+          const approvalSuffix = normalized.approvalId
+            ? ` (approval: ${normalized.approvalId})`
+            : "";
+          console.log(
+            `Queued forward to ${normalized.email.to_email} for approval (id: ${normalized.email.id})${approvalSuffix}`,
+          );
+        } else {
+          console.log(
+            `Forwarded email to ${normalized.email.to_email} (id: ${normalized.email.id})`,
+          );
+        }
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         if (msg === "__exit__") throw err;

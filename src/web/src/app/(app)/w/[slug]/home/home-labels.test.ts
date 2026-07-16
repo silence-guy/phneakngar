@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { HOME_LABELS, homeLayoutLabel } from "./home-labels";
+import {
+  HOME_LABELS,
+  blockedIssuesLabel,
+  homeLayoutLabel,
+  pendingApprovalsLabel,
+} from "./home-labels";
 
 describe("home labels", () => {
   it("provides Khmer canvas and empty-state copy", () => {
@@ -26,5 +31,11 @@ describe("home labels", () => {
     expect(homeLayoutLabel("star")).toBe("ផ្កាយ");
     expect(homeLayoutLabel("tree")).toBe("មែកធាង");
     expect(homeLayoutLabel("flow")).toBe("លំហូរ");
+  });
+
+  it("formats attention strip chips", () => {
+    expect(HOME_LABELS.attentionAria).toBe("ការយកចិត្តទុកដាក់");
+    expect(pendingApprovalsLabel(2)).toBe("រង់ចាំអនុម័ត 2");
+    expect(blockedIssuesLabel(1)).toBe("ជាប់គាំង 1");
   });
 });

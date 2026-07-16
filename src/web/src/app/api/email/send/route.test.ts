@@ -21,6 +21,8 @@ const mockWorkerSelfRefFetch = vi.fn();
 const mockCreateMapping = vi.fn();
 const mockGetConversationForAgent = vi.fn();
 const mockCreateMessage = vi.fn();
+const mockCreateApproval = vi.fn();
+const mockTransitionStatus = vi.fn();
 
 function claimedEmail(overrides: Record<string, unknown> = {}) {
   return {
@@ -70,6 +72,7 @@ vi.mock("@/lib/cache", () => ({
   cacheKeys: {
     allEmailAccounts: (ws: string) => `ea:${ws}`,
     overviewEmailStats: (ws: string) => `ov_email:${ws}`,
+    overviewAttention: (ws: string) => `ov_attn:${ws}`,
   },
 }));
 
@@ -87,6 +90,10 @@ vi.mock("@phneakngar/shared", async (importOriginal) => {
       markOutboundEmailFailed: (...args: unknown[]) => mockMarkFailed(...args),
       markOutboundEmailAmbiguous: (...args: unknown[]) => mockMarkAmbiguous(...args),
       getEmailById: (...args: unknown[]) => mockGetEmailById(...args),
+      transitionOutboundEmailStatus: (...args: unknown[]) => mockTransitionStatus(...args),
+    },
+    approval: {
+      createApproval: (...args: unknown[]) => mockCreateApproval(...args),
     },
     agent: {
       getAgent: (...args: unknown[]) => mockGetAgent(...args),
@@ -141,6 +148,7 @@ vi.mock("@/lib/middleware/helpers", () => ({
 
 vi.mock("@/lib/api/responses", () => ({
   emailToResponse: (e: any) => e,
+  approvalToResponse: (a: any) => a,
 }));
 
 vi.mock("@/lib/broadcast", () => ({
@@ -1168,5 +1176,67 @@ describe("POST /api/email/send", () => {
       expect(mockMarkAmbiguous).toHaveBeenCalledOnce();
       expect(mockMarkSent).not.toHaveBeenCalled();
     });
+  });
+
+  it("requiresApproval queues pending_approval and creates approval row without sending", async () => {
+    mockGetAgent.mockResolvedValue({ id: "a1", emailHandle: "test-agent" });
+    const email = claimedEmail({ status: "pending_approval" });
+    mockClaimOutbound.mockResolvedValue({ outcome: "claimed", email });
+    mockCreateApproval.mockResolvedValue({
+      id: "ap_1",
+      kind: "outbound_email",
+      status: "pending",
+      payload: { emailId: "e1" },
+    });
+
+    const res = await POST(
+      makeReq({
+        agentId: "a1",
+        to: "user@example.com",
+        subject: "Needs review",
+        htmlBody: "<p>Draft</p>",
+        idempotencyKey: "approve-1",
+        requiresApproval: true,
+      }),
+      {} as any,
+    );
+    const body = await res.json();
+
+    expect(res.status).toBe(202);
+    expect(body.status).toBe("pending_approval");
+    expect(body.email.status).toBe("pending_approval");
+    expect(body.approval.id).toBe("ap_1");
+    expect(mockCreateApproval).toHaveBeenCalledOnce();
+    const approvalArgs = mockCreateApproval.mock.calls[0]![1] as any;
+    expect(approvalArgs.kind).toBe("outbound_email");
+    expect(approvalArgs.payload.emailId).toBe("e1");
+    expect(mockMarkSending).not.toHaveBeenCalled();
+    expect(mockEmailWorkerFetch).not.toHaveBeenCalled();
+
+    const claimArgs = mockClaimOutbound.mock.calls[0]![1] as any;
+    expect(claimArgs.status).toBe("pending_approval");
+  });
+
+  it("returns 409 when delivery key is already pending_approval", async () => {
+    mockGetAgent.mockResolvedValue({ id: "a1", emailHandle: "test-agent" });
+    const email = claimedEmail({ status: "pending_approval" });
+    mockClaimOutbound.mockResolvedValue({ outcome: "pending_approval", email });
+
+    const res = await POST(
+      makeReq({
+        agentId: "a1",
+        to: "user@example.com",
+        subject: "Needs review",
+        htmlBody: "<p>Draft</p>",
+        idempotencyKey: "approve-dup",
+        requiresApproval: true,
+      }),
+      {} as any,
+    );
+    expect(res.status).toBe(409);
+    const body = await res.json();
+    expect(body.status).toBe("pending_approval");
+    expect(mockCreateApproval).not.toHaveBeenCalled();
+    expect(mockEmailWorkerFetch).not.toHaveBeenCalled();
   });
 });
