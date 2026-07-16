@@ -1017,3 +1017,92 @@ export const conversationMember = sqliteTable(
     index("idx_conversation_member_member").on(t.workspaceId, t.memberType, t.memberId),
   ]
 );
+
+/**
+ * Durable chat-gateway binding (provider + external team → workspace agent/user).
+ * Env GATEWAY_TEAM_MAP remains a bootstrap override; DB is the product source of truth.
+ * Full commercial Helio/OpenClaw parity is still not claimed.
+ */
+export const gatewayBinding = sqliteTable(
+  "gateway_binding",
+  {
+    id: text("id").primaryKey().$defaultFn(() => "gb_" + nanoid()),
+    workspaceId: text("workspace_id")
+      .notNull()
+      .references(() => workspace.id, { onDelete: "cascade" }),
+    /** slack | discord | telegram | lark | teams */
+    provider: text("provider").notNull(),
+    /** External team / tenant / bot scope id. */
+    externalTeamId: text("external_team_id").notNull(),
+    /** Optional multi-account id within provider. */
+    externalAccountId: text("external_account_id"),
+    agentId: text("agent_id").notNull(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    /** active | disabled */
+    status: text("status").notNull().default("active"),
+    /** open | allowlist | pairing */
+    dmPolicy: text("dm_policy").notNull().default("open"),
+    /** live | preview — product badge for outbound capability */
+    outboundMode: text("outbound_mode").notNull().default("preview"),
+    createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
+    updatedAt: text("updated_at").notNull().$defaultFn(() => new Date().toISOString()),
+  },
+  (t) => [
+    unique("gateway_binding_provider_team_account").on(
+      t.provider,
+      t.externalTeamId,
+      t.externalAccountId,
+    ),
+    index("idx_gateway_binding_ws").on(t.workspaceId, t.provider, t.status),
+    index("idx_gateway_binding_lookup").on(t.provider, t.externalTeamId, t.status),
+    foreignKey({
+      columns: [t.agentId, t.workspaceId],
+      foreignColumns: [agent.id, agent.workspaceId],
+    }).onDelete("cascade"),
+  ]
+);
+
+/** DM pairing / allowlist peer for a gateway binding. */
+export const gatewayPeerAllowlist = sqliteTable(
+  "gateway_peer_allowlist",
+  {
+    id: text("id").primaryKey().$defaultFn(() => "gpa_" + nanoid()),
+    workspaceId: text("workspace_id")
+      .notNull()
+      .references(() => workspace.id, { onDelete: "cascade" }),
+    bindingId: text("binding_id")
+      .notNull()
+      .references(() => gatewayBinding.id, { onDelete: "cascade" }),
+    /** Provider peer id (user/chat). */
+    peerId: text("peer_id").notNull(),
+    /** allow | deny | paired */
+    status: text("status").notNull().default("allow"),
+    createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
+  },
+  (t) => [
+    unique("gateway_peer_allowlist_unique").on(t.bindingId, t.peerId),
+    index("idx_gateway_peer_ws").on(t.workspaceId, t.bindingId),
+  ]
+);
+
+/** Idempotent ingress keys for external gateway messages. */
+export const gatewayIngressDedupe = sqliteTable(
+  "gateway_ingress_dedupe",
+  {
+    id: text("id").primaryKey().$defaultFn(() => "gid_" + nanoid()),
+    workspaceId: text("workspace_id")
+      .notNull()
+      .references(() => workspace.id, { onDelete: "cascade" }),
+    provider: text("provider").notNull(),
+    externalMessageId: text("external_message_id").notNull(),
+    conversationId: text("conversation_id"),
+    messageId: text("message_id"),
+    createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
+  },
+  (t) => [
+    unique("gateway_ingress_dedupe_unique").on(t.provider, t.externalMessageId),
+    index("idx_gateway_ingress_dedupe_ws").on(t.workspaceId, t.provider),
+  ]
+);

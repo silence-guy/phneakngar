@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   APPROVALS_LABELS,
   approvalKindLabel,
+  approvalPayloadSummary,
   outboundApprovalMeta,
   parseOutboundToFromSummary,
 } from "./approvals-labels";
@@ -21,7 +22,44 @@ describe("APPROVALS_LABELS", () => {
     expect(approvalKindLabel("outbound_email")).toBe(
       APPROVALS_LABELS.kind.outbound_email,
     );
+    expect(approvalKindLabel("tool_action")).toBe(APPROVALS_LABELS.kind.tool_action);
+    expect(approvalKindLabel("skill_install")).toBe(APPROVALS_LABELS.kind.skill_install);
+    expect(approvalKindLabel("automation_promote")).toBe(
+      APPROVALS_LABELS.kind.automation_promote,
+    );
     expect(approvalKindLabel("custom_kind")).toBe("custom_kind");
+  });
+});
+
+describe("approvalPayloadSummary", () => {
+  it("prefers skill name + runtime for skill_install", () => {
+    expect(
+      approvalPayloadSummary({
+        kind: "skill_install",
+        summary: "fallback",
+        payload: { name: "repo-scan", runtime: "claude" },
+      }),
+    ).toBe("repo-scan · claude");
+  });
+
+  it("prefers tool name for tool_action", () => {
+    expect(
+      approvalPayloadSummary({
+        kind: "tool_action",
+        summary: "fallback",
+        payload: { tool_name: "github.write" },
+      }),
+    ).toBe("github.write");
+  });
+
+  it("uses outbound summary To line", () => {
+    expect(
+      approvalPayloadSummary({
+        kind: "outbound_email",
+        summary: "To alice@example.com",
+        payload: { emailId: "em1" },
+      }),
+    ).toBe("alice@example.com");
   });
 });
 

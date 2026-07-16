@@ -304,10 +304,19 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
 
   // Helio scenario install: wire automation (+ Day Planner calendar) for the leader.
   // Best-effort — agent creation must not fail if ensure path errors.
+  // scenario_health reports gaps when ensure partially fails or is skipped.
   let scenarioPath: {
     scenarioId: string;
     automationCreated: boolean;
     calendarCreated: boolean;
+    health: {
+      ok: boolean;
+      gaps: string[];
+      summary: string;
+      automation_id: string | null;
+      automation_enabled: boolean | null;
+      calendar_event_id: string | null;
+    };
   } | null = null;
   if (body.scenario && isScenarioRuntimeId(body.scenario) && leaderAgent) {
     try {
@@ -320,9 +329,30 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
         scenarioId: path.scenarioId,
         automationCreated: path.automationCreated,
         calendarCreated: path.calendarCreated,
+        health: {
+          ok: path.health.ok,
+          gaps: path.health.gaps,
+          summary: path.health.summary,
+          automation_id: path.health.automationId,
+          automation_enabled: path.health.automationEnabled,
+          calendar_event_id: path.health.calendarEventId,
+        },
       };
     } catch {
-      // Best-effort
+      // Best-effort — still report gap so install health is observable.
+      scenarioPath = {
+        scenarioId: body.scenario,
+        automationCreated: false,
+        calendarCreated: false,
+        health: {
+          ok: false,
+          gaps: ["automation_missing"],
+          summary: `${body.scenario}: gaps — automation_missing`,
+          automation_id: null,
+          automation_enabled: null,
+          calendar_event_id: null,
+        },
+      };
     }
   }
 

@@ -175,6 +175,31 @@ export const listAgentIntegrations = (agentId: string, workspaceId: string) =>
     `/api/agents/${agentId}/integrations${wsQuery(workspaceId)}`,
   );
 
+export const createAgentIntegration = (
+  agentId: string,
+  workspaceId: string,
+  data: {
+    provider: string;
+    status?: "active" | "disabled" | "error";
+    config?: unknown;
+    secret_ref?: string | null;
+  },
+) =>
+  apiFetch<AgentIntegrationPublic>(
+    `/api/agents/${agentId}/integrations${wsQuery(workspaceId)}`,
+    { method: "POST", body: JSON.stringify(data) },
+  );
+
+export const deleteAgentIntegration = (
+  agentId: string,
+  workspaceId: string,
+  integrationId: string,
+) =>
+  apiFetch<{ ok: boolean }>(
+    `/api/agents/${agentId}/integrations/${integrationId}${wsQuery(workspaceId)}`,
+    { method: "DELETE" },
+  );
+
 // Email Accounts
 export const listEmailAccounts = (agentId: string, workspaceId: string) =>
   apiFetch<AgentEmailAccount[]>(`/api/agents/${agentId}/email-accounts${wsQuery(workspaceId)}`);

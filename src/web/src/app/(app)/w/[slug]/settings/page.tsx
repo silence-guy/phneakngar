@@ -10,6 +10,7 @@ import { MembersTab } from "./members-tab";
 import { NotificationTab } from "./notification-tab";
 import { PetTab } from "./pet-tab";
 import { UsagesTab } from "./usages-tab";
+import { GatewayTab } from "./gateway-tab";
 import { SETTINGS_LABELS, settingsTabLabel } from "./settings-labels";
 
 const TABS = [
@@ -18,6 +19,7 @@ const TABS = [
   { id: "instruction" },
   { id: "notifications" },
   { id: "members" },
+  { id: "gateway" },
   { id: "usages" },
 ] as const;
 
@@ -80,6 +82,8 @@ export default function SettingsPage() {
               <InstructionTab />
             ) : activeTab === "usages" ? (
               <UsagesTab />
+            ) : activeTab === "gateway" ? (
+              <GatewayTab />
             ) : (
               <div className="mx-auto max-w-md">
                 {activeTab === "general" && <GeneralTab />}

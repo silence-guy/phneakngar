@@ -672,4 +672,86 @@ describe("chhlat route body validation", () => {
       expect(broadcastMock).not.toHaveBeenCalled();
     });
   });
+
+  // -----------------------------------------------------------------------
+  // POST /chhlat/approvals
+  // -----------------------------------------------------------------------
+
+  describe("POST /chhlat/approvals", () => {
+    async function loadApprovals() {
+      vi.resetModules();
+      applyBase();
+
+      const createApproval = vi.fn().mockResolvedValue({
+        id: "ap_1",
+        kind: "tool_action",
+        status: "pending",
+        title: "Tool: Bash",
+        summary: "high_stakes:shell",
+        payload: {},
+        workspaceId: "w1",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      });
+
+      vi.doMock("@phneakngar/shared", async () => {
+        const actual = await vi.importActual<typeof import("@phneakngar/shared")>(
+          "@phneakngar/shared",
+        );
+        return {
+          ...actual,
+          createDb: vi.fn(() => ({})),
+          queries: {
+            machine: {
+              getMachineByChhlat: vi.fn().mockResolvedValue(null),
+            },
+            agent: {
+              getAgent: vi.fn().mockResolvedValue({ id: "a1", workspaceId: "w1" }),
+            },
+            approval: {
+              createApproval,
+            },
+          },
+        };
+      });
+      vi.doMock("@/lib/api/responses", () => ({
+        approvalToResponse: (row: any) => ({
+          id: row.id,
+          kind: row.kind,
+          status: row.status,
+          title: row.title,
+        }),
+      }));
+      vi.doMock("@/lib/cache", () => ({
+        invalidate: vi.fn().mockResolvedValue(undefined),
+        cacheKeys: { overviewAttention: (ws: string) => `ov_att:${ws}` },
+      }));
+
+      const POST = (await import("./approvals/route")).POST;
+      return { POST, createApproval };
+    }
+
+    it("rejects invalid body", async () => {
+      const { POST } = await loadApprovals();
+      const res = await POST(postRaw("http://localhost/api/chhlat/approvals", "{"), {});
+      expect(res.status).toBe(400);
+    });
+
+    it("creates approval for valid machine body", async () => {
+      const { POST, createApproval } = await loadApprovals();
+      const res = await POST(
+        postReq("http://localhost/api/chhlat/approvals", {
+          chhlat_id: "d1",
+          tool_name: "Bash",
+          tool_class: "shell",
+          request_id: "req_1",
+        }),
+        {},
+      );
+      expect(res.status).toBe(201);
+      expect(createApproval).toHaveBeenCalled();
+      const body = await res.json();
+      expect(body.approval.id).toBe("ap_1");
+    });
+  });
 });

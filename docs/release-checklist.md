@@ -150,3 +150,8 @@ The new caller is deployed before stricter callees to avoid a temporary outage. 
 - Cloudflare logs and traces show no new 5xx, retry storm, or authorization anomaly.
 
 Keep previous Worker deployments available until these checks pass. Roll back Workers through Cloudflare deployment history and repair D1 forward with a new migration rather than reversing a production migration.
+
+## Helio / OpenClaw honesty
+
+- Confirm [parity-status.md](./parity-status.md): full commercial parity is **not** claimed unless plan exit checklist is complete.
+- Confirm remote D1 has migrations through `0053` when shipping gateway bindings.

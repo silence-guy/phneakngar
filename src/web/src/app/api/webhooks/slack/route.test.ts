@@ -108,6 +108,8 @@ describe("POST /api/webhooks/slack", () => {
       message_id: "msg1",
       created_conversation: true,
       task_id: "t1",
+      binding_id: null,
+      outbound_mode: null,
     });
     expect(mockIngress).toHaveBeenCalledWith(
       {},

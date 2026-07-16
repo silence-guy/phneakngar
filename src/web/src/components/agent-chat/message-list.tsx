@@ -28,6 +28,7 @@ import {
   timelineChromeAttrs,
   type BubblePosition,
 } from "@/components/chat-primitives";
+import { isQuietSystemNote } from "@/components/chat-primitives/timeline-chrome";
 
 import { eventTypeFromMessage, type GroupPosition } from "@/components/agent-chat/chat-message-utils";
 import { toast } from "sonner";
@@ -527,13 +528,13 @@ export const MessageItem = memo(function MessageItem({
 
   const isTaskDone = hasTaskStream && activeTask?.status === "failed";
 
-  // Lifecycle notice (cancelled/superseded) — a system line, not agent speech.
-  // Match the durable metadata flag, with a content fallback for older rows.
-  const isLifecycleNote =
-    msg.role === "assistant" &&
-    (msg.metadata?.kind === "lifecycle" ||
-      msg.content === "Task cancelled by you" ||
-      msg.content === "Task cancelled by user");
+  // Quiet system lines (cancelled / email approve-reject) — not agent speech.
+  // Uses shared isQuietSystemNote helper (WP17–18); no activity_event table.
+  const isLifecycleNote = isQuietSystemNote({
+    role: msg.role,
+    content: msg.content,
+    metadata: (msg.metadata ?? null) as Record<string, unknown> | null,
+  });
 
   // Per-message actions: one descriptor list, two presentations (hover toolbar
   // on hover-capable devices, long-press action sheet on touch). Copy is

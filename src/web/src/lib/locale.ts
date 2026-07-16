@@ -394,6 +394,10 @@ export const agentFormCopy = {
     [Locale.EN]: "Permission",
     [Locale.KM]: "សិទ្ធិ",
   },
+  integrations: {
+    [Locale.EN]: "Integrations",
+    [Locale.KM]: "ការតភ្ជាប់",
+  },
   failedToSaveInstructions: {
     [Locale.EN]: "Failed to save instructions",
     [Locale.KM]: "មិនអាចរក្សាទុកសេចក្តីណែនាំបានទេ",

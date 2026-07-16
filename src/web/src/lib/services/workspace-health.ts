@@ -49,12 +49,35 @@ export type WorkspaceHealthReport = {
       runtimes_reporting: number;
       runtimes_available: number;
     };
+    /**
+     * Dry-config gateway doctor (no live provider API probes).
+     * Live badges are not send-readiness; full commercial parity is not claimed.
+     */
+    gateway: {
+      status: WorkspaceHealthStatus;
+      total: number;
+      active: number;
+      disabled: number;
+      live: number;
+      preview: number;
+      live_without_token_risk: number;
+      missing_team_id: number;
+      missing_agent_ref: number;
+      webhook_map_configured: boolean;
+      webhook_secret_configured: boolean;
+      webhook_fail_closed: boolean;
+    };
   };
   issues: WorkspaceHealthIssue[];
 };
 
 type HealthOptions = {
   now?: Date;
+  /** Optional env snapshot for webhook secret fail-closed dry-config. */
+  gatewayEnv?: {
+    GATEWAY_TEAM_MAP?: string | null;
+    GATEWAY_WEBHOOK_SECRET?: string | null;
+  };
 };
 
 const HEADROOM_NEXT_ACTIONS = new Set([
@@ -143,10 +166,11 @@ export async function getWorkspaceHealth(
   // not the viewing user. Scoping runtimes by user while agents stay
   // workspace-wide makes another member's runtimes vanish, falsely reporting
   // "no_runtime_registered" and "headroom_required_unavailable" criticals.
-  const [runtimes, agents, taskStats] = await Promise.all([
+  const [runtimes, agents, taskStats, gatewayBindings] = await Promise.all([
     queries.runtime.listAgentRuntimes(db, workspaceId),
     queries.agent.getAllAgentsForWorkspace(db, workspaceId),
     queries.overview.getTaskStatsByWorkspace(db, workspaceId, todayStart.toISOString()),
+    queries.gatewayBinding.listGatewayBindings(db, workspaceId),
   ]);
 
   const runtimeIds = new Set(runtimes.map((runtime) => runtime.id));
@@ -269,6 +293,32 @@ export async function getWorkspaceHealth(
     });
   }
 
+  // Dry-config gateway doctor: binding misconfig + secret-missing fail-closed.
+  // No Telegram/Slack HTTP probes. Live is a risk flag, not send-readiness.
+  const gatewayBindingReport = queries.gatewayBinding.assessGatewayBindingsDryConfig(
+    gatewayBindings.map((binding) => ({
+      id: binding.id,
+      provider: binding.provider,
+      externalTeamId: binding.externalTeamId,
+      agentId: binding.agentId,
+      status: binding.status,
+      dmPolicy: binding.dmPolicy,
+      outboundMode: binding.outboundMode,
+    })),
+    { knownAgentIds: agents.map((agent) => agent.id) },
+  );
+  const gatewayWebhookReport = queries.gatewayBinding.assessGatewayWebhookSecretConfig(
+    opts.gatewayEnv ?? {},
+  );
+  for (const issue of [...gatewayBindingReport.issues, ...gatewayWebhookReport.issues]) {
+    issues.push({
+      code: issue.code,
+      severity: issue.severity,
+      message: issue.message,
+      ...(issue.next_actions ? { next_actions: issue.next_actions } : {}),
+    });
+  }
+
   return {
     status: worstStatus(issues),
     generated_at: now.toISOString(),
@@ -318,6 +368,25 @@ export async function getWorkspaceHealth(
         unavailable_agents: headroomUnavailableAgents.length,
         runtimes_reporting: headroomReportingRuntimes,
         runtimes_available: headroomAvailableRuntimes,
+      },
+      gateway: {
+        status: checkStatus(issues, [
+          "gateway_binding_missing_team_id",
+          "gateway_binding_missing_agent",
+          "gateway_live_without_token_risk",
+          "gateway_webhook_secret_missing",
+        ]),
+        total: gatewayBindingReport.total,
+        active: gatewayBindingReport.active,
+        disabled: gatewayBindingReport.disabled,
+        live: gatewayBindingReport.live,
+        preview: gatewayBindingReport.preview,
+        live_without_token_risk: gatewayBindingReport.live_without_token_risk,
+        missing_team_id: gatewayBindingReport.missing_team_id,
+        missing_agent_ref: gatewayBindingReport.missing_agent_ref,
+        webhook_map_configured: gatewayWebhookReport.map_configured,
+        webhook_secret_configured: gatewayWebhookReport.secret_configured,
+        webhook_fail_closed: gatewayWebhookReport.fail_closed,
       },
     },
     issues,

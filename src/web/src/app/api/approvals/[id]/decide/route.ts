@@ -14,6 +14,7 @@ import { approvalToResponse, emailToResponse } from "@/lib/api/responses";
 import { resolveServerEmailDomain } from "@/lib/email-domain";
 import { sendReleasedOutboundEmail } from "@/lib/outbound-email-dispatch";
 import { invalidate, cacheKeys } from "@/lib/cache";
+import { buildEmailDecisionSystemEvent } from "@/components/chat-primitives/timeline-chrome";
 
 type OutboundEmailPayload = {
   emailId?: string;
@@ -22,6 +23,47 @@ type OutboundEmailPayload = {
   traceId?: string | null;
   sourceTaskId?: string | null;
 };
+
+type Db = Parameters<typeof queries.approval.getApproval>[0];
+
+/**
+ * Thin chat system line for outbound email approve/reject (timeline-chrome quiet).
+ * Idempotent on approval id — safe under decide retries. No-ops without conversationId.
+ */
+async function stampOutboundEmailDecisionSystemEvent(
+  db: Db,
+  opts: {
+    decision: "approved" | "rejected";
+    approvalId: string;
+    conversationId?: string | null;
+    email: { id: string; subject?: string | null; toEmail?: string | null };
+  },
+): Promise<void> {
+  const conversationId =
+    typeof opts.conversationId === "string" && opts.conversationId.trim()
+      ? opts.conversationId.trim()
+      : null;
+  if (!conversationId) return;
+
+  const draft = buildEmailDecisionSystemEvent({
+    decision: opts.decision,
+    approvalId: opts.approvalId,
+    emailId: opts.email.id,
+    subject: opts.email.subject ?? "",
+    to: opts.email.toEmail ?? "",
+  });
+  try {
+    await queries.message.createMessageIfAbsent(db, {
+      id: draft.idempotencyId!,
+      conversationId,
+      role: draft.role,
+      content: draft.content,
+      metadata: draft.metadataJson,
+    });
+  } catch {
+    // non-critical: decision side effects already applied
+  }
+}
 
 type SkillInstallPayload = {
   name?: string;
@@ -262,6 +304,12 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
         409,
       );
     }
+    await stampOutboundEmailDecisionSystemEvent(db, {
+      decision: "rejected",
+      approvalId: id,
+      conversationId: payload.conversationId,
+      email: rejected,
+    });
     invalidate(cacheKeys.overviewAttention(ws.workspaceId)).catch(() => {});
     return writeJSON({
       approval: approvalToResponse(decided),
@@ -305,6 +353,13 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
       409,
     );
   }
+
+  await stampOutboundEmailDecisionSystemEvent(db, {
+    decision: "approved",
+    approvalId: id,
+    conversationId: payload.conversationId,
+    email: released,
+  });
 
   invalidate(cacheKeys.overviewAttention(ws.workspaceId)).catch(() => {});
 

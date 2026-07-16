@@ -42,6 +42,16 @@ function requiredConfigurationPresent(env: Env, emailDomain: string | null): boo
   return true;
 }
 
+/**
+ * Dry-config only: when GATEWAY_TEAM_MAP is set, GATEWAY_WEBHOOK_SECRET is required
+ * (webhook path fail-closed with 503). No live provider probes.
+ */
+function gatewayWebhookConfigPresent(env: Env): boolean {
+  const mapConfigured = Boolean(env.GATEWAY_TEAM_MAP?.trim());
+  if (!mapConfigured) return true;
+  return Boolean(env.GATEWAY_WEBHOOK_SECRET?.trim());
+}
+
 async function checkD1(env: Env): Promise<ComponentHealth> {
   const startedAt = performance.now();
   try {
@@ -108,7 +118,9 @@ export async function GET() {
   ]);
 
   const configuration = requiredConfigurationPresent(cfEnv, emailDomain) ? "ok" : "error";
+  const gatewayWebhook = gatewayWebhookConfigPresent(cfEnv) ? "ok" : "error";
   const healthy = configuration === "ok"
+    && gatewayWebhook === "ok"
     && database.status === "ok"
     && emailWorker.status === "ok"
     && websocketWorker.status === "ok";
@@ -118,6 +130,8 @@ export async function GET() {
       status: healthy ? "ok" : "degraded",
       checks: {
         configuration: { status: configuration },
+        /** Dry-config fail-closed signal for map-without-secret; no live probes. */
+        gateway_webhook: { status: gatewayWebhook },
         database,
         email_worker: emailWorker,
         websocket_worker: websocketWorker,

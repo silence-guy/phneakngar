@@ -25,6 +25,10 @@ declare namespace Cloudflare {
     GATEWAY_TEAM_MAP?: string
     /** Shared secret for chat gateway webhooks (header x-gateway-secret or Bearer). */
     GATEWAY_WEBHOOK_SECRET?: string
+    /** Optional Telegram Bot API webhook secret_token (x-telegram-bot-api-secret-token). */
+    TELEGRAM_WEBHOOK_SECRET?: string
+    /** Optional Slack signing secret for x-slack-signature HMAC. */
+    SLACK_SIGNING_SECRET?: string
     WS_SERVICE_SECRET: string
     RATE_LIMIT_KV: KVNamespace
     CACHE_KV: KVNamespace

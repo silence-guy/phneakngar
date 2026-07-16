@@ -5,6 +5,7 @@ const mockCreateAutomation = vi.fn();
 const mockListIssues = vi.fn();
 const mockGetEmailsByAgent = vi.fn();
 const mockEnsureDayPlanner = vi.fn();
+const mockListCalendarEvents = vi.fn();
 
 vi.mock("@phneakngar/shared", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@phneakngar/shared")>();
@@ -20,6 +21,9 @@ vi.mock("@phneakngar/shared", async (importOriginal) => {
       },
       email: {
         getEmailsByAgent: (...a: unknown[]) => mockGetEmailsByAgent(...a),
+      },
+      calendarEvent: {
+        listCalendarEvents: (...a: unknown[]) => mockListCalendarEvents(...a),
       },
     },
   };
@@ -41,6 +45,7 @@ vi.mock("@/lib/services/morning-brief", async (importOriginal) => {
 
 import {
   SCENARIO_RUNTIME_IDS,
+  assessScenarioInstallHealth,
   buildInboxAiTaskContext,
   buildLightScenarioTaskContext,
   buildScenarioAutomationContext,
@@ -58,6 +63,7 @@ import {
   isTaskDigestAutomation,
   listScenarioRuntimeSpecs,
   loadBoardSnapshot,
+  reportScenarioInstallHealth,
   loadInboxSnapshot,
   toDigestIssueItems,
   toInboxDigestItems,
@@ -432,7 +438,7 @@ describe("loadBoardSnapshot / loadInboxSnapshot", () => {
 describe("ensureScenarioAutomation / ensureScenarioRuntimePath", () => {
   it("delegates day-planner to morning-brief path", async () => {
     mockEnsureDayPlanner.mockResolvedValue({
-      automation: { id: "au_dp" },
+      automation: { id: "au_dp", enabled: true },
       automationCreated: true,
       calendarEvent: { id: "ce1" },
       calendarCreated: true,
@@ -446,6 +452,8 @@ describe("ensureScenarioAutomation / ensureScenarioRuntimePath", () => {
     expect(path.scenarioId).toBe("day-planner");
     expect(path.automationCreated).toBe(true);
     expect(path.calendarCreated).toBe(true);
+    expect(path.health.ok).toBe(true);
+    expect(path.health.gaps).toEqual([]);
     expect(mockEnsureDayPlanner).toHaveBeenCalledWith(
       {},
       expect.objectContaining({
@@ -462,7 +470,7 @@ describe("ensureScenarioAutomation / ensureScenarioRuntimePath", () => {
       scenarioId: "day-planner",
     });
     expect(auto.created).toBe(true);
-    expect(auto.automation).toEqual({ id: "au_dp" });
+    expect(auto.automation).toEqual({ id: "au_dp", enabled: true });
     expect(mockCreateAutomation).not.toHaveBeenCalled();
   });
 
@@ -604,7 +612,7 @@ describe("ensureScenarioAutomation / ensureScenarioRuntimePath", () => {
 
   it("ensureScenarioRuntimePath for task-digest has no calendar cue", async () => {
     mockListAutomations.mockResolvedValue([]);
-    mockCreateAutomation.mockResolvedValue({ id: "au_td" });
+    mockCreateAutomation.mockResolvedValue({ id: "au_td", enabled: true });
     const result = await ensureScenarioRuntimePath({} as any, {
       workspaceId: "w1",
       agentId: "a1",
@@ -616,6 +624,8 @@ describe("ensureScenarioAutomation / ensureScenarioRuntimePath", () => {
     expect(result.automationCreated).toBe(true);
     expect(result.calendarEvent).toBeNull();
     expect(result.calendarCreated).toBe(false);
+    expect(result.health.ok).toBe(true);
+    expect(result.health.automationId).toBe("au_td");
   });
 
   it("creates feedback-loop automation with weekday schedule", async () => {
@@ -1093,5 +1103,72 @@ describe("buildScenarioAutomationContext", () => {
     expect(result?.context.inbox_ai).toBeUndefined();
     expect(mockListIssues).not.toHaveBeenCalled();
     expect(mockGetEmailsByAgent).not.toHaveBeenCalled();
+  });
+});
+
+describe("assessScenarioInstallHealth / reportScenarioInstallHealth", () => {
+  it("reports healthy when automation enabled (non day-planner)", () => {
+    const health = assessScenarioInstallHealth({
+      scenarioId: "task-digest",
+      automation: { id: "au1", enabled: true },
+    });
+    expect(health.ok).toBe(true);
+    expect(health.gaps).toEqual([]);
+    expect(health.summary).toBe("task-digest: healthy");
+  });
+
+  it("reports automation_missing and calendar_cue_missing for day-planner", () => {
+    const health = assessScenarioInstallHealth({
+      scenarioId: "day-planner",
+      automation: null,
+      calendarEvent: null,
+    });
+    expect(health.ok).toBe(false);
+    expect(health.gaps).toEqual(["automation_missing", "calendar_cue_missing"]);
+  });
+
+  it("reports automation_disabled when present but paused", () => {
+    const health = assessScenarioInstallHealth({
+      scenarioId: "inbox-ai",
+      automation: { id: "au1", enabled: false },
+    });
+    expect(health.ok).toBe(false);
+    expect(health.gaps).toEqual(["automation_disabled"]);
+  });
+
+  it("reportScenarioInstallHealth loads workspace-scoped automation + calendar", async () => {
+    mockListAutomations.mockResolvedValue([
+      {
+        id: "au_dp",
+        title: "Morning brief",
+        skillName: "day-planner",
+        sopMarkdown: "brief",
+        enabled: true,
+      },
+    ]);
+    mockListCalendarEvents.mockResolvedValue([{ id: "ce1", title: "Morning brief" }]);
+
+    const health = await reportScenarioInstallHealth({} as any, {
+      workspaceId: "w1",
+      agentId: "a1",
+      scenarioId: "day-planner",
+    });
+    expect(health.ok).toBe(true);
+    expect(health.automationId).toBe("au_dp");
+    expect(health.calendarEventId).toBe("ce1");
+    expect(mockListAutomations).toHaveBeenCalledWith({}, "w1", { agentId: "a1" });
+    expect(mockListCalendarEvents).toHaveBeenCalledWith({}, "w1", { agentId: "a1" });
+  });
+
+  it("reportScenarioInstallHealth surfaces gap when automation absent", async () => {
+    mockListAutomations.mockResolvedValue([]);
+    mockListCalendarEvents.mockResolvedValue([]);
+    const health = await reportScenarioInstallHealth({} as any, {
+      workspaceId: "w1",
+      agentId: "a1",
+      scenarioId: "task-digest",
+    });
+    expect(health.ok).toBe(false);
+    expect(health.gaps).toContain("automation_missing");
   });
 });

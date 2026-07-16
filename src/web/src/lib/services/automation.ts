@@ -1,6 +1,8 @@
 import type { Database } from "@phneakngar/shared";
 import {
   AutomationDeliveryMode,
+  buildHeartbeatPrompt,
+  isHeartbeatAutomation,
   queries,
   TASK_TYPES,
   computeNextScheduledAt,
@@ -95,6 +97,11 @@ function buildAutomationPrompt(auto: {
   sopMarkdown: string;
   skillName: string | null;
 }): string {
+  // Heartbeat ambient checks use quiet-by-default prompt contract (OpenClaw-class).
+  // Full commercial Helio/OpenClaw parity is still not claimed.
+  if (isHeartbeatAutomation({ skillName: auto.skillName, title: auto.title })) {
+    return buildHeartbeatPrompt(auto.sopMarkdown);
+  }
   const parts = [auto.title.trim()];
   const sop = (auto.sopMarkdown ?? "").trim();
   if (sop) parts.push(sop);

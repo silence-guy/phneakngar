@@ -14,7 +14,15 @@ describe("settings labels", () => {
   });
 
   it("maps every tab id to a Khmer label", () => {
-    for (const id of ["general", "pet", "instruction", "notifications", "members", "usages"]) {
+    for (const id of [
+      "general",
+      "pet",
+      "instruction",
+      "notifications",
+      "members",
+      "gateway",
+      "usages",
+    ]) {
       expect(isKhmer(settingsTabLabel(id))).toBe(true);
     }
   });
@@ -60,5 +68,13 @@ describe("settings labels", () => {
     const label = expiresLabel("12/31/2026");
     expect(isKhmer(label)).toBe(true);
     expect(label).toContain("12/31/2026");
+  });
+
+  it("exposes gateway dry-config doctor labels without claiming full parity", () => {
+    expect(SETTINGS_LABELS.gateway.doctorTitle).toMatch(/dry-config/i);
+    expect(SETTINGS_LABELS.gateway.doctorHint).toMatch(/no live/i);
+    expect(SETTINGS_LABELS.gateway.parityNote).toMatch(/not claimed/i);
+    expect(SETTINGS_LABELS.gateway.doctorLiveRisk).toMatch(/risk/i);
+    expect(SETTINGS_LABELS.gateway.doctorWebhookFailClosed).toMatch(/fail-closed|shared secret/i);
   });
 });

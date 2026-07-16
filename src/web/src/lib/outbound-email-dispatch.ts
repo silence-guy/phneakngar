@@ -13,6 +13,7 @@ import { emailToResponse } from "@/lib/api/responses";
 import { broadcastToUser } from "@/lib/broadcast";
 import { invalidate, cacheKeys } from "@/lib/cache";
 import { fetchEmailWorker } from "@/lib/email-worker";
+import { buildEmailSentSystemEvent } from "@/components/chat-primitives/timeline-chrome";
 import { NextResponse } from "next/server";
 
 type Db = Parameters<typeof queries.email.getEmailById>[0];
@@ -66,36 +67,60 @@ async function broadcastEmailSentEvent(
   targetConversationId?: string,
   targetAgentId?: string,
 ) {
-  const eventContent = `Email sent to ${to}: ${subject}`;
-  const metadataObj = {
+  // Pure helper for content/metadata (timeline EmailCard). Prefer
+  // createMessageIfAbsent so finalize retries share one durable event id.
+  const draft = buildEmailSentSystemEvent({
     emailId,
     subject,
     from,
     to,
-    direction: "outbound" as const,
-    ...(targetConversationId ? { targetConversationId, targetAgentId } : {}),
-  };
-  const metadata = JSON.stringify(metadataObj);
-  const eventMsg = await queries.message.createMessage(db, {
-    conversationId,
-    role: "event",
-    content: eventContent,
-    metadata,
+    targetConversationId,
+    targetAgentId,
   });
-  broadcastToUser(ownerId, {
-    type: "conversation.message",
-    conversationId,
-    message: {
-      id: eventMsg.id,
-      conversation_id: eventMsg.conversationId,
-      role: eventMsg.role as "event",
-      content: eventMsg.content,
-      task_id: eventMsg.taskId,
-      attachment_ids: null,
-      metadata: metadataObj,
-      created_at: eventMsg.createdAt,
-    },
-  }).catch(() => {});
+  let eventMsg: {
+    id: string;
+    conversationId: string;
+    role: string;
+    content: string;
+    taskId?: string | null;
+    createdAt: string;
+  };
+  let created = true;
+  if (typeof queries.message.createMessageIfAbsent === "function") {
+    const result = await queries.message.createMessageIfAbsent(db, {
+      id: draft.idempotencyId!,
+      conversationId,
+      role: draft.role,
+      content: draft.content,
+      metadata: draft.metadataJson,
+    });
+    eventMsg = result.message;
+    created = result.created;
+  } else {
+    // Test doubles may only stub createMessage.
+    eventMsg = await queries.message.createMessage(db, {
+      conversationId,
+      role: draft.role,
+      content: draft.content,
+      metadata: draft.metadataJson,
+    });
+  }
+  if (created) {
+    broadcastToUser(ownerId, {
+      type: "conversation.message",
+      conversationId,
+      message: {
+        id: eventMsg.id,
+        conversation_id: eventMsg.conversationId,
+        role: eventMsg.role as "event",
+        content: eventMsg.content,
+        task_id: eventMsg.taskId ?? null,
+        attachment_ids: null,
+        metadata: draft.metadata,
+        created_at: eventMsg.createdAt,
+      },
+    }).catch(() => {});
+  }
   broadcastToUser(ownerId, { type: "email.sent", agentId }).catch(() => {});
 }
 
@@ -127,6 +152,7 @@ async function finalizeSuccessfulSend(
   if (validatedConversationId && email.messageId) {
     const threadId = extractThreadId(body.references, body.inReplyTo, email.messageId);
     if (threadId) {
+      // createMapping is race/retry safe (onConflictDoNothing + re-read).
       await queries.conversationMap.createMapping(db, {
         key: buildEmailMapKey(body.agentId, threadId),
         workspaceId,

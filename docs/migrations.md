@@ -85,6 +85,12 @@ The production-readiness audit validated the complete chain from an empty local 
   - outbound email delivery status vocabulary expanded in app code to include `pending_approval` and `rejected` (mailbox PATCH remains limited to `unread|read|archived`; pipeline transitions go through claim/release/decide helpers)
 - `0051_artifact_delivery_task.sql`, which adds nullable `artifact.task_id` and indexes for linking delivery artifacts to producing tasks.
 - `0052_conversation_member.sql`, which is additive multi-party conversation membership (`conversation_member` table + unique/indexes), mirroring `channel_member` for DMs.
+- `0053_gateway_commercial_foundations.sql`, which is additive commercial gateway control-plane work:
+  - `gateway_binding` — durable provider/team → workspace/agent/user mapping (DB source of truth; env `GATEWAY_TEAM_MAP` remains bootstrap override)
+  - `gateway_peer_allowlist` — DM pairing / allowlist peers per binding
+  - `gateway_ingress_dedupe` — external message idempotency keys for signed ingress
+  - App-level heartbeat automation kind + live outbound clients remain feature-flagged; full commercial Helio/OpenClaw parity is still not claimed
+
 
 Before applying `0048_task_message_idempotency.sql` to production, run this read-only preflight against the target D1 database and review any rows it returns:
 
@@ -123,6 +129,12 @@ Machine/runtime identity is stored as `chhlat_id`.
 - Migration `0047_rename_machine_identity_to_chhlat_id.sql` is a no-op marker for the rename path.
 
 ## Production Procedure
+
+## Remote apply record (phneakngar-app)
+
+- **2026-07-16:** Applied `0050_helio_parity_foundations.sql` … `0053_gateway_commercial_foundations.sql` via `pnpm db:migrate:remote`.
+- Verify: `pnpm --filter @phneakngar/web exec wrangler d1 migrations list phneakngar-app --remote` → **No migrations to apply**.
+- Full commercial Helio/OpenClaw parity is **not** claimed by this apply.
 
 List pending remote migrations first:
 

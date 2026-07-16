@@ -256,6 +256,40 @@ export async function checkServerReachability(
   }
 }
 
+/**
+ * Dry-config only: local process env for GATEWAY_TEAM_MAP / GATEWAY_WEBHOOK_SECRET.
+ * When the map is set without a shared secret, control-plane webhooks fail closed.
+ * Does not call provider APIs or list workspace bindings (no live channel probe).
+ */
+export function checkGatewayWebhookConfig(
+  env: NodeJS.ProcessEnv = process.env,
+): DoctorCheck {
+  const mapConfigured = Boolean(env.GATEWAY_TEAM_MAP?.trim());
+  const secretConfigured = Boolean(env.GATEWAY_WEBHOOK_SECRET?.trim());
+  if (mapConfigured && !secretConfigured) {
+    return {
+      name: "Gateway webhook secret",
+      status: "fail",
+      detail:
+        "GATEWAY_TEAM_MAP is set without GATEWAY_WEBHOOK_SECRET (fail-closed dry-config)",
+      hint: "Set GATEWAY_WEBHOOK_SECRET or clear GATEWAY_TEAM_MAP. Live provider probes are not performed.",
+    };
+  }
+  if (mapConfigured && secretConfigured) {
+    return {
+      name: "Gateway webhook secret",
+      status: "pass",
+      detail: "map + secret present in this environment (dry-config; no live probe)",
+    };
+  }
+  return {
+    name: "Gateway webhook secret",
+    status: "info",
+    detail:
+      "GATEWAY_TEAM_MAP not set in this environment (workspace bindings assessed via web settings/health)",
+  };
+}
+
 export async function runDoctor(
   profile?: string,
   options: { fetchImpl?: typeof fetch; skipNetwork?: boolean } = {},
@@ -269,6 +303,7 @@ export async function runDoctor(
     checkAgentWorkdirScope(profile),
     checkRuntimes(),
     checkChhlat(profile),
+    checkGatewayWebhookConfig(),
   ];
 
   if (!options.skipNetwork) {

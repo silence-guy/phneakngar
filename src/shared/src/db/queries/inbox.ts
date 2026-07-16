@@ -16,11 +16,38 @@ export function isUnreadEligible(
 }
 
 /**
+ * Pure: whether an incoming unread stamp should replace the stored one.
+ * ISO timestamps compare lexicographically for equal-length forms.
+ */
+export function shouldReplaceUnreadStamp(
+  existingCompletedAt: string,
+  incomingCompletedAt: string,
+): boolean {
+  return incomingCompletedAt >= existingCompletedAt;
+}
+
+/**
+ * Pure: suppress re-creating unread when the user has already read at/after
+ * this completion (retry after mark-read must not resurrect the badge).
+ */
+export function isUnreadSuppressedByReadState(
+  lastReadAt: string | null | undefined,
+  completedAt: string,
+): boolean {
+  if (lastReadAt == null || lastReadAt === "") return false;
+  return lastReadAt >= completedAt;
+}
+
+/**
  * upsertUnreadEntry - SQL required
  *
  * Reason: Drizzle ORM's onConflictDoUpdate() does not support conditional WHERE clauses
  * on the excluded values (e.g., "WHERE excluded.completed_at >= inbox_unread.completed_at").
  * This conditional upsert is necessary to only update if the new entry is more recent.
+ *
+ * Retry / race notes:
+ * - Double-upsert with same or older completed_at is a no-op update (WHERE guard).
+ * - After mark-read, retries must not resurrect unread when last_read_at >= completed_at.
  */
 export async function upsertUnreadEntry(
   db: Database,
@@ -38,10 +65,16 @@ export async function upsertUnreadEntry(
   },
 ) {
   const id = nanoid();
-  // SQL required: conditional upsert with WHERE on excluded values
+  // SQL required: conditional upsert with WHERE on excluded values + read-state guard
   await db.run(sql`
     INSERT INTO inbox_unread (id, conversation_id, user_id, workspace_id, agent_id, task_id, task_type, task_status, task_prompt, completed_at, latest_message_id)
-    VALUES (${id}, ${entry.conversationId}, ${entry.userId}, ${entry.workspaceId}, ${entry.agentId}, ${entry.taskId}, ${entry.taskType}, ${entry.taskStatus}, ${entry.taskPrompt}, ${entry.completedAt}, ${entry.latestMessageId})
+    SELECT ${id}, ${entry.conversationId}, ${entry.userId}, ${entry.workspaceId}, ${entry.agentId}, ${entry.taskId}, ${entry.taskType}, ${entry.taskStatus}, ${entry.taskPrompt}, ${entry.completedAt}, ${entry.latestMessageId}
+    WHERE NOT EXISTS (
+      SELECT 1 FROM conversation_read_state rs
+      WHERE rs.conversation_id = ${entry.conversationId}
+        AND rs.user_id = ${entry.userId}
+        AND rs.last_read_at >= ${entry.completedAt}
+    )
     ON CONFLICT (conversation_id, user_id) DO UPDATE SET
       agent_id = excluded.agent_id,
       task_id = excluded.task_id,
@@ -51,6 +84,12 @@ export async function upsertUnreadEntry(
       completed_at = excluded.completed_at,
       latest_message_id = excluded.latest_message_id
     WHERE excluded.completed_at >= inbox_unread.completed_at
+      AND NOT EXISTS (
+        SELECT 1 FROM conversation_read_state rs
+        WHERE rs.conversation_id = excluded.conversation_id
+          AND rs.user_id = excluded.user_id
+          AND rs.last_read_at >= excluded.completed_at
+      )
   `);
 }
 
@@ -72,15 +111,27 @@ export async function updateUnreadLatestMessage(
 }
 
 /**
- * deleteUnreadEntry - ORM refactored
+ * deleteUnreadEntry - race-safe under concurrent complete/mark-read.
  *
- * Simple DELETE with equality conditions - uses Drizzle ORM operators.
+ * When `upToCompletedAt` is provided, only rows with completed_at <= that
+ * watermark are removed so a newer unread stamp that arrives mid-read is kept.
+ * Without a watermark (legacy callers), delete is still idempotent (0-row OK).
  */
 export async function deleteUnreadEntry(
   db: Database,
   conversationId: string,
   userId: string,
+  opts?: { upToCompletedAt?: string },
 ) {
+  if (opts?.upToCompletedAt) {
+    await db.run(sql`
+      DELETE FROM inbox_unread
+      WHERE conversation_id = ${conversationId}
+        AND user_id = ${userId}
+        AND completed_at <= ${opts.upToCompletedAt}
+    `);
+    return;
+  }
   await db
     .delete(inboxUnread)
     .where(and(eq(inboxUnread.conversationId, conversationId), eq(inboxUnread.userId, userId)));
@@ -258,6 +309,8 @@ export async function getUnreadCount(
  * Reason: UPSERT with ON CONFLICT - Drizzle's onConflictDoUpdate() doesn't support
  * the WHERE clause variant needed here. Also, we need to set last_read_at to the
  * current timestamp on conflict.
+ *
+ * Deletes unread with completed_at <= now so a concurrent newer completion is kept.
  */
 export async function markConversationRead(
   db: Database,
@@ -272,7 +325,7 @@ export async function markConversationRead(
     ON CONFLICT (conversation_id, user_id)
     DO UPDATE SET last_read_at = ${now}
   `);
-  await deleteUnreadEntry(db, conversationId, userId);
+  await deleteUnreadEntry(db, conversationId, userId, { upToCompletedAt: now });
 }
 
 /**

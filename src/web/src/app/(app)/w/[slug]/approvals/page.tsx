@@ -10,14 +10,14 @@ import {
 } from "@/lib/api";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { Mail, ShieldCheck } from "lucide-react";
+import { Mail, ShieldCheck, Wrench, Sparkles, Workflow } from "lucide-react";
 import { relativeTime } from "@/lib/time";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import {
   APPROVALS_LABELS,
   approvalKindLabel,
+  approvalPayloadSummary,
   outboundApprovalMeta,
-  parseOutboundToFromSummary,
 } from "./approvals-labels";
 
 function SkeletonRow() {
@@ -52,24 +52,28 @@ function ApprovalRow({
 }) {
   const isOutbound = item.kind === "outbound_email";
   const meta = isOutbound ? outboundApprovalMeta(item.payload) : null;
-  const toLine =
-    isOutbound
-      ? parseOutboundToFromSummary(item.summary) ?? item.summary
-      : item.summary;
+  const toLine = approvalPayloadSummary(item);
   const agentEmailHref =
     isOutbound && item.agent_id && slug
       ? `/w/${slug}/agents/${item.agent_id}/email`
       : null;
 
+  const KindIcon =
+    item.kind === "outbound_email"
+      ? Mail
+      : item.kind === "tool_action"
+        ? Wrench
+        : item.kind === "skill_install"
+          ? Sparkles
+          : item.kind === "automation_promote"
+            ? Workflow
+            : ShieldCheck;
+
   return (
     <div className="px-4 py-3 border-b border-border/30" data-testid="approval-row">
       <div className="flex items-start gap-3">
         <div className="size-8 rounded-md bg-secondary flex items-center justify-center shrink-0">
-          {isOutbound ? (
-            <Mail className="size-4 text-muted-foreground" />
-          ) : (
-            <ShieldCheck className="size-4 text-muted-foreground" />
-          )}
+          <KindIcon className="size-4 text-muted-foreground" />
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 min-w-0">

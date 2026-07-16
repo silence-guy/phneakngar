@@ -8,6 +8,9 @@ import {
   TIMELINE_GUTTER_CLASS,
   toTimelineActor,
   timelineChromeAttrs,
+  isQuietSystemNote,
+  buildEmailSentSystemEvent,
+  buildEmailDecisionSystemEvent,
   type TimelineActor,
 } from "./timeline-chrome";
 
@@ -89,5 +92,94 @@ describe("timeline chrome tokens (B4)", () => {
     expect(new Set(byActor.map((a) => a["data-timeline-actor"]))).toEqual(
       new Set(ACTORS),
     );
+  });
+});
+
+describe("thin chat system event helpers (WP17–18)", () => {
+  it("isQuietSystemNote matches lifecycle + email decision kinds", () => {
+    expect(
+      isQuietSystemNote({
+        role: "assistant",
+        content: "x",
+        metadata: { kind: "lifecycle" },
+      }),
+    ).toBe(true);
+    expect(
+      isQuietSystemNote({
+        role: "assistant",
+        content: "Outbound email approved: Hi",
+        metadata: { kind: "email_approved" },
+      }),
+    ).toBe(true);
+    expect(
+      isQuietSystemNote({
+        role: "assistant",
+        content: "Outbound email rejected: Hi",
+        metadata: { kind: "email_rejected" },
+      }),
+    ).toBe(true);
+    expect(
+      isQuietSystemNote({
+        role: "assistant",
+        content: "Task cancelled by you",
+        metadata: null,
+      }),
+    ).toBe(true);
+    expect(
+      isQuietSystemNote({
+        role: "event",
+        content: "Email sent to a@b: Hi",
+        metadata: { kind: "email_sent" },
+      }),
+    ).toBe(false);
+    expect(
+      isQuietSystemNote({
+        role: "assistant",
+        content: "Hello",
+        metadata: {},
+      }),
+    ).toBe(false);
+  });
+
+  it("buildEmailSentSystemEvent is deterministic and role=event for EmailCard", () => {
+    const draft = buildEmailSentSystemEvent({
+      emailId: "e1",
+      subject: "Hello",
+      from: "a@x",
+      to: "b@y",
+    });
+    expect(draft.role).toBe("event");
+    expect(draft.idempotencyId).toBe("email-sent-event-e1");
+    expect(draft.content).toBe("Email sent to b@y: Hello");
+    expect(draft.metadata.kind).toBe("email_sent");
+    expect(draft.metadata.direction).toBe("outbound");
+    expect(draft.metadata.emailId).toBe("e1");
+    expect(JSON.parse(draft.metadataJson)).toEqual(draft.metadata);
+  });
+
+  it("buildEmailDecisionSystemEvent is deterministic per approval id", () => {
+    const approved = buildEmailDecisionSystemEvent({
+      decision: "approved",
+      approvalId: "ap_1",
+      emailId: "e1",
+      subject: "Hi",
+      to: "b@y",
+    });
+    const rejected = buildEmailDecisionSystemEvent({
+      decision: "rejected",
+      approvalId: "ap_1",
+      emailId: "e1",
+      subject: "Hi",
+      to: "b@y",
+    });
+    expect(approved.role).toBe("assistant");
+    expect(approved.idempotencyId).toBe("email-decision-ap_1");
+    expect(approved.content).toContain("approved");
+    expect(approved.metadata.kind).toBe("email_approved");
+    expect(rejected.metadata.kind).toBe("email_rejected");
+    expect(rejected.content).toContain("rejected");
+    // Same approval id → same idempotency key (retry-safe regardless of decision
+    // string used only for content; decide path calls once per terminal decision).
+    expect(rejected.idempotencyId).toBe("email-decision-ap_1");
   });
 });

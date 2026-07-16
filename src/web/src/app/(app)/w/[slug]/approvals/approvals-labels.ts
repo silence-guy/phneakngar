@@ -40,3 +40,46 @@ export function parseOutboundToFromSummary(summary: string | null | undefined): 
   const m = summary.match(/^To\s+(.+)$/i) ?? summary.match(/^ទៅ\s+(.+)$/);
   return m?.[1]?.trim() || null;
 }
+
+/**
+ * Multi-kind payload/summary line for approval rows.
+ * Outbound email uses summary/to; skill_install prefers name; tool_action prefers tool.
+ */
+export function approvalPayloadSummary(item: {
+  kind: string;
+  summary?: string | null;
+  payload?: unknown;
+}): string | null {
+  if (item.kind === "outbound_email") {
+    return parseOutboundToFromSummary(item.summary) ?? item.summary ?? null;
+  }
+  if (!item.payload || typeof item.payload !== "object" || Array.isArray(item.payload)) {
+    return item.summary ?? null;
+  }
+  const p = item.payload as Record<string, unknown>;
+  if (item.kind === "skill_install") {
+    const name = typeof p.name === "string" ? p.name.trim() : "";
+    const runtime = typeof p.runtime === "string" ? p.runtime.trim() : "";
+    if (name && runtime) return `${name} · ${runtime}`;
+    if (name) return name;
+    return item.summary ?? null;
+  }
+  if (item.kind === "tool_action") {
+    const tool =
+      (typeof p.tool === "string" && p.tool.trim()) ||
+      (typeof p.tool_name === "string" && p.tool_name.trim()) ||
+      (typeof p.toolName === "string" && p.toolName.trim()) ||
+      "";
+    if (tool) return tool;
+    return item.summary ?? null;
+  }
+  if (item.kind === "automation_promote") {
+    const title =
+      (typeof p.title === "string" && p.title.trim()) ||
+      (typeof p.suggested_title === "string" && p.suggested_title.trim()) ||
+      "";
+    if (title) return title;
+    return item.summary ?? null;
+  }
+  return item.summary ?? null;
+}

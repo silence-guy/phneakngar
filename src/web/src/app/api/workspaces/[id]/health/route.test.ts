@@ -60,7 +60,16 @@ describe("GET /api/workspaces/[id]/health", () => {
 
     expect(res.status).toBe(200);
     expect(body.status).toBe("ok");
-    expect(mockGetWorkspaceHealth).toHaveBeenCalledWith({}, "w1");
+    expect(mockGetWorkspaceHealth).toHaveBeenCalledWith(
+      {},
+      "w1",
+      expect.objectContaining({
+        gatewayEnv: expect.objectContaining({
+          GATEWAY_TEAM_MAP: undefined,
+          GATEWAY_WEBHOOK_SECRET: undefined,
+        }),
+      }),
+    );
   });
 
   it("returns 404 when path workspace does not match scoped workspace", async () => {

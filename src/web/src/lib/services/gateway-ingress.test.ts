@@ -7,6 +7,9 @@ const mockCreateMessage = vi.fn();
 const mockGetAgent = vi.fn();
 const mockGetMember = vi.fn();
 const mockEnqueueTask = vi.fn();
+const mockFindActiveBinding = vi.fn();
+const mockClaimDedupe = vi.fn();
+const mockIsPeerAllowed = vi.fn();
 
 vi.mock("@phneakngar/shared", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@phneakngar/shared")>();
@@ -28,6 +31,11 @@ vi.mock("@phneakngar/shared", async (importOriginal) => {
       },
       member: {
         getMemberByUserAndWorkspace: (...a: unknown[]) => mockGetMember(...a),
+      },
+      gatewayBinding: {
+        findActiveGatewayBinding: (...a: unknown[]) => mockFindActiveBinding(...a),
+        claimIngressDedupe: (...a: unknown[]) => mockClaimDedupe(...a),
+        isPeerAllowed: (...a: unknown[]) => mockIsPeerAllowed(...a),
       },
     },
   };
@@ -215,6 +223,9 @@ describe("ingressGatewayMessage", () => {
     mockGetAgent.mockResolvedValue({ id: "ag1", runtimeId: "rt1", ownerId: "u1" });
     mockGetMember.mockResolvedValue({ id: "m1", userId: "u1" });
     mockEnqueueTask.mockResolvedValue({ id: "task1" });
+    mockFindActiveBinding.mockResolvedValue(null);
+    mockClaimDedupe.mockResolvedValue({ claimed: true, row: { id: "dedupe1" } });
+    mockIsPeerAllowed.mockResolvedValue(true);
   });
 
   it("rejects unknown team mapping with 404", async () => {
@@ -296,6 +307,8 @@ describe("ingressGatewayMessage", () => {
       messageId: "msg1",
       createdConversation: true,
       taskId: "task1",
+      bindingId: null,
+      outboundMode: null,
     });
     expect(mockCreateConversation).toHaveBeenCalledWith(
       {},
@@ -410,6 +423,96 @@ describe("ingressGatewayMessage", () => {
       {},
       expect.objectContaining({ key: "gateway:teams:tenant-guid:19:c@thread.tacv2" }),
     );
+  });
+
+  it("prefers D1 gateway_binding over env team map", async () => {
+    mockFindActiveBinding.mockResolvedValue({
+      id: "gb1",
+      workspaceId: "ws-db",
+      agentId: "ag-db",
+      userId: "u-db",
+      dmPolicy: "open",
+      outboundMode: "preview",
+    });
+    mockGetAgent.mockResolvedValue({ id: "ag-db", runtimeId: "rt1" });
+    mockGetMember.mockResolvedValue({ id: "m1", userId: "u-db" });
+
+    const result = await ingressGatewayMessage({} as never, {
+      provider: "slack",
+      body: { team_id: "T1", text: "from binding", channel_id: "C1" },
+      teamMapRaw: JSON.stringify({
+        "slack:T1": { workspaceId: "ws-env", agentId: "ag-env", userId: "u-env" },
+      }),
+    });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.bindingId).toBe("gb1");
+      expect(result.outboundMode).toBe("preview");
+    }
+    expect(mockGetAgent).toHaveBeenCalledWith({}, "ag-db", "ws-db");
+    expect(mockCreateConversation).toHaveBeenCalledWith(
+      {},
+      expect.objectContaining({ workspaceId: "ws-db", agentId: "ag-db", userId: "u-db" }),
+    );
+  });
+
+  it("ignores bot-authored messages", async () => {
+    const result = await ingressGatewayMessage({} as never, {
+      provider: "slack",
+      body: {
+        team_id: "T1",
+        event: { bot_id: "B1", text: "bot says", channel: "C1" },
+      },
+      teamMapRaw: JSON.stringify({
+        "slack:T1": { workspaceId: "ws1", agentId: "ag1", userId: "u1" },
+      }),
+    });
+    expect(result).toMatchObject({ ok: true, ignored: "bot_loop" });
+    expect(mockCreateMessage).not.toHaveBeenCalled();
+  });
+
+  it("returns duplicate when ingress dedupe already claimed", async () => {
+    mockClaimDedupe.mockResolvedValue({
+      claimed: false,
+      row: { conversationId: "conv-old", messageId: "msg-old" },
+    });
+    const result = await ingressGatewayMessage({} as never, {
+      provider: "slack",
+      body: {
+        team_id: "T1",
+        event: { text: "hi", channel: "C1", ts: "123.456", user: "U1" },
+      },
+      teamMapRaw: JSON.stringify({
+        "slack:T1": { workspaceId: "ws1", agentId: "ag1", userId: "u1" },
+      }),
+    });
+    expect(result).toMatchObject({
+      ok: true,
+      ignored: "duplicate",
+      conversationId: "conv-old",
+      messageId: "msg-old",
+    });
+    expect(mockCreateMessage).not.toHaveBeenCalled();
+  });
+
+  it("enforces allowlist dm_policy on binding", async () => {
+    mockFindActiveBinding.mockResolvedValue({
+      id: "gb1",
+      workspaceId: "ws1",
+      agentId: "ag1",
+      userId: "u1",
+      dmPolicy: "allowlist",
+      outboundMode: "preview",
+    });
+    mockIsPeerAllowed.mockResolvedValue(false);
+    const result = await ingressGatewayMessage({} as never, {
+      provider: "slack",
+      body: {
+        team_id: "T1",
+        event: { text: "hi", channel: "C1", user: "U-stranger" },
+      },
+    });
+    expect(result).toEqual({ ok: false, status: 403, error: "peer not allowlisted" });
   });
 });
 

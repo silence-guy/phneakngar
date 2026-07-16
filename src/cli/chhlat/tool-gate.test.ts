@@ -1,10 +1,20 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, afterEach } from "vitest";
 import {
   decideToolGate,
   buildControlResponseLine,
   handleToolControlRequest,
+  handleToolControlRequestAsync,
   resolveUpdatedInput,
+  buildRequiresApprovalDenyMessage,
+  buildToolActionApprovalRequest,
+  setToolActionApprovalCreator,
+  getToolActionApprovalCreator,
+  ApprovalKind,
 } from "./tool-gate.js";
+
+afterEach(() => {
+  setToolActionApprovalCreator(null);
+});
 
 describe("decideToolGate", () => {
   it("allows low-stakes tools", () => {
@@ -112,6 +122,7 @@ describe("handleToolControlRequest", () => {
     expect(parsed.response.response.behavior).toBe("deny");
     expect(String(parsed.response.response.message)).toContain("approval");
     expect(String(parsed.response.response.message)).toContain("outbound_email");
+    expect(parsed.response.response.approval_id).toBeUndefined();
   });
 
   it("deny message includes policy reason for shell", () => {
@@ -123,6 +134,113 @@ describe("handleToolControlRequest", () => {
     expect(result!.decision.behavior).toBe("deny");
     const parsed = JSON.parse(result!.line);
     expect(String(parsed.response.response.message)).toContain("high_stakes:shell");
+  });
+});
+
+describe("handleToolControlRequestAsync + approval pointer", () => {
+  it("creates durable tool_action approval and embeds approval id on deny", async () => {
+    const calls: unknown[] = [];
+    setToolActionApprovalCreator(async (input) => {
+      calls.push(input);
+      return { approvalId: "ap_tool_1" };
+    });
+
+    const result = await handleToolControlRequestAsync({
+      type: "control_request",
+      request_id: "req_write",
+      payload: { tool_name: "Write", input: { path: "x.ts", content: "hi" } },
+    });
+
+    expect(result).not.toBeNull();
+    expect(result!.decision.behavior).toBe("deny");
+    expect(result!.approvalId).toBe("ap_tool_1");
+    expect(calls).toHaveLength(1);
+    expect(calls[0]).toMatchObject({
+      toolName: "Write",
+      toolClass: "write",
+      requestId: "req_write",
+      approvalKind: ApprovalKind.TOOL_ACTION,
+    });
+
+    const parsed = JSON.parse(result!.line);
+    expect(parsed.response.response.behavior).toBe("deny");
+    expect(parsed.response.response.approval_id).toBe("ap_tool_1");
+    expect(String(parsed.response.response.message)).toContain("Approval id: ap_tool_1");
+  });
+
+  it("still denies without approval id when creator is missing", async () => {
+    expect(getToolActionApprovalCreator()).toBeNull();
+    const result = await handleToolControlRequestAsync({
+      type: "control_request",
+      request_id: "req_bash",
+      payload: { tool_name: "Bash", input: { command: "rm -rf /tmp" } },
+    });
+    expect(result!.decision.behavior).toBe("deny");
+    expect(result!.approvalId).toBeNull();
+    const parsed = JSON.parse(result!.line);
+    expect(parsed.response.response.approval_id).toBeUndefined();
+    expect(String(parsed.response.response.message)).not.toContain("Approval id:");
+  });
+
+  it("still denies when creator throws (fail open on pointer only)", async () => {
+    setToolActionApprovalCreator(async () => {
+      throw new Error("network down");
+    });
+    const result = await handleToolControlRequestAsync({
+      type: "control_request",
+      request_id: "req_net",
+      payload: { tool_name: "http_request", input: { url: "https://x" } },
+    });
+    expect(result!.decision.behavior).toBe("deny");
+    expect(result!.approvalId).toBeNull();
+    const parsed = JSON.parse(result!.line);
+    expect(parsed.response.response.approval_id).toBeUndefined();
+  });
+
+  it("does not create approval for allow decisions", async () => {
+    let called = false;
+    setToolActionApprovalCreator(async () => {
+      called = true;
+      return { approvalId: "ap_x" };
+    });
+    const result = await handleToolControlRequestAsync({
+      type: "control_request",
+      request_id: "req_ls",
+      payload: { input: '{"command":"ls"}' },
+    });
+    expect(result!.decision.behavior).toBe("allow");
+    expect(called).toBe(false);
+  });
+
+  it("buildToolActionApprovalRequest is pure and maps to tool_action", () => {
+    const decision = decideToolGate({
+      tool_name: "Bash",
+      input: { command: "echo hi" },
+    });
+    // echo is read-only shell head → allow / no draft
+    const allowDraft = buildToolActionApprovalRequest(
+      { request_id: "r1", payload: { tool_name: "Bash", input: { command: "echo hi" } } },
+      decision,
+    );
+    // force high-stakes
+    const denyDecision = decideToolGate({
+      tool_name: "Bash",
+      input: { command: "rm -rf /tmp" },
+    });
+    const draft = buildToolActionApprovalRequest(
+      {
+        request_id: "r2",
+        payload: { tool_name: "Bash", input: { command: "rm -rf /tmp" } },
+      },
+      denyDecision,
+    );
+    expect(allowDraft).toBeNull();
+    expect(draft).toMatchObject({
+      approvalKind: ApprovalKind.TOOL_ACTION,
+      requestId: "r2",
+      toolName: "Bash",
+      toolClass: "shell",
+    });
   });
 });
 
@@ -145,11 +263,33 @@ describe("buildControlResponseLine / resolveUpdatedInput", () => {
     });
   });
 
+  it("builds deny line with approval_id pointer", () => {
+    const line = buildControlResponseLine("r1", "deny", undefined, "nope", {
+      approvalId: "ap_9",
+    });
+    expect(JSON.parse(line).response.response).toEqual({
+      behavior: "deny",
+      message: "nope",
+      approval_id: "ap_9",
+    });
+  });
+
   it("builds allow line with updatedInput", () => {
     const line = buildControlResponseLine("r2", "allow", { command: "ls" });
     expect(JSON.parse(line).response.response).toEqual({
       behavior: "allow",
       updatedInput: { command: "ls" },
     });
+  });
+
+  it("buildRequiresApprovalDenyMessage includes optional id", () => {
+    const decision = decideToolGate({
+      tool_name: "Write",
+      input: { path: "a" },
+    });
+    expect(buildRequiresApprovalDenyMessage(decision)).toContain("high_stakes:write");
+    expect(buildRequiresApprovalDenyMessage(decision, "ap_1")).toContain(
+      "Approval id: ap_1",
+    );
   });
 });

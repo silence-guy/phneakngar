@@ -204,3 +204,13 @@ pnpm verify:app-package
 ## License
 
 [Apache-2.0](LICENSE)
+
+## Helio / OpenClaw parity
+
+**Full commercial Helio/OpenClaw parity is not claimed.**
+
+ភ្នាក់ងារ ships Helio-style control-plane foundations (roles, automations, approvals, multi-party membership, scenario templates) and OpenClaw-adjacent gateway ingress stubs. Live multi-channel OAuth/send, skills marketplace, and enterprise shell are tracked separately.
+
+- Status detail: [docs/parity-status.md](docs/parity-status.md)
+- Enterprise shell backlog: [docs/enterprise-commercial-shell.md](docs/enterprise-commercial-shell.md)
+- Apply D1 migrations `0050`–`0053` before relying on these surfaces in production (`docs/migrations.md`).

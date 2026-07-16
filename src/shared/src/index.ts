@@ -233,6 +233,10 @@ export {
   DecideApprovalRequestSchema,
   ProposeSkillFromTaskRequestSchema,
   CreateIntegrationRequestSchema,
+  GatewayProviderSchema,
+  CreateGatewayBindingRequestSchema,
+  UpdateGatewayBindingRequestSchema,
+  GatewayPeerAllowlistRequestSchema,
   ChannelMemberRequestSchema,
   ConversationMemberRequestSchema,
   CreateConversationRequestSchema,
@@ -307,6 +311,9 @@ export type {
   DecideApprovalRequestInput,
   ProposeSkillFromTaskRequestInput,
   CreateIntegrationRequestInput,
+  CreateGatewayBindingRequestInput,
+  UpdateGatewayBindingRequestInput,
+  GatewayPeerAllowlistRequestInput,
   ChannelMemberRequestInput,
   ConversationMemberRequestInput,
   CreateAgentLinkRequestInput,
@@ -418,6 +425,16 @@ export type {
   AutomationPatternSuggestion,
   DetectAutomationPatternsOptions,
 } from "./lib/pattern-automation-suggest";
+export {
+  HEARTBEAT_AUTOMATION_SKILL,
+  HEARTBEAT_OK_TOKEN,
+  DEFAULT_HEARTBEAT_ACK_MAX_CHARS,
+  isHeartbeatAutomation,
+  buildHeartbeatPrompt,
+  classifyHeartbeatReply,
+  shouldNotifyHeartbeat,
+} from "./lib/gateway-heartbeat";
+export type { HeartbeatReplyDisposition } from "./lib/gateway-heartbeat";
 export {
   addRepeatInterval,
   computeNextScheduledAt,

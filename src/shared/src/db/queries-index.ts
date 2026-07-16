@@ -36,3 +36,4 @@ export * as approval from "./queries/approval";
 export * as agentIntegration from "./queries/agent-integration";
 export * as channelMember from "./queries/channel-member";
 export * as conversationMember from "./queries/conversation-member";
+export * as gatewayBinding from "./queries/gateway-binding";

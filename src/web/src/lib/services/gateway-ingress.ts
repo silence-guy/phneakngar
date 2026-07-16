@@ -19,6 +19,10 @@ export type GatewayMapping = {
   workspaceId: string;
   agentId: string;
   userId: string;
+  /** Present when resolved from D1 gateway_binding. */
+  bindingId?: string;
+  dmPolicy?: string;
+  outboundMode?: string;
 };
 
 export type GatewayIngressResult =
@@ -28,6 +32,10 @@ export type GatewayIngressResult =
       messageId: string;
       createdConversation: boolean;
       taskId: string | null;
+      /** Quiet no-op paths (bot loop / already processed). */
+      ignored?: "bot_loop" | "duplicate";
+      bindingId?: string | null;
+      outboundMode?: string | null;
     }
   | { ok: false; status: number; error: string };
 
@@ -255,10 +263,56 @@ export function buildGatewayConversationMapKey(
 }
 
 /**
+ * Resolve workspace mapping: D1 gateway_binding first (product source of truth),
+ * then GATEWAY_TEAM_MAP env bootstrap. Full commercial Helio/OpenClaw parity is not claimed.
+ */
+export async function resolveGatewayIngressMapping(
+  db: Database,
+  opts: {
+    provider: GatewayProvider;
+    teamId: string;
+    teamMapRaw?: string | null;
+    externalAccountId?: string | null;
+  },
+): Promise<GatewayMapping | null> {
+  try {
+    const row = await queries.gatewayBinding.findActiveGatewayBinding(
+      db,
+      opts.provider,
+      opts.teamId,
+      opts.externalAccountId ?? null,
+    );
+    if (row) {
+      return {
+        workspaceId: row.workspaceId,
+        agentId: row.agentId,
+        userId: row.userId,
+        bindingId: row.id,
+        dmPolicy: row.dmPolicy,
+        outboundMode: row.outboundMode,
+      };
+    }
+  } catch (err) {
+    // Table may not exist until 0053 is applied — fall through to env map.
+    log.warn("gateway: binding lookup failed; using env map if present", {
+      provider: opts.provider,
+      err: String(err),
+    });
+  }
+
+  return resolveGatewayMapping(
+    parseGatewayTeamMap(opts.teamMapRaw),
+    opts.provider,
+    opts.teamId,
+  );
+}
+
+/**
  * Map an inbound chat-provider message into a workspace conversation + task.
  * Unknown team mappings are rejected (404). Known mappings create/reuse a
  * conversation via conversation_map, append a user message, and enqueue work.
  * Agent + mapped user membership are validated before any write.
+ * Bot-authored messages are ignored; external message ids are deduped when present.
  */
 export async function ingressGatewayMessage(
   db: Database,
@@ -269,6 +323,25 @@ export async function ingressGatewayMessage(
     teamMapRaw?: string | null;
   },
 ): Promise<GatewayIngressResult> {
+  // Lazy import keeps pure extract helpers testable without circular deps.
+  const {
+    extractGatewayBotLoopSignal,
+    extractExternalMessageId,
+    extractGatewayPeerId,
+  } = await import("./gateway-verify");
+
+  const botLoop = extractGatewayBotLoopSignal(opts.provider, opts.body);
+  if (botLoop.isBot) {
+    return {
+      ok: true,
+      conversationId: "",
+      messageId: "",
+      createdConversation: false,
+      taskId: null,
+      ignored: "bot_loop",
+    };
+  }
+
   const teamId = extractTeamId(opts.provider, opts.body, opts.headers);
   if (!teamId) {
     return { ok: false, status: 400, error: "team_id required" };
@@ -279,11 +352,11 @@ export async function ingressGatewayMessage(
     return { ok: false, status: 400, error: "text required" };
   }
 
-  const mapping = resolveGatewayMapping(
-    parseGatewayTeamMap(opts.teamMapRaw),
-    opts.provider,
+  const mapping = await resolveGatewayIngressMapping(db, {
+    provider: opts.provider,
     teamId,
-  );
+    teamMapRaw: opts.teamMapRaw,
+  });
   if (!mapping) {
     return { ok: false, status: 404, error: "unknown workspace mapping" };
   }
@@ -303,6 +376,59 @@ export async function ingressGatewayMessage(
   }
   if (!agent.runtimeId) {
     return { ok: false, status: 409, error: "mapped agent has no runtime" };
+  }
+
+  // DM policy: allowlist / pairing require peer on allowlist.
+  const dmPolicy = (mapping.dmPolicy ?? "open").toLowerCase();
+  if (
+    mapping.bindingId &&
+    (dmPolicy === "allowlist" || dmPolicy === "pairing")
+  ) {
+    const peerId = extractGatewayPeerId(opts.provider, opts.body);
+    if (!peerId) {
+      return { ok: false, status: 403, error: "peer id required for dm policy" };
+    }
+    let allowed = false;
+    try {
+      allowed = await queries.gatewayBinding.isPeerAllowed(
+        db,
+        mapping.workspaceId,
+        mapping.bindingId,
+        peerId,
+      );
+    } catch (err) {
+      log.warn("gateway: peer allowlist check failed", { err: String(err) });
+      return { ok: false, status: 503, error: "peer allowlist unavailable" };
+    }
+    if (!allowed) {
+      return { ok: false, status: 403, error: "peer not allowlisted" };
+    }
+  }
+
+  const externalMessageId = extractExternalMessageId(opts.provider, opts.body);
+  if (externalMessageId) {
+    try {
+      const claim = await queries.gatewayBinding.claimIngressDedupe(db, {
+        workspaceId: mapping.workspaceId,
+        provider: opts.provider,
+        externalMessageId,
+      });
+      if (!claim.claimed) {
+        return {
+          ok: true,
+          conversationId: claim.row?.conversationId ?? "",
+          messageId: claim.row?.messageId ?? "",
+          createdConversation: false,
+          taskId: null,
+          ignored: "duplicate",
+          bindingId: mapping.bindingId ?? null,
+          outboundMode: mapping.outboundMode ?? null,
+        };
+      }
+    } catch (err) {
+      // Dedupe table missing pre-0053 — continue without idempotency.
+      log.warn("gateway: ingress dedupe unavailable", { err: String(err) });
+    }
   }
 
   const channelId = extractChannelId(opts.provider, opts.body);
@@ -341,6 +467,9 @@ export async function ingressGatewayMessage(
       provider: opts.provider,
       teamId,
       channelId,
+      bindingId: mapping.bindingId ?? null,
+      outboundMode: mapping.outboundMode ?? null,
+      externalMessageId,
     }),
   });
 
@@ -360,6 +489,8 @@ export async function ingressGatewayMessage(
           team_id: teamId,
           channel_id: channelId,
           gateway: true,
+          binding_id: mapping.bindingId ?? null,
+          outbound_mode: mapping.outboundMode ?? null,
         },
       },
     );
@@ -378,5 +509,7 @@ export async function ingressGatewayMessage(
     messageId: message.id,
     createdConversation,
     taskId,
+    bindingId: mapping.bindingId ?? null,
+    outboundMode: mapping.outboundMode ?? null,
   };
 }

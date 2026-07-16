@@ -79,6 +79,7 @@ export async function dispatchEmailToAgent(
     conversationId = conversationResult.conversation.id
 
     if (mapKey) {
+      // createMapping is race/retry safe (onConflictDoNothing + re-read).
       conversationId = await queries.conversationMap.createMapping(db, {
         key: mapKey,
         workspaceId: email.workspaceId,

@@ -781,14 +781,115 @@ export async function ensureDayPlannerCreateAll(
     automationCreated: path.automationCreated,
     calendarEvent: path.calendarEvent,
     calendarCreated: path.calendarCreated,
+    health: path.health,
     /** True when either automation or calendar was newly created. */
     anyCreated: path.automationCreated || path.calendarCreated,
   };
 }
 
+// ---------------------------------------------------------------------------
+// Scenario install health (commercial install lifecycle — gaps, not just ensure)
+// ---------------------------------------------------------------------------
+
+export type ScenarioHealthGap =
+  | "automation_missing"
+  | "automation_disabled"
+  | "calendar_cue_missing";
+
+export type ScenarioInstallHealth = {
+  scenarioId: ScenarioRuntimeId;
+  ok: boolean;
+  automationId: string | null;
+  automationEnabled: boolean | null;
+  calendarEventId: string | null;
+  gaps: ScenarioHealthGap[];
+  /** Short operator-facing summary (English technical). */
+  summary: string;
+};
+
+/**
+ * Pure assessor for scenario install health.
+ * Day Planner requires both automation and a morning-brief calendar cue.
+ */
+export function assessScenarioInstallHealth(input: {
+  scenarioId: ScenarioRuntimeId;
+  automation: { id: string; enabled: boolean } | null | undefined;
+  calendarEvent?: { id: string } | null;
+}): ScenarioInstallHealth {
+  const gaps: ScenarioHealthGap[] = [];
+  const automation = input.automation ?? null;
+  const calendarEvent =
+    input.scenarioId === "day-planner" ? (input.calendarEvent ?? null) : null;
+
+  if (!automation) {
+    gaps.push("automation_missing");
+  } else if (!automation.enabled) {
+    gaps.push("automation_disabled");
+  }
+
+  if (input.scenarioId === "day-planner" && !calendarEvent) {
+    gaps.push("calendar_cue_missing");
+  }
+
+  const ok = gaps.length === 0;
+  const summary = ok
+    ? `${input.scenarioId}: healthy`
+    : `${input.scenarioId}: gaps — ${gaps.join(", ")}`;
+
+  return {
+    scenarioId: input.scenarioId,
+    ok,
+    automationId: automation?.id ?? null,
+    automationEnabled: automation ? automation.enabled : null,
+    calendarEventId: calendarEvent?.id ?? null,
+    gaps,
+    summary,
+  };
+}
+
+/**
+ * Report scenario install health for an agent (workspace-scoped first).
+ * Does not create resources — use ensureScenarioRuntimePath to repair.
+ */
+export async function reportScenarioInstallHealth(
+  db: Database,
+  input: {
+    workspaceId: string;
+    agentId: string;
+    scenarioId: ScenarioRuntimeId;
+  },
+): Promise<ScenarioInstallHealth> {
+  const automations = await queries.automation.listAutomations(db, input.workspaceId, {
+    agentId: input.agentId,
+  });
+  const automation =
+    automations.find((a) => detectScenarioRuntime(a) === input.scenarioId) ?? null;
+
+  let calendarEvent: { id: string } | null = null;
+  if (input.scenarioId === "day-planner") {
+    const events = await queries.calendarEvent.listCalendarEvents(db, input.workspaceId, {
+      agentId: input.agentId,
+    });
+    // Morning brief cue uses MORNING_BRIEF_DEFAULT_TITLE ("Morning brief").
+    const found = events.find(
+      (e) => e.title.trim().toLowerCase() === "morning brief",
+    );
+    calendarEvent = found ? { id: found.id } : null;
+  }
+
+  return assessScenarioInstallHealth({
+    scenarioId: input.scenarioId,
+    automation: automation
+      ? { id: automation.id, enabled: Boolean(automation.enabled) }
+      : null,
+    calendarEvent,
+  });
+}
+
 /**
  * Full scenario path wire-up for a template install / agent seed.
  * Day Planner also ensures the calendar cue; others only ensure automation.
+ * Always returns a health report so callers can surface install gaps.
  */
 export async function ensureScenarioRuntimePath(
   db: Database,
@@ -807,6 +908,7 @@ export async function ensureScenarioRuntimePath(
     ReturnType<typeof ensureDayPlannerMorningBriefPath>
   >["calendarEvent"] | null;
   calendarCreated: boolean;
+  health: ScenarioInstallHealth;
 }> {
   if (input.scenarioId === "day-planner") {
     const result = await ensureDayPlannerMorningBriefPath(db, {
@@ -815,12 +917,27 @@ export async function ensureScenarioRuntimePath(
       deliveryChannelId: input.deliveryChannelId ?? null,
       nowIso: input.nowIso,
     });
+    const health = assessScenarioInstallHealth({
+      scenarioId: "day-planner",
+      automation: result.automation
+        ? {
+            id: result.automation.id,
+            enabled: Boolean(
+              (result.automation as { enabled?: boolean }).enabled ?? true,
+            ),
+          }
+        : null,
+      calendarEvent: result.calendarEvent
+        ? { id: result.calendarEvent.id }
+        : null,
+    });
     return {
       scenarioId: "day-planner",
       automation: result.automation,
       automationCreated: result.automationCreated,
       calendarEvent: result.calendarEvent,
       calendarCreated: result.calendarCreated,
+      health,
     };
   }
 
@@ -831,12 +948,25 @@ export async function ensureScenarioRuntimePath(
     deliveryChannelId: input.deliveryChannelId ?? null,
     nowIso: input.nowIso,
   });
+  const health = assessScenarioInstallHealth({
+    scenarioId: input.scenarioId,
+    automation: autoResult.automation
+      ? {
+          id: autoResult.automation.id,
+          enabled: Boolean(
+            (autoResult.automation as { enabled?: boolean }).enabled ?? true,
+          ),
+        }
+      : null,
+    calendarEvent: null,
+  });
   return {
     scenarioId: input.scenarioId,
     automation: autoResult.automation,
     automationCreated: autoResult.created,
     calendarEvent: null,
     calendarCreated: false,
+    health,
   };
 }
 

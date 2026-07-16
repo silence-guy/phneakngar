@@ -713,6 +713,57 @@ export const CreateIntegrationRequestSchema = z.object({
 });
 export type CreateIntegrationRequestInput = z.infer<typeof CreateIntegrationRequestSchema>;
 
+/** Chat gateway binding (provider team → workspace agent). Commercial control-plane. */
+export const GatewayProviderSchema = z.enum([
+  "slack",
+  "discord",
+  "telegram",
+  "lark",
+  "teams",
+]);
+export const CreateGatewayBindingRequestSchema = z.object({
+  provider: GatewayProviderSchema,
+  external_team_id: z.string().min(1).max(200),
+  external_account_id: z.string().min(1).max(200).nullable().optional(),
+  agent_id: z.string().min(1),
+  user_id: z.string().min(1).optional(),
+  status: z.enum(["active", "disabled"]).optional().default("active"),
+  dm_policy: z.enum(["open", "allowlist", "pairing"]).optional().default("open"),
+  outbound_mode: z.enum(["live", "preview"]).optional().default("preview"),
+});
+export type CreateGatewayBindingRequestInput = z.infer<
+  typeof CreateGatewayBindingRequestSchema
+>;
+
+export const UpdateGatewayBindingRequestSchema = z
+  .object({
+    status: z.enum(["active", "disabled"]).optional(),
+    dm_policy: z.enum(["open", "allowlist", "pairing"]).optional(),
+    outbound_mode: z.enum(["live", "preview"]).optional(),
+    agent_id: z.string().min(1).optional(),
+    user_id: z.string().min(1).optional(),
+  })
+  .refine(
+    (v) =>
+      v.status !== undefined ||
+      v.dm_policy !== undefined ||
+      v.outbound_mode !== undefined ||
+      v.agent_id !== undefined ||
+      v.user_id !== undefined,
+    { message: "at least one field is required" },
+  );
+export type UpdateGatewayBindingRequestInput = z.infer<
+  typeof UpdateGatewayBindingRequestSchema
+>;
+
+export const GatewayPeerAllowlistRequestSchema = z.object({
+  peer_id: z.string().min(1).max(200),
+  status: z.enum(["allow", "deny", "paired"]).optional().default("allow"),
+});
+export type GatewayPeerAllowlistRequestInput = z.infer<
+  typeof GatewayPeerAllowlistRequestSchema
+>;
+
 export const ChannelMemberRequestSchema = z.object({
   member_type: z.enum(["user", "agent"]),
   member_id: z.string().min(1),

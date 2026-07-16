@@ -79,6 +79,48 @@ describe("GET /api/health", () => {
     expect(text).not.toContain("ws-secret");
   });
 
+  it("returns gateway_webhook ok when team map is unset (dry-config)", async () => {
+    const fixture = createEnv();
+    mockGetCloudflareContext.mockReturnValue({ env: fixture.env });
+
+    const response = await GET();
+    const body = await response.json() as any;
+
+    expect(response.status).toBe(200);
+    expect(body.checks.gateway_webhook.status).toBe("ok");
+  });
+
+  it("returns 503 when GATEWAY_TEAM_MAP is set without shared secret (fail-closed dry-config)", async () => {
+    const fixture = createEnv({
+      GATEWAY_TEAM_MAP: JSON.stringify({ "slack:T1": { workspaceId: "w1" } }),
+      GATEWAY_WEBHOOK_SECRET: "",
+    });
+    mockGetCloudflareContext.mockReturnValue({ env: fixture.env });
+
+    const response = await GET();
+    const text = await response.text();
+    const body = JSON.parse(text);
+
+    expect(response.status).toBe(503);
+    expect(body.status).toBe("degraded");
+    expect(body.checks.gateway_webhook.status).toBe("error");
+    expect(text).not.toContain("gateway-secret");
+  });
+
+  it("returns healthy when map and webhook secret are both configured", async () => {
+    const fixture = createEnv({
+      GATEWAY_TEAM_MAP: JSON.stringify({ "slack:T1": { workspaceId: "w1" } }),
+      GATEWAY_WEBHOOK_SECRET: "gateway-secret",
+    });
+    mockGetCloudflareContext.mockReturnValue({ env: fixture.env });
+
+    const response = await GET();
+    const body = await response.json() as any;
+
+    expect(response.status).toBe(200);
+    expect(body.checks.gateway_webhook.status).toBe("ok");
+  });
+
   it.each([
     { PHNEAKNGAR_DOMAIN: undefined, NEXT_PUBLIC_PHNEAKNGAR_DOMAIN: "agents.example" },
     { PHNEAKNGAR_DOMAIN: "https://private.example/path", NEXT_PUBLIC_PHNEAKNGAR_DOMAIN: "agents.example" },

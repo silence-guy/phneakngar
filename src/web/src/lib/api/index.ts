@@ -23,6 +23,8 @@ export {
   updateAgentLink,
   deleteAgentLink,
   listAgentIntegrations,
+  createAgentIntegration,
+  deleteAgentIntegration,
   listEmailAccounts,
   createEmailAccount,
   updateEmailAccount,
@@ -195,3 +197,10 @@ export {
   listAutomationSuggestions,
 } from "./automations";
 export type { AutomationItem, AutomationPatternSuggestionItem } from "./automations";
+export {
+  listGatewayBindings,
+  createGatewayBinding,
+  updateGatewayBinding,
+  deleteGatewayBinding,
+} from "./gateway";
+export type { GatewayBindingItem } from "./gateway";

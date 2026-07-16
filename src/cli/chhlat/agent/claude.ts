@@ -12,7 +12,7 @@ import type {
   EncodeOpts,
 } from "../types.js";
 import { killProcessTree } from "../kill-tree.js";
-import { handleToolControlRequest } from "../tool-gate.js";
+import { handleToolControlRequestAsync } from "../tool-gate.js";
 
 export class ClaudeBackend implements AgentBackend {
   name = "claude";
@@ -377,7 +377,7 @@ export class ClaudeBackend implements AgentBackend {
           }
 
           case "control_request": {
-            handleControlRequest(proc, event, enqueueStdinWrite);
+            void handleControlRequest(proc, event, enqueueStdinWrite);
             break;
           }
 
@@ -516,13 +516,16 @@ export class ClaudeBackend implements AgentBackend {
   }
 }
 
-function handleControlRequest(
+async function handleControlRequest(
   proc: ChildProcess,
   event: Record<string, unknown>,
   enqueueStdinWrite?: (data: string) => void,
-): void {
+): Promise<void> {
   // Shared approval policy gates high-stakes tool classes; low-stakes auto-allow.
-  const gated = handleToolControlRequest(event);
+  // When a process-level creator is configured, high-stakes denies also create a
+  // durable tool_action approval and include its id as a deny pointer.
+  // Never hold/wait/resume after web decide.
+  const gated = await handleToolControlRequestAsync(event);
   if (!gated) return;
 
   // enqueueStdinWrite already appends "\n"; direct writes must include it.

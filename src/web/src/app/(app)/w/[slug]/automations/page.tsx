@@ -17,6 +17,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Loader2, Plus, Sparkles, Trash2, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { classifyAutomationRunHealth } from "@/lib/automation-reliability";
 
 function formatWhen(value: string | null) {
   if (!value) return "—";
@@ -297,6 +298,7 @@ export default function AutomationsPage() {
                 <th className="px-4 py-2 font-medium">Agent</th>
                 <th className="px-4 py-2 font-medium">Schedule</th>
                 <th className="px-4 py-2 font-medium">Next run</th>
+                <th className="px-4 py-2 font-medium">Last run</th>
                 <th className="px-4 py-2 font-medium">Status</th>
                 <th className="px-4 py-2 font-medium w-20" />
               </tr>
@@ -304,6 +306,16 @@ export default function AutomationsPage() {
             <tbody>
               {items.map((item) => {
                 const agent = agentsById.get(item.agent_id);
+                const health = classifyAutomationRunHealth({
+                  enabled: item.enabled,
+                  nextRunAt: item.next_run_at,
+                });
+                const statusText =
+                  health.statusLabel === "paused"
+                    ? "Paused"
+                    : health.statusLabel === "overdue"
+                      ? "Overdue"
+                      : "Enabled";
                 return (
                   <tr key={item.id} className="border-b border-border/30">
                     <td className="px-4 py-2.5">
@@ -323,18 +335,23 @@ export default function AutomationsPage() {
                     <td className="px-4 py-2.5 text-muted-foreground text-xs">
                       {formatWhen(item.next_run_at)}
                     </td>
+                    <td className="px-4 py-2.5 text-muted-foreground text-xs">
+                      {formatWhen(item.last_run_at)}
+                    </td>
                     <td className="px-4 py-2.5">
                       <button
                         type="button"
                         onClick={() => handleToggle(item)}
                         className={cn(
                           "text-[11px] uppercase tracking-wide rounded px-1.5 py-0.5 border",
-                          item.enabled
-                            ? "border-border text-foreground"
-                            : "border-border/50 text-muted-foreground"
+                          health.statusLabel === "overdue"
+                            ? "border-amber-500/50 text-amber-700 dark:text-amber-400"
+                            : item.enabled
+                              ? "border-border text-foreground"
+                              : "border-border/50 text-muted-foreground"
                         )}
                       >
-                        {item.enabled ? "Enabled" : "Paused"}
+                        {statusText}
                       </button>
                     </td>
                     <td className="px-4 py-2.5 text-right">

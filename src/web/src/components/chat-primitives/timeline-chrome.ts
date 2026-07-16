@@ -56,3 +56,114 @@ export function timelineChromeAttrs(actor: TimelineActor): {
     "data-timeline-actor": actor,
   };
 }
+
+// ---------------------------------------------------------------------------
+// Thin chat system-event helpers (WP17–18)
+// No activity_event table — durable chat messages only (role=event / lifecycle).
+// ---------------------------------------------------------------------------
+
+export type ChatSystemEventKind =
+  | "lifecycle"
+  | "email_sent"
+  | "email_approved"
+  | "email_rejected";
+
+export type EmailSystemEventInput = {
+  emailId: string;
+  subject: string;
+  from: string;
+  to: string;
+  targetConversationId?: string;
+  targetAgentId?: string;
+};
+
+export type ChatSystemMessageDraft = {
+  /** Deterministic id for createMessageIfAbsent retry safety (optional). */
+  idempotencyId?: string;
+  role: "event" | "assistant";
+  content: string;
+  metadata: Record<string, unknown>;
+  metadataJson: string;
+};
+
+/** Quiet system lines (approve/reject/lifecycle) use assistant + kind stamp. */
+export function isQuietSystemNote(input: {
+  role: string;
+  content: string;
+  metadata?: Record<string, unknown> | null;
+}): boolean {
+  if (input.role !== "assistant") return false;
+  const kind = input.metadata?.kind;
+  if (kind === "lifecycle" || kind === "email_approved" || kind === "email_rejected") {
+    return true;
+  }
+  // Legacy cancelled rows without metadata.kind
+  return (
+    input.content === "Task cancelled by you" ||
+    input.content === "Task cancelled by user"
+  );
+}
+
+/**
+ * Outbound email *sent* card in the chat stream (role=event → EmailCard).
+ * Idempotent message id: `email-sent-event-${emailId}`.
+ */
+export function buildEmailSentSystemEvent(
+  input: EmailSystemEventInput,
+): ChatSystemMessageDraft {
+  const metadata: Record<string, unknown> = {
+    kind: "email_sent" satisfies ChatSystemEventKind,
+    emailId: input.emailId,
+    subject: input.subject,
+    from: input.from,
+    to: input.to,
+    direction: "outbound",
+    ...(input.targetConversationId
+      ? {
+          targetConversationId: input.targetConversationId,
+          targetAgentId: input.targetAgentId,
+        }
+      : {}),
+  };
+  return {
+    idempotencyId: `email-sent-event-${input.emailId}`,
+    role: "event",
+    content: `Email sent to ${input.to}: ${input.subject}`,
+    metadata,
+    metadataJson: JSON.stringify(metadata),
+  };
+}
+
+/**
+ * Approval decide system line for outbound_email (quiet timeline chrome).
+ * Idempotent message id: `email-decision-${approvalId}`.
+ */
+export function buildEmailDecisionSystemEvent(input: {
+  decision: "approved" | "rejected";
+  approvalId: string;
+  emailId: string;
+  subject: string;
+  to: string;
+}): ChatSystemMessageDraft {
+  const kind: ChatSystemEventKind =
+    input.decision === "approved" ? "email_approved" : "email_rejected";
+  const verb = input.decision === "approved" ? "approved" : "rejected";
+  const metadata: Record<string, unknown> = {
+    kind,
+    systemEvent: kind,
+    // Also stamp lifecycle so existing quiet-note paths keep working.
+    // Prefer kind=email_* for new clients; isQuietSystemNote accepts both.
+    emailId: input.emailId,
+    subject: input.subject,
+    to: input.to,
+    approvalId: input.approvalId,
+    decision: input.decision,
+  };
+  return {
+    idempotencyId: `email-decision-${input.approvalId}`,
+    role: "assistant",
+    content: `Outbound email ${verb}: ${input.subject}`,
+    metadata,
+    metadataJson: JSON.stringify(metadata),
+  };
+}

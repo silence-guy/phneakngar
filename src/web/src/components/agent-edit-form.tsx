@@ -35,6 +35,8 @@ import {
   AllowedSendersTab,
   AgentAccessTab,
 } from "@/components/agent-form-fields";
+import { AgentIntegrationsPanel } from "@/components/agent-integrations-panel";
+import { AgentSkillsPanel } from "@/components/agent-skills-panel";
 import {
   type AvatarConfig,
   AvatarPickerDialog,
@@ -170,7 +172,7 @@ interface AgentEditFormProps {
   saving: boolean;
 }
 
-type TabId = "general" | "instruction" | "runtime" | "email" | "permission";
+type TabId = "general" | "instruction" | "runtime" | "email" | "integrations" | "permission";
 
 export function AgentEditForm({
   agent,
@@ -325,10 +327,12 @@ export function AgentEditForm({
     { id: "instruction", label: agentFormLabel("instruction") },
     { id: "runtime", label: agentFormLabel("runtime") },
     { id: "email", label: agentFormLabel("email") },
+    { id: "integrations", label: agentFormLabel("integrations") },
     { id: "permission", label: agentFormLabel("permission") },
   ];
 
   const isFormTab = activeTab === "general" || activeTab === "runtime" || activeTab === "email";
+  const isIntegrationsTab = activeTab === "integrations";
   const instructionRatio = instructions.length / MAX_INSTRUCTION_LENGTH;
 
   return (
@@ -482,6 +486,19 @@ export function AgentEditForm({
                   </Button>
                 </div>
               </form>
+            ) : isIntegrationsTab ? (
+              <div className="space-y-8">
+                <AgentIntegrationsPanel
+                  agentId={agent.id}
+                  workspaceId={workspaceId}
+                />
+                <div className="border-t border-border/40 pt-6">
+                  <AgentSkillsPanel
+                    agentId={agent.id}
+                    workspaceId={workspaceId}
+                  />
+                </div>
+              </div>
             ) : (
               <AgentAccessTab agentId={agent.id} ownerId={agent.owner_id} />
             )}

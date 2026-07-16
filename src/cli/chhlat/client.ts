@@ -272,4 +272,86 @@ export class ChhlatClient {
     );
   }
 
+  /**
+   * Create a durable tool_action approval via machine-auth chhlat bridge.
+   * Used by the CLI control_request gate (deny + approval id pointer).
+   */
+  createToolApproval(
+    token: string,
+    body: CreateChhlatToolApprovalRequest,
+  ): Promise<CreateChhlatToolApprovalResponse> {
+    return this.request(
+      "POST",
+      "/api/chhlat/approvals",
+      token,
+      body,
+    );
+  }
+
+}
+
+/** Request body for POST /api/chhlat/approvals */
+export type CreateChhlatToolApprovalRequest = {
+  chhlat_id: string;
+  agent_id?: string | null;
+  tool_name?: string | null;
+  tool_class?: string | null;
+  request_id?: string | null;
+  title?: string;
+  summary?: string;
+  input?: unknown;
+  policy_reason?: string | null;
+  kind?: string | null;
+};
+
+export type CreateChhlatToolApprovalResponse = {
+  approval: {
+    id: string;
+    kind?: string;
+    status?: string;
+    title?: string;
+    summary?: string;
+    [key: string]: unknown;
+  };
+};
+
+/**
+ * Build a ToolActionApprovalCreator that POSTs through ChhlatClient.
+ * Kept next to the client so tool-gate stays free of HTTP details.
+ */
+export function makeClientToolActionApprovalCreator(opts: {
+  client: ChhlatClient;
+  token: string;
+  chhlatId: string;
+  agentId?: string | null;
+}): (
+  input: {
+    toolName: string | null;
+    toolClass: string;
+    requestId: string;
+    input: unknown;
+    policyReason: string;
+  },
+) => Promise<{ approvalId: string } | null> {
+  return async (input) => {
+    const res = await opts.client.createToolApproval(opts.token, {
+      chhlat_id: opts.chhlatId,
+      agent_id: opts.agentId ?? null,
+      tool_name: input.toolName,
+      tool_class: input.toolClass,
+      request_id: input.requestId,
+      title: input.toolName
+        ? `Tool: ${input.toolName}`
+        : `Tool class: ${input.toolClass}`,
+      summary: input.policyReason,
+      input: input.input,
+      policy_reason: input.policyReason,
+      kind: "tool_action",
+    });
+    const id = res?.approval?.id;
+    if (typeof id === "string" && id.trim()) {
+      return { approvalId: id.trim() };
+    }
+    return null;
+  };
 }

@@ -144,10 +144,19 @@ beforeEach(() => {
   mockCreateMessage.mockResolvedValue({ id: "msg-seed" });
   mockEnsureScenarioRuntimePath.mockResolvedValue({
     scenarioId: "day-planner",
-    automation: { id: "auto_1" },
+    automation: { id: "auto_1", enabled: true },
     automationCreated: true,
     calendarEvent: { id: "cal_1" },
     calendarCreated: true,
+    health: {
+      scenarioId: "day-planner",
+      ok: true,
+      automationId: "auto_1",
+      automationEnabled: true,
+      calendarEventId: "cal_1",
+      gaps: [],
+      summary: "day-planner: healthy",
+    },
   });
 });
 
@@ -220,16 +229,33 @@ describe("POST /api/studios", () => {
       scenarioId: "day-planner",
       automationCreated: true,
       calendarCreated: true,
+      health: {
+        ok: true,
+        gaps: [],
+        summary: "day-planner: healthy",
+        automation_id: "auto_1",
+        automation_enabled: true,
+        calendar_event_id: "cal_1",
+      },
     });
   });
 
   it("wires ensureScenarioRuntimePath for Helio task-digest without calendar", async () => {
     mockEnsureScenarioRuntimePath.mockResolvedValueOnce({
       scenarioId: "task-digest",
-      automation: { id: "auto_td" },
+      automation: { id: "auto_td", enabled: true },
       automationCreated: true,
       calendarEvent: null,
       calendarCreated: false,
+      health: {
+        scenarioId: "task-digest",
+        ok: true,
+        automationId: "auto_td",
+        automationEnabled: true,
+        calendarEventId: null,
+        gaps: [],
+        summary: "task-digest: healthy",
+      },
     });
     mockListAgents
       .mockResolvedValueOnce([])
@@ -255,6 +281,14 @@ describe("POST /api/studios", () => {
       scenarioId: "task-digest",
       automationCreated: true,
       calendarCreated: false,
+      health: {
+        ok: true,
+        gaps: [],
+        summary: "task-digest: healthy",
+        automation_id: "auto_td",
+        automation_enabled: true,
+        calendar_event_id: null,
+      },
     });
   });
 
@@ -277,7 +311,20 @@ describe("POST /api/studios", () => {
 
     expect(res.status).toBe(201);
     expect(body.leader_agent_id).toBe("agent-1");
-    expect(body.scenario_path).toBeNull();
+    // Install failure is observable via scenario_health gaps (not silent null).
+    expect(body.scenario_path).toEqual({
+      scenarioId: "inbox-ai",
+      automationCreated: false,
+      calendarCreated: false,
+      health: {
+        ok: false,
+        gaps: ["automation_missing"],
+        summary: "inbox-ai: gaps — automation_missing",
+        automation_id: null,
+        automation_enabled: null,
+        calendar_event_id: null,
+      },
+    });
   });
 
   it("creates a single agent studio (no links)", async () => {

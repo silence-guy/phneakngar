@@ -17,7 +17,12 @@ export const GET = withAuth(async (req, ctx) => {
   const db = getDb(ctx.env.DB);
   const cacheKey = cacheKeys.workspaceHealth(ws.workspaceId);
   const health = await cached(cacheKey, 30, async () => {
-    return getWorkspaceHealth(db, ws.workspaceId);
+    return getWorkspaceHealth(db, ws.workspaceId, {
+      gatewayEnv: {
+        GATEWAY_TEAM_MAP: ctx.env.GATEWAY_TEAM_MAP,
+        GATEWAY_WEBHOOK_SECRET: ctx.env.GATEWAY_WEBHOOK_SECRET,
+      },
+    });
   });
   return writeJSON(health);
 });

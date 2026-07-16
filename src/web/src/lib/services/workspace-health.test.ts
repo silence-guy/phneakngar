@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 const mockListAgentRuntimes = vi.fn();
 const mockGetAllAgentsForWorkspace = vi.fn();
 const mockGetTaskStatsByWorkspace = vi.fn();
+const mockListGatewayBindings = vi.fn();
 
 vi.mock("@phneakngar/shared", async () => {
   const real = await import("@phneakngar/shared");
@@ -10,6 +11,7 @@ vi.mock("@phneakngar/shared", async () => {
     ...real,
     OFFLINE_THRESHOLD_MS: 20_000,
     queries: {
+      ...real.queries,
       runtime: {
         listAgentRuntimes: (...args: unknown[]) => mockListAgentRuntimes(...args),
       },
@@ -18,6 +20,10 @@ vi.mock("@phneakngar/shared", async () => {
       },
       overview: {
         getTaskStatsByWorkspace: (...args: unknown[]) => mockGetTaskStatsByWorkspace(...args),
+      },
+      gatewayBinding: {
+        ...real.queries.gatewayBinding,
+        listGatewayBindings: (...args: unknown[]) => mockListGatewayBindings(...args),
       },
     },
   };
@@ -44,6 +50,7 @@ describe("getWorkspaceHealth", () => {
     mockListAgentRuntimes.mockResolvedValue([]);
     mockGetAllAgentsForWorkspace.mockResolvedValue([]);
     mockGetTaskStatsByWorkspace.mockResolvedValue(taskStats());
+    mockListGatewayBindings.mockResolvedValue([]);
   });
 
   it("reports ok when a machine is online and agents are configured", async () => {
@@ -267,5 +274,98 @@ describe("getWorkspaceHealth", () => {
     const issue = report.issues.find((item) => item.code === "headroom_runtime_unavailable");
 
     expect(issue?.next_actions).toEqual(["install_headroom", "configure_headroom_path"]);
+  });
+
+  it("reports dry-config gateway binding counts and live-without-token risk (no live probes)", async () => {
+    mockListAgentRuntimes.mockResolvedValue([
+      {
+        id: "rt1",
+        provider: "claude",
+        machineLastSeenAt: new Date(now.getTime() - 1_000).toISOString(),
+      },
+    ]);
+    mockGetAllAgentsForWorkspace.mockResolvedValue([{ id: "a1", runtimeId: "rt1" }]);
+    mockListGatewayBindings.mockResolvedValue([
+      {
+        id: "gb1",
+        provider: "telegram",
+        externalTeamId: "chat-1",
+        agentId: "a1",
+        status: "active",
+        dmPolicy: "open",
+        outboundMode: "live",
+      },
+      {
+        id: "gb2",
+        provider: "slack",
+        externalTeamId: "T1",
+        agentId: "a1",
+        status: "active",
+        dmPolicy: "open",
+        outboundMode: "preview",
+      },
+    ]);
+
+    const report = await getWorkspaceHealth({} as any, "w1", { now });
+
+    expect(mockListGatewayBindings).toHaveBeenCalledWith({}, "w1");
+    expect(report.checks.gateway).toMatchObject({
+      status: "warning",
+      total: 2,
+      active: 2,
+      live: 1,
+      preview: 1,
+      live_without_token_risk: 1,
+      webhook_fail_closed: false,
+    });
+    expect(report.issues.map((issue) => issue.code)).toContain("gateway_live_without_token_risk");
+    expect(report.status).toBe("warning");
+  });
+
+  it("reports critical when gateway bindings misconfig or webhook secret fail-closed", async () => {
+    mockListAgentRuntimes.mockResolvedValue([
+      {
+        id: "rt1",
+        provider: "claude",
+        machineLastSeenAt: new Date(now.getTime() - 1_000).toISOString(),
+      },
+    ]);
+    mockGetAllAgentsForWorkspace.mockResolvedValue([{ id: "a1", runtimeId: "rt1" }]);
+    mockListGatewayBindings.mockResolvedValue([
+      {
+        id: "gb-bad",
+        provider: "discord",
+        externalTeamId: "",
+        agentId: "missing-agent",
+        status: "active",
+        dmPolicy: "open",
+        outboundMode: "preview",
+      },
+    ]);
+
+    const report = await getWorkspaceHealth({} as any, "w1", {
+      now,
+      gatewayEnv: {
+        GATEWAY_TEAM_MAP: JSON.stringify({ "slack:T1": { workspaceId: "w1" } }),
+        GATEWAY_WEBHOOK_SECRET: "",
+      },
+    });
+
+    expect(report.checks.gateway).toMatchObject({
+      status: "critical",
+      missing_team_id: 1,
+      missing_agent_ref: 1,
+      webhook_map_configured: true,
+      webhook_secret_configured: false,
+      webhook_fail_closed: true,
+    });
+    expect(report.issues.map((issue) => issue.code)).toEqual(
+      expect.arrayContaining([
+        "gateway_binding_missing_team_id",
+        "gateway_binding_missing_agent",
+        "gateway_webhook_secret_missing",
+      ]),
+    );
+    expect(report.status).toBe("critical");
   });
 });

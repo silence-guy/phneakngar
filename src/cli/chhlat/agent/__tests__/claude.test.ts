@@ -60,6 +60,7 @@ async function collectMessages(
 }
 
 const { ClaudeBackend } = await import("../claude.js");
+const { setToolActionApprovalCreator } = await import("../../tool-gate.js");
 
 describe("ClaudeBackend", () => {
   let backend: InstanceType<typeof ClaudeBackend>;
@@ -68,6 +69,7 @@ describe("ClaudeBackend", () => {
     mockSpawn.mockClear();
     mockKillProcessTree.mockClear();
     currentMockProc = null;
+    setToolActionApprovalCreator(null);
     backend = new ClaudeBackend("/usr/bin/claude");
   });
 
@@ -204,6 +206,35 @@ describe("ClaudeBackend", () => {
     expect(parsed.response.request_id).toBe("req_email");
     expect(parsed.response.response.behavior).toBe("deny");
     expect(String(parsed.response.response.message)).toMatch(/approval|outbound_email/i);
+  });
+
+  it("creates durable tool_action approval and includes id on high-stakes deny", async () => {
+    setToolActionApprovalCreator(async () => ({ approvalId: "ap_cli_42" }));
+
+    const session = backend.execute("hello", { cwd: "/tmp" });
+    const mock = getMock();
+
+    mock.stdout.push(
+      JSON.stringify({
+        type: "control_request",
+        request_id: "req_bash",
+        payload: {
+          tool_name: "Bash",
+          input: { command: "rm -rf /tmp/x" },
+        },
+      }) + "\n",
+    );
+    await tick(40);
+    mock.proc.emit("close", 0);
+
+    await session.result;
+
+    const approvalWrite = mock.stdinWrites.find((w) => w.includes("control_response"));
+    expect(approvalWrite).toBeDefined();
+    const parsed = JSON.parse(approvalWrite!.trim());
+    expect(parsed.response.response.behavior).toBe("deny");
+    expect(parsed.response.response.approval_id).toBe("ap_cli_42");
+    expect(String(parsed.response.response.message)).toContain("Approval id: ap_cli_42");
   });
 
   it("does not write approval when request_id is missing", async () => {

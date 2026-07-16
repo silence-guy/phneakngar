@@ -104,6 +104,22 @@ describe("isUnreadEligible", () => {
 // TC1: upsertUnreadEntry
 // ---------------------------------------------------------------------------
 
+describe("shouldReplaceUnreadStamp / isUnreadSuppressedByReadState", () => {
+  it("accepts equal or newer completed_at for replace", () => {
+    expect(inboxQueries.shouldReplaceUnreadStamp("2026-01-01T00:00:00Z", "2026-01-01T00:00:00Z")).toBe(true);
+    expect(inboxQueries.shouldReplaceUnreadStamp("2026-01-01T00:00:00Z", "2026-01-02T00:00:00Z")).toBe(true);
+    expect(inboxQueries.shouldReplaceUnreadStamp("2026-01-02T00:00:00Z", "2026-01-01T00:00:00Z")).toBe(false);
+  });
+
+  it("suppresses unread when last_read_at is at/after completion", () => {
+    expect(inboxQueries.isUnreadSuppressedByReadState(null, "2026-01-01T00:00:00Z")).toBe(false);
+    expect(inboxQueries.isUnreadSuppressedByReadState(undefined, "2026-01-01T00:00:00Z")).toBe(false);
+    expect(inboxQueries.isUnreadSuppressedByReadState("2026-01-01T00:00:00Z", "2026-01-01T00:00:00Z")).toBe(true);
+    expect(inboxQueries.isUnreadSuppressedByReadState("2026-01-02T00:00:00Z", "2026-01-01T00:00:00Z")).toBe(true);
+    expect(inboxQueries.isUnreadSuppressedByReadState("2026-01-01T00:00:00Z", "2026-01-02T00:00:00Z")).toBe(false);
+  });
+});
+
 describe("upsertUnreadEntry", () => {
   it("calls db.run with INSERT ON CONFLICT", async () => {
     const mockDb = createMockDb([]);
@@ -122,7 +138,7 @@ describe("upsertUnreadEntry", () => {
     expect(mockDb.run).toHaveBeenCalled();
   });
 
-  it("can be called twice (upsert semantics)", async () => {
+  it("can be called twice (double-upsert / retry semantics)", async () => {
     const mockDb = createMockDb([]);
     const entry = {
       conversationId: "c1",
@@ -137,8 +153,32 @@ describe("upsertUnreadEntry", () => {
       latestMessageId: "m1",
     };
     await inboxQueries.upsertUnreadEntry(mockDb, entry);
+    await inboxQueries.upsertUnreadEntry(mockDb, entry);
     await inboxQueries.upsertUnreadEntry(mockDb, { ...entry, taskId: "t2", completedAt: "2026-01-02T00:00:00Z" });
-    expect(mockDb.run).toHaveBeenCalledTimes(2);
+    expect(mockDb.run).toHaveBeenCalledTimes(3);
+  });
+
+  it("SQL guards against older completed_at and already-read state", async () => {
+    const mockDb = createMockDb([]);
+    await inboxQueries.upsertUnreadEntry(mockDb, {
+      conversationId: "c1",
+      userId: "u1",
+      workspaceId: "w1",
+      agentId: "a1",
+      taskId: "t1",
+      taskType: "user_dm_message",
+      taskStatus: "completed",
+      taskPrompt: "hello",
+      completedAt: "2026-01-01T00:00:00Z",
+      latestMessageId: "m1",
+    });
+    const sqlArg = mockDb.run.mock.calls[0][0];
+    const sqlText = String(sqlArg?.queryChunks?.map?.((c: any) => c?.value?.join?.("") ?? c).join("") ?? sqlArg);
+    // Fallback: drizzle SQL objects stringify with query contents
+    const blob = sqlText + JSON.stringify(sqlArg);
+    expect(blob).toMatch(/ON CONFLICT/i);
+    expect(blob).toMatch(/conversation_read_state/i);
+    expect(blob).toMatch(/completed_at/i);
   });
 });
 
@@ -176,6 +216,30 @@ describe("deleteUnreadEntry", () => {
     await inboxQueries.deleteUnreadEntry(mockDb, "c1", "u1");
     await inboxQueries.deleteUnreadEntry(mockDb, "c1", "u1");
     expect(mockDb.delete).toHaveBeenCalledTimes(2);
+  });
+
+  it("race-safe delete with upToCompletedAt uses watermark SQL (keeps newer stamps)", async () => {
+    const mockDb = createMockDb([]);
+    await inboxQueries.deleteUnreadEntry(mockDb, "c1", "u1", {
+      upToCompletedAt: "2026-01-02T00:00:00.000Z",
+    });
+    expect(mockDb.run).toHaveBeenCalledTimes(1);
+    expect(mockDb.delete).not.toHaveBeenCalled();
+    const sqlArg = mockDb.run.mock.calls[0][0];
+    const blob = String(sqlArg) + JSON.stringify(sqlArg);
+    expect(blob).toMatch(/DELETE/i);
+    expect(blob).toMatch(/completed_at/i);
+  });
+
+  it("race-safe delete is idempotent under double call", async () => {
+    const mockDb = createMockDb([]);
+    await inboxQueries.deleteUnreadEntry(mockDb, "c1", "u1", {
+      upToCompletedAt: "2026-01-02T00:00:00.000Z",
+    });
+    await inboxQueries.deleteUnreadEntry(mockDb, "c1", "u1", {
+      upToCompletedAt: "2026-01-02T00:00:00.000Z",
+    });
+    expect(mockDb.run).toHaveBeenCalledTimes(2);
   });
 });
 
@@ -256,12 +320,12 @@ describe("getUnreadCount", () => {
 // ---------------------------------------------------------------------------
 
 describe("markConversationRead", () => {
-  it("calls db operations for read_state upsert + delete", async () => {
+  it("calls db operations for read_state upsert + watermark delete", async () => {
     const mockDb = createMockDb([]);
     await inboxQueries.markConversationRead(mockDb, "u", "c");
-    // 1 call for UPSERT (db.run) + 1 call for deleteUnreadEntry (db.delete)
-    expect(mockDb.run).toHaveBeenCalledTimes(1);
-    expect(mockDb.delete).toHaveBeenCalledTimes(1);
+    // 1 call for UPSERT (db.run) + 1 call for race-safe deleteUnreadEntry (db.run)
+    expect(mockDb.run).toHaveBeenCalledTimes(2);
+    expect(mockDb.delete).not.toHaveBeenCalled();
   });
 });
 

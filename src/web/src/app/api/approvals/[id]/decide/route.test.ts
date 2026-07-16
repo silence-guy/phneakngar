@@ -9,6 +9,7 @@ const mockReleaseFromApproval = vi.fn();
 const mockGetAgent = vi.fn();
 const mockSendReleased = vi.fn();
 const mockInstallAgentSkill = vi.fn();
+const mockCreateMessageIfAbsent = vi.fn();
 
 vi.mock("@opennextjs/cloudflare", () => ({
   getCloudflareContext: vi.fn(() => ({ env: { DB: {}, PHNEAKNGAR_DOMAIN: "agents.example" } })),
@@ -43,6 +44,9 @@ vi.mock("@phneakngar/shared", async (importOriginal) => {
       },
       agentSkill: {
         installAgentSkill: (...a: unknown[]) => mockInstallAgentSkill(...a),
+      },
+      message: {
+        createMessageIfAbsent: (...a: unknown[]) => mockCreateMessageIfAbsent(...a),
       },
     },
   };
@@ -170,18 +174,24 @@ describe("POST /api/approvals/[id]/decide", () => {
       id: "ap_1",
       kind: "outbound_email",
       status: "pending",
-      payload: { emailId: "e1" },
+      payload: { emailId: "e1", conversationId: "c1" },
     });
     mockGetEmailById.mockResolvedValue({ id: "e1", status: "pending_approval", agentId: "a1" });
     mockGetAgent.mockResolvedValue({ id: "a1", ownerId: "u1" });
-    mockMarkRejected.mockResolvedValue({ id: "e1", status: "rejected" });
+    mockMarkRejected.mockResolvedValue({
+      id: "e1",
+      status: "rejected",
+      subject: "Hi",
+      toEmail: "b@example.com",
+    });
     mockDecideApproval.mockResolvedValue({
       id: "ap_1",
       kind: "outbound_email",
       status: "rejected",
       decidedByUserId: "u1",
-      payload: { emailId: "e1" },
+      payload: { emailId: "e1", conversationId: "c1" },
     });
+    mockCreateMessageIfAbsent.mockResolvedValue({ message: { id: "email-decision-ap_1" }, created: true });
 
     const res = await POST(
       new NextRequest("http://localhost/api/approvals/ap_1/decide", {
@@ -201,6 +211,16 @@ describe("POST /api/approvals/[id]/decide", () => {
     // Side effect before terminal decide
     expect(mockMarkRejected.mock.invocationCallOrder[0]).toBeLessThan(
       mockDecideApproval.mock.invocationCallOrder[0],
+    );
+    // Quiet system line for chat timeline (idempotent on approval id)
+    expect(mockCreateMessageIfAbsent).toHaveBeenCalledWith(
+      {},
+      expect.objectContaining({
+        id: "email-decision-ap_1",
+        conversationId: "c1",
+        role: "assistant",
+        content: expect.stringContaining("rejected"),
+      }),
     );
   });
 
@@ -257,7 +277,7 @@ describe("POST /api/approvals/[id]/decide", () => {
       id: "ap_1",
       kind: "outbound_email",
       status: "pending",
-      payload: { emailId: "e1", customAccountId: null },
+      payload: { emailId: "e1", customAccountId: null, conversationId: "c1" },
     });
     mockGetEmailById.mockResolvedValue({ id: "e1", status: "pending_approval", agentId: "a1" });
     mockGetAgent.mockResolvedValue({ id: "a1", ownerId: "u1" });
@@ -276,8 +296,9 @@ describe("POST /api/approvals/[id]/decide", () => {
       kind: "outbound_email",
       status: "approved",
       decidedByUserId: "u1",
-      payload: { emailId: "e1" },
+      payload: { emailId: "e1", conversationId: "c1" },
     });
+    mockCreateMessageIfAbsent.mockResolvedValue({ message: { id: "email-decision-ap_1" }, created: true });
     mockSendReleased.mockResolvedValue(
       new Response(JSON.stringify({ id: "e1", status: "sent" }), { status: 200 }),
     );
@@ -303,6 +324,55 @@ describe("POST /api/approvals/[id]/decide", () => {
     expect(mockDecideApproval.mock.invocationCallOrder[0]).toBeLessThan(
       mockSendReleased.mock.invocationCallOrder[0],
     );
+    // System approve line before send (sent event comes from outbound finalize)
+    expect(mockCreateMessageIfAbsent).toHaveBeenCalledWith(
+      {},
+      expect.objectContaining({
+        id: "email-decision-ap_1",
+        conversationId: "c1",
+        role: "assistant",
+        content: expect.stringContaining("approved"),
+      }),
+    );
+    expect(mockCreateMessageIfAbsent.mock.invocationCallOrder[0]).toBeLessThan(
+      mockSendReleased.mock.invocationCallOrder[0],
+    );
+  });
+
+  it("skips system event stamp when outbound email payload has no conversationId", async () => {
+    mockGetApproval.mockResolvedValue({
+      id: "ap_2",
+      kind: "outbound_email",
+      status: "pending",
+      payload: { emailId: "e2" },
+    });
+    mockGetEmailById.mockResolvedValue({ id: "e2", status: "pending_approval", agentId: "a1" });
+    mockGetAgent.mockResolvedValue({ id: "a1", ownerId: "u1" });
+    mockMarkRejected.mockResolvedValue({
+      id: "e2",
+      status: "rejected",
+      subject: "No conv",
+      toEmail: "b@example.com",
+    });
+    mockDecideApproval.mockResolvedValue({
+      id: "ap_2",
+      kind: "outbound_email",
+      status: "rejected",
+      decidedByUserId: "u1",
+      payload: { emailId: "e2" },
+    });
+
+    const res = await POST(
+      new NextRequest("http://localhost/api/approvals/ap_2/decide", {
+        method: "POST",
+        body: JSON.stringify({ decision: "rejected" }),
+        headers: { "content-type": "application/json" },
+      }),
+      { params: { id: "ap_2" } } as any,
+    );
+
+    expect(res.status).toBe(200);
+    expect(mockCreateMessageIfAbsent).not.toHaveBeenCalled();
   });
 
   it("does not decide when release fails", async () => {

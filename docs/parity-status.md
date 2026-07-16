@@ -1,0 +1,65 @@
+# Helio / OpenClaw parity status
+
+**Last updated:** 2026-07-16  
+**Canonical plan:** `plans/2026-07-16-full-commercial-helio-openclaw-parity.md` (local)
+
+## Claim (current)
+
+> **Full commercial Helio/OpenClaw parity is not claimed.**
+
+Residual control-plane MVPs, productized UI, monorepo-green tests, and in-progress commercial foundations do **not** equal live multi-channel / marketplace / OAuth commercial parity.
+
+| Claim | Status |
+| --- | --- |
+| Helio residual control-plane MVPs | Shipped (`0050`–`0052`, productize) |
+| Multi-party DM (schema + API + UI) | MVP shipped — `0052` applied on remote D1 (2026-07-16) |
+| Approval inbox (outbound email) | Productized MVP |
+| Scenario install ensure-path | Ensure + install **health** (`assess`/`report` + studios `scenario_path.health` gaps) |
+| Approvals multi-kind UI | Icons + payload summaries for email / tool / skill / automation promote |
+| Integrations settings UI | Agent settings → Integrations tab (GitHub/Linear vault pointer); `secret_ref` never returned |
+| Skills lifecycle | Propose → skill_install approval → install; agent skills list read-only; marketplace not claimed |
+| Automation reliability UX | Last run + overdue chip on automations list |
+| CLI↔approval bridge (WP8) | High-stakes control_request can create durable `tool_action` via machine `POST /api/chhlat/approvals` and deny with `approval_id` pointer — **no hold/resume** |
+| Doctor / dry binding health (WP16) | Dry-config binding + webhook-secret assessors; workspace-health `checks.gateway`; `/api/health` gateway_webhook fail-closed; Gateway tab doctor row; Live risk/not-verified — **no live provider probes** |
+| Timeline + inbox polish (WP17–18 partial) | Race-safe inbox_unread + conversation_map getOrCreate; thin email system events via timeline-chrome on send/approve — **no `activity_event` company feed** |
+| Gateway ingress (5 providers) | D1 `gateway_binding` first + env map bootstrap; shared secret; optional Telegram/Slack provider secrets; bot-loop + dedupe |
+| Gateway outbound | Format stubs + Telegram/Slack live clients when `outbound_mode=live` + token (feature-flagged) |
+| Bindings admin (D1) | MVP shipped (`0053` + Settings → Gateway tab) — `0053` applied on remote D1 (2026-07-16) |
+| Live Slack/Telegram send in production | **Not claimed** (Preview default; no production OAuth/install flow) |
+| Heartbeat ambient checks | Pure helpers + automation skill_name hook; delivery quiet path partial |
+| Remote D1 `0050`–`0053` | **Applied** on `phneakngar-app` remote (2026-07-16); re-list shows no pending migrations |
+| Full commercial Helio/OpenClaw parity | **Not claimed** |
+
+## Forbidden marketing phrases until plan exit
+
+- “Full commercial Helio parity”
+- “Full OpenClaw parity”
+- “Works with Slack/Teams/…” without listing Live vs Preview and staging proof
+- “OAuth marketplace” / “ClawHub equivalent” without skills verify lifecycle
+
+## Deploy note
+
+**Remote `phneakngar-app` (2026-07-16):** `0050`–`0053` applied via `pnpm db:migrate:remote`; list shows **no migrations to apply**.
+
+Additive migrations for multi-party, approvals foundations, and gateway bindings:
+
+- `0050_helio_parity_foundations.sql`
+- `0051_artifact_delivery_task.sql`
+- `0052_conversation_member.sql`
+- `0053_gateway_commercial_foundations.sql` (bindings, peer allowlist, ingress dedupe)
+
+```bash
+pnpm --filter @phneakngar/web exec wrangler d1 migrations list phneakngar-app --remote
+pnpm db:migrate:remote   # only when list shows pending
+```
+
+## Phase ladder (summary)
+
+| Phase | Meaning | Claim when green |
+| --- | --- | --- |
+| 0 | Honesty + migrations | Still not full parity |
+| A | Control-plane commercial | Control-plane ready; live send limited |
+| B | Live multi-channel commercial | Parity for **listed Live** providers only |
+| C | Enterprise shell | Optional enterprise commercial |
+
+See the full plan for exit checklists.

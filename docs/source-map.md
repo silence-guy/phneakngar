@@ -65,3 +65,10 @@ Deep links (`phneakngar://…` and https paths under `/w/{slug}/…`) are handle
 - Package-safe slug/scope: `phneakngar`, `@phneakngar/*`
 - Environment prefix: `PHNEAKNGAR_*`
 - Protocol identifiers such as HTTP headers, package names, domains, and binary names must stay ASCII.
+
+## Parity honesty
+
+- [parity-status.md](./parity-status.md) — Helio/OpenClaw claim ladder (full commercial parity **not** claimed)
+- [enterprise-commercial-shell.md](./enterprise-commercial-shell.md) — Phase C scaffold only
+- Gateway services: `src/web/src/lib/services/gateway-ingress.ts`, `gateway-outbound.ts`, `gateway-verify/`
+- Gateway bindings queries: `src/shared/src/db/queries/gateway-binding.ts` (after `0053`)

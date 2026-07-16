@@ -6,6 +6,7 @@ import {
   ChhlatClient,
   ChhlatHttpError,
   isTaskAlreadyTerminalError,
+  makeClientToolActionApprovalCreator,
 } from "./client.js";
 
 // ---------------------------------------------------------------------------
@@ -545,6 +546,81 @@ describe("ChhlatClient.sweep() with mocked fetch", () => {
         body: JSON.stringify({ chhlat_id: "d1" }),
       }),
     );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// ChhlatClient.createToolApproval() tests
+// ---------------------------------------------------------------------------
+
+describe("ChhlatClient.createToolApproval() with mocked fetch", () => {
+  const originalFetch = globalThis.fetch;
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+  });
+
+  it("POSTs tool_action approval bridge payload", async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 201,
+      json: () =>
+        Promise.resolve({
+          approval: { id: "ap_1", kind: "tool_action", status: "pending" },
+        }),
+    }) as unknown as typeof fetch;
+
+    const client = new ChhlatClient("http://localhost:8080");
+    const res = await client.createToolApproval("tok", {
+      chhlat_id: "d1",
+      agent_id: "a1",
+      tool_name: "Bash",
+      tool_class: "shell",
+      request_id: "req_1",
+      policy_reason: "high_stakes:shell",
+      input: { command: "rm -rf /tmp" },
+    });
+
+    expect(res.approval.id).toBe("ap_1");
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      "http://localhost:8080/api/chhlat/approvals",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({
+          chhlat_id: "d1",
+          agent_id: "a1",
+          tool_name: "Bash",
+          tool_class: "shell",
+          request_id: "req_1",
+          policy_reason: "high_stakes:shell",
+          input: { command: "rm -rf /tmp" },
+        }),
+      }),
+    );
+  });
+
+  it("makeClientToolActionApprovalCreator returns approvalId from response", async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 201,
+      json: () => Promise.resolve({ approval: { id: "ap_99" } }),
+    }) as unknown as typeof fetch;
+
+    const client = new ChhlatClient("http://localhost:8080");
+    const creator = makeClientToolActionApprovalCreator({
+      client,
+      token: "tok",
+      chhlatId: "d1",
+      agentId: "a1",
+    });
+    const result = await creator({
+      toolName: "Write",
+      toolClass: "write",
+      requestId: "r1",
+      input: { path: "x" },
+      policyReason: "high_stakes:write",
+    });
+    expect(result).toEqual({ approvalId: "ap_99" });
   });
 });
 

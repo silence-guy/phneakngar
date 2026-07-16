@@ -10,6 +10,7 @@ export const SETTINGS_LABELS = {
     notifications: "ការជូនដំណឹង",
     members: "សមាជិក",
     usages: "ការប្រើប្រាស់",
+    gateway: "ច្រកទ្វារ",
   } as Record<string, string>,
 
   general: {
@@ -74,6 +75,39 @@ export const SETTINGS_LABELS = {
     enable: "បើកការជូនដំណឹង",
     enableDescription: "ទទួលការជូនដំណឹងពេលភារកិច្ចបញ្ចប់ ខណៈ tab នៅផ្ទៃខាងក្រោយ",
     notifyWhen: "ជូនដំណឹងខ្ញុំពេល៖",
+  },
+
+  gateway: {
+    sectionTitle: "Chat gateway bindings",
+    sectionHint:
+      "Map Slack/Discord/Telegram/Lark/Teams team ids to a workspace agent. Outbound defaults to Preview until Live credentials are configured.",
+    parityNote: "Full commercial Helio/OpenClaw parity is not claimed.",
+    provider: "Provider",
+    teamId: "External team / chat id",
+    agent: "Agent",
+    add: "Add binding",
+    saving: "Saving…",
+    empty: "No gateway bindings yet.",
+    created: "Binding created",
+    deleted: "Binding deleted",
+    delete: "Delete binding",
+    failedToLoad: "Failed to load gateway bindings",
+    failedToCreate: "Failed to create binding",
+    failedToDelete: "Failed to delete binding",
+    missingFields: "Provider, team id, and agent are required",
+    doctorTitle: "Dry-config doctor",
+    doctorHint:
+      "Binding and webhook-secret checks only. No live Telegram/Slack network probes. Live badges are not send-readiness.",
+    doctorOk: "Dry-config ok",
+    doctorWarning: "Dry-config warnings",
+    doctorCritical: "Dry-config critical",
+    doctorBindingsSummary: "bindings",
+    doctorLiveRisk: "Live without verified outbound token (risk flag)",
+    doctorWebhookFailClosed: "Webhook fail-closed: map set without shared secret",
+    doctorMissingTeam: "Missing external team / chat id",
+    doctorMissingAgent: "Binding agent missing or not in workspace",
+    doctorEmpty: "No bindings — nothing to assess.",
+    liveRiskBadgeHint: "not verified",
   },
 } as const;
 

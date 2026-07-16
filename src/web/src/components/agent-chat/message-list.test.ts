@@ -7,6 +7,7 @@ import {
   TIMELINE_BODY_CLASS,
   TIMELINE_BODY_QUIET_CLASS,
 } from "@/components/chat-primitives";
+import { isQuietSystemNote } from "@/components/chat-primitives/timeline-chrome";
 
 // AC4 regression guard: a send-dm reply that is ALSO the message carrying the
 // live error stream must still render its own text bubble (error is additive),
@@ -126,5 +127,23 @@ describe("AgentRow / HumanRow shared timeline chrome (B4)", () => {
     // Body tokens stay flat (no role-colored fills).
     expect(TIMELINE_BODY_CLASS).not.toContain("bg-primary");
     expect(TIMELINE_BODY_CLASS).not.toMatch(/\bbg-muted\b/);
+  });
+
+  it("message-list quiet path classifies email approve/reject as system notes", () => {
+    // message-list uses isQuietSystemNote for the system chrome branch.
+    expect(
+      isQuietSystemNote({
+        role: "assistant",
+        content: "Outbound email approved: Hi",
+        metadata: { kind: "email_approved" },
+      }),
+    ).toBe(true);
+    expect(
+      isQuietSystemNote({
+        role: "assistant",
+        content: "Outbound email rejected: Hi",
+        metadata: { kind: "email_rejected" },
+      }),
+    ).toBe(true);
   });
 });
