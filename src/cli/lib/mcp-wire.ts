@@ -98,6 +98,8 @@ function tomlServerBlock(): string {
     `command = ${JSON.stringify(command)}`,
     `args = [${argsToml}]`,
     "enabled = true",
+    // Grok session attach budgets all MCP inits; keep headroom for parallel cold starts.
+    "startup_timeout_sec = 60",
     END,
     "",
   ].join("\n");

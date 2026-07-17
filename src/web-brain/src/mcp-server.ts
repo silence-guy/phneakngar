@@ -118,9 +118,14 @@ const TOOLS = [
   },
 ] as const;
 
-/** Framing for the active client: Grok uses NDJSON; official SDK uses Content-Length. */
+/**
+ * Framing for the active client.
+ * Grok TUI/session decodes **NDJSON only** (`mcp_transport_decode_error` if we
+ * reply with `Content-Length:` headers). Default NDJSON; switch to LSP-style
+ * Content-Length only when the client speaks that framing first.
+ */
 type FrameMode = "content-length" | "ndjson";
-let frameMode: FrameMode = "content-length";
+let frameMode: FrameMode = "ndjson";
 
 function send(msg: unknown): void {
   // One writeSync: split stdout.write() can leave body in the pipe buffer.
@@ -355,10 +360,11 @@ export async function runMcpStdio(): Promise<void> {
     draining = true;
     try {
       while (true) {
-        // Prefer Content-Length if the buffer looks like LSP/MCP headers.
+        // Content-Length only when the buffer *starts* with that header.
+        // Do not treat bare `\r\n\r\n` elsewhere as CL — Grok is NDJSON-only.
         const asText = buffer.toString("utf-8");
         const trimmedStart = asText.replace(/^\s+/, "");
-        if (/^Content-Length\s*:/i.test(trimmedStart) || buffer.indexOf("\r\n\r\n") >= 0) {
+        if (/^Content-Length\s*:/i.test(trimmedStart)) {
           const headerEnd = buffer.indexOf("\r\n\r\n");
           if (headerEnd < 0) return;
           const header = buffer.slice(0, headerEnd).toString("utf-8");
@@ -401,26 +407,12 @@ export async function runMcpStdio(): Promise<void> {
           continue;
         }
 
-        // Bare JSON object without trailing newline (Grok mcp doctor).
+        // Bare JSON object without trailing newline.
         const text = buffer.toString("utf-8");
         const taken = takeJsonObject(text.trimStart());
         if (!taken) return;
-        // Only consume when the object is complete and buffer has no more
-        // incomplete trailing junk that is clearly still growing — if rest is
-        // only whitespace, we can safely parse now.
-        if (taken.rest.trim() !== "" && !taken.rest.trimStart().startsWith("{")) {
-          // Incomplete trailing data; wait for more unless rest is empty-ish.
-          // If rest has non-JSON noise, drop object and continue carefully.
-        }
         frameMode = "ndjson";
-        const consumed = text.length - taken.rest.length;
-        // Map consumed length back onto buffer (trimStart may have skipped ws).
-        const ws = text.length - text.trimStart().length;
-        const byteLen = Buffer.byteLength(text.slice(0, ws + taken.json.length), "utf-8");
-        // Prefer exact slice via string length alignment for utf8 ascii JSON.
         buffer = Buffer.from(taken.rest, "utf-8");
-        void consumed;
-        void byteLen;
         try {
           const msg = JSON.parse(taken.json) as JsonRpcReq;
           const resp = await handleMcpMessage(msg);
@@ -431,9 +423,12 @@ export async function runMcpStdio(): Promise<void> {
       }
     } finally {
       draining = false;
+      // If data arrived while we were awaiting, process it (avoid stall).
+      if (buffer.length > 0) void drain();
     }
   }
 
+  if (typeof process.stdin.resume === "function") process.stdin.resume();
   process.stdin.on("data", onData);
   await new Promise<void>((resolve) => {
     process.stdin.on("end", () => resolve());
