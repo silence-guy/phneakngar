@@ -4,7 +4,7 @@ All workspace packages share one version. Prefer the monorepo release path:
 
 ```bash
 # from repo root — after quality gates
-pnpm bump patch   # or minor / major / explicit 0.0.150
+pnpm bump patch   # or minor / major / explicit 0.0.3
 git push origin main
 ```
 

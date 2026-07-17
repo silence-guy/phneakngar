@@ -11,19 +11,19 @@ import {
 describe("CLI package verifier helpers", () => {
   it("selects only the tarball matching the current package version", () => {
     const entries = [
-      "phneakngar-cli-0.0.149.tgz",
-      "phneakngar-cli-0.0.1.tgz",
+      "phneakngar-cli-0.0.9.tgz", // stale leftover from an older line
+      "phneakngar-cli-0.0.2.tgz",
     ];
 
-    expect(expectedTarballName("0.0.1")).toBe("phneakngar-cli-0.0.1.tgz");
-    expect(findExpectedTarball(entries, "0.0.1")).toBe(
-      "phneakngar-cli-0.0.1.tgz",
+    expect(expectedTarballName("0.0.2")).toBe("phneakngar-cli-0.0.2.tgz");
+    expect(findExpectedTarball(entries, "0.0.2")).toBe(
+      "phneakngar-cli-0.0.2.tgz",
     );
   });
 
   it("rejects stale tarballs when the expected version is absent", () => {
     expect(
-      findExpectedTarball(["phneakngar-cli-0.0.149.tgz"], "0.0.1"),
+      findExpectedTarball(["phneakngar-cli-0.0.9.tgz"], "0.0.2"),
     ).toBeUndefined();
   });
 
