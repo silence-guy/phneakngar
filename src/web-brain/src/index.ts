@@ -20,7 +20,10 @@ export { webFetch } from "./fetch.js";
 export {
   webSearch,
   ddgLiteProvider,
+  ddgHtmlProvider,
   parseDdgLiteHtml,
+  resolveDdgResultHref,
+  ddgTimeParam,
   createMockSearchProvider,
 } from "./search.js";
 export { WebCache, defaultCacheDir } from "./cache.js";
@@ -79,6 +82,8 @@ export type {
   FetchOptions,
   SearchOptions,
   SearchProvider,
+  SearchProviderTelemetry,
+  SearchTimeRange,
   WebCacheLike,
 } from "./types.js";
 export type { WebBrainStatus } from "./doctor.js";

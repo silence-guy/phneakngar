@@ -58,6 +58,19 @@ function printSearch(res: Awaited<ReturnType<typeof webSearch>>, json: boolean):
   console.log(`query: ${res.query}`);
   console.log(`provider: ${res.provider}`);
   console.log(`results: ${res.results.length}`);
+  if (res.degraded) console.log(`degraded: true`);
+  if (res.error) console.log(`error: [${res.error.code}] ${res.error.message}`);
+  if (res.providersTried?.length) {
+    console.log(`providersTried: ${res.providersTried.join(" → ")}`);
+  }
+  if (res.timeRange) console.log(`timeRange: ${res.timeRange}`);
+  if (res.telemetry?.length) {
+    for (const t of res.telemetry) {
+      console.log(
+        `  telemetry[${t.provider}]: http=${t.httpStatus ?? "?"} parse=${t.parseCount} ${t.latencyMs}ms${t.blockedHint ? ` blocked=${t.blockedHint}` : ""}${t.error ? ` err=${t.error}` : ""}`,
+      );
+    }
+  }
   console.log("");
   for (const [i, r] of res.results.entries()) {
     console.log(`${i + 1}. ${r.title}`);
@@ -120,9 +133,15 @@ export function webCommand(): Command {
 
   cmd
     .command("search")
-    .description("Search the web (default: ddg-lite; use --mock for offline demo)")
+    .description(
+      "Search the web (ddg-lite → ddg-html fallback; use --mock for offline demo)",
+    )
     .argument("<query>", "Search query")
     .option("--max <n>", "Max results", "5")
+    .option(
+      "--time-range <range>",
+      "Recency: day | week | month | year (DDG df=)",
+    )
     .option("--json", "JSON output")
     .option(
       "--mock",
@@ -130,6 +149,9 @@ export function webCommand(): Command {
     )
     .action(async (query: string, opts) => {
       const maxResults = Number(opts.max) || 5;
+      const timeRange = opts.timeRange
+        ? (String(opts.timeRange) as "day" | "week" | "month" | "year")
+        : undefined;
       const provider = opts.mock
         ? createMockSearchProvider([
             {
@@ -139,7 +161,7 @@ export function webCommand(): Command {
             },
           ])
         : undefined;
-      const res = await webSearch(query, { maxResults, provider });
+      const res = await webSearch(query, { maxResults, provider, timeRange });
       printSearch(res, !!opts.json);
     });
 

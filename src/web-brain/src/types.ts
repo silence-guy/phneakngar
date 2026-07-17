@@ -11,7 +11,8 @@ export type WebErrorCode =
   | "unsupported_content"
   | "too_large"
   | "empty_content"
-  | "search_failed";
+  | "search_failed"
+  | "empty_provider_results";
 
 export type WebError = {
   ok: false;
@@ -27,11 +28,35 @@ export type WebSearchResult = {
   snippet: string;
 };
 
+/** Per-provider attempt diagnostics (even when results are empty). */
+export type SearchProviderTelemetry = {
+  provider: string;
+  ok: boolean;
+  httpStatus?: number;
+  latencyMs: number;
+  rawHtmlBytes?: number;
+  parseCount: number;
+  /** Captcha / anomaly / challenge page signals when detected. */
+  blockedHint?: string;
+  error?: string;
+};
+
 export type WebSearchSuccess = {
   ok: true;
   query: string;
   results: WebSearchResult[];
+  /** Primary provider that produced results, or last tried when empty. */
   provider: string;
+  /** True when results are empty or only a degraded fallback path. */
+  degraded?: boolean;
+  /** Present when providers returned zero usable hits or partially failed. */
+  error?: {
+    code: WebErrorCode;
+    message: string;
+  };
+  providersTried?: string[];
+  telemetry?: SearchProviderTelemetry[];
+  timeRange?: SearchTimeRange;
 };
 
 export type WebSearchResponse = WebSearchSuccess | WebError;
@@ -77,18 +102,30 @@ export type FetchOptions = {
   allowPrivateNetwork?: boolean;
 };
 
+export type SearchTimeRange = "day" | "week" | "month" | "year";
+
 export type SearchOptions = {
   maxResults?: number;
-  /** Injected search provider for tests. */
+  /** Injected search provider for tests (skips fallback chain). */
   provider?: SearchProvider;
   fetchImpl?: typeof fetch;
+  /** Recency filter when the engine supports it (DDG `df`). */
+  timeRange?: SearchTimeRange;
+  /** Disable automatic provider fallback (default false). */
+  noFallback?: boolean;
+};
+
+export type SearchProviderContext = {
+  maxResults: number;
+  fetchImpl: typeof fetch;
+  timeRange?: SearchTimeRange;
 };
 
 export type SearchProvider = {
   name: string;
   search: (
     query: string,
-    opts: { maxResults: number; fetchImpl: typeof fetch },
+    opts: SearchProviderContext,
   ) => Promise<WebSearchResult[]>;
 };
 

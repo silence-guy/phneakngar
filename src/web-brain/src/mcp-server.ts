@@ -34,12 +34,17 @@ const TOOLS = [
   {
     name: "web_search",
     description:
-      "Search the public web. Returns title/url/snippet list. Prefer over inventing URLs.",
+      "Search the public web (DDG lite → HTML fallback). Returns title/url/snippet plus provider telemetry. Empty results set degraded=true and error.code=empty_provider_results (not silent success). Prefer over inventing URLs.",
     inputSchema: {
       type: "object",
       properties: {
         query: { type: "string" },
         max_results: { type: "number" },
+        time_range: {
+          type: "string",
+          enum: ["day", "week", "month", "year"],
+          description: "Recency filter (DDG df=) when supported",
+        },
         mock: { type: "boolean", description: "Offline mock results" },
       },
       required: ["query"],
@@ -157,6 +162,11 @@ export async function callTool(
     case "web_search": {
       const query = String(args.query ?? "");
       const maxResults = Number(args.max_results) || 5;
+      const tr = args.time_range != null ? String(args.time_range) : undefined;
+      const timeRange =
+        tr === "day" || tr === "week" || tr === "month" || tr === "year"
+          ? tr
+          : undefined;
       const provider = args.mock
         ? createMockSearchProvider([
             {
@@ -166,7 +176,7 @@ export async function callTool(
             },
           ])
         : undefined;
-      return webSearch(query, { maxResults, provider });
+      return webSearch(query, { maxResults, provider, timeRange });
     }
     case "web_fetch": {
       return webFetch(String(args.url ?? ""), {
