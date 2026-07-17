@@ -326,8 +326,10 @@ export const agentFormCopy = {
     [Locale.KM]: "ឧបករណ៍ MCP",
   },
   mcpToolsHint: {
-    [Locale.EN]: "MCP tools are configured in the local runtime/config for this agent — not managed here. Edit the runtime's MCP servers so tools appear during chhlat sessions.",
-    [Locale.KM]: "ឧបករណ៍ MCP ត្រូវបានកំណត់នៅក្នុង runtime/config មូលដ្ឋានសម្រាប់ភ្នាក់ងារនេះ — មិនគ្រប់គ្រងនៅទីនេះទេ។ កែ MCP servers របស់ Runtime ដើម្បីឱ្យ tools បង្ហាញក្នុងសម័យ chhlat។",
+    [Locale.EN]:
+      "MCP tools are configured on the agent machine — not managed in this dashboard. For live web (search, fetch, extract, crawl, diff), run `phneakngar web wire-mcp` on the PC so Codex/Claude load the lean web-brain tools, or add other MCP servers in the local runtime config.",
+    [Locale.KM]:
+      "ឧបករណ៍ MCP ត្រូវបានកំណត់នៅលើម៉ាស៊ីនភ្នាក់ងារ — មិនគ្រប់គ្រងក្នុង dashboard នេះទេ។ សម្រាប់វេបផ្ទាល់ (search, fetch, extract, crawl, diff) សូមរត់ `phneakngar web wire-mcp` លើ PC ដើម្បីឱ្យ Codex/Claude ផ្ទុក lean web-brain ឬបន្ថែម MCP servers ផ្សេងទៀតក្នុង runtime/config មូលដ្ឋាន។",
   },
   advanced: {
     [Locale.EN]: "Advanced",

@@ -40,6 +40,26 @@ $env:PHNEAKNGAR_SERVER_URL = "https://your-control-plane.example"
 | AI runtime | At least one of Claude Code, Codex, OpenCode, or Grok CLI |
 | Network | Outbound HTTPS to the operator-provided control-plane origin |
 
+### Optional: lean web brain (search / fetch)
+
+The CLI includes a small first-party **web brain** (`@phneakngar/web-brain`) for live `web_search` / `web_fetch` with a local disk cache. It does **not** install wigolo, ONNX models, or a browser engine (disk delta is intentionally small).
+
+```bash
+phneakngar web status
+phneakngar web search "postgres logical replication" --mock   # offline demo
+phneakngar web search "postgres logical replication"          # live (ddg-lite)
+phneakngar web fetch https://example.com
+phneakngar web extract https://example.com --mode metadata
+phneakngar web crawl https://example.com --max-depth 1 --max-pages 5
+phneakngar web diff https://example.com   # cache vs fresh fetch
+phneakngar web wire-mcp    # Codex + Claude MCP tools
+phneakngar doctor          # includes "Web brain" readiness + MCP wire hint
+```
+
+Cache files live under `~/.phneakngar/web-cache/` (or `$PHNEAKNGAR_PROJECT_ROOT/web-cache`).
+
+MCP tools (when wired): `web_search`, `web_fetch`, `web_cache`, `web_extract`, `web_crawl`, `web_diff`.
+
 An agent-only machine does not need pnpm, Bun, Wrangler, Docker, or a Cloudflare account.
 
 Shell snippets use POSIX syntax unless a PowerShell alternative is shown. The `phneakngar config set-server` command is portable and preferred over environment-variable syntax on Windows.

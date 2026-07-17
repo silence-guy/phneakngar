@@ -1,0 +1,9 @@
+@phneakngar/web-brain
+Copyright 2026 ភ្នាក់ងារ contributors
+
+This package is original clean-room code under the Apache License 2.0.
+
+Design inspiration (tool surface, local-cache-first agent web UX, honest
+fetch failures) draws from the public product documentation of
+https://github.com/KnockOutEZ/wigolo (AGPL-3.0). No wigolo source files
+are copied into this package. No dependency on the `wigolo` npm package.

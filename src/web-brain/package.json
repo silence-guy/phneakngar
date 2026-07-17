@@ -1,0 +1,38 @@
+{
+  "name": "@phneakngar/web-brain",
+  "version": "0.0.2",
+  "description": "Lean local web search/fetch/cache toolkit for ភ្នាក់ងារ agents",
+  "license": "Apache-2.0",
+  "author": "ភ្នាក់ងារ",
+  "type": "module",
+  "main": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "bin": {
+    "phneakngar-web-brain-mcp": "./src/bin-mcp.ts"
+  },
+  "files": [
+    "src",
+    "scripts",
+    "README.md",
+    "LICENSE",
+    "NOTICE"
+  ],
+  "engines": {
+    "node": ">=20.19.0"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "check:size": "node scripts/check-size.mjs",
+    "mcp": "node --experimental-strip-types ./src/bin-mcp.ts",
+    "lint": "echo 'web-brain: no separate lint config'"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "^25.9.4",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.9"
+  }
+}

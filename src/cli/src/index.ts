@@ -17,6 +17,7 @@ import { doctorCommand } from "../commands/doctor.js";
 import { logsCommand } from "../commands/logs.js";
 import { initCommand } from "../commands/init.js";
 import { skillCommand } from "../commands/skill.js";
+import { webCommand } from "../commands/web.js";
 
 const program = new Command();
 
@@ -28,6 +29,7 @@ program
 
 program.addCommand(initCommand());
 program.addCommand(doctorCommand());
+program.addCommand(webCommand());
 program.addCommand(registerCommand());
 program.addCommand(loginCommand());
 program.addCommand(statusCommand());

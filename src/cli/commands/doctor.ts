@@ -7,6 +7,7 @@ import { detectRuntimes } from "../lib/runtimes.js";
 import { getCurrentVersion } from "../lib/version.js";
 import { isProcessAlive, readChhlatPid } from "../chhlat/pidfile.js";
 import { chhlatLogFilePath, pidFilePath } from "../chhlat/config.js";
+import { webBrainDoctorCheck } from "./web.js";
 
 export type CheckStatus = "pass" | "fail" | "warn" | "info";
 
@@ -304,6 +305,7 @@ export async function runDoctor(
     checkRuntimes(),
     checkChhlat(profile),
     checkGatewayWebhookConfig(),
+    webBrainDoctorCheck(),
   ];
 
   if (!options.skipNetwork) {

@@ -29,6 +29,16 @@ describe("buildPrompt", () => {
     expect(parsed.instruction).toBe("Fix the login bug");
   });
 
+  it("advertises lean web brain tools on tasks", () => {
+    const parsed = JSON.parse(buildPrompt(makeTask("Search the web for X")));
+    expect(parsed.web_brain?.available).toBe(true);
+    expect(parsed.web_brain?.tools).toContain("web_fetch");
+    expect(parsed.web_brain?.tools).toContain("web_extract");
+    expect(parsed.web_brain?.tools).toContain("web_crawl");
+    expect(parsed.web_brain?.tools).toContain("web_diff");
+    expect(String(parsed.notice)).toMatch(/web_search|web fetch|wire-mcp/i);
+  });
+
   it("injects the default Khmer language policy and preserves technical tokens", () => {
     const parsed = JSON.parse(buildPrompt(makeTask("Fix the login bug")));
     expect(parsed.language_policy.default_user_facing_language).toBe("km-KH");
@@ -82,12 +92,14 @@ describe("buildPrompt", () => {
     const parsed = JSON.parse(buildPrompt(task));
     expect(parsed.type).toBe("email_inbound");
     expect(parsed.instruction).toBe("Check inbox");
+    expect(parsed.web_brain?.available).toBe(true);
     expect(buildPrompt(task)).toBe(
       JSON.stringify({
         type: "email_inbound",
         received_at: parsed.received_at,
         instruction: "Check inbox",
         language_policy: parsed.language_policy,
+        web_brain: parsed.web_brain,
       }),
     );
   });

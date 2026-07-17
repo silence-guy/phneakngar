@@ -58,6 +58,22 @@ const TOOL_NAME_TO_CLASS: Record<string, ToolClassType> = {
   web_search: ToolClass.SEARCH,
   webfetch: ToolClass.READ,
   web_fetch: ToolClass.READ,
+  // Lean web-brain MCP / tool aliases (low-stakes public read/search)
+  web_cache: ToolClass.READ,
+  web_cache_search: ToolClass.SEARCH,
+  web_extract: ToolClass.READ,
+  web_crawl: ToolClass.SEARCH,
+  web_diff: ToolClass.READ,
+  mcp_web_search: ToolClass.SEARCH,
+  mcp_web_fetch: ToolClass.READ,
+  mcp_web_extract: ToolClass.READ,
+  mcp_web_crawl: ToolClass.SEARCH,
+  mcp_web_diff: ToolClass.READ,
+  phneakngar_web_search: ToolClass.SEARCH,
+  phneakngar_web_fetch: ToolClass.READ,
+  phneakngar_web_extract: ToolClass.READ,
+  phneakngar_web_crawl: ToolClass.SEARCH,
+  phneakngar_web_diff: ToolClass.READ,
   get: ToolClass.READ,
   fetch: ToolClass.READ,
 
@@ -198,6 +214,16 @@ export function classifyToolName(toolName?: string | null): ToolClassType {
   }
   if (/(^|[_-])(read|cat|ls|glob|grep|search)([_-]|$)/.test(key)) {
     return key.includes("search") || key.includes("grep") || key.includes("glob")
+      ? ToolClass.SEARCH
+      : ToolClass.READ;
+  }
+  // phneakngar web-brain / wigolo-style MCP names: public web read/search
+  if (
+    /(web[_-]?(search|fetch|cache|extract|crawl|diff)|wigolo__(search|fetch|crawl|extract|diff))/.test(
+      key,
+    )
+  ) {
+    return key.includes("search") || key.includes("crawl")
       ? ToolClass.SEARCH
       : ToolClass.READ;
   }

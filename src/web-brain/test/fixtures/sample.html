@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Sample Article Title</title>
+  <meta property="og:title" content="Sample OG Title" />
+  <style>body { color: red; }</style>
+  <script>alert("xss")</script>
+</head>
+<body>
+  <header><nav>Home About</nav></header>
+  <main>
+    <article>
+      <h1>Sample Article Title</h1>
+      <p>This is the <strong>first</strong> paragraph with a
+        <a href="https://example.com/more">link to more</a>.</p>
+      <h2>Section Two</h2>
+      <p>Second paragraph explains the feature under test.</p>
+      <ul>
+        <li>Alpha item</li>
+        <li>Beta item</li>
+      </ul>
+    </article>
+  </main>
+  <footer>Copyright</footer>
+</body>
+</html>

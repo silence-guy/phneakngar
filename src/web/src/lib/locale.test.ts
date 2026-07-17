@@ -50,7 +50,8 @@ describe("web locale helpers", () => {
     expect(agentFormLabel("roleTitle")).toBe("តួនាទីសហការី");
     expect(agentFormLabel("responsibility")).toBe("ការទទួលខុសត្រូវ");
     expect(agentFormLabel("mcpTools")).toBe("ឧបករណ៍ MCP");
-    expect(agentFormLabel("mcpToolsHint")).toContain("runtime/config");
+    expect(agentFormLabel("mcpToolsHint")).toContain("wire-mcp");
+    expect(agentFormLabel("mcpToolsHint")).toMatch(/web-brain|runtime\/config/i);
     expect(agentFormLabel("ambiguousToIssue")).toContain("issue");
     expect(agentFormLabel("ambiguousToIssueHint")).toMatch(/issue|DM/i);
   });
@@ -77,7 +78,10 @@ describe("web locale helpers", () => {
     expect(agentFormLabel("roleTitle", Locale.EN)).toBe("Teammate role");
     expect(agentFormLabel("responsibility", Locale.EN)).toBe("Responsibility");
     expect(agentFormLabel("mcpTools", Locale.EN)).toBe("MCP tools");
-    expect(agentFormLabel("mcpToolsHint", Locale.EN)).toMatch(/runtime\/config/i);
+    expect(agentFormLabel("mcpToolsHint", Locale.EN)).toMatch(/wire-mcp/i);
+    expect(agentFormLabel("mcpToolsHint", Locale.EN)).toMatch(
+      /web-brain|search|fetch|runtime/i,
+    );
     expect(agentFormLabel("ambiguousToIssue", Locale.EN)).toBe("Ambiguous DMs → issue");
     expect(agentFormLabel("ambiguousToIssueHint", Locale.EN)).toMatch(/owned issue/i);
   });

@@ -24,6 +24,14 @@ describe("classifyToolName", () => {
     expect(classifyToolName("Glob")).toBe(ToolClass.SEARCH);
     expect(classifyToolName("web_search")).toBe(ToolClass.SEARCH);
     expect(classifyToolName("WebFetch")).toBe(ToolClass.READ);
+    expect(classifyToolName("mcp_web_search")).toBe(ToolClass.SEARCH);
+    expect(classifyToolName("mcp_web_fetch")).toBe(ToolClass.READ);
+    expect(classifyToolName("phneakngar_web_fetch")).toBe(ToolClass.READ);
+    expect(classifyToolName("web_extract")).toBe(ToolClass.READ);
+    expect(classifyToolName("web_crawl")).toBe(ToolClass.SEARCH);
+    expect(classifyToolName("mcp_web_crawl")).toBe(ToolClass.SEARCH);
+    expect(classifyToolName("web_diff")).toBe(ToolClass.READ);
+    expect(classifyToolName("mcp_web_diff")).toBe(ToolClass.READ);
   });
 
   it("classifies write/shell/email/writeback as high-stakes classes", () => {

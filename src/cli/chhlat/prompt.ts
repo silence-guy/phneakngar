@@ -28,6 +28,13 @@ const CALENDAR_NOTICE =
   " If you need more information or confirmation, email them and then exit." +
   " Do not wait — when they reply, a new task will be triggered automatically and you will be woken up with their response.";
 
+const WEB_BRAIN_NOTICE =
+  " Live web tools are available via the lean web brain:" +
+  " prefer MCP tools web_search, web_fetch, web_extract, web_crawl, web_diff, web_cache when wired" +
+  " (`phneakngar web wire-mcp`); else CLI `phneakngar web search|fetch|extract|crawl|diff`." +
+  " Prefer real fetch for URLs; cite sources; do not invent page content." +
+  " On blocked/SSRF/http errors, report the structured error and stop retry-spamming.";
+
 const ISSUE_NOTICE =
   "This task was triggered by an assigned issue. The issue_id is provided in this message." +
   " Use `phneakngar issue show --issue_id <issue_id>` to read full context." +
@@ -72,9 +79,22 @@ export function buildTaskObject(task: Task, attachments?: Attachment[]): Record<
     received_at: receivedAt,
     instruction: task.prompt,
     language_policy: languagePolicyFor(task),
+    web_brain: {
+      available: true,
+      provider: "phneakngar",
+      tools: [
+        "web_search",
+        "web_fetch",
+        "web_cache",
+        "web_extract",
+        "web_crawl",
+        "web_diff",
+      ],
+      notice: WEB_BRAIN_NOTICE.trim(),
+    },
   };
   if (task.type === "user_dm_message") {
-    obj.notice = DM_RESPONSE_NOTICE;
+    obj.notice = DM_RESPONSE_NOTICE + WEB_BRAIN_NOTICE;
     const ctx = task.context as Record<string, unknown> | undefined;
     if (ctx?.message_id) {
       obj.message_id = ctx.message_id;
@@ -113,16 +133,16 @@ export function buildTaskObject(task: Task, attachments?: Attachment[]): Record<
           : {}),
       };
       // Append guidance so the model sees it even if it only reads notice.
-      obj.notice = `${DM_RESPONSE_NOTICE} ${judgmentNotice}`;
+      obj.notice = `${DM_RESPONSE_NOTICE}${WEB_BRAIN_NOTICE} ${judgmentNotice}`;
     }
   }
   if (task.type === "email_notification") {
     const ctx = task.context as Record<string, unknown> | undefined;
     const dmUser = ctx?.dmUser as { name: string; email: string } | undefined;
     if (ctx?.conversationType === "user_dm_message" && dmUser) {
-      obj.notice = buildEmailDmNotice(dmUser.name, dmUser.email);
+      obj.notice = buildEmailDmNotice(dmUser.name, dmUser.email) + WEB_BRAIN_NOTICE;
     } else {
-      obj.notice = EMAIL_NOTICE;
+      obj.notice = EMAIL_NOTICE + WEB_BRAIN_NOTICE;
     }
     if (ctx?.emailId != null) {
       obj.email_id = ctx.emailId;
