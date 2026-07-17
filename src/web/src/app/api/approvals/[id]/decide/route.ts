@@ -204,6 +204,23 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
       return writeError("approval not found or already decided", 409);
     }
     invalidate(cacheKeys.overviewAttention(ws.workspaceId)).catch(() => {});
+    try {
+      await queries.activityEvent.createActivityEvent(db, {
+        workspaceId: ws.workspaceId,
+        kind: "approval_decided",
+        summary: `Approval ${body.decision}: ${pending.title || pending.kind}`,
+        actorType: "user",
+        actorId: ctx.userId,
+        subjectType: "approval",
+        subjectId: id,
+        payloadJson: JSON.stringify({
+          decision: body.decision,
+          kind: pending.kind,
+        }),
+      });
+    } catch {
+      // activity_event may be missing pre-0054
+    }
     return writeJSON({ approval: approvalToResponse(decided) });
   }
 

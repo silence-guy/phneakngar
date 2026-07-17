@@ -90,6 +90,10 @@ The production-readiness audit validated the complete chain from an empty local 
   - `gateway_peer_allowlist` — DM pairing / allowlist peers per binding
   - `gateway_ingress_dedupe` — external message idempotency keys for signed ingress
   - App-level heartbeat automation kind + live outbound clients remain feature-flagged; full commercial Helio/OpenClaw parity is still not claimed
+- `0054_gateway_egress_secret_and_activity.sql`, which is additive residual commercial path work:
+  - `gateway_binding.secret_ref` — write-only bot/token vault pointer for live egress
+  - `activity_event` — workspace-scoped activity feed (approve / egress / probe)
+  - Live Telegram/Slack egress is production-wired when binding is `live` + secret vaulted; full commercial Helio/OpenClaw parity is still not claimed
 
 
 Before applying `0048_task_message_idempotency.sql` to production, run this read-only preflight against the target D1 database and review any rows it returns:
@@ -135,6 +139,8 @@ Machine/runtime identity is stored as `chhlat_id`.
 - **2026-07-16:** Applied `0050_helio_parity_foundations.sql` … `0053_gateway_commercial_foundations.sql` via `pnpm db:migrate:remote`.
 - Verify: `pnpm --filter @phneakngar/web exec wrangler d1 migrations list phneakngar-app --remote` → **No migrations to apply**.
 - Full commercial Helio/OpenClaw parity is **not** claimed by this apply.
+- **2026-07-17 (later):** Applied `0054_gateway_egress_secret_and_activity.sql` via `pnpm db:migrate:remote` on remote `phneakngar-app` after CF D1 recovered. Re-list: no migrations to apply. Full commercial Helio/OpenClaw parity is still **not** claimed.
+- **2026-07-17 (earlier):** First remote attempt blocked by Cloudflare D1 API `code: 7500` (transient).
 
 List pending remote migrations first:
 

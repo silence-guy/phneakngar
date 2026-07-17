@@ -72,7 +72,7 @@ describe("settings labels", () => {
 
   it("exposes gateway dry-config doctor labels without claiming full parity", () => {
     expect(SETTINGS_LABELS.gateway.doctorTitle).toMatch(/dry-config/i);
-    expect(SETTINGS_LABELS.gateway.doctorHint).toMatch(/no live/i);
+    expect(SETTINGS_LABELS.gateway.doctorHint).toMatch(/probe/i);
     expect(SETTINGS_LABELS.gateway.parityNote).toMatch(/not claimed/i);
     expect(SETTINGS_LABELS.gateway.doctorLiveRisk).toMatch(/risk/i);
     expect(SETTINGS_LABELS.gateway.doctorWebhookFailClosed).toMatch(/fail-closed|shared secret/i);

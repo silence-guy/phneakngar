@@ -288,6 +288,20 @@ export class ChhlatClient {
     );
   }
 
+  /**
+   * Poll a durable approval status (machine-auth hold/resume).
+   */
+  getToolApproval(
+    token: string,
+    approvalId: string,
+  ): Promise<CreateChhlatToolApprovalResponse> {
+    return this.request(
+      "GET",
+      `/api/chhlat/approvals/${encodeURIComponent(approvalId)}`,
+      token,
+    );
+  }
+
 }
 
 /** Request body for POST /api/chhlat/approvals */

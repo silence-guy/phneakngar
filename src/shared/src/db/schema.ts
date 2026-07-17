@@ -1046,6 +1046,11 @@ export const gatewayBinding = sqliteTable(
     dmPolicy: text("dm_policy").notNull().default("open"),
     /** live | preview — product badge for outbound capability */
     outboundMode: text("outbound_mode").notNull().default("preview"),
+    /**
+     * Write-only bot/token vault pointer (or embedded secret for self-host MVP).
+     * Never returned on list/get APIs — only has_secret.
+     */
+    secretRef: text("secret_ref"),
     createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
     updatedAt: text("updated_at").notNull().$defaultFn(() => new Date().toISOString()),
   },
@@ -1061,6 +1066,34 @@ export const gatewayBinding = sqliteTable(
       columns: [t.agentId, t.workspaceId],
       foreignColumns: [agent.id, agent.workspaceId],
     }).onDelete("cascade"),
+  ]
+);
+
+/**
+ * Workspace-scoped activity feed (approve / egress / automation / probe).
+ * Full commercial company timeline is not claimed — MVP event log only.
+ */
+export const activityEvent = sqliteTable(
+  "activity_event",
+  {
+    id: text("id").primaryKey().$defaultFn(() => "ae_" + nanoid()),
+    workspaceId: text("workspace_id")
+      .notNull()
+      .references(() => workspace.id, { onDelete: "cascade" }),
+    kind: text("kind").notNull(),
+    actorType: text("actor_type"),
+    actorId: text("actor_id"),
+    subjectType: text("subject_type"),
+    subjectId: text("subject_id"),
+    summary: text("summary").notNull(),
+    payloadJson: text("payload_json"),
+    /** Optional idempotency key within workspace (e.g. gateway-egress:taskId). */
+    dedupeKey: text("dedupe_key"),
+    createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
+  },
+  (t) => [
+    index("idx_activity_event_ws_created").on(t.workspaceId, t.createdAt),
+    unique("activity_event_ws_dedupe").on(t.workspaceId, t.dedupeKey),
   ]
 );
 

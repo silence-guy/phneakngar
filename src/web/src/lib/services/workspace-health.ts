@@ -304,6 +304,11 @@ export async function getWorkspaceHealth(
       status: binding.status,
       dmPolicy: binding.dmPolicy,
       outboundMode: binding.outboundMode,
+      hasSecret: Boolean(
+        "secretRef" in binding &&
+          typeof (binding as { secretRef?: string | null }).secretRef === "string" &&
+          (binding as { secretRef?: string | null }).secretRef?.trim(),
+      ),
     })),
     { knownAgentIds: agents.map((agent) => agent.id) },
   );

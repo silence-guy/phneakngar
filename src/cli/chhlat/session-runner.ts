@@ -9,8 +9,15 @@
 import { mkdir, writeFile, rm, rename } from "fs/promises";
 import { mkdirSync } from "fs";
 import path from "path";
-import { ChhlatClient, ChhlatHttpError, isTaskAlreadyTerminalError } from "./client.js";
+import {
+  ChhlatClient,
+  ChhlatHttpError,
+  isTaskAlreadyTerminalError,
+  makeClientToolActionApprovalCreator,
+} from "./client.js";
+import { setToolActionApprovalCreator } from "./tool-gate.js";
 import { createBackend } from "./agent/index.js";
+import { setApprovalHoldPoller } from "./agent/claude.js";
 import { prepare } from "./execenv/index.js";
 import {
   initEntryAsync,
@@ -168,6 +175,21 @@ export async function runSession(input: SessionRunnerInput): Promise<void> {
 
   const client = new ChhlatClient(serverURL);
   const backend = createBackend(provider, cliPath);
+
+  // Wire durable tool_action create + optional hold/resume poller for control_request.
+  setToolActionApprovalCreator(
+    makeClientToolActionApprovalCreator({
+      client,
+      token,
+      chhlatId: task.runtimeId ?? "",
+      agentId: task.agentId,
+    }),
+  );
+  setApprovalHoldPoller(async (approvalId) => {
+    const res = await client.getToolApproval(token, approvalId);
+    const status = res?.approval?.status;
+    return typeof status === "string" ? { status } : null;
+  });
 
   // Compute timelineDir before prepare() so timeline entry exists even on early crashes
   const agentBaseDir = path.join(workspacesRoot, task.workspaceId, task.agentId, "workdir");

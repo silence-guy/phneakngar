@@ -21,6 +21,7 @@ function bindingToResponse(row: {
   status: string;
   dmPolicy: string;
   outboundMode: string;
+  secretRef?: string | null;
   createdAt: string;
   updatedAt: string;
 }) {
@@ -36,6 +37,7 @@ function bindingToResponse(row: {
     dm_policy: row.dmPolicy,
     outbound_mode: row.outboundMode,
     outbound_badge: outboundModeBadge(row.outboundMode),
+    has_secret: Boolean(row.secretRef?.trim()),
     created_at: row.createdAt,
     updated_at: row.updatedAt,
   };
@@ -76,6 +78,7 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
       status: body.status,
       dmPolicy: body.dm_policy,
       outboundMode: body.outbound_mode,
+      secretRef: body.secret_ref ?? null,
     });
     if (!created) return writeError("failed to create binding", 500);
     return writeJSON({ binding: bindingToResponse(created) }, 201);

@@ -386,6 +386,30 @@ export async function promoteDueAutomationsForWorkspace(
         },
       );
 
+      try {
+        await queries.activityEvent.createActivityEvent(db, {
+          workspaceId,
+          kind: "automation_due",
+          summary: `Automation due: ${auto.title}`,
+          actorType: "system",
+          actorId: null,
+          subjectType: "automation",
+          subjectId: auto.id,
+          dedupeKey: `automation-due:${auto.id}:${taskId}`,
+          payloadJson: JSON.stringify({
+            automation_id: auto.id,
+            task_id: taskId,
+            conversation_id: conv.id,
+          }),
+        });
+      } catch (activityErr) {
+        // activity_event may be missing pre-0054
+        log.warn("automation: activity event failed", {
+          id: auto.id,
+          err: String(activityErr),
+        });
+      }
+
       enqueued++;
     } catch (err) {
       log.warn("automation: post-claim dispatch failed, reverting", {

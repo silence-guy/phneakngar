@@ -730,6 +730,8 @@ export const CreateGatewayBindingRequestSchema = z.object({
   status: z.enum(["active", "disabled"]).optional().default("active"),
   dm_policy: z.enum(["open", "allowlist", "pairing"]).optional().default("open"),
   outbound_mode: z.enum(["live", "preview"]).optional().default("preview"),
+  /** Write-only bot token / vault pointer — never returned on responses. */
+  secret_ref: z.string().min(1).max(4000).nullable().optional(),
 });
 export type CreateGatewayBindingRequestInput = z.infer<
   typeof CreateGatewayBindingRequestSchema
@@ -742,6 +744,8 @@ export const UpdateGatewayBindingRequestSchema = z
     outbound_mode: z.enum(["live", "preview"]).optional(),
     agent_id: z.string().min(1).optional(),
     user_id: z.string().min(1).optional(),
+    /** Write-only; null clears vault pointer. */
+    secret_ref: z.string().min(1).max(4000).nullable().optional(),
   })
   .refine(
     (v) =>
@@ -749,7 +753,8 @@ export const UpdateGatewayBindingRequestSchema = z
       v.dm_policy !== undefined ||
       v.outbound_mode !== undefined ||
       v.agent_id !== undefined ||
-      v.user_id !== undefined,
+      v.user_id !== undefined ||
+      v.secret_ref !== undefined,
     { message: "at least one field is required" },
   );
 export type UpdateGatewayBindingRequestInput = z.infer<

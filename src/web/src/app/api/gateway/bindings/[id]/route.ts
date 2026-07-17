@@ -17,6 +17,7 @@ function bindingToResponse(row: {
   status: string;
   dmPolicy: string;
   outboundMode: string;
+  secretRef?: string | null;
   createdAt: string;
   updatedAt: string;
 }) {
@@ -32,6 +33,7 @@ function bindingToResponse(row: {
     dm_policy: row.dmPolicy,
     outbound_mode: row.outboundMode,
     outbound_badge: outboundModeBadge(row.outboundMode),
+    has_secret: Boolean(row.secretRef?.trim()),
     created_at: row.createdAt,
     updated_at: row.updatedAt,
   };
@@ -83,6 +85,7 @@ export const PATCH = withAuth(async (req: NextRequest, ctx) => {
     outboundMode: body.outbound_mode,
     agentId: body.agent_id,
     userId: body.user_id,
+    ...(body.secret_ref !== undefined ? { secretRef: body.secret_ref } : {}),
   });
   if (!updated) return writeError("binding not found", 404);
   return writeJSON({ binding: bindingToResponse(updated) });

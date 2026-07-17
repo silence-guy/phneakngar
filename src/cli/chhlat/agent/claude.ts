@@ -12,7 +12,21 @@ import type {
   EncodeOpts,
 } from "../types.js";
 import { killProcessTree } from "../kill-tree.js";
-import { handleToolControlRequestAsync } from "../tool-gate.js";
+import {
+  handleToolControlRequestAsync,
+  type ApprovalStatusPoller,
+} from "../tool-gate.js";
+
+/** Optional hold/resume poller (registered by CLI runtime when hold is enabled). */
+let approvalHoldPoller: ApprovalStatusPoller | null = null;
+
+export function setApprovalHoldPoller(poller: ApprovalStatusPoller | null): void {
+  approvalHoldPoller = poller;
+}
+
+export function getApprovalHoldPoller(): ApprovalStatusPoller | null {
+  return approvalHoldPoller;
+}
 
 export class ClaudeBackend implements AgentBackend {
   name = "claude";
@@ -516,6 +530,15 @@ export class ClaudeBackend implements AgentBackend {
   }
 }
 
+export function approvalHoldEnabledFromEnv(
+  env: NodeJS.ProcessEnv = process.env,
+): boolean {
+  const v = (env.CHHLAT_APPROVAL_HOLD ?? env.PHNEAKNGAR_APPROVAL_HOLD ?? "")
+    .trim()
+    .toLowerCase();
+  return v === "1" || v === "true" || v === "yes" || v === "on";
+}
+
 async function handleControlRequest(
   proc: ChildProcess,
   event: Record<string, unknown>,
@@ -524,8 +547,20 @@ async function handleControlRequest(
   // Shared approval policy gates high-stakes tool classes; low-stakes auto-allow.
   // When a process-level creator is configured, high-stakes denies also create a
   // durable tool_action approval and include its id as a deny pointer.
-  // Never hold/wait/resume after web decide.
-  const gated = await handleToolControlRequestAsync(event);
+  // Optional hold/resume: CHHLAT_APPROVAL_HOLD=1 + registered poller waits for web decide.
+  const holdEnabled = approvalHoldEnabledFromEnv();
+  const poller = approvalHoldPoller;
+  const gated = await handleToolControlRequestAsync(event, {
+    hold:
+      holdEnabled && poller
+        ? {
+            enabled: true,
+            poll: poller,
+            timeoutMs: Number(process.env.CHHLAT_APPROVAL_HOLD_MS ?? 120_000) || 120_000,
+            intervalMs: Number(process.env.CHHLAT_APPROVAL_HOLD_INTERVAL_MS ?? 2_000) || 2_000,
+          }
+        : null,
+  });
   if (!gated) return;
 
   // enqueueStdinWrite already appends "\n"; direct writes must include it.

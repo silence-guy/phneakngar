@@ -5,7 +5,9 @@
  * High-stakes tool classes are denied and (when configured) create a durable
  * tool_action approval pointer; low-stakes tools and allow-listed names are allowed.
  *
- * No hold/wait/resume-after-decide: deny is immediate; human decides later in web UI.
+ * Optional hold/resume: when hold opts are set, poll durable approval until
+ * approved/denied/timeout, then emit allow or deny control_response.
+ * Default remains immediate deny + approval_id pointer (stateless-friendly).
  */
 
 import {
@@ -229,14 +231,69 @@ export function handleToolControlRequest(
   return { line, decision };
 }
 
+/** Poll terminal approval status for hold/resume. */
+export type ApprovalStatusPoller = (
+  approvalId: string,
+) => Promise<{ status: string } | null>;
+
+export type ToolControlHoldOptions = {
+  /** When true, wait for web decide after creating approval. */
+  enabled: boolean;
+  /** Max wait ms (default 120_000). */
+  timeoutMs?: number;
+  /** Poll interval ms (default 2_000). */
+  intervalMs?: number;
+  poll: ApprovalStatusPoller;
+  /** Inject sleep for tests. */
+  sleep?: (ms: number) => Promise<void>;
+  /** Inject now for tests. */
+  now?: () => number;
+};
+
+export type ToolControlAsyncOptions = CliToolGateOptions & {
+  hold?: ToolControlHoldOptions | null;
+};
+
 /**
- * Async gate: deny high-stakes tools and optionally create a durable tool_action
- * approval, embedding the approval id in the control_response deny pointer.
- * Never holds/waits for web decide — deny is always immediate.
+ * Wait until approval is approved/denied/rejected or timeout.
+ * Returns terminal status or "timeout".
+ */
+export async function waitForApprovalDecision(
+  approvalId: string,
+  hold: ToolControlHoldOptions,
+): Promise<"approved" | "denied" | "rejected" | "timeout" | "error"> {
+  const timeoutMs = hold.timeoutMs ?? 120_000;
+  const intervalMs = hold.intervalMs ?? 2_000;
+  const sleep = hold.sleep ?? ((ms: number) => new Promise((r) => setTimeout(r, ms)));
+  const now = hold.now ?? (() => Date.now());
+  const deadline = now() + timeoutMs;
+
+  while (now() < deadline) {
+    try {
+      const row = await hold.poll(approvalId);
+      const status = (row?.status ?? "").trim().toLowerCase();
+      if (status === "approved") return "approved";
+      if (status === "denied" || status === "rejected") {
+        return status === "rejected" ? "rejected" : "denied";
+      }
+    } catch {
+      // keep polling until timeout
+    }
+    const remaining = deadline - now();
+    if (remaining <= 0) break;
+    await sleep(Math.min(intervalMs, remaining));
+  }
+  return "timeout";
+}
+
+/**
+ * Async gate: for high-stakes tools create a durable tool_action approval.
+ * Default: deny immediately with approval_id pointer.
+ * With hold.enabled: poll until approve → allow, or deny/timeout → deny.
  */
 export async function handleToolControlRequestAsync(
   event: Record<string, unknown>,
-  opts: CliToolGateOptions = {},
+  opts: ToolControlAsyncOptions = {},
   createApproval: ToolActionApprovalCreator | null = toolActionApprovalCreator,
 ): Promise<
   { line: string; decision: ToolGateDecision; approvalId?: string | null } | null
@@ -262,6 +319,36 @@ export async function handleToolControlRequestAsync(
         approvalId = null;
       }
     }
+  }
+
+  // Optional hold/resume after durable approval exists.
+  if (decision.requiresApproval && approvalId && opts.hold?.enabled) {
+    const outcome = await waitForApprovalDecision(approvalId, opts.hold);
+    if (outcome === "approved") {
+      const allowLine = buildControlResponseLine(
+        requestId,
+        "allow",
+        updatedInput,
+      );
+      return {
+        line: allowLine,
+        decision: { ...decision, behavior: "allow", requiresApproval: false },
+        approvalId,
+      };
+    }
+    const reason =
+      outcome === "timeout"
+        ? `Approval timed out (${opts.hold.timeoutMs ?? 120_000}ms).`
+        : `Approval ${outcome}.`;
+    const message = `${buildRequiresApprovalDenyMessage(decision, approvalId)} ${reason}`;
+    const line = buildControlResponseLine(
+      requestId,
+      "deny",
+      updatedInput,
+      message,
+      { approvalId },
+    );
+    return { line, decision, approvalId };
   }
 
   const message = decision.requiresApproval

@@ -11,6 +11,7 @@ const mockGetChannel = vi.fn();
 const mockListCalendar = vi.fn();
 const mockListIssues = vi.fn();
 const mockGetEmailsByAgent = vi.fn();
+const mockCreateActivity = vi.fn();
 
 vi.mock("@phneakngar/shared", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@phneakngar/shared")>();
@@ -42,6 +43,9 @@ vi.mock("@phneakngar/shared", async (importOriginal) => {
       },
       email: {
         getEmailsByAgent: (...a: unknown[]) => mockGetEmailsByAgent(...a),
+      },
+      activityEvent: {
+        createActivityEvent: (...a: unknown[]) => mockCreateActivity(...a),
       },
     },
   };
@@ -481,6 +485,41 @@ describe("promoteDueAutomationsForWorkspace", () => {
     });
     expect(enqueued).toBe(0);
     expect(mockEnqueueTask).not.toHaveBeenCalled();
+  });
+
+  it("double-fire: second promote after claim loss does not enqueue another task", async () => {
+    mockListDue.mockResolvedValue([auto]);
+    mockGetAgent.mockResolvedValue({ id: "a1", runtimeId: "rt1", ownerId: "u1" });
+    mockGetChannel.mockResolvedValue({ id: "ch_1", name: "general" });
+    mockListCalendar.mockResolvedValue([]);
+    mockCreateConversation.mockResolvedValue({ id: "c1" });
+    mockCreateMessage.mockResolvedValue({ id: "m1" });
+    mockEnqueueTask.mockResolvedValue({ id: "t1", type: "automation_event" });
+    mockCreateActivity.mockResolvedValue({ created: true, row: { id: "ae1" } });
+
+    // First poll wins claim.
+    mockClaim.mockResolvedValueOnce({ ...auto, lastTaskId: "t1" });
+    const first = await promoteDueAutomationsForWorkspace({} as any, "w1", {
+      nowIso: "2026-07-16T08:05:00.000Z",
+    });
+    expect(first).toBe(1);
+    expect(mockEnqueueTask).toHaveBeenCalledTimes(1);
+    expect(mockCreateActivity).toHaveBeenCalledWith(
+      {},
+      expect.objectContaining({
+        kind: "automation_due",
+        workspaceId: "w1",
+        subjectId: "au_1",
+      }),
+    );
+
+    // Concurrent/second poll loses claim — must not double-create tasks.
+    mockClaim.mockResolvedValueOnce(null);
+    const second = await promoteDueAutomationsForWorkspace({} as any, "w1", {
+      nowIso: "2026-07-16T08:05:01.000Z",
+    });
+    expect(second).toBe(0);
+    expect(mockEnqueueTask).toHaveBeenCalledTimes(1);
   });
 
   it("skips agents without runtime", async () => {

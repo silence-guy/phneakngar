@@ -78,6 +78,8 @@ export async function createGatewayBinding(
     status?: GatewayBindingStatus;
     dmPolicy?: GatewayDmPolicy;
     outboundMode?: GatewayOutboundMode;
+    /** Write-only bot token / vault pointer. */
+    secretRef?: string | null;
   },
 ) {
   const now = new Date().toISOString();
@@ -93,6 +95,7 @@ export async function createGatewayBinding(
       status: data.status ?? "active",
       dmPolicy: data.dmPolicy ?? "open",
       outboundMode: data.outboundMode ?? "preview",
+      secretRef: data.secretRef ?? null,
       createdAt: now,
       updatedAt: now,
     })
@@ -110,19 +113,61 @@ export async function updateGatewayBinding(
     outboundMode?: GatewayOutboundMode;
     agentId?: string;
     userId?: string;
+    /** Write-only; pass null to clear. Omit to leave unchanged. */
+    secretRef?: string | null;
   },
 ) {
+  const set: Record<string, unknown> = {
+    updatedAt: new Date().toISOString(),
+  };
+  if (patch.status !== undefined) set.status = patch.status;
+  if (patch.dmPolicy !== undefined) set.dmPolicy = patch.dmPolicy;
+  if (patch.outboundMode !== undefined) set.outboundMode = patch.outboundMode;
+  if (patch.agentId !== undefined) set.agentId = patch.agentId;
+  if (patch.userId !== undefined) set.userId = patch.userId;
+  if (patch.secretRef !== undefined) set.secretRef = patch.secretRef;
+
   const rows = await db
     .update(gatewayBinding)
-    .set({
-      ...patch,
-      updatedAt: new Date().toISOString(),
-    })
+    .set(set)
     .where(
       and(eq(gatewayBinding.workspaceId, workspaceId), eq(gatewayBinding.id, bindingId)),
     )
     .returning();
   return rows[0] ?? null;
+}
+
+/** Public API shape — never includes secretRef. */
+export function toPublicGatewayBinding(row: {
+  id: string;
+  workspaceId: string;
+  provider: string;
+  externalTeamId: string;
+  externalAccountId: string | null;
+  agentId: string;
+  userId: string;
+  status: string;
+  dmPolicy: string;
+  outboundMode: string;
+  secretRef?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}) {
+  return {
+    id: row.id,
+    workspaceId: row.workspaceId,
+    provider: row.provider,
+    externalTeamId: row.externalTeamId,
+    externalAccountId: row.externalAccountId,
+    agentId: row.agentId,
+    userId: row.userId,
+    status: row.status,
+    dmPolicy: row.dmPolicy,
+    outboundMode: row.outboundMode,
+    hasSecret: Boolean(row.secretRef?.trim()),
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  };
 }
 
 export async function deleteGatewayBinding(
@@ -281,6 +326,8 @@ export type GatewayBindingDrySnapshot = {
   status?: string | null;
   dmPolicy?: string | null;
   outboundMode?: string | null;
+  /** True when secret_ref is non-empty (never pass raw secret into assessor). */
+  hasSecret?: boolean | null;
 };
 
 export type GatewayDryConfigIssue = {
@@ -349,8 +396,10 @@ export function assessGatewayBindingsDryConfig(
 
     if (isLiveOutboundModeDry(binding.outboundMode)) {
       live += 1;
-      // Binding rows do not store provider tokens; Live is a risk flag only.
-      live_without_token_risk += 1;
+      // Live without vaulted secret_ref is still a send-readiness risk.
+      if (!binding.hasSecret) {
+        live_without_token_risk += 1;
+      }
     } else {
       preview += 1;
     }

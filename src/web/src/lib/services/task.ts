@@ -14,6 +14,7 @@ import { broadcastToUser, broadcastToChhlat } from "@/lib/broadcast";
 import { messageToResponse } from "@/lib/api/responses";
 import { invalidate, cacheKeys } from "@/lib/cache";
 import { TaskPayloadBuilder } from "@/lib/services/task-payload-builder";
+import { deliverTaskResultToGatewayLive } from "@/lib/services/gateway-egress";
 import {
   deliverTaskResultToChannel,
   type DeliverTaskToChannelResult,
@@ -289,6 +290,21 @@ export class TaskService {
       }, { result: parsed });
     } catch (err) {
       log.warn("completeTask: channel delivery failed", { taskId, err });
+    }
+
+    // Live external gateway egress (Telegram/Slack) when binding is live + vaulted.
+    // Soft-fail; full commercial multi-channel parity is still not claimed.
+    try {
+      await deliverTaskResultToGatewayLive(this.db, {
+        id: task.id,
+        agentId: task.agentId,
+        workspaceId: task.workspaceId,
+        conversationId: task.conversationId,
+        context: task.context,
+        result: parsed,
+      }, { result: parsed });
+    } catch (err) {
+      log.warn("completeTask: gateway live egress failed", { taskId, err });
     }
 
     let taskWithOutcome = task;

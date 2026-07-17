@@ -212,6 +212,101 @@ describe("handleToolControlRequestAsync + approval pointer", () => {
     expect(called).toBe(false);
   });
 
+  it("hold path: approve → allow control_response", async () => {
+    setToolActionApprovalCreator(async () => ({ approvalId: "ap_hold_1" }));
+    let polls = 0;
+    const result = await handleToolControlRequestAsync(
+      {
+        type: "control_request",
+        request_id: "req_hold_ok",
+        payload: { tool_name: "Write", input: { path: "a.ts", content: "x" } },
+      },
+      {
+        hold: {
+          enabled: true,
+          timeoutMs: 5_000,
+          intervalMs: 1,
+          sleep: async () => {},
+          now: (() => {
+            let t = 0;
+            return () => {
+              t += 1;
+              return t;
+            };
+          })(),
+          poll: async () => {
+            polls += 1;
+            return polls >= 2 ? { status: "approved" } : { status: "pending" };
+          },
+        },
+      },
+    );
+    expect(result!.decision.behavior).toBe("allow");
+    const parsed = JSON.parse(result!.line);
+    expect(parsed.response.response.behavior).toBe("allow");
+  });
+
+  it("hold path: deny → deny with approval id", async () => {
+    setToolActionApprovalCreator(async () => ({ approvalId: "ap_hold_deny" }));
+    const result = await handleToolControlRequestAsync(
+      {
+        type: "control_request",
+        request_id: "req_hold_deny",
+        payload: { tool_name: "Bash", input: { command: "rm -rf /" } },
+      },
+      {
+        hold: {
+          enabled: true,
+          timeoutMs: 100,
+          intervalMs: 1,
+          sleep: async () => {},
+          now: (() => {
+            let t = 0;
+            return () => {
+              t += 50;
+              return t;
+            };
+          })(),
+          poll: async () => ({ status: "denied" }),
+        },
+      },
+    );
+    expect(result!.decision.behavior).toBe("deny");
+    const parsed = JSON.parse(result!.line);
+    expect(parsed.response.response.approval_id).toBe("ap_hold_deny");
+    expect(String(parsed.response.response.message)).toMatch(/denied/i);
+  });
+
+  it("hold path: timeout → deny", async () => {
+    setToolActionApprovalCreator(async () => ({ approvalId: "ap_hold_to" }));
+    const result = await handleToolControlRequestAsync(
+      {
+        type: "control_request",
+        request_id: "req_hold_to",
+        payload: { tool_name: "Write", input: { path: "b.ts", content: "y" } },
+      },
+      {
+        hold: {
+          enabled: true,
+          timeoutMs: 10,
+          intervalMs: 1,
+          sleep: async () => {},
+          now: (() => {
+            let t = 0;
+            return () => {
+              t += 20;
+              return t;
+            };
+          })(),
+          poll: async () => ({ status: "pending" }),
+        },
+      },
+    );
+    expect(result!.decision.behavior).toBe("deny");
+    const parsed = JSON.parse(result!.line);
+    expect(String(parsed.response.response.message)).toMatch(/timed out/i);
+  });
+
   it("buildToolActionApprovalRequest is pure and maps to tool_action", () => {
     const decision = decideToolGate({
       tool_name: "Bash",

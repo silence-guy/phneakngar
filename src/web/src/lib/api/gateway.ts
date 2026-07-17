@@ -13,6 +13,7 @@ export type GatewayBindingItem = {
   dm_policy: string;
   outbound_mode: string;
   outbound_badge: "Live" | "Preview";
+  has_secret: boolean;
   created_at: string;
   updated_at: string;
 };
@@ -34,6 +35,7 @@ export async function createGatewayBinding(
     status?: string;
     dm_policy?: string;
     outbound_mode?: string;
+    secret_ref?: string | null;
   },
 ): Promise<{ binding: GatewayBindingItem }> {
   return apiFetch(`/api/gateway/bindings${wsQuery(workspaceId)}`, {
@@ -51,6 +53,7 @@ export async function updateGatewayBinding(
     outbound_mode?: string;
     agent_id?: string;
     user_id?: string;
+    secret_ref?: string | null;
   },
 ): Promise<{ binding: GatewayBindingItem }> {
   return apiFetch(`/api/gateway/bindings/${encodeURIComponent(id)}${wsQuery(workspaceId)}`, {
@@ -66,6 +69,16 @@ export async function deleteGatewayBinding(
   return apiFetch(`/api/gateway/bindings/${encodeURIComponent(id)}${wsQuery(workspaceId)}`, {
     method: "DELETE",
   });
+}
+
+export async function probeGatewayBinding(
+  workspaceId: string,
+  id: string,
+): Promise<{ ok: boolean; provider?: string; error?: string; detail?: unknown }> {
+  return apiFetch(
+    `/api/gateway/bindings/${encodeURIComponent(id)}/probe${wsQuery(workspaceId)}`,
+    { method: "POST" },
+  );
 }
 
 // Re-export Agent for consumers that load agents alongside bindings.

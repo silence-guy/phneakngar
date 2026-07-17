@@ -202,5 +202,8 @@ export {
   createGatewayBinding,
   updateGatewayBinding,
   deleteGatewayBinding,
+  probeGatewayBinding,
 } from "./gateway";
 export type { GatewayBindingItem } from "./gateway";
+export { listActivityEvents } from "./activity";
+export type { ActivityEventItem } from "./activity";

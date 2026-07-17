@@ -135,6 +135,19 @@ vi.mock("./client.js", () => {
     isTaskAlreadyTerminalError: (error: unknown) => error instanceof ChhlatHttpError
       && error.status === 409
       && error.code === "TASK_ALREADY_TERMINAL",
+    makeClientToolActionApprovalCreator: () => async () => ({ approvalId: "ap_test" }),
+  };
+});
+
+vi.mock("./tool-gate.js", () => ({
+  setToolActionApprovalCreator: vi.fn(),
+}));
+
+vi.mock("./agent/claude.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./agent/claude.js")>();
+  return {
+    ...actual,
+    setApprovalHoldPoller: vi.fn(),
   };
 });
 

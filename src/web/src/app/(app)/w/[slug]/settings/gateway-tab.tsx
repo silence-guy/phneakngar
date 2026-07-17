@@ -8,7 +8,9 @@ import { useWorkspace } from "@/contexts/workspace-context";
 import {
   listGatewayBindings,
   createGatewayBinding,
+  updateGatewayBinding,
   deleteGatewayBinding,
+  probeGatewayBinding,
   listAgents,
   type GatewayBindingItem,
 } from "@/lib/api";
@@ -48,7 +50,7 @@ function assessBindingsClient(
     const isLive = (b.outbound_mode ?? "").trim().toLowerCase() === "live";
     if (isLive) {
       live += 1;
-      live_without_token_risk += 1;
+      if (!b.has_secret) live_without_token_risk += 1;
     } else {
       preview += 1;
     }
@@ -82,7 +84,11 @@ export function GatewayTab() {
   const [provider, setProvider] = useState<(typeof PROVIDERS)[number]>("telegram");
   const [teamId, setTeamId] = useState("");
   const [agentId, setAgentId] = useState("");
+  const [botToken, setBotToken] = useState("");
+  const [outboundMode, setOutboundMode] = useState<"preview" | "live">("preview");
+  const [tokenDrafts, setTokenDrafts] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
+  const [busyId, setBusyId] = useState<string | null>(null);
   const [webhookFailClosed, setWebhookFailClosed] = useState(false);
   const [healthGatewayIssues, setHealthGatewayIssues] = useState<
     Array<{ code: string; severity: string; message: string }>
@@ -159,11 +165,14 @@ export function GatewayTab() {
         provider,
         external_team_id: teamId.trim(),
         agent_id: agentId,
-        outbound_mode: "preview",
+        outbound_mode: outboundMode,
         dm_policy: "open",
+        ...(botToken.trim() ? { secret_ref: botToken.trim() } : {}),
       });
       setItems((prev) => [...prev, res.binding]);
       setTeamId("");
+      setBotToken("");
+      setOutboundMode("preview");
       toast.success(SETTINGS_LABELS.gateway.created);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : SETTINGS_LABELS.gateway.failedToCreate);
@@ -179,6 +188,51 @@ export function GatewayTab() {
       toast.success(SETTINGS_LABELS.gateway.deleted);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : SETTINGS_LABELS.gateway.failedToDelete);
+    }
+  };
+
+  const handleSaveToken = async (id: string) => {
+    const token = (tokenDrafts[id] ?? "").trim();
+    if (!token) {
+      toast.error(SETTINGS_LABELS.gateway.botToken);
+      return;
+    }
+    setBusyId(id);
+    try {
+      const res = await updateGatewayBinding(workspaceId, id, { secret_ref: token });
+      setItems((prev) => prev.map((b) => (b.id === id ? res.binding : b)));
+      setTokenDrafts((prev) => ({ ...prev, [id]: "" }));
+      toast.success(SETTINGS_LABELS.gateway.tokenSaved);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : SETTINGS_LABELS.gateway.failedToUpdate);
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const handleSetMode = async (id: string, mode: "live" | "preview") => {
+    setBusyId(id);
+    try {
+      const res = await updateGatewayBinding(workspaceId, id, { outbound_mode: mode });
+      setItems((prev) => prev.map((b) => (b.id === id ? res.binding : b)));
+      toast.success(SETTINGS_LABELS.gateway.updated);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : SETTINGS_LABELS.gateway.failedToUpdate);
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const handleProbe = async (id: string) => {
+    setBusyId(id);
+    try {
+      const res = await probeGatewayBinding(workspaceId, id);
+      if (res.ok) toast.success(SETTINGS_LABELS.gateway.probeOk);
+      else toast.error(res.error ?? SETTINGS_LABELS.gateway.probeFailed);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : SETTINGS_LABELS.gateway.probeFailed);
+    } finally {
+      setBusyId(null);
     }
   };
 
@@ -296,6 +350,31 @@ export function GatewayTab() {
               ))}
             </select>
           </label>
+          <label className="text-xs text-muted-foreground space-y-1">
+            <span>{SETTINGS_LABELS.gateway.outboundMode}</span>
+            <select
+              className="w-full h-9 rounded-md border border-border/60 bg-background px-2 text-sm"
+              value={outboundMode}
+              onChange={(e) => setOutboundMode(e.target.value as "preview" | "live")}
+            >
+              <option value="preview">{SETTINGS_LABELS.gateway.outboundPreview}</option>
+              <option value="live">{SETTINGS_LABELS.gateway.outboundLive}</option>
+            </select>
+          </label>
+          <label className="text-xs text-muted-foreground space-y-1">
+            <span>{SETTINGS_LABELS.gateway.botToken}</span>
+            <input
+              type="password"
+              autoComplete="off"
+              className="w-full h-9 rounded-md border border-border/60 bg-background px-2 text-sm"
+              value={botToken}
+              onChange={(e) => setBotToken(e.target.value)}
+              placeholder="xoxb-… / bot token"
+            />
+            <span className="block text-[10px] text-muted-foreground/80">
+              {SETTINGS_LABELS.gateway.botTokenHint}
+            </span>
+          </label>
         </div>
         <Button size="sm" onClick={() => void handleCreate()} disabled={saving}>
           <Plus className="size-3.5 mr-1.5" />
@@ -310,44 +389,101 @@ export function GatewayTab() {
           items.map((b) => (
             <div
               key={b.id}
-              className="flex items-start justify-between gap-3 rounded-md border border-border/40 px-3 py-2.5"
+              className="rounded-md border border-border/40 px-3 py-2.5 space-y-2"
             >
-              <div className="min-w-0 space-y-0.5">
-                <div className="flex items-center gap-2 text-sm font-medium">
-                  <span className="truncate">{b.provider}</span>
-                  <span
-                    className={
-                      b.outbound_badge === "Live"
-                        ? "text-[10px] uppercase tracking-wide text-amber-700 dark:text-amber-400"
-                        : "text-[10px] uppercase tracking-wide text-muted-foreground"
-                    }
-                    title={
-                      b.outbound_badge === "Live"
-                        ? SETTINGS_LABELS.gateway.doctorLiveRisk
-                        : undefined
-                    }
-                  >
-                    {b.outbound_badge}
-                    {b.outbound_badge === "Live" ? (
-                      <span className="ml-1 normal-case tracking-normal text-muted-foreground">
-                        ({SETTINGS_LABELS.gateway.liveRiskBadgeHint})
-                      </span>
-                    ) : null}
-                  </span>
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0 space-y-0.5">
+                  <div className="flex items-center gap-2 text-sm font-medium">
+                    <span className="truncate">{b.provider}</span>
+                    <span
+                      className={
+                        b.outbound_badge === "Live"
+                          ? "text-[10px] uppercase tracking-wide text-amber-700 dark:text-amber-400"
+                          : "text-[10px] uppercase tracking-wide text-muted-foreground"
+                      }
+                      title={
+                        b.outbound_badge === "Live" && !b.has_secret
+                          ? SETTINGS_LABELS.gateway.doctorLiveRisk
+                          : undefined
+                      }
+                    >
+                      {b.outbound_badge}
+                      {b.outbound_badge === "Live" && !b.has_secret ? (
+                        <span className="ml-1 normal-case tracking-normal text-muted-foreground">
+                          ({SETTINGS_LABELS.gateway.liveRiskBadgeHint})
+                        </span>
+                      ) : null}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground">
+                      {b.has_secret
+                        ? SETTINGS_LABELS.gateway.hasSecret
+                        : SETTINGS_LABELS.gateway.noSecret}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground truncate">
+                    {b.external_team_id} · {b.dm_policy} · {b.status}
+                  </p>
                 </div>
-                <p className="text-xs text-muted-foreground truncate">
-                  {b.external_team_id} · {b.dm_policy} · {b.status}
-                </p>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="shrink-0 size-8"
+                  onClick={() => void handleDelete(b.id)}
+                  aria-label={SETTINGS_LABELS.gateway.delete}
+                >
+                  <Trash2 className="size-3.5" />
+                </Button>
               </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="shrink-0 size-8"
-                onClick={() => void handleDelete(b.id)}
-                aria-label={SETTINGS_LABELS.gateway.delete}
-              >
-                <Trash2 className="size-3.5" />
-              </Button>
+              <div className="flex flex-wrap items-end gap-2">
+                <label className="text-[11px] text-muted-foreground space-y-1 flex-1 min-w-[10rem]">
+                  <span>{SETTINGS_LABELS.gateway.botToken}</span>
+                  <input
+                    type="password"
+                    autoComplete="off"
+                    className="w-full h-8 rounded-md border border-border/60 bg-background px-2 text-xs"
+                    value={tokenDrafts[b.id] ?? ""}
+                    onChange={(e) =>
+                      setTokenDrafts((prev) => ({ ...prev, [b.id]: e.target.value }))
+                    }
+                    placeholder={b.has_secret ? "••••••••" : "bot token"}
+                  />
+                </label>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  disabled={busyId === b.id}
+                  onClick={() => void handleSaveToken(b.id)}
+                >
+                  {SETTINGS_LABELS.gateway.saveToken}
+                </Button>
+                {b.outbound_mode === "live" ? (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={busyId === b.id}
+                    onClick={() => void handleSetMode(b.id, "preview")}
+                  >
+                    {SETTINGS_LABELS.gateway.setPreview}
+                  </Button>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={busyId === b.id}
+                    onClick={() => void handleSetMode(b.id, "live")}
+                  >
+                    {SETTINGS_LABELS.gateway.enableLive}
+                  </Button>
+                )}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={busyId === b.id || !b.has_secret}
+                  onClick={() => void handleProbe(b.id)}
+                >
+                  {SETTINGS_LABELS.gateway.probe}
+                </Button>
+              </div>
             </div>
           ))
         )}
