@@ -15,6 +15,7 @@ describe("MCP server handlers", () => {
     expect(names).toContain("web_crawl");
     expect(names).toContain("web_diff");
     expect(names).toContain("web_cache");
+    expect(names).toContain("web_find_similar");
   });
 
   it("initialize returns serverInfo", async () => {

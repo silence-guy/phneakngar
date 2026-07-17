@@ -9,6 +9,8 @@ import {
   structuredExtract,
   webCrawl,
   webDiff,
+  findSimilar,
+  startFirecrawlCompatServer,
 } from "@phneakngar/web-brain";
 import { configDir } from "../lib/config.js";
 import { printJSON } from "../lib/output.js";
@@ -219,6 +221,11 @@ export function webCommand(): Command {
       [] as string[],
     )
     .option("--extract-links", "Include inter-page link graph")
+    .option("--use-auth", "Send cookies from auth state / env")
+    .option("--index", "Embed pages into local vector store")
+    .option("--max-total-chars <n>", "Total markdown char budget")
+    .option("--max-tokens-out <n>", "Aggregate token budget (approx)")
+    .option("--no-full-markdown", "Evidence/excerpt only (strip full bodies)")
     .option("--json", "JSON output")
     .action(async (url: string, opts) => {
       const strat = String(opts.strategy || "bfs");
@@ -237,6 +244,13 @@ export function webCommand(): Command {
         includePatterns: opts.include?.length ? opts.include : undefined,
         excludePatterns: opts.exclude?.length ? opts.exclude : undefined,
         extractLinksGraph: !!opts.extractLinks,
+        useAuth: !!opts.useAuth,
+        indexPages: !!opts.index,
+        maxTotalChars: opts.maxTotalChars
+          ? Number(opts.maxTotalChars)
+          : undefined,
+        maxTokensOut: opts.maxTokensOut ? Number(opts.maxTokensOut) : undefined,
+        includeFullMarkdown: opts.fullMarkdown !== false,
         cache: openCache(),
         minDelayMs: 0, // CLI interactive: no forced delay for snappy demos
       });
@@ -250,6 +264,8 @@ export function webCommand(): Command {
         console.log(
           `strategy: ${res.strategyUsed} sitemap=${res.sitemapFound} totalFound=${res.totalFound} crawled=${res.crawled}`,
         );
+        if (res.indexed) console.log(`indexed: ${res.indexed}`);
+        if (res.authUsed) console.log(`auth: used`);
         if (res.urls?.length) {
           console.log(`urls: ${res.urls.length}`);
           for (const u of res.urls.slice(0, 30)) console.log(`- ${u}`);
@@ -263,6 +279,46 @@ export function webCommand(): Command {
         }
       }
       if (!res.ok) process.exitCode = 1;
+    });
+
+  cmd
+    .command("similar")
+    .description("Find similar pages in local crawl vector index")
+    .argument("<query>", "URL or free-text concept")
+    .option("--limit <n>", "Max results", "5")
+    .option("--json", "JSON output")
+    .action((query: string, opts) => {
+      const results = findSimilar(query, { limit: Number(opts.limit) || 5 });
+      if (opts.json) printJSON({ query, results });
+      else {
+        console.log(`${results.length} hit(s)`);
+        for (const r of results) {
+          console.log(`- ${r.score.toFixed(3)} ${r.url}`);
+          if (r.textPreview) console.log(`  ${r.textPreview.slice(0, 100)}`);
+        }
+      }
+    });
+
+  cmd
+    .command("serve")
+    .description("Firecrawl-compat REST (scrape/crawl/map/search)")
+    .option("--host <host>", "Bind host", "127.0.0.1")
+    .option("--port <n>", "Port", "3333")
+    .option("--api-key <key>", "Optional bearer / x-api-key")
+    .action(async (opts) => {
+      const { url } = await startFirecrawlCompatServer({
+        host: String(opts.host || "127.0.0.1"),
+        port: Number(opts.port) || 3333,
+        apiKey: opts.apiKey ? String(opts.apiKey) : undefined,
+        cache: openCache(),
+      });
+      console.log(`Firecrawl-compat listening on ${url}`);
+      console.log(`  POST ${url}/v1/scrape`);
+      console.log(`  POST ${url}/v1/crawl  → GET ${url}/v1/crawl/:id`);
+      console.log(`  POST ${url}/v1/map`);
+      console.log(`  POST ${url}/v1/search`);
+      // keep process alive
+      await new Promise(() => {});
     });
 
   cmd

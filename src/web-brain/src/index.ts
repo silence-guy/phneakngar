@@ -67,6 +67,36 @@ export {
 } from "./sitemap.js";
 export type { SitemapEntry } from "./sitemap.js";
 export {
+  deduplicatePages,
+  stripRepeatedNavigationLines,
+  splitIntoBlocks,
+} from "./dedup.js";
+export {
+  hashEmbed,
+  findSimilar,
+  indexCrawlResult,
+  isIndexingEnabled,
+  VectorStore,
+  cosineSimilarity,
+} from "./embed.js";
+export {
+  resolveAuth,
+  applyAuthHeaders,
+  cookiesFromNetscape,
+  cookiesFromStorageState,
+} from "./auth.js";
+export {
+  countTokens,
+  truncateByTokens,
+  applyAggregateMarkdownBudget,
+  buildEvidenceFromMarkdown,
+} from "./budget.js";
+export {
+  startFirecrawlCompatServer,
+  createFirecrawlCompatHandler,
+  CrawlJobStore,
+} from "./firecrawl-compat.js";
+export {
   parseRobotsTxt,
   isPathAllowed,
   isUrlAllowedByRobots,

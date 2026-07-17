@@ -12,6 +12,7 @@ import { WebCache, defaultCacheDir } from "./cache.js";
 import { structuredExtract } from "./structured-extract.js";
 import { webCrawl } from "./crawl.js";
 import { webDiff } from "./diff.js";
+import { findSimilar, isIndexingEnabled } from "./embed.js";
 
 type JsonRpcId = string | number | null;
 
@@ -124,8 +125,36 @@ const TOOLS = [
           type: "boolean",
           description: "Include inter-page link graph",
         },
+        use_auth: {
+          type: "boolean",
+          description: "Send cookies from auth state / env",
+        },
+        max_total_chars: { type: "number" },
+        max_tokens_out: { type: "number" },
+        include_full_markdown: { type: "boolean" },
+        index_pages: {
+          type: "boolean",
+          description: "Embed pages into local vector store (or PHNEAKNGAR_CRAWL_INDEX=1)",
+        },
+        dedupe_boilerplate: { type: "boolean" },
       },
       required: ["url"],
+    },
+  },
+  {
+    name: "web_find_similar",
+    description:
+      "Find similar pages from the local crawl vector index (hash embeddings). Prefer after crawl with index_pages / PHNEAKNGAR_CRAWL_INDEX=1.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        query: {
+          type: "string",
+          description: "URL previously indexed or free-text concept",
+        },
+        limit: { type: "number" },
+      },
+      required: ["query"],
     },
   },
   {
@@ -253,8 +282,27 @@ export async function callTool(
         includePatterns: include,
         excludePatterns: exclude,
         extractLinksGraph: args.extract_links === true,
+        useAuth: args.use_auth === true,
+        maxTotalChars:
+          args.max_total_chars != null
+            ? Number(args.max_total_chars)
+            : undefined,
+        maxTokensOut:
+          args.max_tokens_out != null ? Number(args.max_tokens_out) : undefined,
+        includeFullMarkdown: args.include_full_markdown !== false,
+        indexPages: args.index_pages === true || isIndexingEnabled(),
+        dedupeBoilerplate: args.dedupe_boilerplate !== false,
         cache,
       });
+    }
+    case "web_find_similar": {
+      return {
+        ok: true,
+        indexingEnabled: isIndexingEnabled(),
+        results: findSimilar(String(args.query ?? ""), {
+          limit: Number(args.limit) || 5,
+        }),
+      };
     }
     case "web_diff": {
       return webDiff({

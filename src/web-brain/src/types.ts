@@ -100,6 +100,12 @@ export type FetchOptions = {
   cache?: WebCacheLike | null;
   /** Allow loopback/private targets (tests only; default false). */
   allowPrivateNetwork?: boolean;
+  /** Extra HTTP headers (Cookie, Authorization, …). */
+  headers?: Record<string, string>;
+  /** Load cookies from auth state / env when true. */
+  useAuth?: boolean;
+  /** Path to storageState.json or cookies.txt */
+  authStatePath?: string;
 };
 
 export type SearchTimeRange = "day" | "week" | "month" | "year";

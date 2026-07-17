@@ -23,6 +23,17 @@ import {
   stripFragment,
 } from "./url-utils.js";
 import type { FetchOptions, WebCacheLike, WebError } from "./types.js";
+import { deduplicatePages } from "./dedup.js";
+import { indexCrawlResult, isIndexingEnabled } from "./embed.js";
+import {
+  applyAggregateMarkdownBudget,
+  buildEvidenceFromMarkdown,
+  DEFAULT_MAX_TOTAL_CHARS,
+  MIN_TOKENS_PER_PAGE,
+  scaleDefaultTokens,
+  truncateByChars,
+  type EvidenceItem,
+} from "./budget.js";
 
 export type CrawlStrategy = "bfs" | "dfs" | "sitemap" | "auto" | "map";
 
@@ -33,6 +44,8 @@ export type CrawlPage = {
   markdown: string;
   depth: number;
   fromCache: boolean;
+  evidence?: EvidenceItem[];
+  excerpt?: string;
 };
 
 export type CrawlLinkEdge = { from: string; to: string };
@@ -52,6 +65,11 @@ export type CrawlSuccess = {
   urls?: string[];
   /** Optional inter-page edges when extractLinks=true. */
   links?: CrawlLinkEdge[];
+  /** Pages dropped after max_total_chars budget. */
+  droppedOverBudget?: number;
+  /** Whether crawl pages were embedded (PHNEAKNGAR_CRAWL_INDEX=1). */
+  indexed?: number;
+  authUsed?: boolean;
 };
 
 export type CrawlResponse = CrawlSuccess | WebError;
@@ -73,6 +91,19 @@ export type CrawlOptions = {
   fetchImpl?: typeof fetch;
   /** Max markdown chars per page (default 30_000). */
   maxChars?: number;
+  /** Use cookie/auth state for fetches. */
+  useAuth?: boolean;
+  authStatePath?: string;
+  /** Strip cross-page nav/boilerplate (default true when ≥2 pages). */
+  dedupeBoilerplate?: boolean;
+  /** Total markdown char budget across all pages. */
+  maxTotalChars?: number;
+  /** Aggregate token budget (approx cl100k). */
+  maxTokensOut?: number;
+  /** Keep full markdown (default true); false → evidence/excerpt only. */
+  includeFullMarkdown?: boolean;
+  /** Index pages into local vector store (or env PHNEAKNGAR_CRAWL_INDEX=1). */
+  indexPages?: boolean;
 };
 
 function sleep(ms: number): Promise<void> {
@@ -219,6 +250,11 @@ export async function webCrawl(
   const includePatterns = opts.includePatterns;
   const excludePatterns = opts.excludePatterns;
   const extractLinksGraph = opts.extractLinksGraph === true;
+  const useAuth = opts.useAuth === true || process.env.PHNEAKNGAR_USE_AUTH === "1";
+  const dedupeBoilerplate = opts.dedupeBoilerplate !== false;
+  const maxTotalChars = opts.maxTotalChars ?? DEFAULT_MAX_TOTAL_CHARS;
+  const includeFullMarkdown = opts.includeFullMarkdown !== false;
+  const doIndex = opts.indexPages === true || isIndexingEnabled();
 
   const seedSafe = assertSafeHttpUrl(seedUrl, {
     allowPrivateNetwork: allowPrivate,
@@ -234,6 +270,8 @@ export async function webCrawl(
     fetchImpl,
     cache: opts.cache ?? opts.fetchOpts?.cache,
     allowPrivateNetwork: allowPrivate,
+    useAuth,
+    authStatePath: opts.authStatePath ?? opts.fetchOpts?.authStatePath,
   };
   const cache = opts.cache ?? opts.fetchOpts?.cache ?? null;
 
@@ -371,18 +409,22 @@ export async function webCrawl(
         for (const l of page.links) recordEdge(url, l);
       }
     }
-    return {
-      ok: true,
+    return finalizeCrawl({
       seed: seed.toString(),
       strategyUsed,
       pages,
       totalFound,
-      crawled: pages.length,
       skipped,
       robotsFetched,
       sitemapFound: true,
-      ...(extractLinksGraph ? { links: linkEdges } : {}),
-    };
+      links: extractLinksGraph ? linkEdges : undefined,
+      dedupeBoilerplate,
+      maxTotalChars,
+      maxTokensOut: opts.maxTokensOut,
+      includeFullMarkdown,
+      doIndex,
+      useAuth,
+    });
   }
 
   // --- BFS / DFS traversal ---
@@ -457,17 +499,142 @@ export async function webCrawl(
     }
   }
 
-  return {
-    ok: true,
+  return finalizeCrawl({
     seed: seed.toString(),
     strategyUsed: traversal,
     pages,
     totalFound: visited.size,
-    crawled: pages.length,
     skipped,
     robotsFetched,
     sitemapFound,
-    ...(extractLinksGraph ? { links: linkEdges } : {}),
+    links: extractLinksGraph ? linkEdges : undefined,
+    dedupeBoilerplate,
+    maxTotalChars,
+    maxTokensOut: opts.maxTokensOut,
+    includeFullMarkdown,
+    doIndex,
+    useAuth,
+  });
+}
+
+async function finalizeCrawl(args: {
+  seed: string;
+  strategyUsed: CrawlStrategy;
+  pages: CrawlPage[];
+  totalFound: number;
+  skipped: { url: string; reason: string }[];
+  robotsFetched: boolean;
+  sitemapFound: boolean;
+  links?: CrawlLinkEdge[];
+  dedupeBoilerplate: boolean;
+  maxTotalChars: number;
+  maxTokensOut?: number;
+  includeFullMarkdown: boolean;
+  doIndex: boolean;
+  useAuth: boolean;
+}): Promise<CrawlSuccess> {
+  let pages = args.pages;
+
+  if (args.dedupeBoilerplate && pages.length > 1) {
+    let domain: string | undefined;
+    try {
+      domain = new URL(args.seed).hostname;
+    } catch {
+      domain = undefined;
+    }
+    const deduped = deduplicatePages(
+      pages.map((p) => ({ url: p.url, markdown: p.markdown })),
+      domain,
+    );
+    pages = pages.map((p, i) => ({
+      ...p,
+      markdown: deduped[i]?.markdown ?? p.markdown,
+    }));
+  }
+
+  // Char budget across pages
+  let droppedOverBudget = 0;
+  {
+    const budgeted: CrawlPage[] = [];
+    let charCount = 0;
+    for (const page of pages) {
+      if (
+        charCount + page.markdown.length > args.maxTotalChars &&
+        budgeted.length > 0
+      ) {
+        droppedOverBudget += 1;
+        continue;
+      }
+      let md = page.markdown;
+      if (charCount + md.length > args.maxTotalChars) {
+        md = truncateByChars(md, Math.max(0, args.maxTotalChars - charCount));
+      }
+      budgeted.push({ ...page, markdown: md });
+      charCount += md.length;
+    }
+    pages = budgeted;
+  }
+
+  const maxTokensOut =
+    args.maxTokensOut ?? scaleDefaultTokens(pages.length);
+
+  // Evidence while full markdown still present
+  for (const page of pages) {
+    if (!page.markdown) continue;
+    page.evidence = buildEvidenceFromMarkdown(
+      args.seed,
+      page.title || page.url,
+      page.url,
+      page.markdown,
+      { maxTokensOut: Math.min(400, maxTokensOut), maxItems: 1 },
+    );
+  }
+
+  // Vector index uses full (char-budgeted) markdown before token strip
+  let indexed = 0;
+  if (args.doIndex) {
+    for (const page of pages) {
+      const ok = await indexCrawlResult({
+        url: page.url,
+        title: page.title,
+        markdown: page.markdown,
+      });
+      if (ok) indexed += 1;
+    }
+  }
+
+  if (!args.includeFullMarkdown) {
+    for (const page of pages) {
+      if (!page.evidence?.length && page.markdown) {
+        page.excerpt = page.markdown.slice(0, 600);
+      }
+      page.markdown = "";
+    }
+  } else {
+    applyAggregateMarkdownBudget(
+      pages,
+      (p) => p.markdown,
+      (p, body) => {
+        p.markdown = body;
+      },
+      { maxTokensOut, minTokensPerItem: MIN_TOKENS_PER_PAGE },
+    );
+  }
+
+  return {
+    ok: true,
+    seed: args.seed,
+    strategyUsed: args.strategyUsed,
+    pages,
+    totalFound: args.totalFound,
+    crawled: pages.length,
+    skipped: args.skipped,
+    robotsFetched: args.robotsFetched,
+    sitemapFound: args.sitemapFound,
+    ...(args.links ? { links: args.links } : {}),
+    ...(droppedOverBudget > 0 ? { droppedOverBudget } : {}),
+    ...(indexed > 0 ? { indexed } : {}),
+    authUsed: args.useAuth,
   };
 }
 

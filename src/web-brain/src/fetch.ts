@@ -10,6 +10,7 @@ import {
   toWebError,
 } from "./ssrf.js";
 import { extractFromHtml } from "./extract.js";
+import { applyAuthHeaders, resolveAuth } from "./auth.js";
 import type { FetchOptions, WebFetchResponse, CacheEntry } from "./types.js";
 
 const DEFAULT_MAX_CHARS = 30_000;
@@ -118,15 +119,26 @@ export async function webFetch(
       return toWebError(hopSafe.code, hopSafe.message);
     }
 
+    const auth = resolveAuth({
+      useAuth: opts.useAuth,
+      authStatePath: opts.authStatePath,
+      host: current.hostname,
+    });
+    const headers = applyAuthHeaders(
+      {
+        Accept: "text/html,application/xhtml+xml,text/plain;q=0.9,*/*;q=0.1",
+        "User-Agent":
+          "phneakngar-web-brain/0.0.2 (+https://github.com/silence-guy/phneakngar)",
+        ...opts.headers,
+      },
+      auth,
+    );
     try {
       res = await fetchImpl(current.toString(), {
         method: "GET",
         redirect: "manual",
         signal: AbortSignal.timeout(timeoutMs),
-        headers: {
-          Accept: "text/html,application/xhtml+xml,text/plain;q=0.9,*/*;q=0.1",
-          "User-Agent": "phneakngar-web-brain/0.0.2 (+https://github.com/silence-guy/phneakngar)",
-        },
+        headers,
       });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);

@@ -5,6 +5,7 @@
 import { lookup } from "node:dns/promises";
 import { isIP } from "node:net";
 import { extractTitle, stripBoilerplate } from "./extract.js";
+import { applyAuthHeaders, resolveAuth } from "./auth.js";
 import {
   assertResolvedAddressesSafe,
   assertSafeHttpUrl,
@@ -191,16 +192,26 @@ export async function fetchHtml(
       }
     }
 
+    const auth = resolveAuth({
+      useAuth: opts.useAuth,
+      authStatePath: opts.authStatePath,
+      host: current.hostname,
+    });
+    const headers = applyAuthHeaders(
+      {
+        Accept: "text/html,application/xhtml+xml;q=0.9,*/*;q=0.1",
+        "User-Agent": "phneakngar-web-brain/0.0.2",
+        ...opts.headers,
+      },
+      auth,
+    );
     let res: Response;
     try {
       res = await fetchImpl(current.toString(), {
         method: "GET",
         redirect: "manual",
         signal: AbortSignal.timeout(timeoutMs),
-        headers: {
-          Accept: "text/html,application/xhtml+xml;q=0.9,*/*;q=0.1",
-          "User-Agent": "phneakngar-web-brain/0.0.2",
-        },
+        headers,
       });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
