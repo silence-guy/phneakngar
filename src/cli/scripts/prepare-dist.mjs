@@ -1,14 +1,24 @@
-import { readFileSync, writeFileSync, chmodSync, copyFileSync } from "node:fs";
+import { readFileSync, writeFileSync, chmodSync, copyFileSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
 
-const entry = resolve("dist/index.js");
-const src = readFileSync(entry, "utf8");
 const shebang = "#!/usr/bin/env node\n";
-if (!src.startsWith(shebang)) {
-  writeFileSync(entry, shebang + src);
+
+function prepareEntry(relPath) {
+  const entry = resolve(relPath);
+  if (!existsSync(entry)) {
+    console.warn("skip missing", entry);
+    return;
+  }
+  const src = readFileSync(entry, "utf8");
+  if (!src.startsWith(shebang)) {
+    writeFileSync(entry, shebang + src);
+  }
+  chmodSync(entry, 0o755);
+  console.log("prepared", entry);
 }
-chmodSync(entry, 0o755);
-console.log("prepared", entry);
+
+prepareEntry("dist/index.js");
+prepareEntry("dist/web-brain-mcp.js");
 
 const rootLicense = resolve("../../LICENSE");
 const packageLicense = resolve("LICENSE");

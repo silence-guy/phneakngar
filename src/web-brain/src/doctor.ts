@@ -16,7 +16,7 @@ export function checkWebBrainReady(opts: {
   cache?: WebCacheLike | null;
   enabled?: boolean;
   /** Optional MCP wire status from CLI. */
-  mcpWired?: { codex?: boolean; claude?: boolean };
+  mcpWired?: { codex?: boolean; claude?: boolean; grok?: boolean };
 }): WebBrainStatus {
   if (opts.enabled === false) {
     return {
@@ -47,6 +47,7 @@ export function checkWebBrainReady(opts: {
     const parts = [
       mcp.codex ? "codex" : null,
       mcp.claude ? "claude" : null,
+      mcp.grok ? "grok" : null,
     ].filter(Boolean);
     mcpDetail = parts.length
       ? `MCP wired: ${parts.join("+")}`

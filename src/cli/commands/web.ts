@@ -16,6 +16,7 @@ import {
   wireAll,
   isCodexWired,
   isClaudeWired,
+  isGrokWired,
 } from "../lib/mcp-wire.js";
 
 function openCache(): WebCache {
@@ -76,8 +77,16 @@ export function webCommand(): Command {
     .option("--json", "JSON output")
     .action((opts) => {
       const cache = openCache();
-      const mcp = { codex: isCodexWired(), claude: isClaudeWired() };
-      const status = checkWebBrainReady({ cache, enabled: true, mcpWired: mcp });
+      const mcp = {
+        codex: isCodexWired(),
+        claude: isClaudeWired(),
+        grok: isGrokWired(),
+      };
+      const status = checkWebBrainReady({
+        cache,
+        enabled: true,
+        mcpWired: mcp,
+      });
       const stats = cache.stats();
       const payload = { ...status, cache: stats, mcp };
       if (opts.json) {
@@ -86,7 +95,9 @@ export function webCommand(): Command {
       }
       console.log(`Web brain: [${status.status.toUpperCase()}] ${status.detail}`);
       console.log(`Cache: ${stats.entries} entries @ ${stats.path}`);
-      console.log(`MCP: codex=${mcp.codex} claude=${mcp.claude}`);
+      console.log(
+        `MCP: codex=${mcp.codex} claude=${mcp.claude} grok=${mcp.grok}`,
+      );
     });
 
   cmd
@@ -253,7 +264,7 @@ export function webCommand(): Command {
 
   cmd
     .command("wire-mcp")
-    .description("Wire phneakngar_web_brain MCP into Codex + Claude configs")
+    .description("Wire phneakngar_web_brain MCP into Codex, Claude, and Grok configs")
     .option("--remove", "Remove managed MCP entries")
     .option("--json", "JSON output")
     .action((opts) => {
@@ -276,7 +287,11 @@ export function webBrainDoctorCheck() {
     return checkWebBrainReady({
       cache,
       enabled: true,
-      mcpWired: { codex: isCodexWired(), claude: isClaudeWired() },
+      mcpWired: {
+        codex: isCodexWired(),
+        claude: isClaudeWired(),
+        grok: isGrokWired(),
+      },
     });
   } catch (err) {
     return {

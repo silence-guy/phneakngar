@@ -43,7 +43,7 @@
   },
   "scripts": {
     "dev": "bun run src/index.ts",
-    "build": "bun build src/index.ts --outdir dist --target node --format esm --external citty --external commander --external postal-mime --external playwright-core --external sharp && bun build chhlat/session-runner.ts --outdir dist --target node --format esm --external citty --external commander --external postal-mime && bun build chhlat/meeting-runner.ts --outdir dist --target node --format esm --external playwright-core && node scripts/prepare-dist.mjs",
+    "build": "bun build src/index.ts --outdir dist --target node --format esm --external citty --external commander --external postal-mime --external playwright-core --external sharp && bun build chhlat/session-runner.ts --outdir dist --target node --format esm --external citty --external commander --external postal-mime && bun build chhlat/meeting-runner.ts --outdir dist --target node --format esm --external playwright-core && bun build ../web-brain/src/bin-mcp.ts --outdir dist --target node --format esm --outfile dist/web-brain-mcp.js && node scripts/prepare-dist.mjs",
     "prepack": "pnpm run build",
     "pack:check": "npm pack --dry-run",
     "knip": "knip",

@@ -1,5 +1,5 @@
 /**
- * Idempotent MCP config wiring for Codex + Claude Code.
+ * Idempotent MCP config wiring for Codex, Claude Code, and Grok CLI.
  * Writes only managed marker blocks so user MCP servers are preserved.
  */
 
@@ -8,16 +8,14 @@ import {
   mkdirSync,
   readFileSync,
   writeFileSync,
-  renameSync,
 } from "node:fs";
 import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { homedir } from "node:os";
 import { createRequire } from "node:module";
 
 const BEGIN = "# BEGIN phneakngar-managed web-brain";
 const END = "# END phneakngar-managed web-brain";
-const BEGIN_JSON = "/* BEGIN phneakngar-managed web-brain */";
-const END_JSON = "/* END phneakngar-managed web-brain */";
 
 export type WireResult = {
   runtime: string;
@@ -26,30 +24,72 @@ export type WireResult = {
   detail: string;
 };
 
-function resolveWebBrainMcpCommand(): { command: string; args: string[] } {
-  // Prefer bun/tsx-friendly path to package mcp entry via node + experimental strip types,
-  // or absolute path to mcp-server source when workspace is present.
+/**
+ * Resolve how to launch the web-brain MCP stdio server.
+ * Prefer bundled dist next to the CLI, then monorepo source, then package resolve.
+ */
+export function resolveWebBrainMcpCommand(): { command: string; args: string[] } {
+  // 1) Bundled CLI sibling (global npm install of @phneakngar/cli)
+  try {
+    const here = dirname(fileURLToPath(import.meta.url));
+    // dist/index.js → dist/web-brain-mcp.js  OR  lib/mcp-wire.ts → ../web-brain/...
+    const candidates = [
+      join(here, "web-brain-mcp.js"),
+      join(here, "dist", "web-brain-mcp.js"),
+      join(here, "..", "dist", "web-brain-mcp.js"),
+      join(here, "..", "web-brain-mcp.js"),
+    ];
+    for (const p of candidates) {
+      if (existsSync(p)) {
+        return { command: process.execPath, args: [p] };
+      }
+    }
+  } catch {
+    // ignore
+  }
+
+  // 2) Monorepo absolute path (dev machine)
+  const mono = join(
+    dirname(fileURLToPath(import.meta.url)),
+    "..",
+    "..",
+    "web-brain",
+    "src",
+    "bin-mcp.ts",
+  );
+  if (existsSync(mono)) {
+    return {
+      command: process.execPath,
+      args: ["--experimental-strip-types", mono],
+    };
+  }
+
+  // 3) Workspace package resolve
   try {
     const require = createRequire(import.meta.url);
     const pkgJson = require.resolve("@phneakngar/web-brain/package.json");
-    const mcpTs = join(dirname(pkgJson), "src", "mcp-server.ts");
+    const mcpTs = join(dirname(pkgJson), "src", "bin-mcp.ts");
     if (existsSync(mcpTs)) {
       return {
         command: process.execPath,
-        args: ["--experimental-strip-types", mcpTs, "--mcp"],
+        args: ["--experimental-strip-types", mcpTs],
       };
     }
   } catch {
     // fall through
   }
-  // npx-style fallback for published layouts (future)
+
   return {
     command: process.execPath,
-    args: ["--experimental-strip-types", "-e", "import('@phneakngar/web-brain').then(m=>m.runMcpStdio())"],
+    args: [
+      "--experimental-strip-types",
+      "-e",
+      "import('@phneakngar/web-brain').then((m)=>m.runMcpStdio())",
+    ],
   };
 }
 
-function codexBlock(): string {
+function tomlServerBlock(): string {
   const { command, args } = resolveWebBrainMcpCommand();
   const argsToml = args.map((a) => JSON.stringify(a)).join(", ");
   return [
@@ -57,6 +97,7 @@ function codexBlock(): string {
     "[mcp_servers.phneakngar_web_brain]",
     `command = ${JSON.stringify(command)}`,
     `args = [${argsToml}]`,
+    "enabled = true",
     END,
     "",
   ].join("\n");
@@ -70,41 +111,61 @@ function stripManagedToml(content: string): string {
   return content.replace(re, "");
 }
 
-export function wireCodex(opts: { remove?: boolean } = {}): WireResult {
-  const path = join(homedir(), ".codex", "config.toml");
-  const block = codexBlock();
+function wireTomlFile(
+  runtime: string,
+  path: string,
+  opts: { remove?: boolean } = {},
+): WireResult {
+  const block = tomlServerBlock();
   if (opts.remove) {
     if (!existsSync(path)) {
-      return { runtime: "codex", path, action: "missing", detail: "no config.toml" };
+      return { runtime, path, action: "missing", detail: "no config file" };
     }
     const prev = readFileSync(path, "utf-8");
     const next = stripManagedToml(prev);
     if (next === prev) {
-      return { runtime: "codex", path, action: "skipped", detail: "no managed block" };
+      return { runtime, path, action: "skipped", detail: "no managed block" };
     }
     writeFileSync(path, next, { mode: 0o600 });
-    return { runtime: "codex", path, action: "removed", detail: "managed block removed" };
+    return { runtime, path, action: "removed", detail: "managed block removed" };
   }
 
   mkdirSync(dirname(path), { recursive: true, mode: 0o700 });
   const prev = existsSync(path) ? readFileSync(path, "utf-8") : "";
-  if (prev.includes(BEGIN) && prev.includes(block.trim())) {
-    return { runtime: "codex", path, action: "skipped", detail: "already current" };
+  // Consider current if same server key present with same command path roughly
+  if (prev.includes(BEGIN) && prev.includes("phneakngar_web_brain")) {
+    const stripped = stripManagedToml(prev);
+    const next = (stripped.replace(/\s+$/, "") ? stripped.replace(/\s+$/, "") + "\n\n" : "") + block;
+    if (next === prev || prev.includes(block.trim())) {
+      // refresh block in case command path changed
+      if (prev.includes(block.trim())) {
+        return { runtime, path, action: "skipped", detail: "already current" };
+      }
+      writeFileSync(path, next, { mode: 0o600 });
+      return { runtime, path, action: "updated", detail: "mcp_servers.phneakngar_web_brain" };
+    }
   }
   const base = stripManagedToml(prev).replace(/\s+$/, "");
   const next = (base ? base + "\n\n" : "") + block;
   writeFileSync(path, next, { mode: 0o600 });
   return {
-    runtime: "codex",
+    runtime,
     path,
     action: prev.includes(BEGIN) ? "updated" : "wrote",
     detail: "mcp_servers.phneakngar_web_brain",
   };
 }
 
+export function wireCodex(opts: { remove?: boolean } = {}): WireResult {
+  return wireTomlFile("codex", join(homedir(), ".codex", "config.toml"), opts);
+}
+
+/** Grok CLI uses the same TOML mcp_servers shape as Codex under ~/.grok/config.toml */
+export function wireGrok(opts: { remove?: boolean } = {}): WireResult {
+  return wireTomlFile("grok", join(homedir(), ".grok", "config.toml"), opts);
+}
+
 function claudeMcpJsonPath(): string {
-  // Claude Code user MCP: ~/.claude.json has mcpServers in some versions;
-  // also support ~/.claude/mcp.json
   const candidates = [
     join(homedir(), ".claude", "mcp.json"),
     join(homedir(), ".claude.json"),
@@ -118,10 +179,7 @@ function claudeMcpJsonPath(): string {
 export function wireClaude(opts: { remove?: boolean } = {}): WireResult {
   const path = claudeMcpJsonPath();
   const { command, args } = resolveWebBrainMcpCommand();
-  const server = {
-    command,
-    args,
-  };
+  const server = { command, args };
 
   if (opts.remove) {
     if (!existsSync(path)) {
@@ -152,7 +210,6 @@ export function wireClaude(opts: { remove?: boolean } = {}): WireResult {
     try {
       json = JSON.parse(readFileSync(path, "utf-8")) as typeof json;
     } catch {
-      // start fresh servers map if corrupt partial
       json = {};
     }
   }
@@ -173,7 +230,7 @@ export function wireClaude(opts: { remove?: boolean } = {}): WireResult {
 }
 
 export function wireAll(opts: { remove?: boolean } = {}): WireResult[] {
-  return [wireCodex(opts), wireClaude(opts)];
+  return [wireCodex(opts), wireClaude(opts), wireGrok(opts)];
 }
 
 export function isCodexWired(): boolean {
@@ -195,7 +252,8 @@ export function isClaudeWired(): boolean {
   }
 }
 
-// silence unused imports in some trees
-void renameSync;
-void BEGIN_JSON;
-void END_JSON;
+export function isGrokWired(): boolean {
+  const path = join(homedir(), ".grok", "config.toml");
+  if (!existsSync(path)) return false;
+  return readFileSync(path, "utf-8").includes("phneakngar_web_brain");
+}
