@@ -96,14 +96,34 @@ const TOOLS = [
   {
     name: "web_crawl",
     description:
-      "Capped BFS crawl (max_depth≤2, max_pages≤20). Respects robots.txt. Same host by default.",
+      "Multi-page crawl: strategy bfs|dfs|sitemap|auto|map. Sitemap-first for docs, pattern filters, robots.txt, canonical URL dedup. Caps: depth≤3, pages≤50. Prefer sitemap/auto for doc sites; map for URL discovery only.",
     inputSchema: {
       type: "object",
       properties: {
         url: { type: "string" },
+        strategy: {
+          type: "string",
+          enum: ["bfs", "dfs", "sitemap", "auto", "map"],
+          description:
+            "bfs (default) | dfs | sitemap | auto (sitemap if found else bfs) | map (URLs only)",
+        },
         max_depth: { type: "number" },
         max_pages: { type: "number" },
         same_host: { type: "boolean" },
+        include_patterns: {
+          type: "array",
+          items: { type: "string" },
+          description: "Regex whitelist on full URL",
+        },
+        exclude_patterns: {
+          type: "array",
+          items: { type: "string" },
+          description: "Regex blacklist on full URL",
+        },
+        extract_links: {
+          type: "boolean",
+          description: "Include inter-page link graph",
+        },
       },
       required: ["url"],
     },
@@ -208,10 +228,31 @@ export async function callTool(
       });
     }
     case "web_crawl": {
+      const strat = args.strategy != null ? String(args.strategy) : "bfs";
+      const strategy =
+        strat === "dfs" ||
+        strat === "sitemap" ||
+        strat === "auto" ||
+        strat === "map" ||
+        strat === "bfs"
+          ? strat
+          : "bfs";
+      const include =
+        Array.isArray(args.include_patterns)
+          ? args.include_patterns.map(String)
+          : undefined;
+      const exclude =
+        Array.isArray(args.exclude_patterns)
+          ? args.exclude_patterns.map(String)
+          : undefined;
       return webCrawl(String(args.url ?? ""), {
-        maxDepth: args.max_depth != null ? Number(args.max_depth) : 1,
-        maxPages: args.max_pages != null ? Number(args.max_pages) : 10,
+        strategy,
+        maxDepth: args.max_depth != null ? Number(args.max_depth) : 2,
+        maxPages: args.max_pages != null ? Number(args.max_pages) : 20,
         sameHost: args.same_host !== false,
+        includePatterns: include,
+        excludePatterns: exclude,
+        extractLinksGraph: args.extract_links === true,
         cache,
       });
     }

@@ -189,15 +189,54 @@ export function webCommand(): Command {
 
   cmd
     .command("crawl")
-    .description("Capped BFS crawl (max_depth≤2, max_pages≤20)")
+    .description(
+      "Crawl site (bfs|dfs|sitemap|auto|map; depth≤3, pages≤50)",
+    )
     .argument("<url>", "Seed http(s) URL")
-    .option("--max-depth <n>", "Link depth (default 1, max 2)", "1")
-    .option("--max-pages <n>", "Page cap (default 10, max 20)", "10")
+    .option(
+      "--strategy <s>",
+      "bfs | dfs | sitemap | auto | map (default bfs)",
+      "bfs",
+    )
+    .option("--max-depth <n>", "Link depth (default 2, max 3)", "2")
+    .option("--max-pages <n>", "Page cap (default 20, max 50)", "20")
+    .option(
+      "--include <regex>",
+      "Include URL regex (repeatable)",
+      (v: string, acc: string[]) => {
+        acc.push(v);
+        return acc;
+      },
+      [] as string[],
+    )
+    .option(
+      "--exclude <regex>",
+      "Exclude URL regex (repeatable)",
+      (v: string, acc: string[]) => {
+        acc.push(v);
+        return acc;
+      },
+      [] as string[],
+    )
+    .option("--extract-links", "Include inter-page link graph")
     .option("--json", "JSON output")
     .action(async (url: string, opts) => {
+      const strat = String(opts.strategy || "bfs");
+      const strategy =
+        strat === "dfs" ||
+        strat === "sitemap" ||
+        strat === "auto" ||
+        strat === "map" ||
+        strat === "bfs"
+          ? strat
+          : "bfs";
       const res = await webCrawl(url, {
-        maxDepth: Number(opts.maxDepth) || 1,
-        maxPages: Number(opts.maxPages) || 10,
+        strategy,
+        maxDepth: Number(opts.maxDepth) || 2,
+        maxPages: Number(opts.maxPages) || 20,
+        includePatterns: opts.include?.length ? opts.include : undefined,
+        excludePatterns: opts.exclude?.length ? opts.exclude : undefined,
+        extractLinksGraph: !!opts.extractLinks,
         cache: openCache(),
         minDelayMs: 0, // CLI interactive: no forced delay for snappy demos
       });
@@ -208,7 +247,14 @@ export function webCommand(): Command {
         process.exitCode = 1;
       } else {
         console.log(`seed: ${res.seed}`);
-        console.log(`pages: ${res.pages.length} (robots=${res.robotsFetched})`);
+        console.log(
+          `strategy: ${res.strategyUsed} sitemap=${res.sitemapFound} totalFound=${res.totalFound} crawled=${res.crawled}`,
+        );
+        if (res.urls?.length) {
+          console.log(`urls: ${res.urls.length}`);
+          for (const u of res.urls.slice(0, 30)) console.log(`- ${u}`);
+          if (res.urls.length > 30) console.log(`… +${res.urls.length - 30} more`);
+        }
         for (const p of res.pages) {
           console.log(`- [d${p.depth}] ${p.title} — ${p.url}`);
         }

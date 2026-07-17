@@ -1,8 +1,11 @@
 /**
- * Capped BFS crawl with SSRF, robots.txt, and per-host rate limiting.
+ * Multi-strategy crawl (BFS / DFS / sitemap / auto / map).
+ * Lean port of agent-crawl behaviors: robots, sitemap-first, pattern filters,
+ * canonical dedup, doc-path prioritization. Single fetch per page.
  */
 
-import { webFetch } from "./fetch.js";
+import { createHash } from "node:crypto";
+import { extractFromHtml } from "./extract.js";
 import { fetchHtml } from "./structured-extract.js";
 import {
   isPathAllowed,
@@ -11,7 +14,17 @@ import {
   type RobotsRules,
 } from "./robots.js";
 import { assertSafeHttpUrl, toWebError } from "./ssrf.js";
+import { discoverSitemapUrls } from "./sitemap.js";
+import {
+  canonicalForCrawl,
+  canonicalForOutput,
+  matchesPatterns,
+  prioritizeDocLinks,
+  stripFragment,
+} from "./url-utils.js";
 import type { FetchOptions, WebCacheLike, WebError } from "./types.js";
+
+export type CrawlStrategy = "bfs" | "dfs" | "sitemap" | "auto" | "map";
 
 export type CrawlPage = {
   url: string;
@@ -22,42 +35,61 @@ export type CrawlPage = {
   fromCache: boolean;
 };
 
+export type CrawlLinkEdge = { from: string; to: string };
+
 export type CrawlSuccess = {
   ok: true;
   seed: string;
+  strategyUsed: CrawlStrategy;
   pages: CrawlPage[];
+  /** Unique URLs discovered (visited + still queued), not only fetched. */
+  totalFound: number;
+  crawled: number;
   skipped: { url: string; reason: string }[];
   robotsFetched: boolean;
+  sitemapFound: boolean;
+  /** Present when strategy=map (URL discovery only). */
+  urls?: string[];
+  /** Optional inter-page edges when extractLinks=true. */
+  links?: CrawlLinkEdge[];
 };
 
 export type CrawlResponse = CrawlSuccess | WebError;
 
 export type CrawlOptions = {
+  strategy?: CrawlStrategy;
   maxDepth?: number;
   maxPages?: number;
   /** Stay on seed hostname (default true). */
   sameHost?: boolean;
+  includePatterns?: string[];
+  excludePatterns?: string[];
+  /** Emit link graph edges (default false). */
+  extractLinksGraph?: boolean;
   fetchOpts?: FetchOptions;
   cache?: WebCacheLike | null;
-  /** Respect robots.txt (default true). */
   respectRobots?: boolean;
-  /** Delay between requests to same host ms (default 250; robots crawl-delay may raise). */
   minDelayMs?: number;
   fetchImpl?: typeof fetch;
+  /** Max markdown chars per page (default 30_000). */
+  maxChars?: number;
 };
 
 function sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
 }
 
-/** Extract same-document http(s) links from HTML. */
+/** Extract http(s) links from HTML (absolute). */
 export function extractLinks(html: string, baseUrl: string): string[] {
   const out: string[] = [];
-  const re = /<a\b[^>]+href=["']([^"'#]+)["']/gi;
+  const re = /<a\b[^>]+href=["']([^"'#][^"']*)["']/gi;
   let m: RegExpExecArray | null;
   while ((m = re.exec(html)) !== null) {
     const href = m[1]!.trim();
-    if (!href || href.startsWith("mailto:") || href.startsWith("javascript:")) continue;
+    if (!href || href.startsWith("mailto:") || href.startsWith("javascript:")) {
+      continue;
+    }
+    if (href.startsWith("tel:") || href.startsWith("data:")) continue;
     try {
       const abs = new URL(href, baseUrl);
       if (abs.protocol !== "http:" && abs.protocol !== "https:") continue;
@@ -73,30 +105,120 @@ export function extractLinks(html: string, baseUrl: string): string[] {
 async function loadRobots(
   origin: string,
   opts: FetchOptions,
-): Promise<RobotsRules> {
+): Promise<{ rules: RobotsRules; raw: string | null }> {
   const robotsUrl = `${origin}/robots.txt`;
   const res = await fetchHtml(robotsUrl, { ...opts, forceRefresh: true });
   if (!res.ok) {
-    return { disallows: [], allows: [], crawlDelayMs: null };
+    return {
+      rules: { disallows: [], allows: [], crawlDelayMs: null },
+      raw: null,
+    };
   }
-  return parseRobotsTxt(res.html);
+  return { rules: parseRobotsTxt(res.html), raw: res.html };
+}
+
+function hashContent(s: string): string {
+  return createHash("sha256").update(s).digest("hex");
+}
+
+type FetchPageResult =
+  | {
+      ok: true;
+      url: string;
+      finalUrl: string;
+      title: string;
+      markdown: string;
+      html: string;
+      fromCache: boolean;
+      links: string[];
+    }
+  | { ok: false; reason: string };
+
+/**
+ * One network/cache path: HTML → markdown + links; optional disk cache write.
+ */
+async function fetchPage(
+  url: string,
+  opts: {
+    fetchOpts: FetchOptions;
+    maxChars: number;
+    cache: WebCacheLike | null | undefined;
+  },
+): Promise<FetchPageResult> {
+  const cacheKey = url;
+  if (opts.cache && !opts.fetchOpts.forceRefresh) {
+    const hit = opts.cache.get(cacheKey);
+    if (hit) {
+      // Cache has markdown only — re-fetch HTML only when we need more links
+      // at expansion time; for leaf pages cache is enough.
+      return {
+        ok: true,
+        url: hit.url,
+        finalUrl: hit.finalUrl,
+        title: hit.title,
+        markdown: hit.markdown,
+        html: "",
+        fromCache: true,
+        links: [],
+      };
+    }
+  }
+
+  const htmlRes = await fetchHtml(url, opts.fetchOpts);
+  if (!htmlRes.ok) {
+    return { ok: false, reason: htmlRes.error.message };
+  }
+
+  const extracted = extractFromHtml(htmlRes.html, opts.maxChars);
+  const links = extractLinks(htmlRes.html, htmlRes.finalUrl);
+  const fetchedAt = new Date().toISOString();
+  const contentHash = hashContent(extracted.markdown);
+
+  if (opts.cache) {
+    opts.cache.put({
+      url: cacheKey,
+      finalUrl: htmlRes.finalUrl,
+      title: extracted.title,
+      markdown: extracted.markdown,
+      contentType: "text/html",
+      httpStatus: 200,
+      fetchedAt,
+      contentHash,
+    });
+  }
+
+  return {
+    ok: true,
+    url: cacheKey,
+    finalUrl: htmlRes.finalUrl,
+    title: extracted.title,
+    markdown: extracted.markdown,
+    html: htmlRes.html,
+    fromCache: false,
+    links,
+  };
 }
 
 /**
- * Breadth-first crawl from seed URL.
- * Caps: maxDepth default 1, maxPages default 10 (hard max 20 / depth 2).
+ * Multi-strategy crawl from seed URL.
+ * Caps: maxDepth default 2 (hard max 3), maxPages default 20 (hard max 50).
  */
 export async function webCrawl(
   seedUrl: string,
   opts: CrawlOptions = {},
 ): Promise<CrawlResponse> {
-  const maxDepth = Math.min(Math.max(opts.maxDepth ?? 1, 0), 2);
-  const maxPages = Math.min(Math.max(opts.maxPages ?? 10, 1), 20);
+  const strategy: CrawlStrategy = opts.strategy ?? "bfs";
+  const maxDepth = Math.min(Math.max(opts.maxDepth ?? 2, 0), 3);
+  const maxPages = Math.min(Math.max(opts.maxPages ?? 20, 1), 50);
   const sameHost = opts.sameHost !== false;
   const respectRobots = opts.respectRobots !== false;
   const minDelayMs = Math.max(opts.minDelayMs ?? 250, 0);
   const allowPrivate = opts.fetchOpts?.allowPrivateNetwork ?? false;
   const fetchImpl = opts.fetchImpl ?? opts.fetchOpts?.fetchImpl ?? fetch;
+  const maxChars = opts.maxChars ?? 30_000;
+  const includePatterns = opts.includePatterns;
+  const excludePatterns = opts.excludePatterns;
+  const extractLinksGraph = opts.extractLinksGraph === true;
 
   const seedSafe = assertSafeHttpUrl(seedUrl, {
     allowPrivateNetwork: allowPrivate,
@@ -113,100 +235,345 @@ export async function webCrawl(
     cache: opts.cache ?? opts.fetchOpts?.cache,
     allowPrivateNetwork: allowPrivate,
   };
+  const cache = opts.cache ?? opts.fetchOpts?.cache ?? null;
 
   let robots: RobotsRules = { disallows: [], allows: [], crawlDelayMs: null };
+  let robotsRaw: string | null = null;
   let robotsFetched = false;
   if (respectRobots) {
-    robots = await loadRobots(origin, fetchOpts);
+    const loaded = await loadRobots(origin, fetchOpts);
+    robots = loaded.rules;
+    robotsRaw = loaded.raw;
     robotsFetched = true;
   }
   const delayMs = Math.max(minDelayMs, robots.crawlDelayMs ?? 0);
 
-  const queue: { url: string; depth: number }[] = [{ url: seed.toString(), depth: 0 }];
-  const seen = new Set<string>();
+  const lightFetch = async (url: string) => {
+    const r = await fetchHtml(url, { ...fetchOpts, forceRefresh: true });
+    if (!r.ok) return { ok: false as const };
+    return { ok: true as const, body: r.html, status: 200 };
+  };
+
+  // --- strategy: map (URL discovery only) ---
+  if (strategy === "map") {
+    return runMapStrategy({
+      seed: seed.toString(),
+      origin,
+      host,
+      sameHost,
+      maxDepth,
+      maxPages,
+      includePatterns,
+      excludePatterns,
+      respectRobots,
+      robots,
+      robotsRaw,
+      robotsFetched,
+      delayMs,
+      lightFetch,
+      fetchOpts,
+      allowPrivate,
+    });
+  }
+
+  // --- resolve effective strategy ---
+  let strategyUsed: CrawlStrategy = strategy;
+  let sitemapUrls: string[] = [];
+  let sitemapFound = false;
+
+  if (strategy === "sitemap" || strategy === "auto") {
+    sitemapUrls = await discoverSitemapUrls(origin, lightFetch, robotsRaw);
+    sitemapFound = sitemapUrls.length > 0;
+    if (sitemapFound) {
+      strategyUsed = "sitemap";
+    } else if (strategy === "sitemap") {
+      strategyUsed = "bfs"; // fallback
+    } else {
+      strategyUsed = "bfs";
+    }
+  }
+
   const pages: CrawlPage[] = [];
   const skipped: { url: string; reason: string }[] = [];
+  const linkEdges: CrawlLinkEdge[] = [];
+  const seenEdges = new Set<string>();
   let lastFetchAt = 0;
 
-  while (queue.length && pages.length < maxPages) {
-    const item = queue.shift()!;
-    if (seen.has(item.url)) continue;
-    seen.add(item.url);
-
-    const safe = assertSafeHttpUrl(item.url, {
-      allowPrivateNetwork: allowPrivate,
-    });
-    if (!safe.ok) {
-      skipped.push({ url: item.url, reason: safe.message });
-      continue;
+  const seedCanon = canonicalForCrawl(seed.toString());
+  const allowUrl = (url: string, opts?: { isSeed?: boolean }): string | null => {
+    const safe = assertSafeHttpUrl(url, { allowPrivateNetwork: allowPrivate });
+    if (!safe.ok) return safe.message;
+    if (sameHost && safe.url.hostname.toLowerCase() !== host) return "off-host";
+    // Seed always allowed through include whitelist; still honor exclude/robots.
+    const isSeed =
+      opts?.isSeed === true || canonicalForCrawl(url) === seedCanon;
+    if (
+      !isSeed &&
+      !matchesPatterns(url, includePatterns, excludePatterns)
+    ) {
+      return "pattern-filter";
     }
-
-    if (sameHost && safe.url.hostname.toLowerCase() !== host) {
-      skipped.push({ url: item.url, reason: "off-host" });
-      continue;
+    if (
+      isSeed &&
+      excludePatterns?.length &&
+      !matchesPatterns(url, undefined, excludePatterns)
+    ) {
+      return "pattern-filter";
     }
-
-    if (respectRobots && !isUrlAllowedByRobots(item.url, robots)) {
-      skipped.push({ url: item.url, reason: "robots-disallow" });
-      continue;
+    if (respectRobots && !isUrlAllowedByRobots(url, robots)) {
+      return "robots-disallow";
     }
+    return null;
+  };
 
+  const pace = async () => {
     const wait = delayMs - (Date.now() - lastFetchAt);
     if (wait > 0) await sleep(wait);
+  };
 
-    const htmlRes = await fetchHtml(item.url, {
-      ...fetchOpts,
-      forceRefresh: false,
-    });
+  const recordEdge = (from: string, to: string) => {
+    if (!extractLinksGraph) return;
+    const key = `${from}\0${stripFragment(to)}`;
+    if (seenEdges.has(key)) return;
+    seenEdges.add(key);
+    linkEdges.push({ from, to: stripFragment(to) });
+  };
+
+  // --- sitemap fetch list ---
+  if (strategyUsed === "sitemap") {
+    const seenCanon = new Set<string>();
+    const ordered: string[] = [];
+    for (const u of sitemapUrls) {
+      const c = canonicalForCrawl(u);
+      if (seenCanon.has(c)) continue;
+      seenCanon.add(c);
+      if (allowUrl(u)) continue;
+      ordered.push(u);
+    }
+    const totalFound = ordered.length;
+    for (const url of ordered.slice(0, maxPages)) {
+      await pace();
+      const page = await fetchPage(url, { fetchOpts, maxChars, cache });
+      lastFetchAt = Date.now();
+      if (!page.ok) {
+        skipped.push({ url, reason: page.reason });
+        continue;
+      }
+      pages.push({
+        url: canonicalForOutput(page.finalUrl),
+        finalUrl: page.finalUrl,
+        title: page.title,
+        markdown: page.markdown,
+        depth: 0,
+        fromCache: page.fromCache,
+      });
+      if (extractLinksGraph) {
+        for (const l of page.links) recordEdge(url, l);
+      }
+    }
+    return {
+      ok: true,
+      seed: seed.toString(),
+      strategyUsed,
+      pages,
+      totalFound,
+      crawled: pages.length,
+      skipped,
+      robotsFetched,
+      sitemapFound: true,
+      ...(extractLinksGraph ? { links: linkEdges } : {}),
+    };
+  }
+
+  // --- BFS / DFS traversal ---
+  const traversal: "bfs" | "dfs" = strategyUsed === "dfs" ? "dfs" : "bfs";
+  const queue: { url: string; depth: number }[] = [
+    { url: seed.toString(), depth: 0 },
+  ];
+  const visited = new Set<string>([canonicalForCrawl(seed.toString())]);
+
+  while (queue.length && pages.length < maxPages) {
+    const item =
+      traversal === "dfs" ? queue.pop()! : queue.shift()!;
+
+    const deny = allowUrl(item.url);
+    if (deny) {
+      skipped.push({ url: item.url, reason: deny });
+      continue;
+    }
+
+    await pace();
+    const page = await fetchPage(item.url, { fetchOpts, maxChars, cache });
     lastFetchAt = Date.now();
 
-    // Also get markdown via webFetch (uses cache when available)
-    const mdRes = await webFetch(item.url, {
-      ...fetchOpts,
-      forceRefresh: false,
-    });
-
-    if (!mdRes.ok) {
-      skipped.push({
-        url: item.url,
-        reason: mdRes.error.message,
-      });
+    if (!page.ok) {
+      skipped.push({ url: item.url, reason: page.reason });
       continue;
+    }
+
+    // Cache hit without HTML: if we need to expand, re-fetch for links
+    let links = page.links;
+    if (
+      page.fromCache &&
+      item.depth < maxDepth &&
+      pages.length < maxPages &&
+      links.length === 0
+    ) {
+      const htmlRes = await fetchHtml(item.url, {
+        ...fetchOpts,
+        forceRefresh: true,
+      });
+      lastFetchAt = Date.now();
+      if (htmlRes.ok) {
+        links = extractLinks(htmlRes.html, htmlRes.finalUrl);
+      }
     }
 
     pages.push({
-      url: item.url,
-      finalUrl: mdRes.finalUrl,
-      title: mdRes.title,
-      markdown: mdRes.markdown,
+      url: canonicalForOutput(page.finalUrl),
+      finalUrl: page.finalUrl,
+      title: page.title,
+      markdown: page.markdown,
       depth: item.depth,
-      fromCache: mdRes.fromCache,
+      fromCache: page.fromCache,
     });
 
     if (item.depth >= maxDepth || pages.length >= maxPages) continue;
-    if (!htmlRes.ok) continue;
 
-    for (const link of extractLinks(htmlRes.html, mdRes.finalUrl)) {
-      if (seen.has(link)) continue;
-      if (sameHost) {
-        try {
-          if (new URL(link).hostname.toLowerCase() !== host) continue;
-        } catch {
-          continue;
-        }
-      }
-      if (respectRobots && !isPathAllowed(new URL(link).pathname, robots)) {
-        continue;
-      }
+    const filtered = prioritizeDocLinks(
+      links.filter((link) => {
+        if (visited.has(canonicalForCrawl(link))) return false;
+        if (allowUrl(link)) return false;
+        return true;
+      }),
+    );
+
+    for (const link of filtered) {
+      const c = canonicalForCrawl(link);
+      if (visited.has(c)) continue;
+      visited.add(c);
       queue.push({ url: link, depth: item.depth + 1 });
+      recordEdge(item.url, link);
     }
   }
 
   return {
     ok: true,
     seed: seed.toString(),
+    strategyUsed: traversal,
     pages,
+    totalFound: visited.size,
+    crawled: pages.length,
     skipped,
     robotsFetched,
+    sitemapFound,
+    ...(extractLinksGraph ? { links: linkEdges } : {}),
+  };
+}
+
+async function runMapStrategy(ctx: {
+  seed: string;
+  origin: string;
+  host: string;
+  sameHost: boolean;
+  maxDepth: number;
+  maxPages: number;
+  includePatterns?: string[];
+  excludePatterns?: string[];
+  respectRobots: boolean;
+  robots: RobotsRules;
+  robotsRaw: string | null;
+  robotsFetched: boolean;
+  delayMs: number;
+  lightFetch: (
+    url: string,
+  ) => Promise<{ ok: true; body: string; status: number } | { ok: false }>;
+  fetchOpts: FetchOptions;
+  allowPrivate: boolean;
+}): Promise<CrawlResponse> {
+  const discovered: string[] = [];
+  const seen = new Set<string>();
+  let sitemapFound = false;
+
+  const pushUrl = (url: string) => {
+    if (discovered.length >= ctx.maxPages) return;
+    const c = canonicalForCrawl(url);
+    if (seen.has(c)) return;
+    if (ctx.sameHost) {
+      try {
+        if (new URL(url).hostname.toLowerCase() !== ctx.host) return;
+      } catch {
+        return;
+      }
+    }
+    if (!matchesPatterns(url, ctx.includePatterns, ctx.excludePatterns)) return;
+    if (ctx.respectRobots && !isUrlAllowedByRobots(url, ctx.robots)) return;
+    const safe = assertSafeHttpUrl(url, {
+      allowPrivateNetwork: ctx.allowPrivate,
+    });
+    if (!safe.ok) return;
+    seen.add(c);
+    discovered.push(canonicalForOutput(url));
+  };
+
+  pushUrl(ctx.seed);
+
+  const sm = await discoverSitemapUrls(
+    ctx.origin,
+    ctx.lightFetch,
+    ctx.robotsRaw,
+  );
+  if (sm.length > 0) {
+    sitemapFound = true;
+    for (const u of sm) pushUrl(u);
+  }
+
+  // Light BFS for more URLs (HTML only, no markdown)
+  const queue: { url: string; depth: number }[] = [{ url: ctx.seed, depth: 0 }];
+  const queued = new Set<string>([canonicalForCrawl(ctx.seed)]);
+  let last = 0;
+
+  while (queue.length && discovered.length < ctx.maxPages) {
+    const item = queue.shift()!;
+    if (item.depth >= ctx.maxDepth) continue;
+    const wait = ctx.delayMs - (Date.now() - last);
+    if (wait > 0) await sleep(wait);
+    const htmlRes = await fetchHtml(item.url, {
+      ...ctx.fetchOpts,
+      forceRefresh: item.depth === 0,
+    });
+    last = Date.now();
+    if (!htmlRes.ok) continue;
+    for (const link of extractLinks(htmlRes.html, htmlRes.finalUrl)) {
+      pushUrl(link);
+      const c = canonicalForCrawl(link);
+      if (queued.has(c)) continue;
+      if (item.depth + 1 > ctx.maxDepth) continue;
+      if (ctx.sameHost) {
+        try {
+          if (new URL(link).hostname.toLowerCase() !== ctx.host) continue;
+        } catch {
+          continue;
+        }
+      }
+      if (ctx.respectRobots && !isPathAllowed(new URL(link).pathname, ctx.robots)) {
+        continue;
+      }
+      queued.add(c);
+      queue.push({ url: link, depth: item.depth + 1 });
+    }
+  }
+
+  return {
+    ok: true,
+    seed: ctx.seed,
+    strategyUsed: "map",
+    pages: [],
+    totalFound: discovered.length,
+    crawled: 0,
+    skipped: [],
+    robotsFetched: ctx.robotsFetched,
+    sitemapFound,
+    urls: discovered,
   };
 }

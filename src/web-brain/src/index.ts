@@ -44,7 +44,28 @@ export type {
   StructuredExtractSuccess,
 } from "./structured-extract.js";
 export { webCrawl, extractLinks } from "./crawl.js";
-export type { CrawlOptions, CrawlPage, CrawlResponse, CrawlSuccess } from "./crawl.js";
+export type {
+  CrawlOptions,
+  CrawlPage,
+  CrawlResponse,
+  CrawlSuccess,
+  CrawlStrategy,
+  CrawlLinkEdge,
+} from "./crawl.js";
+export {
+  canonicalForCrawl,
+  canonicalForOutput,
+  matchesPatterns,
+  stripFragment,
+} from "./url-utils.js";
+export {
+  parseSitemapEntries,
+  parseSitemapIndex,
+  sortSitemapEntries,
+  extractSitemapUrlFromRobots,
+  discoverSitemapUrls,
+} from "./sitemap.js";
+export type { SitemapEntry } from "./sitemap.js";
 export {
   parseRobotsTxt,
   isPathAllowed,
