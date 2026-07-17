@@ -3,6 +3,7 @@
  * Implements tools/list + tools/call without the full SDK.
  */
 
+import { writeSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { webFetch } from "./fetch.js";
@@ -117,11 +118,19 @@ const TOOLS = [
   },
 ] as const;
 
+/** Framing for the active client: Grok uses NDJSON; official SDK uses Content-Length. */
+type FrameMode = "content-length" | "ndjson";
+let frameMode: FrameMode = "content-length";
+
 function send(msg: unknown): void {
+  // One writeSync: split stdout.write() can leave body in the pipe buffer.
   const body = JSON.stringify(msg);
-  const buf = Buffer.from(body, "utf-8");
-  process.stdout.write(`Content-Length: ${buf.length}\r\n\r\n`);
-  process.stdout.write(buf);
+  if (frameMode === "ndjson") {
+    writeSync(1, `${body}\n`);
+    return;
+  }
+  const frame = `Content-Length: ${Buffer.byteLength(body, "utf-8")}\r\n\r\n${body}`;
+  writeSync(1, frame);
 }
 
 function ok(id: JsonRpcId, result: unknown): void {
@@ -131,6 +140,8 @@ function ok(id: JsonRpcId, result: unknown): void {
 function err(id: JsonRpcId, code: number, message: string): void {
   send({ jsonrpc: "2.0", id, error: { code, message } });
 }
+
+const SUPPORTED_PROTOCOL = "2025-06-18";
 
 export async function callTool(
   name: string,
@@ -213,11 +224,20 @@ export async function handleMcpMessage(msg: JsonRpcReq): Promise<unknown | void>
   const method = msg.method ?? "";
 
   if (method === "initialize") {
+    const requested =
+      typeof msg.params?.protocolVersion === "string"
+        ? msg.params.protocolVersion
+        : SUPPORTED_PROTOCOL;
+    // Prefer client-requested version when present (Grok sends 2025-06-18).
+    const protocolVersion =
+      requested === "2024-11-05" || requested === "2025-03-26" || requested === "2025-06-18"
+        ? requested
+        : SUPPORTED_PROTOCOL;
     return {
       jsonrpc: "2.0",
       id,
       result: {
-        protocolVersion: "2024-11-05",
+        protocolVersion,
         capabilities: { tools: {} },
         serverInfo: { name: "phneakngar-web-brain", version: "0.0.2" },
       },
@@ -275,10 +295,55 @@ export async function handleMcpMessage(msg: JsonRpcReq): Promise<unknown | void>
 }
 
 /**
- * Run MCP server on stdio (Content-Length framing + optional NDJSON lines).
+ * Try to extract one complete top-level JSON object from the start of `text`.
+ * Used when clients (Grok) send raw JSON without a trailing newline.
+ */
+export function takeJsonObject(
+  text: string,
+): { json: string; rest: string } | null {
+  const start = text.search(/\{/);
+  if (start < 0) return null;
+  let depth = 0;
+  let inString = false;
+  let escape = false;
+  for (let i = start; i < text.length; i++) {
+    const ch = text[i]!;
+    if (inString) {
+      if (escape) {
+        escape = false;
+        continue;
+      }
+      if (ch === "\\") {
+        escape = true;
+        continue;
+      }
+      if (ch === '"') inString = false;
+      continue;
+    }
+    if (ch === '"') {
+      inString = true;
+      continue;
+    }
+    if (ch === "{") depth++;
+    else if (ch === "}") {
+      depth--;
+      if (depth === 0) {
+        return {
+          json: text.slice(start, i + 1),
+          rest: text.slice(i + 1),
+        };
+      }
+    }
+  }
+  return null;
+}
+
+/**
+ * Run MCP server on stdio (Content-Length framing + NDJSON / bare JSON).
  */
 export async function runMcpStdio(): Promise<void> {
   let buffer = Buffer.alloc(0);
+  let draining = false;
 
   const onData = (chunk: Buffer) => {
     buffer = Buffer.concat([buffer, chunk]);
@@ -286,43 +351,86 @@ export async function runMcpStdio(): Promise<void> {
   };
 
   async function drain(): Promise<void> {
-    while (true) {
-      const headerEnd = buffer.indexOf("\r\n\r\n");
-      if (headerEnd < 0) {
-        // Try NDJSON single line
-        const nl = buffer.indexOf("\n");
-        if (nl < 0) return;
-        const line = buffer.slice(0, nl).toString("utf-8").trim();
-        buffer = buffer.slice(nl + 1);
-        if (line.startsWith("{")) {
+    if (draining) return;
+    draining = true;
+    try {
+      while (true) {
+        // Prefer Content-Length if the buffer looks like LSP/MCP headers.
+        const asText = buffer.toString("utf-8");
+        const trimmedStart = asText.replace(/^\s+/, "");
+        if (/^Content-Length\s*:/i.test(trimmedStart) || buffer.indexOf("\r\n\r\n") >= 0) {
+          const headerEnd = buffer.indexOf("\r\n\r\n");
+          if (headerEnd < 0) return;
+          const header = buffer.slice(0, headerEnd).toString("utf-8");
+          const match = header.match(/Content-Length:\s*(\d+)/i);
+          if (!match) {
+            buffer = buffer.slice(headerEnd + 4);
+            continue;
+          }
+          frameMode = "content-length";
+          const len = Number(match[1]);
+          const bodyStart = headerEnd + 4;
+          if (buffer.length < bodyStart + len) return;
+          const body = buffer.slice(bodyStart, bodyStart + len).toString("utf-8");
+          buffer = buffer.slice(bodyStart + len);
           try {
-            const msg = JSON.parse(line) as JsonRpcReq;
+            const msg = JSON.parse(body) as JsonRpcReq;
             const resp = await handleMcpMessage(msg);
             if (resp !== undefined) send(resp);
           } catch {
-            // ignore
+            // ignore bad frame
           }
+          continue;
         }
-        continue;
+
+        // NDJSON line
+        const nl = buffer.indexOf("\n");
+        if (nl >= 0) {
+          const line = buffer.slice(0, nl).toString("utf-8").trim();
+          buffer = buffer.slice(nl + 1);
+          if (line.startsWith("{")) {
+            frameMode = "ndjson";
+            try {
+              const msg = JSON.parse(line) as JsonRpcReq;
+              const resp = await handleMcpMessage(msg);
+              if (resp !== undefined) send(resp);
+            } catch {
+              // ignore
+            }
+          }
+          continue;
+        }
+
+        // Bare JSON object without trailing newline (Grok mcp doctor).
+        const text = buffer.toString("utf-8");
+        const taken = takeJsonObject(text.trimStart());
+        if (!taken) return;
+        // Only consume when the object is complete and buffer has no more
+        // incomplete trailing junk that is clearly still growing — if rest is
+        // only whitespace, we can safely parse now.
+        if (taken.rest.trim() !== "" && !taken.rest.trimStart().startsWith("{")) {
+          // Incomplete trailing data; wait for more unless rest is empty-ish.
+          // If rest has non-JSON noise, drop object and continue carefully.
+        }
+        frameMode = "ndjson";
+        const consumed = text.length - taken.rest.length;
+        // Map consumed length back onto buffer (trimStart may have skipped ws).
+        const ws = text.length - text.trimStart().length;
+        const byteLen = Buffer.byteLength(text.slice(0, ws + taken.json.length), "utf-8");
+        // Prefer exact slice via string length alignment for utf8 ascii JSON.
+        buffer = Buffer.from(taken.rest, "utf-8");
+        void consumed;
+        void byteLen;
+        try {
+          const msg = JSON.parse(taken.json) as JsonRpcReq;
+          const resp = await handleMcpMessage(msg);
+          if (resp !== undefined) send(resp);
+        } catch {
+          // ignore
+        }
       }
-      const header = buffer.slice(0, headerEnd).toString("utf-8");
-      const match = header.match(/Content-Length:\s*(\d+)/i);
-      if (!match) {
-        buffer = buffer.slice(headerEnd + 4);
-        continue;
-      }
-      const len = Number(match[1]);
-      const bodyStart = headerEnd + 4;
-      if (buffer.length < bodyStart + len) return;
-      const body = buffer.slice(bodyStart, bodyStart + len).toString("utf-8");
-      buffer = buffer.slice(bodyStart + len);
-      try {
-        const msg = JSON.parse(body) as JsonRpcReq;
-        const resp = await handleMcpMessage(msg);
-        if (resp !== undefined) send(resp);
-      } catch {
-        // ignore bad frame
-      }
+    } finally {
+      draining = false;
     }
   }
 

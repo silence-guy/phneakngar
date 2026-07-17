@@ -18,6 +18,15 @@ function prepareEntry(relPath) {
 }
 
 prepareEntry("dist/index.js");
+
+// bun build of bin-mcp.ts emits dist/bin-mcp.js (entry basename) even when
+// --outfile web-brain-mcp.js is set; normalize the MCP entry name for wire-mcp.
+const binMcp = resolve("dist/bin-mcp.js");
+const webBrainMcp = resolve("dist/web-brain-mcp.js");
+if (existsSync(binMcp)) {
+  copyFileSync(binMcp, webBrainMcp);
+  console.log("copied", binMcp, "->", webBrainMcp);
+}
 prepareEntry("dist/web-brain-mcp.js");
 
 const rootLicense = resolve("../../LICENSE");

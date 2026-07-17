@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { handleMcpMessage, listTools, callTool } from "../src/mcp-server.js";
+import {
+  handleMcpMessage,
+  listTools,
+  callTool,
+  takeJsonObject,
+} from "../src/mcp-server.js";
 
 describe("MCP server handlers", () => {
   it("lists tools including extract, crawl, and diff", () => {
@@ -25,6 +30,22 @@ describe("MCP server handlers", () => {
         serverInfo: { name: "phneakngar-web-brain" },
       },
     });
+  });
+
+  it("initialize echoes Grok protocolVersion 2025-06-18", async () => {
+    const resp = (await handleMcpMessage({
+      jsonrpc: "2.0",
+      id: 0,
+      method: "initialize",
+      params: { protocolVersion: "2025-06-18" },
+    })) as { result: { protocolVersion: string } };
+    expect(resp.result.protocolVersion).toBe("2025-06-18");
+  });
+
+  it("takeJsonObject extracts bare JSON without trailing newline", () => {
+    const taken = takeJsonObject('{"a":1}{"b":2}');
+    expect(taken?.json).toBe('{"a":1}');
+    expect(taken?.rest).toBe('{"b":2}');
   });
 
   it("tools/list returns tools", async () => {
