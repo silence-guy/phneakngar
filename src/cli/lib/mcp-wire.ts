@@ -113,6 +113,31 @@ function stripManagedToml(content: string): string {
   return content.replace(re, "");
 }
 
+/**
+ * Remove every TOML table for phneakngar_web_brain, including orphan tables
+ * written outside managed markers (manual wire / older CLI). Prevents
+ * `duplicate key` when a managed block is appended later.
+ */
+function stripPhneakngarWebBrainTomlTables(content: string): string {
+  // Drop managed blocks first so orphans and markers are both cleared.
+  let next = stripManagedToml(content);
+  // Standalone [mcp_servers.phneakngar_web_brain] … until next [section] or EOF.
+  const tableRe =
+    /(?:^|\n)\[mcp_servers\.phneakngar_web_brain\][^\n]*(?:\n(?!\[)[^\n]*)*/g;
+  next = next.replace(tableRe, "\n");
+  // Collapse excessive blank lines left by removals.
+  next = next.replace(/\n{3,}/g, "\n\n");
+  return next;
+}
+
+function countTomlTables(content: string, header: string): number {
+  const re = new RegExp(
+    `^\\[${header.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\]`,
+    "gm",
+  );
+  return (content.match(re) ?? []).length;
+}
+
 function wireTomlFile(
   runtime: string,
   path: string,
@@ -124,7 +149,7 @@ function wireTomlFile(
       return { runtime, path, action: "missing", detail: "no config file" };
     }
     const prev = readFileSync(path, "utf-8");
-    const next = stripManagedToml(prev);
+    const next = stripPhneakngarWebBrainTomlTables(prev);
     if (next === prev) {
       return { runtime, path, action: "skipped", detail: "no managed block" };
     }
@@ -134,26 +159,27 @@ function wireTomlFile(
 
   mkdirSync(dirname(path), { recursive: true, mode: 0o700 });
   const prev = existsSync(path) ? readFileSync(path, "utf-8") : "";
-  // Consider current if same server key present with same command path roughly
-  if (prev.includes(BEGIN) && prev.includes("phneakngar_web_brain")) {
-    const stripped = stripManagedToml(prev);
-    const next = (stripped.replace(/\s+$/, "") ? stripped.replace(/\s+$/, "") + "\n\n" : "") + block;
-    if (next === prev || prev.includes(block.trim())) {
-      // refresh block in case command path changed
-      if (prev.includes(block.trim())) {
-        return { runtime, path, action: "skipped", detail: "already current" };
-      }
-      writeFileSync(path, next, { mode: 0o600 });
-      return { runtime, path, action: "updated", detail: "mcp_servers.phneakngar_web_brain" };
-    }
+  const base = stripPhneakngarWebBrainTomlTables(prev).replace(/\s+$/, "");
+  const nextRaw = (base ? base + "\n\n" : "") + block;
+  const next = nextRaw.endsWith("\n") ? nextRaw : `${nextRaw}\n`;
+  const prevNorm = prev.endsWith("\n") || prev.length === 0 ? prev : `${prev}\n`;
+
+  // Idempotent only when a single table already matches the managed block exactly.
+  if (
+    countTomlTables(prev, "mcp_servers.phneakngar_web_brain") === 1 &&
+    prev.includes(BEGIN) &&
+    prevNorm === next
+  ) {
+    return { runtime, path, action: "skipped", detail: "already current" };
   }
-  const base = stripManagedToml(prev).replace(/\s+$/, "");
-  const next = (base ? base + "\n\n" : "") + block;
+
+  const hadAny =
+    prev.includes("phneakngar_web_brain") || prev.includes(BEGIN);
   writeFileSync(path, next, { mode: 0o600 });
   return {
     runtime,
     path,
-    action: prev.includes(BEGIN) ? "updated" : "wrote",
+    action: hadAny ? "updated" : "wrote",
     detail: "mcp_servers.phneakngar_web_brain",
   };
 }
