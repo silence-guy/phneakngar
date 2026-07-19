@@ -320,9 +320,9 @@ export const agentFormCopy = {
   },
   approvalHoldHint: {
     [Locale.EN]:
-      "High-stakes tools pause and wait for the Approvals inbox (default on). Set CHHLAT_APPROVAL_HOLD=0 on the machine to force off.",
+      "High-stakes tools pause until you decide in Approvals. Missing config still means ON (product default). This toggle saves runtime_config.approvalHold. Force off on the machine with CHHLAT_APPROVAL_HOLD=0.",
     [Locale.KM]:
-      "ឧបករណ៍ហានិភ័យខ្ពស់ផ្អាករង់ចាំប្រអប់អនុម័ត (បើកតាមលំនាំដើម)។ កំណត់ CHHLAT_APPROVAL_HOLD=0 លើម៉ាស៊ីនដើម្បីបិទ។",
+      "ឧបករណ៍ហានិភ័យខ្ពស់ផ្អាករហូតអ្នកសម្រេចក្នុងប្រអប់អនុម័ត។ បើមិនទាន់កំណត់ នៅតែបើក (លំនាំដើមផលិតផល)។ Toggle នេះរក្សាទុក runtime_config.approvalHold។ បិទលើម៉ាស៊ីនដោយ CHHLAT_APPROVAL_HOLD=0។",
   },
   requireContextOptimization: {
     [Locale.EN]: "Require optimization",

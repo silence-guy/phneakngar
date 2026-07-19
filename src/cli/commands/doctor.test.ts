@@ -8,6 +8,7 @@ import {
   checkAgentWorkdirScope,
   checkRuntimes,
   checkConfig,
+  checkApprovalHoldEnv,
   runDoctor,
   type DoctorCheck,
 } from "./doctor.js";
@@ -171,5 +172,30 @@ describe("runDoctor", () => {
     const result = await runDoctor(undefined, { fetchImpl: fetchImpl as unknown as typeof fetch });
     expect(result.checks.some((c) => c.name === "Server")).toBe(true);
     expect(result.checks.some((c) => c.name === "Chhlat health")).toBe(true);
+  });
+
+  it("includes approval hold env check", async () => {
+    const result = await runDoctor(undefined, { skipNetwork: true });
+    expect(result.checks.some((c) => c.name === "Approval hold")).toBe(true);
+  });
+});
+
+describe("checkApprovalHoldEnv", () => {
+  it("reports env force off", () => {
+    const c = checkApprovalHoldEnv({ CHHLAT_APPROVAL_HOLD: "0" });
+    expect(c.status).toBe("info");
+    expect(c.detail).toMatch(/forces off/i);
+  });
+
+  it("reports env force on", () => {
+    const c = checkApprovalHoldEnv({ PHNEAKNGAR_APPROVAL_HOLD: "true" });
+    expect(c.status).toBe("info");
+    expect(c.detail).toMatch(/forces on/i);
+  });
+
+  it("reports unset default on", () => {
+    const c = checkApprovalHoldEnv({});
+    expect(c.status).toBe("info");
+    expect(c.detail).toMatch(/default on/i);
   });
 });

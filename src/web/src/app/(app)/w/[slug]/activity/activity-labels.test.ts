@@ -10,9 +10,12 @@ function hasKhmer(s: string): boolean {
 }
 
 describe("activity labels", () => {
-  it("uses Khmer for title and empty state", () => {
+  it("uses Khmer for title, empty, and load-error copy", () => {
     expect(hasKhmer(ACTIVITY_LABELS.title)).toBe(true);
     expect(hasKhmer(ACTIVITY_LABELS.empty.none)).toBe(true);
+    expect(hasKhmer(ACTIVITY_LABELS.failedToLoad)).toBe(true);
+    expect(hasKhmer(ACTIVITY_LABELS.empty.loadFailed)).toBe(true);
+    expect(hasKhmer(ACTIVITY_LABELS.retry)).toBe(true);
   });
 
   it("maps known kinds", () => {

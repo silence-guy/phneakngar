@@ -18,6 +18,42 @@ export interface DoctorCheck {
   hint?: string;
 }
 
+/**
+ * Pure doctor row for approval-hold env override.
+ * Does not read agent runtime_config (no agent context in doctor).
+ * Env unset → runtime default on; env forces on/off when recognized.
+ */
+export function checkApprovalHoldEnv(
+  env: NodeJS.ProcessEnv | Record<string, string | undefined> = process.env,
+): DoctorCheck {
+  const raw = (env.CHHLAT_APPROVAL_HOLD ?? env.PHNEAKNGAR_APPROVAL_HOLD ?? "")
+    .toString()
+    .trim()
+    .toLowerCase();
+  if (raw === "0" || raw === "false" || raw === "no" || raw === "off") {
+    return {
+      name: "Approval hold",
+      status: "info",
+      detail: "env forces off (CHHLAT_APPROVAL_HOLD / PHNEAKNGAR_APPROVAL_HOLD)",
+      hint: "Unset env to use agent runtime_config (default on when missing)",
+    };
+  }
+  if (raw === "1" || raw === "true" || raw === "yes" || raw === "on") {
+    return {
+      name: "Approval hold",
+      status: "info",
+      detail: "env forces on (CHHLAT_APPROVAL_HOLD / PHNEAKNGAR_APPROVAL_HOLD)",
+    };
+  }
+  return {
+    name: "Approval hold",
+    status: "info",
+    detail:
+      "env unset — agent runtime_config.approvalHold (missing key = product default on)",
+    hint: "Disable per agent in Runtime settings, or set CHHLAT_APPROVAL_HOLD=0",
+  };
+}
+
 export interface DoctorResult {
   checks: DoctorCheck[];
   ok: boolean;
@@ -306,6 +342,7 @@ export async function runDoctor(
     checkChhlat(profile),
     checkGatewayWebhookConfig(),
     webBrainDoctorCheck(),
+    checkApprovalHoldEnv(),
   ];
 
   if (!options.skipNetwork) {

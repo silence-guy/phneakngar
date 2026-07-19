@@ -64,11 +64,16 @@ MCP tools (when wired): `web_search`, `web_fetch`, `web_cache`, `web_extract`, `
 
 ### Approval hold (human desk)
 
-High-stakes tool calls create a durable approval and **hold** until you decide in the dashboard Approvals inbox (default **on** via agent `runtime_config.approvalHold`). Force off on a machine:
+High-stakes tool calls create a durable approval and **hold** until you decide in the dashboard Approvals inbox (default **on** via agent `runtime_config.approvalHold`).
+
+**Existing agents** without an `approvalHold` key in `runtime_config` still **hold** — missing config means product default **on**, not legacy deny-immediately. Turn off per agent: dashboard → agent → Runtime → “Hold tools until approved”. Or force off on a machine:
 
 ```bash
 export CHHLAT_APPROVAL_HOLD=0   # or PHNEAKNGAR_APPROVAL_HOLD=0
+# Force on (overrides agent off): CHHLAT_APPROVAL_HOLD=1
 ```
+
+`phneakngar doctor` reports whether the env forces hold on/off or leaves the runtime default.
 
 ### 10-minute path (personal company)
 

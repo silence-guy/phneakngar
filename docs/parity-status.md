@@ -29,11 +29,11 @@ Residual control-plane MVPs, productized UI, monorepo-green tests, and in-progre
 | Bot token install (vault) | Settings → Gateway: write-only bot token (`secret_ref`); `has_secret` only on list/get; probe button (getMe / auth.test) |
 | CLI hold/resume after approval | Product default **on** via `runtime_config.approvalHold`; env `CHHLAT_APPROVAL_HOLD=0` forces off; polls until approve/deny/timeout |
 | Activity feed MVP | `activity_event` table + `GET /api/activity` + **workspace Activity UI** (`/w/[slug]/activity`); events on approve / egress / probe / automation_due |
-| Approval hold product | Agent `runtime_config.approvalHold` (default on) + env force; CLI session wires runtime config |
+| Approval hold product | Agent `runtime_config.approvalHold` (**intentional default on** when key missing) + env force; toggle saves explicit JSON; CLI session wires runtime config |
 | Lean web-brain toolkit | `@phneakngar/web-brain` search/fetch/extract/crawl/diff + MCP wire + doctor — **not** full wigolo/ML |
 | Gateway peer allowlist UI | Settings → Gateway peers list/add/remove; Live path intermediate only (see `docs/gateway-live-runbook.md`) |
 | Bindings admin (D1) | MVP shipped (`0053`/`0054` + Settings → Gateway tab) — apply `0054` on remote when ready |
-| Live Slack/Telegram send in production | **Intermediate only** — requires operator-set live + token; no OAuth marketplace / multi-region claim |
+| Live Slack/Telegram send in production | **Intermediate only** — requires operator-set live + token; staging proof checklist in `docs/gateway-live-runbook.md` + `docs/agent-work/gateway-live-telegram-proof/`; no OAuth marketplace / multi-region claim |
 | Heartbeat ambient checks | Pure helpers + automation skill_name hook; delivery quiet path partial |
 | Remote D1 `0050`–`0053` | **Applied** on `phneakngar-app` remote (2026-07-16); re-list shows no pending migrations |
 | Remote D1 `0054` | **Applied** on `phneakngar-app` remote (2026-07-17) via `pnpm db:migrate:remote`; re-list shows no pending |

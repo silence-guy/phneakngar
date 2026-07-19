@@ -28,12 +28,26 @@ User clarification: **`cieee.xyz` is a live-testing identity only. It must not b
 | 018 | Web-brain release showcase docs | P1 | S | — | DONE |
 | 019 | Gateway peer allowlist UI + Live runbook | P1 | M | — | DONE |
 | 020 | First-run 10-minute path polish | P2 | M | 016 | DONE |
+| 021 | A–E deep audit report | P2 | S | 016–020 | DONE |
+| 022 | Hold-default operator clarity | P2 | S | 017 | DONE |
+| 023 | Activity load-error honesty | P2 | S | 016 | DONE |
+| 024 | Gateway Live Telegram staging proof | P2 | M | 019 | DONE (docs; Live operator proof pending) |
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED.
 
 ## 2026-07-19 direction tranche (A–E)
 
 Executed in main working tree for release packaging toward v0.0.3 themes: Activity UI, approval hold product default, web-brain docs, gateway peers + runbook, first-mission checklist.
+
+## Residual close-out (post A–E)
+
+Plans **022–024** close accepted residuals without flipping product defaults or claiming full Helio parity:
+
+1. **022** — make hold default-on *obvious* (docs/UI/doctor); do not change default
+2. **023** — Activity failed load ≠ empty feed (toast + retry); optional Approvals parity
+3. **024** — repeatable Live Telegram staging checklist + evidence template (ops); no secrets in git
+
+Execute 022 → 023 in any order (parallel OK). **024** Steps 1–2 are code/docs; Step 3 needs a human operator with a bot token.
 
 ## Dependency notes
 

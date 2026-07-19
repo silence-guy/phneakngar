@@ -1,9 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
 import { useWorkspace } from "@/contexts/workspace-context";
 import { listActivityEvents, type ActivityEventItem } from "@/lib/api";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
 import {
   Activity,
   Circle,
@@ -20,6 +22,7 @@ import {
   activityKindLabel,
   type ActivityIconKey,
 } from "./activity-labels";
+import { resolveActivityListView } from "./activity-list-view";
 
 function SkeletonRow() {
   return (
@@ -94,14 +97,18 @@ export default function ActivityPage() {
   const { workspaceId } = useWorkspace();
   const [items, setItems] = useState<ActivityEventItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
+    setLoadError(false);
     try {
       const result = await listActivityEvents(workspaceId, { limit: 50 });
       setItems(result.items);
     } catch {
       setItems([]);
+      setLoadError(true);
+      toast.error(ACTIVITY_LABELS.failedToLoad);
     } finally {
       setLoading(false);
     }
@@ -110,6 +117,12 @@ export default function ActivityPage() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  const view = resolveActivityListView({
+    loading,
+    loadError,
+    itemCount: items.length,
+  });
 
   return (
     <div className="flex flex-col h-full">
@@ -123,13 +136,26 @@ export default function ActivityPage() {
       </div>
 
       <div className="flex-1 overflow-y-auto thin-scrollbar">
-        {loading ? (
+        {view === "loading" ? (
           <>
             <SkeletonRow />
             <SkeletonRow />
             <SkeletonRow />
           </>
-        ) : items.length === 0 ? (
+        ) : view === "error" ? (
+          <div
+            className="flex flex-col items-center justify-center py-20 text-center px-4"
+            data-testid="activity-load-error"
+          >
+            <Activity className="size-8 text-muted-foreground/50 mb-3" />
+            <p className="text-sm text-muted-foreground max-w-sm mb-4">
+              {ACTIVITY_LABELS.empty.loadFailed}
+            </p>
+            <Button type="button" size="sm" variant="secondary" onClick={() => void load()}>
+              {ACTIVITY_LABELS.retry}
+            </Button>
+          </div>
+        ) : view === "empty" ? (
           <div className="flex flex-col items-center justify-center py-20 text-center px-4">
             <Activity className="size-8 text-muted-foreground/50 mb-3" />
             <p className="text-sm text-muted-foreground max-w-sm">
