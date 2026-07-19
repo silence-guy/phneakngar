@@ -2,7 +2,7 @@
 
 **Honesty:** Full commercial Helio/OpenClaw parity is **not** claimed. This runbook covers operator-configured **Telegram** (and similarly Slack) Live egress with vaulted bot tokens and peer allowlist.
 
-**Staging proof artifacts:** [docs/gateway-live-telegram-proof/](./) — fill `EVIDENCE.template.md` after a real run (never commit bot tokens).
+**Staging proof artifacts:** [gateway-live-telegram-proof.md](./gateway-live-telegram-proof.md) — fill [evidence template](./gateway-live-telegram-evidence.template.md) after a real run (never commit bot tokens).
 
 ## Prerequisites
 
@@ -34,7 +34,7 @@ curl -sS "$CONTROL_PLANE/api/health" | head -c 200
 6. [ ] **Machine online** — `phneakngar chhlat start` (or desktop equivalent).
 7. [ ] **Trigger egress** — Complete a task that triggers channel/gateway egress — message should post when Live + token present.
 8. [ ] **Activity** — Open workspace **Activity**; expect `gateway_egress_ok` (or diagnose `gateway_egress_fail`).
-9. [ ] **Record evidence** — Copy [gateway-live-telegram-evidence.template.md](./gateway-live-telegram-evidence.template.md) → `EVIDENCE-YYYY-MM-DD.md` with **no secrets**.
+9. [ ] **Record evidence** — Copy [gateway-live-telegram-evidence.template.md](./gateway-live-telegram-evidence.template.md) → a local `EVIDENCE-YYYY-MM-DD.md` (do not commit secrets).
 
 ## Slack
 
