@@ -5,13 +5,21 @@ on:
     branches: [main]
     paths:
       - "src/desktop/.deploy-version-mobile"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Package version to build (must match package.json and mobile marker)"
+        required: true
+        type: string
 
 permissions:
   contents: read
 
 jobs:
   prepare:
-    if: "${{ startsWith(github.event.head_commit.message, 'release: v') }}"
+    if: >-
+      ${{ github.event_name == 'workflow_dispatch' ||
+          startsWith(github.event.head_commit.message, 'release: v') }}
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.version.outputs.version }}
@@ -21,12 +29,18 @@ jobs:
         id: version
         env:
           COMMIT_MSG: ${{ github.event.head_commit.message }}
+          DISPATCH_VERSION: ${{ github.event.inputs.version }}
         run: |
           MARKER_VERSION=$(tr -d '\n' < src/desktop/.deploy-version-mobile)
           PACKAGE_VERSION=$(node -p "require('./src/desktop/package.json').version")
-          RELEASE_VERSION=$(printf '%s' "$COMMIT_MSG" | sed -nE 's/^release: v([0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?).*/\1/p')
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            RELEASE_VERSION="$DISPATCH_VERSION"
+          else
+            RELEASE_VERSION=$(printf '%s' "$COMMIT_MSG" | sed -nE 's/^release: v([0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?).*/\1/p')
+          fi
           if [ -z "$RELEASE_VERSION" ] || [ "$MARKER_VERSION" != "$RELEASE_VERSION" ] || [ "$PACKAGE_VERSION" != "$RELEASE_VERSION" ]; then
-            echo "Mobile marker/package version does not match the release commit" >&2
+            echo "Mobile marker/package version does not match the release commit/input" >&2
+            echo "marker=$MARKER_VERSION package=$PACKAGE_VERSION release=$RELEASE_VERSION" >&2
             exit 1
           fi
           echo "version=$RELEASE_VERSION" >> "$GITHUB_OUTPUT"
