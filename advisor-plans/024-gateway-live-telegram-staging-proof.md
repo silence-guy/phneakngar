@@ -36,7 +36,7 @@ Code paths for vaulted token, Live mode, probe, peer allowlist, and egress exist
 **In scope**
 - `docs/gateway-live-runbook.md` — expand to a **signed checklist** with checkbox steps + “Evidence to capture”
 - `docs/parity-status.md` — optional “Staging proof” column/note: pending | recorded YYYY-MM-DD (operator fills after run)
-- `docs/agent-work/gateway-live-telegram-proof/` (create) — `CHECKLIST.md` + `EVIDENCE.template.md` (no secrets)
+- `docs/gateway-live-telegram-proof/` (create) — `CHECKLIST.md` + `EVIDENCE.template.md` (no secrets)
 - Optional S code: `scripts/gateway-live-preflight.mjs` **read-only** checks (health URL, docs present) — **no** bot token, **no** send
 
 **Out of scope**
@@ -76,7 +76,7 @@ curl -sS "$CONTROL_PLANE/api/health" | head -c 200
 
 ### Step 1: Evidence template
 
-Create `docs/agent-work/gateway-live-telegram-proof/EVIDENCE.template.md`:
+Create `docs/gateway-live-telegram-proof/EVIDENCE.template.md`:
 
 ```markdown
 # Gateway Live Telegram proof
@@ -105,7 +105,7 @@ Update `docs/gateway-live-runbook.md` with ordered checkboxes matching the templ
 Executor agent **cannot** complete this without secrets. After Step 1–2 land:
 
 - STOP and hand checklist to operator, **or**
-- If operator provides a **non-secret** confirmation (“probe ok, message received”), fill a **copy** of evidence file (not template) under `docs/agent-work/gateway-live-telegram-proof/EVIDENCE-YYYY-MM-DD.md` with only allowed fields.
+- If operator provides a **non-secret** confirmation (“probe ok, message received”), fill a **copy** of evidence file (not template) under `docs/gateway-live-telegram-proof/EVIDENCE-YYYY-MM-DD.md` with only allowed fields.
 
 ### Step 4: Parity note
 

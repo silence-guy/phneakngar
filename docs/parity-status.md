@@ -33,7 +33,7 @@ Residual control-plane MVPs, productized UI, monorepo-green tests, and in-progre
 | Lean web-brain toolkit | `@phneakngar/web-brain` search/fetch/extract/crawl/diff + MCP wire + doctor — **not** full wigolo/ML |
 | Gateway peer allowlist UI | Settings → Gateway peers list/add/remove; Live path intermediate only (see `docs/gateway-live-runbook.md`) |
 | Bindings admin (D1) | MVP shipped (`0053`/`0054` + Settings → Gateway tab) — apply `0054` on remote when ready |
-| Live Slack/Telegram send in production | **Intermediate only** — requires operator-set live + token; staging proof checklist in `docs/gateway-live-runbook.md` + `docs/agent-work/gateway-live-telegram-proof/`; no OAuth marketplace / multi-region claim |
+| Live Slack/Telegram send in production | **Intermediate only** — requires operator-set live + token; staging proof checklist in `docs/gateway-live-runbook.md` + `docs/gateway-live-telegram-proof/`; no OAuth marketplace / multi-region claim |
 | Heartbeat ambient checks | Pure helpers + automation skill_name hook; delivery quiet path partial |
 | Remote D1 `0050`–`0053` | **Applied** on `phneakngar-app` remote (2026-07-16); re-list shows no pending migrations |
 | Remote D1 `0054` | **Applied** on `phneakngar-app` remote (2026-07-17) via `pnpm db:migrate:remote`; re-list shows no pending |
