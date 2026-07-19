@@ -83,3 +83,47 @@ export async function probeGatewayBinding(
 
 // Re-export Agent for consumers that load agents alongside bindings.
 export type { Agent as GatewayAgentOption };
+
+export type GatewayPeerItem = {
+  id: string;
+  binding_id: string;
+  peer_id: string;
+  status: string;
+  created_at: string;
+};
+
+export async function listGatewayPeers(
+  workspaceId: string,
+  bindingId: string,
+): Promise<{ items: GatewayPeerItem[] }> {
+  return apiFetch(
+    `/api/gateway/bindings/${encodeURIComponent(bindingId)}/peers${wsQuery(workspaceId)}`,
+  );
+}
+
+export async function addGatewayPeer(
+  workspaceId: string,
+  bindingId: string,
+  body: { peer_id: string; status?: string },
+): Promise<{ peer: GatewayPeerItem }> {
+  return apiFetch(
+    `/api/gateway/bindings/${encodeURIComponent(bindingId)}/peers${wsQuery(workspaceId)}`,
+    {
+      method: "POST",
+      body: JSON.stringify(body),
+    },
+  );
+}
+
+export async function removeGatewayPeer(
+  workspaceId: string,
+  bindingId: string,
+  peerId: string,
+): Promise<{ ok: boolean; peer_id: string }> {
+  const q = wsQuery(workspaceId, { peer_id: peerId });
+  return apiFetch(
+    `/api/gateway/bindings/${encodeURIComponent(bindingId)}/peers${q}`,
+    { method: "DELETE" },
+  );
+}
+

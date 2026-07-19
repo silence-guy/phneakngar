@@ -38,6 +38,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useAgentChatSheet } from "@/contexts/agent-chat-sheet-context";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import { FirstMissionCard } from "./first-mission-card";
 import {
   Popover,
   PopoverContent,
@@ -781,7 +782,7 @@ function MemberOptionalConnect({ workspaceId }: { workspaceId: string }) {
 export default function HomePage() {
   const router = useRouter();
   const { agents, runtimes, loading } = useAgentContext();
-  const { workspaceId, memberRole } = useWorkspace();
+  const { workspaceId, slug, memberRole } = useWorkspace();
   const isMobile = useIsMobile();
   const { openAgentChat } = useAgentChatSheet();
 
@@ -844,12 +845,32 @@ export default function HomePage() {
   }
 
   if (isMobile) {
-    return <MobileAgentList onAgentClick={handleAgentClick} />;
+    return (
+      <div className="relative flex flex-1 flex-col min-h-0">
+        <FirstMissionCard
+          workspaceId={workspaceId}
+          slug={slug ?? ""}
+          agentCount={agents.length}
+          onlineRuntimeCount={onlineRuntimes.length}
+          firstAgentId={agents[0]?.id ?? null}
+        />
+        <MobileAgentList onAgentClick={handleAgentClick} />
+      </div>
+    );
   }
 
   return (
-    <ReactFlowProvider>
-      <AgentCanvas onAgentClick={handleAgentClick} />
-    </ReactFlowProvider>
+    <div className="relative flex flex-1 min-h-0 flex-col">
+      <FirstMissionCard
+        workspaceId={workspaceId}
+        slug={slug ?? ""}
+        agentCount={agents.length}
+        onlineRuntimeCount={onlineRuntimes.length}
+        firstAgentId={agents[0]?.id ?? null}
+      />
+      <ReactFlowProvider>
+        <AgentCanvas onAgentClick={handleAgentClick} />
+      </ReactFlowProvider>
+    </div>
   );
 }

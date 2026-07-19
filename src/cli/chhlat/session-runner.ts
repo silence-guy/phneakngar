@@ -17,7 +17,10 @@ import {
 } from "./client.js";
 import { setToolActionApprovalCreator } from "./tool-gate.js";
 import { createBackend } from "./agent/index.js";
-import { setApprovalHoldPoller } from "./agent/claude.js";
+import {
+  setApprovalHoldPoller,
+  setApprovalHoldRuntimeConfig,
+} from "./agent/claude.js";
 import { prepare } from "./execenv/index.js";
 import {
   initEntryAsync,
@@ -185,6 +188,7 @@ export async function runSession(input: SessionRunnerInput): Promise<void> {
       agentId: task.agentId,
     }),
   );
+  setApprovalHoldRuntimeConfig(task.agent?.runtimeConfig);
   setApprovalHoldPoller(async (approvalId) => {
     const res = await client.getToolApproval(token, approvalId);
     const status = res?.approval?.status;

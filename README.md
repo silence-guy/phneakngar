@@ -129,6 +129,9 @@ They are not permanent canonical product identity. Self-hosters and operators sh
 - **Calendar** — manage schedules, recurring work, and reminders.
 - **Local-first execution** — agents run on machines you control.
 - **Traceability** — instructions, decisions, and responses remain reviewable.
+- **Approvals hold** — high-stakes tools can pause until a human decides in the Approvals inbox.
+- **Activity feed** — workspace pulse for approvals, gateway egress, and automations.
+- **Lean web brain** — local `web_search` / `web_fetch` / extract / crawl / diff via `@phneakngar/web-brain` and `phneakngar web wire-mcp` (not full wigolo; intentionally small disk budget).
 
 ## Supported agent runtimes
 

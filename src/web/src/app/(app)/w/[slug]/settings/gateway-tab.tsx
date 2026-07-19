@@ -11,8 +11,12 @@ import {
   updateGatewayBinding,
   deleteGatewayBinding,
   probeGatewayBinding,
+  listGatewayPeers,
+  addGatewayPeer,
+  removeGatewayPeer,
   listAgents,
   type GatewayBindingItem,
+  type GatewayPeerItem,
 } from "@/lib/api";
 import { getWorkspaceHealth } from "@/lib/api/workspaces";
 import { Button } from "@/components/ui/button";
@@ -74,6 +78,133 @@ function assessBindingsClient(
     missing_team_id,
     missing_agent_ref,
   };
+}
+
+
+function BindingPeersPanel({
+  workspaceId,
+  bindingId,
+}: {
+  workspaceId: string;
+  bindingId: string;
+}) {
+  const [peers, setPeers] = useState<GatewayPeerItem[]>([]);
+  const [peerDraft, setPeerDraft] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await listGatewayPeers(workspaceId, bindingId);
+      setPeers(res.items);
+    } catch {
+      toast.error(SETTINGS_LABELS.gateway.peersLoadFailed);
+    } finally {
+      setLoading(false);
+    }
+  }, [workspaceId, bindingId]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const handleAdd = async () => {
+    const peerId = peerDraft.trim();
+    if (!peerId) return;
+    setBusy(true);
+    try {
+      await addGatewayPeer(workspaceId, bindingId, {
+        peer_id: peerId,
+        status: "allow",
+      });
+      setPeerDraft("");
+      toast.success(SETTINGS_LABELS.gateway.peerAdded);
+      await load();
+    } catch {
+      toast.error(SETTINGS_LABELS.gateway.peerFailed);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleRemove = async (peerId: string) => {
+    setBusy(true);
+    try {
+      await removeGatewayPeer(workspaceId, bindingId, peerId);
+      toast.success(SETTINGS_LABELS.gateway.peerRemoved);
+      await load();
+    } catch {
+      toast.error(SETTINGS_LABELS.gateway.peerFailed);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="rounded-md border border-border/30 bg-muted/20 px-2.5 py-2 space-y-2">
+      <div>
+        <p className="text-[11px] font-medium text-foreground/80">
+          {SETTINGS_LABELS.gateway.peersTitle}
+        </p>
+        <p className="text-[10px] text-muted-foreground leading-relaxed">
+          {SETTINGS_LABELS.gateway.peersHint}
+        </p>
+      </div>
+      {loading ? (
+        <Skeleton className="h-6 w-full rounded" />
+      ) : peers.length === 0 ? (
+        <p className="text-[11px] text-muted-foreground">
+          {SETTINGS_LABELS.gateway.peersEmpty}
+        </p>
+      ) : (
+        <ul className="space-y-1 max-h-28 overflow-y-auto thin-scrollbar">
+          {peers.map((p) => (
+            <li
+              key={p.id}
+              className="flex items-center justify-between gap-2 text-[11px]"
+            >
+              <span className="truncate font-mono text-muted-foreground">
+                {p.peer_id}
+                <span className="ml-1 text-muted-foreground/70">· {p.status}</span>
+              </span>
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                className="h-6 px-2 text-[10px]"
+                disabled={busy}
+                onClick={() => void handleRemove(p.peer_id)}
+              >
+                {SETTINGS_LABELS.gateway.peerRemove}
+              </Button>
+            </li>
+          ))}
+        </ul>
+      )}
+      <div className="flex flex-wrap items-end gap-2">
+        <label className="text-[11px] text-muted-foreground space-y-1 flex-1 min-w-[8rem]">
+          <span>{SETTINGS_LABELS.gateway.peerId}</span>
+          <input
+            className="w-full h-8 rounded-md border border-border/60 bg-background px-2 text-xs font-mono"
+            value={peerDraft}
+            onChange={(e) => setPeerDraft(e.target.value)}
+            placeholder="123456789"
+            autoComplete="off"
+          />
+        </label>
+        <Button
+          type="button"
+          size="sm"
+          variant="secondary"
+          disabled={busy || !peerDraft.trim()}
+          onClick={() => void handleAdd()}
+        >
+          {SETTINGS_LABELS.gateway.peerAdd}
+        </Button>
+      </div>
+    </div>
+  );
 }
 
 export function GatewayTab() {
@@ -484,6 +615,7 @@ export function GatewayTab() {
                   {SETTINGS_LABELS.gateway.probe}
                 </Button>
               </div>
+              <BindingPeersPanel workspaceId={workspaceId} bindingId={b.id} />
             </div>
           ))
         )}

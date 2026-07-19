@@ -23,6 +23,7 @@ function ConnectMachineNextSteps({ isDesktopApp }: { isDesktopApp: boolean }) {
         </li>
         <li>{connectMachineLabel("nextStepChhlat")}</li>
         <li>{connectMachineLabel("nextStepWait")}</li>
+        <li>{connectMachineLabel("nextStepWebBrain")}</li>
       </ol>
       <p className="text-xs text-muted-foreground leading-relaxed">
         {connectMachineLabel("agentWorkdirNote")}

@@ -21,6 +21,12 @@ import {
   readJudgmentSettings,
   type JudgmentPolicySettings,
 } from "@/components/judgment-policy-settings";
+import {
+  ApprovalHoldSettingsPanel,
+  buildRuntimeConfigWithApprovalHold,
+  readApprovalHoldSettings,
+  type ApprovalHoldSettings,
+} from "@/components/approval-hold-settings";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { MarkdownEditor } from "@/components/ui/markdown-editor";
@@ -85,6 +91,8 @@ function RuntimeTab({
   setHeadroomSettings,
   judgmentSettings,
   setJudgmentSettings,
+  approvalHoldSettings,
+  setApprovalHoldSettings,
 }: {
   model: string;
   setModel: (v: string) => void;
@@ -96,6 +104,8 @@ function RuntimeTab({
   setHeadroomSettings: (value: HeadroomSettingsValue) => void;
   judgmentSettings: JudgmentPolicySettings;
   setJudgmentSettings: (value: JudgmentPolicySettings) => void;
+  approvalHoldSettings: ApprovalHoldSettings;
+  setApprovalHoldSettings: (value: ApprovalHoldSettings) => void;
 }) {
   return (
     <>
@@ -143,6 +153,11 @@ function RuntimeTab({
       <JudgmentPolicySettingsPanel
         value={judgmentSettings}
         onChange={setJudgmentSettings}
+      />
+
+      <ApprovalHoldSettingsPanel
+        value={approvalHoldSettings}
+        onChange={setApprovalHoldSettings}
       />
 
       <div className="space-y-0.5 rounded-lg border border-border/50 px-3 py-3">
@@ -202,6 +217,9 @@ export function AgentEditForm({
   );
   const [judgmentSettings, setJudgmentSettings] = useState(() =>
     readJudgmentSettings(agent.runtime_config),
+  );
+  const [approvalHoldSettings, setApprovalHoldSettings] = useState(() =>
+    readApprovalHoldSettings(agent.runtime_config),
   );
 
   // Instruction tab state — auto-saves independently
@@ -314,9 +332,12 @@ export function AgentEditForm({
       role_title: roleTitle.trim(),
       responsibility: responsibility.trim(),
       runtime_id: runtimeId,
-      runtime_config: buildRuntimeConfigWithJudgment(
-        buildRuntimeConfigWithHeadroom(agent.runtime_config, model, headroomSettings),
-        judgmentSettings,
+      runtime_config: buildRuntimeConfigWithApprovalHold(
+        buildRuntimeConfigWithJudgment(
+          buildRuntimeConfigWithHeadroom(agent.runtime_config, model, headroomSettings),
+          judgmentSettings,
+        ),
+        approvalHoldSettings,
       ),
       avatar_url: serializeAvatarConfig(avatarConfig),
     });
@@ -435,6 +456,8 @@ export function AgentEditForm({
                     setHeadroomSettings={setHeadroomSettings}
                     judgmentSettings={judgmentSettings}
                     setJudgmentSettings={setJudgmentSettings}
+                    approvalHoldSettings={approvalHoldSettings}
+                    setApprovalHoldSettings={setApprovalHoldSettings}
                   />
                 )}
 

@@ -40,6 +40,10 @@ export const webNavigationLabels = {
     [Locale.EN]: "Approvals",
     [Locale.KM]: "ការអនុម័ត",
   },
+  activity: {
+    [Locale.EN]: "Activity",
+    [Locale.KM]: "សកម្មភាព",
+  },
   automations: {
     [Locale.EN]: "Automations",
     [Locale.KM]: "ស្វ័យប្រវត្តិកម្ម",
@@ -89,6 +93,7 @@ export const appShellCopy = {
   calendar: webNavigationLabels.calendar,
   issues: webNavigationLabels.issues,
   approvals: webNavigationLabels.approvals,
+  activity: webNavigationLabels.activity,
   automations: webNavigationLabels.automations,
   runtimes: {
     [Locale.EN]: "Runtimes",
@@ -206,6 +211,10 @@ export const connectMachineCopy = {
     [Locale.EN]: "Wait until this page shows Computer connected.",
     [Locale.KM]: "រង់ចាំរហូតទាល់តែទំព័រនេះបង្ហាញ «កុំព្យូទ័របានភ្ជាប់»។",
   },
+  nextStepWebBrain: {
+    [Locale.EN]: "Optional: phneakngar web wire-mcp for live web tools.",
+    [Locale.KM]: "ស្រេចចិត្ត៖ phneakngar web wire-mcp សម្រាប់ឧបករណ៍វេបផ្ទាល់។",
+  },
   agentWorkdirNote: {
     [Locale.EN]:
       "Agents only use a sandboxed agent workspace folder on this computer—not your entire filesystem.",
@@ -304,6 +313,16 @@ export const agentFormCopy = {
   ambiguousToIssueHint: {
     [Locale.EN]: "When a request lacks a clear owner or outcome, file an owned issue instead of freeform chat only.",
     [Locale.KM]: "នៅពេលសំណើមិនមានម្ចាស់ ឬលទ្ធផលច្បាស់ បង្កើត issue ដែលមានម្ចាស់ ជំនួសការជជែកសេរីតែប៉ុណ្ណោះ។",
+  },
+  approvalHold: {
+    [Locale.EN]: "Hold tools until approved",
+    [Locale.KM]: "ផ្អាកឧបករណ៍រហូតមានការអនុម័ត",
+  },
+  approvalHoldHint: {
+    [Locale.EN]:
+      "High-stakes tools pause and wait for the Approvals inbox (default on). Set CHHLAT_APPROVAL_HOLD=0 on the machine to force off.",
+    [Locale.KM]:
+      "ឧបករណ៍ហានិភ័យខ្ពស់ផ្អាករង់ចាំប្រអប់អនុម័ត (បើកតាមលំនាំដើម)។ កំណត់ CHHLAT_APPROVAL_HOLD=0 លើម៉ាស៊ីនដើម្បីបិទ។",
   },
   requireContextOptimization: {
     [Locale.EN]: "Require optimization",

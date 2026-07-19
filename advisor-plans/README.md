@@ -23,8 +23,17 @@ User clarification: **`cieee.xyz` is a live-testing identity only. It must not b
 | 013 | Redeem workspace invites atomically | P2 | M | 001 | DONE |
 | 014 | Claim machine-token activation atomically | P2 | M | 002 | DONE |
 | 015 | Publish accurate installation and contributor docs | P2 | S | 001, 012 | DONE |
+| 016 | Workspace Activity feed UI | P1 | S | — | DONE |
+| 017 | Productize approval hold via runtime_config | P1 | M | — | DONE |
+| 018 | Web-brain release showcase docs | P1 | S | — | DONE |
+| 019 | Gateway peer allowlist UI + Live runbook | P1 | M | — | DONE |
+| 020 | First-run 10-minute path polish | P2 | M | 016 | DONE |
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED.
+
+## 2026-07-19 direction tranche (A–E)
+
+Executed in main working tree for release packaging toward v0.0.3 themes: Activity UI, approval hold product default, web-brain docs, gateway peers + runbook, first-mission checklist.
 
 ## Dependency notes
 

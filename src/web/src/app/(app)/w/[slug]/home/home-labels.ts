@@ -27,6 +27,18 @@ export const HOME_LABELS = {
   attentionAria: "ការយកចិត្តទុកដាក់",
   pendingApprovals: "រង់ចាំអនុម័ត",
   blockedIssues: "ជាប់គាំង",
+  firstMission: {
+    title: "បេសកកម្មដំបូង",
+    subtitle: "១០ នាទីដើម្បីឱ្យក្រុមហ៊ុន AI របស់អ្នកដំណើរការ។",
+    dismiss: "បិទ",
+    steps: {
+      agent_online: "ភ្នាក់ងារ និងម៉ាស៊ីន online",
+      send_message: "ផ្ញើសារ/អ៊ីមែលសាកល្បង",
+      approvals: "បើកប្រអប់អនុម័ត",
+      web_brain: "ភ្ជាប់ web-brain (wire-mcp)",
+      activity: "មើលសកម្មភាពក្រុមហ៊ុន",
+    },
+  },
 } as const;
 
 /** Compact chip label helpers (stable height via reserved digits when needed by callers). */

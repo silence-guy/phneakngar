@@ -1,5 +1,6 @@
 import { spawn, type ChildProcess } from "child_process";
 import { createInterface } from "readline";
+import { resolveApprovalHoldEnabled } from "@phneakngar/shared";
 import type { AgentBackend, AgentSession } from "./index.js";
 import type {
   ExecOptions,
@@ -19,6 +20,17 @@ import {
 
 /** Optional hold/resume poller (registered by CLI runtime when hold is enabled). */
 let approvalHoldPoller: ApprovalStatusPoller | null = null;
+
+/** Optional per-task runtime_config for hold resolve (set by session-runner). */
+let approvalHoldRuntimeConfig: unknown = undefined;
+
+export function setApprovalHoldRuntimeConfig(runtimeConfig: unknown): void {
+  approvalHoldRuntimeConfig = runtimeConfig;
+}
+
+export function getApprovalHoldRuntimeConfig(): unknown {
+  return approvalHoldRuntimeConfig;
+}
 
 export function setApprovalHoldPoller(poller: ApprovalStatusPoller | null): void {
   approvalHoldPoller = poller;
@@ -530,13 +542,18 @@ export class ClaudeBackend implements AgentBackend {
   }
 }
 
+/**
+ * Whether hold/resume is enabled. Prefer agent runtime_config.approvalHold
+ * (product default on); env CHHLAT_APPROVAL_HOLD / PHNEAKNGAR_APPROVAL_HOLD
+ * force on/off when set.
+ */
 export function approvalHoldEnabledFromEnv(
   env: NodeJS.ProcessEnv = process.env,
 ): boolean {
-  const v = (env.CHHLAT_APPROVAL_HOLD ?? env.PHNEAKNGAR_APPROVAL_HOLD ?? "")
-    .trim()
-    .toLowerCase();
-  return v === "1" || v === "true" || v === "yes" || v === "on";
+  return resolveApprovalHoldEnabled({
+    runtimeConfig: approvalHoldRuntimeConfig,
+    env,
+  });
 }
 
 async function handleControlRequest(

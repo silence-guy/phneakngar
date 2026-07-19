@@ -21,14 +21,17 @@ Residual control-plane MVPs, productized UI, monorepo-green tests, and in-progre
 | Integrations settings UI | Agent settings → Integrations tab (GitHub/Linear vault pointer); `secret_ref` never returned |
 | Skills lifecycle | Propose → skill_install approval → install; agent skills list read-only; marketplace not claimed |
 | Automation reliability UX | Last run + overdue chip on automations list |
-| CLI↔approval bridge (WP8) | High-stakes control_request can create durable `tool_action` via machine `POST /api/chhlat/approvals` and deny with `approval_id` pointer — **no hold/resume** |
+| CLI↔approval bridge (WP8) | High-stakes control_request creates durable `tool_action` via machine `POST /api/chhlat/approvals`; hold/resume via product default + poll (see Approval hold product) |
 | Doctor / dry binding health (WP16) | Dry-config binding + webhook-secret assessors; workspace-health `checks.gateway`; `/api/health` gateway_webhook fail-closed; Gateway tab doctor row; Live risk/not-verified — **no live provider probes** |
-| Timeline + inbox polish (WP17–18 partial) | Race-safe inbox_unread + conversation_map getOrCreate; thin email system events via timeline-chrome on send/approve — **no `activity_event` company feed** |
+| Timeline + inbox polish (WP17–18 partial) | Race-safe inbox_unread + conversation_map getOrCreate; thin email system events via timeline-chrome on send/approve; company Activity UI ships separately (see Activity feed MVP) |
 | Gateway ingress (5 providers) | D1 `gateway_binding` first + env map bootstrap; shared secret; optional Telegram/Slack provider secrets; bot-loop + dedupe |
 | Gateway outbound | Format stubs + **production live egress** for Telegram/Slack when binding `outbound_mode=live` + vaulted `secret_ref` (wired from task complete); other providers preview |
 | Bot token install (vault) | Settings → Gateway: write-only bot token (`secret_ref`); `has_secret` only on list/get; probe button (getMe / auth.test) |
-| CLI hold/resume after approval | Opt-in `CHHLAT_APPROVAL_HOLD=1` polls durable approval until approve/deny/timeout; default remains deny+pointer |
-| Activity feed MVP | `activity_event` table + `GET /api/activity`; events on approve / egress / probe / automation_due |
+| CLI hold/resume after approval | Product default **on** via `runtime_config.approvalHold`; env `CHHLAT_APPROVAL_HOLD=0` forces off; polls until approve/deny/timeout |
+| Activity feed MVP | `activity_event` table + `GET /api/activity` + **workspace Activity UI** (`/w/[slug]/activity`); events on approve / egress / probe / automation_due |
+| Approval hold product | Agent `runtime_config.approvalHold` (default on) + env force; CLI session wires runtime config |
+| Lean web-brain toolkit | `@phneakngar/web-brain` search/fetch/extract/crawl/diff + MCP wire + doctor — **not** full wigolo/ML |
+| Gateway peer allowlist UI | Settings → Gateway peers list/add/remove; Live path intermediate only (see `docs/gateway-live-runbook.md`) |
 | Bindings admin (D1) | MVP shipped (`0053`/`0054` + Settings → Gateway tab) — apply `0054` on remote when ready |
 | Live Slack/Telegram send in production | **Intermediate only** — requires operator-set live + token; no OAuth marketplace / multi-region claim |
 | Heartbeat ambient checks | Pure helpers + automation skill_name hook; delivery quiet path partial |

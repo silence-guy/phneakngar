@@ -18,6 +18,8 @@ import {
   buildRuntimeConfigWithHeadroom,
   type HeadroomSettingsValue,
 } from "@/components/headroom-runtime-settings";
+import { buildRuntimeConfigWithApprovalHold } from "@/components/approval-hold-settings";
+import { DEFAULT_APPROVAL_HOLD } from "@phneakngar/shared";
 import { useWorkspace } from "@/contexts/workspace-context";
 import {
   type AvatarConfig,
@@ -223,7 +225,10 @@ export function AgentCreateForm({
       responsibility: responsibility.trim() || undefined,
       runtime_id: runtimeId,
       email_handle: emailHandle || derivedHandle || undefined,
-      runtime_config: buildRuntimeConfigWithHeadroom({}, model, headroomSettings),
+      runtime_config: buildRuntimeConfigWithApprovalHold(
+        buildRuntimeConfigWithHeadroom({}, model, headroomSettings),
+        DEFAULT_APPROVAL_HOLD,
+      ),
       custom_email:
         customEmailGetDataRef.current?.() ?? customEmailData ?? undefined,
       avatar_url: serializeAvatarConfig(avatarConfig),

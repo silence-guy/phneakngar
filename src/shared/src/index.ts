@@ -415,6 +415,13 @@ export type {
   JudgmentPolicySettings,
 } from "./lib/judgment-policy";
 export {
+  DEFAULT_APPROVAL_HOLD,
+  applyApprovalHoldPolicyToRuntimeConfig,
+  readApprovalHoldPolicy,
+  resolveApprovalHoldEnabled,
+} from "./lib/approval-hold-policy";
+export type { ApprovalHoldSettings } from "./lib/approval-hold-policy";
+export {
   DEFAULT_PATTERN_MIN_COUNT,
   DEFAULT_SUGGESTED_SCHEDULE,
   detectAutomationPatterns,

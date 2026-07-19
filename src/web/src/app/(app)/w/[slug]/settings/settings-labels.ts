@@ -124,6 +124,17 @@ export const SETTINGS_LABELS = {
     doctorMissingAgent: "Binding agent missing or not in workspace",
     doctorEmpty: "No bindings — nothing to assess.",
     liveRiskBadgeHint: "token required",
+    peersTitle: "Peer allowlist",
+    peersHint:
+      "When dm_policy is allowlist or pairing, only these peer ids may DM the bot.",
+    peersEmpty: "No peers yet.",
+    peerId: "Peer id",
+    peerAdd: "Add peer",
+    peerRemove: "Remove",
+    peerAdded: "Peer added",
+    peerRemoved: "Peer removed",
+    peerFailed: "Peer update failed",
+    peersLoadFailed: "Failed to load peers",
   },
 } as const;
 

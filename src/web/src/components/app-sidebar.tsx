@@ -10,7 +10,7 @@ import { FlagPopover } from "@/components/flag-popover";
 import { Logo } from "@/components/logo";
 import { appShellLabel } from "@/lib/locale";
 import { cn } from "@/lib/utils";
-import { Monitor, SunMoon, Plus, CalendarDays, Settings, ArrowLeftRight, Home, CircleDot, Folder, Ungroup, ArrowRightToLine, ShieldCheck, Repeat } from "lucide-react";
+import { Monitor, SunMoon, Plus, CalendarDays, Settings, ArrowLeftRight, Home, CircleDot, Folder, Ungroup, ArrowRightToLine, ShieldCheck, Repeat, Activity } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { useTheme } from "next-themes";
@@ -253,6 +253,7 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void } = {}) {
   const isFlags = pathname.startsWith(`${prefix}/flags`);
   const isIssues = pathname.startsWith(`${prefix}/issues`);
   const isApprovals = pathname.startsWith(`${prefix}/approvals`);
+  const isActivity = pathname.startsWith(`${prefix}/activity`);
   const isAutomations = pathname.startsWith(`${prefix}/automations`);
   const isSettings = pathname === `${prefix}/settings`;
   const isCreateAgent = pathname === `${prefix}/agents/new`;
@@ -468,6 +469,23 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void } = {}) {
             <ShieldCheck className="size-4" />
           </TooltipTrigger>
           <TooltipContent side="right">{appShellLabel("approvals")}</TooltipContent>
+        </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger render={
+            <button
+              type="button"
+              onClick={() => { router.push(`${prefix}/activity`); onNavigate?.(); }}
+              className={cn(
+                "flex items-center justify-center size-10 rounded-xl transition-colors duration-200 cursor-pointer",
+                "text-muted-foreground hover:text-foreground hover:bg-accent",
+                isActivity && "bg-accent text-foreground"
+              )}
+            />
+          }>
+            <Activity className="size-4" />
+          </TooltipTrigger>
+          <TooltipContent side="right">{appShellLabel("activity")}</TooltipContent>
         </Tooltip>
 
         <Tooltip>

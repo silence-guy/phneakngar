@@ -40,9 +40,11 @@ $env:PHNEAKNGAR_SERVER_URL = "https://your-control-plane.example"
 | AI runtime | At least one of Claude Code, Codex, OpenCode, or Grok CLI |
 | Network | Outbound HTTPS to the operator-provided control-plane origin |
 
-### Optional: lean web brain (search / fetch)
+### Optional: lean web brain (search / fetch / extract / crawl / diff)
 
-The CLI includes a small first-party **web brain** (`@phneakngar/web-brain`) for live `web_search` / `web_fetch` with a local disk cache. It does **not** install wigolo, ONNX models, or a browser engine (disk delta is intentionally small).
+The CLI includes a small first-party **web brain** (`@phneakngar/web-brain`) for live web tools with a local disk cache. It does **not** install wigolo, ONNX models, or a browser engine (disk delta is intentionally small). Package license for adapted upstream code is AGPL-3.0 under `@phneakngar/web-brain`; the CLI remains Apache-2.0.
+
+**Showcase (offline then live):**
 
 ```bash
 phneakngar web status
@@ -52,13 +54,30 @@ phneakngar web fetch https://example.com
 phneakngar web extract https://example.com --mode metadata
 phneakngar web crawl https://example.com --max-depth 1 --max-pages 5
 phneakngar web diff https://example.com   # cache vs fresh fetch
-phneakngar web wire-mcp    # Codex + Claude MCP tools
+phneakngar web wire-mcp    # Codex + Claude + Grok MCP tools
 phneakngar doctor          # includes "Web brain" readiness + MCP wire hint
 ```
 
 Cache files live under `~/.phneakngar/web-cache/` (or `$PHNEAKNGAR_PROJECT_ROOT/web-cache`).
 
 MCP tools (when wired): `web_search`, `web_fetch`, `web_cache`, `web_extract`, `web_crawl`, `web_diff`.
+
+### Approval hold (human desk)
+
+High-stakes tool calls create a durable approval and **hold** until you decide in the dashboard Approvals inbox (default **on** via agent `runtime_config.approvalHold`). Force off on a machine:
+
+```bash
+export CHHLAT_APPROVAL_HOLD=0   # or PHNEAKNGAR_APPROVAL_HOLD=0
+```
+
+### 10-minute path (personal company)
+
+1. Open the control-plane dashboard and create/join a workspace.
+2. Connect a machine: `phneakngar login` → copy register token from Home → `phneakngar register --token …` → `phneakngar chhlat start`.
+3. Create a first agent (Studio or Agents) and confirm runtime online.
+4. Optional: `phneakngar web wire-mcp` so agents can search/fetch the live web.
+5. Send a test DM or email; open **Approvals** if a tool pauses; open **Activity** for the company pulse.
+6. Optional Live Telegram: Settings → Gateway (see [docs/gateway-live-runbook.md](docs/gateway-live-runbook.md)).
 
 An agent-only machine does not need pnpm, Bun, Wrangler, Docker, or a Cloudflare account.
 
