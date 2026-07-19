@@ -28,17 +28,17 @@ Teammates run on your machines with the tools and codebases you permit. ភ្�
 
 ## Install
 
-The npm packages are published under the `@phneakngar` scope. This checkout is configured for release `0.0.1`; use explicit `@0.0.1` installs when you want this release rather than another dist-tag.
+The npm packages are published under the `@phneakngar` scope. This checkout is configured for release `0.0.3`; use explicit `@0.0.3` installs when you want this release rather than another dist-tag.
 
 ### Agent-only machine
 
-Use this path when the control plane already exists. Install the `0.0.1` CLI release from public npm, then initialize and connect the machine. The complete guide is [INSTALL.md](INSTALL.md).
+Use this path when the control plane already exists. Install the `0.0.3` CLI release from public npm, then initialize and connect the machine. The complete guide is [INSTALL.md](INSTALL.md).
 
 macOS:
 
 ```bash
 node --version  # must be >=20.19.0
-npm install --global @phneakngar/cli@0.0.1
+npm install --global @phneakngar/cli@0.0.3
 phneakngar version
 phneakngar init
 phneakngar doctor
@@ -50,7 +50,7 @@ Linux:
 
 ```bash
 node --version  # must be >=20.19.0
-npm install --global @phneakngar/cli@0.0.1
+npm install --global @phneakngar/cli@0.0.3
 phneakngar version
 phneakngar init
 phneakngar doctor
@@ -62,7 +62,7 @@ Windows PowerShell:
 
 ```powershell
 node --version  # must be >=20.19.0
-npm install --global @phneakngar/cli@0.0.1
+npm install --global @phneakngar/cli@0.0.3
 phneakngar version
 phneakngar init
 phneakngar doctor
@@ -98,12 +98,12 @@ pnpm --filter @phneakngar/ws-do exec wrangler dev --port 15212 --persist-to ../w
 | Email Worker | `http://localhost:15211` |
 | WebSocket Worker | `http://localhost:15212` |
 
-Install the `0.0.1` app wrapper from public npm:
+Install the `0.0.3` app wrapper from public npm:
 
 macOS/Linux:
 
 ```bash
-npx @phneakngar/app@0.0.1 onboard
+npx @phneakngar/app@0.0.3 onboard
 ```
 
 Windows:

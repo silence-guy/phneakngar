@@ -92,7 +92,7 @@ Shell snippets use POSIX syntax unless a PowerShell alternative is shown. The `p
 
 ### Published npm package
 
-`@phneakngar/cli` is published under the public `@phneakngar` npm scope. This checkout is configured for release `0.0.1`; install `@phneakngar/cli@0.0.1` explicitly when you need this release.
+`@phneakngar/cli` is published under the public `@phneakngar` npm scope. This checkout is configured for release `0.0.3`; install `@phneakngar/cli@0.0.3` explicitly when you need this release.
 
 Use the explicit version for reproducible installs:
 
@@ -100,7 +100,7 @@ macOS:
 
 ```bash
 node --version  # must be >=20.19.0
-npm install --global @phneakngar/cli@0.0.1
+npm install --global @phneakngar/cli@0.0.3
 phneakngar version
 ```
 
@@ -108,7 +108,7 @@ Linux:
 
 ```bash
 node --version  # must be >=20.19.0
-npm install --global @phneakngar/cli@0.0.1
+npm install --global @phneakngar/cli@0.0.3
 phneakngar version
 ```
 
@@ -116,7 +116,7 @@ Windows PowerShell:
 
 ```powershell
 node --version  # must be >=20.19.0
-npm install --global @phneakngar/cli@0.0.1
+npm install --global @phneakngar/cli@0.0.3
 phneakngar version
 ```
 
@@ -281,13 +281,13 @@ $env:PHNEAKNGAR_PROJECT_ROOT = "C:\phneakngar-state"
 
 ```bash
 phneakngar chhlat stop
-npm install --global @phneakngar/cli@0.0.1
+npm install --global @phneakngar/cli@0.0.3
 phneakngar version
 phneakngar doctor
 phneakngar chhlat start
 ```
 
-`phneakngar update` uses the configured public package channel. For pinned production rollouts, prefer an explicit `npm install --global @phneakngar/cli@0.0.1` step.
+`phneakngar update` uses the configured public package channel. For pinned production rollouts, prefer an explicit `npm install --global @phneakngar/cli@0.0.3` step.
 
 ## Uninstall
 
@@ -392,7 +392,7 @@ pnpm dev:app onboard
 For the public npm app wrapper on macOS/Linux:
 
 ```bash
-npx @phneakngar/app@0.0.1 onboard
+npx @phneakngar/app@0.0.3 onboard
 ```
 
 Full local `@phneakngar/app` mode is currently documented for macOS/Linux. Windows remains supported for the agent-only CLI path above, but do not advertise Windows app support until a Windows PowerShell smoke proves local Wrangler services, process cleanup, migrations, and `phneakngar-app start/stop` all pass.
