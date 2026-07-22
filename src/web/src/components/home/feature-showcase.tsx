@@ -276,7 +276,7 @@ function FlipCard({ feature }: { feature: Feature }) {
             WebkitBackfaceVisibility: "hidden",
             pointerEvents: flipped ? "none" : undefined,
             boxShadow:
-              "0 4px 16px oklch(0.15 0.01 55 / 15%), inset 0 1px 0 oklch(0.95 0.01 80 / 40%)",
+              "0 4px 16px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.4)",
           }}
         >
           <div className="crt-panel-inner p-5">
@@ -295,7 +295,7 @@ function FlipCard({ feature }: { feature: Feature }) {
             transform: "rotateY(180deg)",
             backgroundColor: "var(--landing-crt-bg)",
             boxShadow:
-              "0 4px 16px oklch(0.15 0.01 55 / 15%)",
+              "0 4px 16px rgba(0, 0, 0, 0.15)",
           }}
         >
           <p
@@ -303,7 +303,7 @@ function FlipCard({ feature }: { feature: Feature }) {
             style={{
               fontFamily: "var(--font-crt)",
               color: "var(--landing-phosphor)",
-              textShadow: "0 0 6px oklch(0.75 0.18 80 / 30%)",
+              textShadow: "0 0 6px rgba(237, 237, 237, 0.3)",
             }}
           >
             {feature.cta.tagline}
@@ -315,7 +315,7 @@ function FlipCard({ feature }: { feature: Feature }) {
               fontFamily: "var(--font-mono)",
               color: "var(--landing-crt-bg)",
               backgroundColor: "var(--landing-phosphor)",
-              boxShadow: "0 0 12px oklch(0.75 0.18 80 / 40%)",
+              boxShadow: "0 0 12px rgba(237, 237, 237, 0.4)",
             }}
           >
             {feature.cta.label}
@@ -391,7 +391,7 @@ function AnimatedArt({ lines }: { lines: string[] }) {
         fontFamily: "'Menlo', 'Consolas', 'DejaVu Sans Mono', monospace",
         fontSize: "clamp(7px, 2.5vw, 13px)",
         color: "var(--landing-phosphor)",
-        textShadow: "0 0 8px oklch(0.75 0.18 80 / 40%)",
+        textShadow: "0 0 8px rgba(237, 237, 237, 0.4)",
         opacity: 0.8,
         lineHeight: 1.35,
         overflowX: "hidden",

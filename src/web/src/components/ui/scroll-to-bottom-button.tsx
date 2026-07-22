@@ -60,7 +60,7 @@ export function ScrollToBottomButton({ scrollRef, threshold = 100 }: ScrollToBot
               variant="ghost"
               size="icon-sm"
               onClick={handleClick}
-              className="rounded-full bg-background/80 backdrop-blur-sm border shadow-sm hover:bg-background"
+              className="rounded-full bg-background/50 border shadow-sm hover:bg-background"
             />
           }
         >

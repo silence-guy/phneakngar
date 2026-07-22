@@ -54,7 +54,7 @@ const DARK_STYLES = `
   img { max-width: 100%; height: auto; }
   /* Force dark-friendly defaults on common email patterns */
   body, div, td, th, p, span, li {
-    color: #e8e5e0 !important;
+    color: #ededed !important;
   }
   table, tr, td, th, div, section, article, header, footer, main {
     background-color: transparent !important;

@@ -90,7 +90,7 @@ function IssueCard({
             type="button"
             onClick={onClick}
             className={cn(
-              "w-full rounded-lg border bg-background/75 p-3 text-left transition-colors cursor-pointer",
+              "w-full rounded-lg border bg-background p-3 text-left transition-colors cursor-pointer",
               "hover:bg-accent/70 hover:border-border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
               selected ? "border-foreground/30 bg-accent" : "border-border/60"
             )}
@@ -164,7 +164,7 @@ function DroppableColumn({ id, children, className }: { id: string; children: Re
     <div
       ref={setNodeRef}
       className={cn(
-        "flex min-h-0 flex-col rounded-lg border bg-card/60 transition-colors",
+        "flex min-h-0 flex-col rounded-lg border bg-card/50 transition-colors",
         isOver ? "ring-2 ring-primary/40 bg-primary/5 border-primary/30" : "border-border/60",
         className
       )}
@@ -192,7 +192,7 @@ function CollapsedCompletedStrip({ activeDragId, completedCount, onExpand }: { a
               "flex h-full items-center justify-center rounded-lg border transition-colors",
               isOver
                 ? "ring-2 ring-primary/40 bg-primary/5 border-primary/30"
-                : "border-dashed border-border/60 bg-muted/20 cursor-pointer hover:bg-muted/40"
+                : "border-dashed border-border/60 bg-muted/50 cursor-pointer hover:bg-muted/40"
             )}
           />
         }
@@ -620,7 +620,7 @@ export default function IssuesPage() {
   const selectedIssue = selectedId ? issues.find((i) => i.id === selectedId) ?? null : null;
 
   return (
-    <div className="relative flex h-full min-h-0 flex-col bg-background/30">
+    <div className="relative flex h-full min-h-0 flex-col bg-background">
       <div className="flex shrink-0 flex-col gap-3 border-b border-border/60 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5 sm:py-4">
         <div className="min-w-0">
           <h1 className="text-base font-semibold tracking-normal">{ISSUE_LABELS.issuesHeading}</h1>
@@ -637,13 +637,13 @@ export default function IssuesPage() {
         {boardLoading ? (
           <div className={cn("grid h-full gap-4", showCompleted ? "grid-cols-5" : "grid-cols-[1fr_1fr_1fr_1fr_36px]")}>
             {[3, 2, 2, 1, ...(showCompleted ? [2] : [])].map((cardCount, colIdx) => (
-              <div key={colIdx} className="flex min-h-0 flex-col rounded-lg border border-border/60 bg-card/60">
-                <div className="border-b border-border/60 bg-muted/30 px-3 py-2">
+              <div key={colIdx} className="flex min-h-0 flex-col rounded-lg border border-border/60 bg-card/50">
+                <div className="border-b border-border/60 bg-muted/50 px-3 py-2">
                   <Skeleton className="h-3 w-16" />
                 </div>
                 <div className="min-h-0 flex-1 space-y-2 p-2">
                   {Array.from({ length: cardCount }).map((_, i) => (
-                    <div key={i} className="rounded-lg border bg-background/75 p-3">
+                    <div key={i} className="rounded-lg border bg-background p-3">
                       <Skeleton className="h-4 w-3/4" />
                       <Skeleton className="mt-1 h-3 w-1/2" />
                       <Skeleton className="mt-2 h-3 w-1/3" />
@@ -653,7 +653,7 @@ export default function IssuesPage() {
               </div>
             ))}
             {!showCompleted && (
-              <div className="h-full rounded-lg border border-dashed border-border/60 bg-muted/20" />
+              <div className="h-full rounded-lg border border-dashed border-border/60 bg-muted/50" />
             )}
           </div>
         ) : issues.length === 0 ? (
@@ -669,7 +669,7 @@ export default function IssuesPage() {
                 const columnIssues = issues.filter((issue) => (col.statuses as readonly string[]).includes(issue.status));
                 return (
                   <DroppableColumn key={col.id} id={col.id}>
-                    <div className="flex shrink-0 items-center justify-between border-b border-border/60 bg-muted/30 px-3 py-2 text-xs font-medium text-muted-foreground">
+                    <div className="flex shrink-0 items-center justify-between border-b border-border/60 bg-muted/50 px-3 py-2 text-xs font-medium text-muted-foreground">
                       <span>{issueColumnLabel(col.id)}</span>
                       <div className="flex items-center gap-1.5">
                         <span>{columnIssues.length}</span>
@@ -730,13 +730,13 @@ export default function IssuesPage() {
         {boardLoading ? (
           <div className="space-y-4">
             {[0, 1, 2].map((i) => (
-              <div key={i} className="rounded-lg border border-border/60 bg-card/60">
+              <div key={i} className="rounded-lg border border-border/60 bg-card/50">
                 <div className="border-b border-border/50 px-3 py-2">
                   <Skeleton className="h-4 w-20" />
                 </div>
                 <div className="space-y-2 p-3">
                   {Array.from({ length: 2 }).map((_, j) => (
-                    <div key={j} className="rounded-lg border bg-background/75 p-3">
+                    <div key={j} className="rounded-lg border bg-background p-3">
                       <Skeleton className="h-4 w-3/4" />
                       <Skeleton className="mt-1 h-3 w-1/2" />
                       <Skeleton className="mt-2 h-3 w-1/3" />
@@ -762,7 +762,7 @@ export default function IssuesPage() {
               const columnIssues = issues.filter((issue) => (col.statuses as readonly string[]).includes(issue.status));
               if (columnIssues.length === 0) return null;
               return (
-                <section key={col.id} className="rounded-lg border border-border/60 bg-card/60">
+                <section key={col.id} className="rounded-lg border border-border/60 bg-card/50">
                   <div className="flex items-center justify-between border-b border-border/50 px-3 py-2 text-sm font-medium">
                     <span>{issueColumnLabel(col.id)}</span>
                     <div className="flex items-center gap-1.5">
@@ -801,7 +801,7 @@ export default function IssuesPage() {
                 aria-label={ISSUE_LABELS.showCompletedIssues}
                 onClick={() => setShowCompleted(true)}
                 onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowCompleted(true); } }}
-                className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-border/60 px-3 py-2.5 text-sm text-muted-foreground transition-colors hover:bg-muted/30"
+                className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-border/60 px-3 py-2.5 text-sm text-muted-foreground transition-colors hover:bg-muted/50"
               >
                 <Eye className="size-3.5" />
                 <span>{showCompletedCountLabel(issues.filter(i => (COMPLETED_STATUSES as readonly string[]).includes(i.status)).length)}</span>

@@ -64,7 +64,7 @@ export function FirstMissionCard({
 
   return (
     <div
-      className="absolute top-14 right-3 z-50 w-[min(100%-1.5rem,18rem)] rounded-lg border border-border/50 bg-background/95 backdrop-blur-sm shadow-sm px-3 py-2.5 space-y-2"
+      className="absolute top-14 right-3 z-50 w-[min(100%-1.5rem,18rem)] rounded-lg border border-border/50 bg-background/50 shadow-sm px-3 py-2.5 space-y-2"
       data-testid="first-mission-card"
     >
       <div className="flex items-start justify-between gap-2">

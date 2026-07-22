@@ -34,7 +34,7 @@ const INBOX_LIMIT = 30;
 function StatusDot({ status }: { status: string | null }) {
   const colorClass =
     status === "completed"
-      ? "bg-[oklch(0.72_0.19_145)]"
+      ? "bg-status-online"
       : status === "failed"
         ? "bg-destructive"
         : "bg-muted-foreground/40";

@@ -116,7 +116,7 @@ export function ActiveTasksFloat() {
       <button
         type="button"
         onClick={() => setExpanded(true)}
-        className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-background/90 backdrop-blur-sm ring-1 ring-foreground/8 shadow-sm text-xs font-medium text-muted-foreground hover:text-foreground transition-colors animate-[fade-up_300ms_ease-out_both]"
+        className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-background/50 ring-1 ring-foreground/8 shadow-sm text-xs font-medium text-muted-foreground hover:text-foreground transition-colors animate-[fade-up_300ms_ease-out_both]"
       >
         <span className="size-1.5 rounded-full bg-primary animate-pulse" />
         {activeTaskCountLabel(taskCount)}
@@ -128,7 +128,7 @@ export function ActiveTasksFloat() {
     <div
       role="region"
       aria-label={ISSUE_LABELS.activeTasks}
-      className="w-80 rounded-lg ring-1 ring-foreground/8 shadow-sm bg-background/90 backdrop-blur-sm animate-[fade-up_300ms_ease-out_both]"
+      className="w-80 rounded-lg ring-1 ring-foreground/8 shadow-sm bg-background/50 animate-[fade-up_300ms_ease-out_both]"
     >
       <div className="flex items-center justify-between px-3 py-2 border-b border-border/50">
         <div className="flex items-center gap-2 text-sm font-medium" aria-live="polite">

@@ -43,7 +43,7 @@ export function DemoMobile({ state, config, className }: { state: DashboardState
       </div>
 
       {/* Main card — matches real mobile shell */}
-      <div className="flex-1 min-h-0 mx-1.5 mb-1.5 rounded-xl bg-card/80 backdrop-blur-xl shadow-lg ring-1 ring-border/40 overflow-hidden flex flex-col">
+      <div className="flex-1 min-h-0 mx-1.5 mb-1.5 rounded-xl bg-card/50 shadow-lg ring-1 ring-border/40 overflow-hidden flex flex-col">
         {/* Agent nav inside card */}
         <div className="flex items-center gap-1 px-2 py-1 border-b border-border/40">
           <span className="size-1 rounded-full bg-green-500" />

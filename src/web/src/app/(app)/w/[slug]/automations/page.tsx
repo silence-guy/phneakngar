@@ -292,7 +292,7 @@ export default function AutomationsPage() {
           </div>
         ) : (
           <table className="w-full text-sm">
-            <thead className="sticky top-0 bg-background/95 backdrop-blur border-b border-border/40">
+            <thead className="sticky top-0 bg-background border-b border-border/40">
               <tr className="text-left text-xs text-muted-foreground">
                 <th className="px-4 py-2 font-medium">Title</th>
                 <th className="px-4 py-2 font-medium">Agent</th>

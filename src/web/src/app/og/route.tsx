@@ -36,7 +36,7 @@ function TypewriterIllustration({ agentEmail }: { agentEmail: string }) {
           flexDirection: "column",
           width: 260,
           padding: "20px 24px",
-          background: "#f5f0e8",
+          background: "#ffffff",
           borderRadius: "4px 4px 0 0",
           border: "1px solid #e0d9cc",
           marginBottom: -2,
@@ -142,7 +142,7 @@ export async function GET(request: NextRequest) {
             width: "100%",
             height: "100%",
             display: "flex",
-            background: "linear-gradient(135deg, #f5f0e8 0%, #ddd5c8 100%)",
+            background: "linear-gradient(135deg, #ffffff 0%, #f5f5f5 100%)",
             padding: "60px 80px",
             fontFamily: '"DM Sans"',
           }}

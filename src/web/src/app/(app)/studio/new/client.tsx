@@ -308,8 +308,7 @@ export function StudioOnboardingClient({
         <div className="w-full max-w-3xl space-y-8 px-6 py-6">
           <div className="text-center space-y-2">
             <h1
-              className="text-2xl font-semibold tracking-tight"
-              style={{ fontFamily: "var(--font-news)" }}
+              className="text-2xl font-semibold tracking-[-0.04em]"
             >
               {STUDIO_ONBOARDING_LABELS.scenario.question}
             </h1>
@@ -377,8 +376,7 @@ export function StudioOnboardingClient({
       <div className="mx-auto w-full max-w-3xl space-y-10 px-6 py-14">
         <div className="text-center">
           <h1
-            className="text-2xl font-semibold tracking-tight"
-            style={{ fontFamily: "var(--font-news)" }}
+            className="text-2xl font-semibold tracking-[-0.04em]"
           >
             {STUDIO_ONBOARDING_LABELS.build.title}
           </h1>

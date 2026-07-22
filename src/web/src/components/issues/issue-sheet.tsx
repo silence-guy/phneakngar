@@ -546,7 +546,7 @@ export function IssueSheet({
           placeholder={mode === "create" ? ISSUE_LABELS.newIssue : ISSUE_LABELS.untitled}
           autoFocus={mode === "create"}
           rows={1}
-          className="w-full rounded-none border-0 bg-transparent px-0 py-1 font-news text-2xl md:text-3xl font-medium leading-[1.2] tracking-tight shadow-none outline-none focus-visible:border-0 focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/40 placeholder:font-normal"
+          className="w-full rounded-none border-0 bg-transparent px-0 py-1 font-sans text-2xl md:text-3xl font-medium leading-[1.2] tracking-tight shadow-none outline-none focus-visible:border-0 focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/40 placeholder:font-normal"
         />
       </div>
 

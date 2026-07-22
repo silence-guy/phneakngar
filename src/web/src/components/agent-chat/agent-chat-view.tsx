@@ -761,7 +761,7 @@ export function AgentChatView({
             <ConversationMembersPanel
               conversationId={conversation.id}
               preferAgentId={agentId}
-              className="rounded-md bg-background/80 backdrop-blur-sm border border-border/40"
+              className="rounded-md bg-background/50 border border-border/40"
             />
           </div>
         )}
@@ -1175,7 +1175,7 @@ export function AgentChatView({
             {/* Pill container */}
             <div
               className={cn(
-                "relative flex-1 min-w-0 flex flex-col rounded-3xl border border-border/50 bg-background/90 transition-[border-radius] duration-200",
+                "relative flex-1 min-w-0 flex flex-col rounded-3xl border border-border/50 bg-background transition-[border-radius] duration-200",
                 "focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50",
                 (isMultiLine || quotedMessage || slashCommand.activeSkill) &&
                 "rounded-2xl",
@@ -1190,7 +1190,7 @@ export function AgentChatView({
               {dragging && (
                 <div
                   className={cn(
-                    "absolute inset-0 z-10 flex items-center justify-center bg-background/80 border-2 border-dashed border-ring pointer-events-none",
+                    "absolute inset-0 z-10 flex items-center justify-center bg-background/50 border-2 border-dashed border-ring pointer-events-none",
                     isMultiLine || quotedMessage || slashCommand.activeSkill
                       ? "rounded-2xl"
                       : "rounded-3xl",

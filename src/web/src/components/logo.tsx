@@ -48,8 +48,7 @@ export function Logo({
       )}
       {!iconOnly && (
         <span
-          className={cn(text, "font-black tracking-tight")}
-          style={{ fontFamily: "var(--font-brand)" }}
+          className={cn(text, "font-bold tracking-[-0.04em]")}
         >
           ភ្នាក់ងារ
         </span>
