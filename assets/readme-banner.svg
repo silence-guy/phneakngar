@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 500" role="img" aria-label="ភ្នាក់ងារ — your personal AI company, always on">
+  <!-- Geist monochrome banner: black canvas, faint dot grid, gray-1000 mark + wordmark -->
+  <defs>
+    <pattern id="dots" width="24" height="24" patternUnits="userSpaceOnUse">
+      <circle cx="1" cy="1" r="1" fill="#ffffff" opacity="0.07"/>
+    </pattern>
+  </defs>
+  <rect width="1600" height="500" fill="#000000"/>
+  <rect width="1600" height="500" fill="url(#dots)"/>
+  <rect x="1" y="1" width="1598" height="498" fill="none" stroke="#ffffff" stroke-opacity="0.145"/>
+
+  <!-- Brand mark: app tile + agent figure + live signal -->
+  <g transform="translate(752, 92)">
+    <rect x="0" y="0" width="96" height="96" rx="22" fill="#ededed"/>
+    <circle cx="48" cy="38" r="11" fill="#000000"/>
+    <path d="M27.5 69c3-11 11.5-17 20.5-17s17.5 6 20.5 17" stroke="#000000" stroke-width="9.5" stroke-linecap="round" fill="none"/>
+    <path d="M66 26c3.5 3 5.5 7.5 5.5 12.5" stroke="#000000" stroke-width="5" stroke-linecap="round" fill="none"/>
+    <circle cx="71.5" cy="30.5" r="4.5" fill="#000000"/>
+  </g>
+
+  <text x="800" y="290" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="92" font-weight="700" letter-spacing="-3.5" fill="#ededed">ភ្នាក់ងារ</text>
+  <text x="800" y="352" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="22" letter-spacing="6" fill="#8f8f8f">YOUR PERSONAL AI COMPANY · ALWAYS ON</text>
+</svg>

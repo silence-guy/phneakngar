@@ -82,9 +82,8 @@ export function HeroSection({ isLoggedIn }: { isLoggedIn: boolean }) {
         <div className="hero-brand mb-6 flex shrink-0 items-center gap-1.5" style={{ opacity: 0 }}>
           <BrandMark size={32} priority />
           <span
-            className="text-2xl tracking-tight"
+            className="text-2xl tracking-[-0.04em]"
             style={{
-              fontFamily: "var(--font-brand)",
               color: "var(--landing-text)",
               fontWeight: 700,
             }}

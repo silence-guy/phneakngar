@@ -1,11 +1,15 @@
+// Agent category colors — Geist accent families (amber, green, blue, red, purple, teal).
+// Chips use ~700-step solids with WCAG-AA ink: #171717 on the lighter amber/green/teal,
+// white on blue/red/purple. Standalone light-mode ink labels use step-900 hues on white.
+
 export function agentColor(agentId: string): string {
   const palette = [
-    "bg-[oklch(0.78_0.08_60)] text-[oklch(0.25_0.05_60)]",
-    "bg-[oklch(0.80_0.07_120)] text-[oklch(0.25_0.05_120)]",
-    "bg-[oklch(0.80_0.06_220)] text-[oklch(0.25_0.05_220)]",
-    "bg-[oklch(0.80_0.07_30)] text-[oklch(0.25_0.05_30)]",
-    "bg-[oklch(0.80_0.06_280)] text-[oklch(0.25_0.05_280)]",
-    "bg-[oklch(0.80_0.07_160)] text-[oklch(0.25_0.05_160)]",
+    "bg-[#ffae00] text-[#171717]",
+    "bg-[#00ac3a] text-[#171717]",
+    "bg-[#006bff] text-[#fff]",
+    "bg-[#ea001d] text-[#fff]",
+    "bg-[#9440d5] text-[#fff]",
+    "bg-[#00cfb7] text-[#171717]",
   ];
   let h = 0;
   for (let i = 0; i < agentId.length; i++) h = (h * 31 + agentId.charCodeAt(i)) | 0;
@@ -14,12 +18,12 @@ export function agentColor(agentId: string): string {
 
 export function agentDot(agentId: string): string {
   const palette = [
-    "bg-[oklch(0.62_0.13_60)] dark:bg-[oklch(0.72_0.11_60)]",
-    "bg-[oklch(0.62_0.12_120)] dark:bg-[oklch(0.72_0.10_120)]",
-    "bg-[oklch(0.62_0.12_220)] dark:bg-[oklch(0.72_0.10_220)]",
-    "bg-[oklch(0.62_0.13_30)] dark:bg-[oklch(0.72_0.11_30)]",
-    "bg-[oklch(0.62_0.12_280)] dark:bg-[oklch(0.72_0.10_280)]",
-    "bg-[oklch(0.62_0.12_160)] dark:bg-[oklch(0.72_0.10_160)]",
+    "bg-[#ffae00] dark:bg-[#ffd54f]",
+    "bg-[#00ac3a] dark:bg-[#00d86a]",
+    "bg-[#006bff] dark:bg-[#3898ff]",
+    "bg-[#ea001d] dark:bg-[#ff5e5e]",
+    "bg-[#9440d5] dark:bg-[#b073f0]",
+    "bg-[#00a38f] dark:bg-[#17c2a8]",
   ];
   let h = 0;
   for (let i = 0; i < agentId.length; i++) h = (h * 31 + agentId.charCodeAt(i)) | 0;
@@ -28,12 +32,12 @@ export function agentDot(agentId: string): string {
 
 export function agentInk(agentId: string): string {
   const palette = [
-    "text-[oklch(0.52_0.14_60)] dark:text-[oklch(0.78_0.11_60)]",
-    "text-[oklch(0.52_0.13_120)] dark:text-[oklch(0.78_0.10_120)]",
-    "text-[oklch(0.52_0.13_220)] dark:text-[oklch(0.78_0.10_220)]",
-    "text-[oklch(0.52_0.14_30)] dark:text-[oklch(0.78_0.11_30)]",
-    "text-[oklch(0.52_0.13_280)] dark:text-[oklch(0.78_0.10_280)]",
-    "text-[oklch(0.52_0.13_160)] dark:text-[oklch(0.78_0.10_160)]",
+    "text-[#8a5300] dark:text-[#fff]",
+    "text-[#116329] dark:text-[#fff]",
+    "text-[#006bff] dark:text-[#fff]",
+    "text-[#ea001d] dark:text-[#fff]",
+    "text-[#9440d5] dark:text-[#fff]",
+    "text-[#00594a] dark:text-[#fff]",
   ];
   let h = 0;
   for (let i = 0; i < agentId.length; i++) h = (h * 31 + agentId.charCodeAt(i)) | 0;

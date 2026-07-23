@@ -4,29 +4,30 @@
 Power users and tasteful hackers who want Your Personal Company with a minimalist, collaborative approach. They value control over their infrastructure, appreciate good tooling, and have strong aesthetic sensibilities. They use ភ្នាក់ងារ in focused work sessions — managing agents, reviewing task output, and iterating on instructions.
 
 ### Brand Personality
-**Warm, precise, and utilitarian.** ភ្នាក់ងារ feels like a well-crafted tool made by someone who cares — not cold and corporate, not flashy and consumer. It earns trust through restraint and clarity. Every element has a reason.
+**Precise, calm, and utilitarian.** ភ្នាក់ងារ feels like a well-crafted developer tool — not cold and corporate, not flashy and consumer. It earns trust through restraint and clarity. Every element has a reason. Warmth lives in the writing and the micro-interactions, never in the color palette.
 
-3-word personality: **Warm. Sharp. Purposeful.**
+3-word personality: **Sharp. Quiet. Purposeful.**
 
 Emotional goals: confidence, calm focus, quiet delight in small details.
 
 ### Aesthetic Direction
-**Visual tone**: Notion-inspired warmth meets developer-tool precision. Soft neutral palette (warm grays, cream tints) with crisp typography and intentional micro-interactions. Light and airy in light mode, cozy and focused in dark mode.
+**Visual tone**: Vercel's Geist design system — monochrome surfaces, near-neutral grays, color reserved for state. Pure white / pure black canvases, hairline alpha borders, flat matte surfaces separated by borders instead of tint or glow. Light and airy in light mode, focused and deep in dark mode.
 
-**References**: Notion (polished, warm, delightful micro-interactions), vintage Macintosh product photography (warm object on cool ground, generous negative space, matte textures)
+**References**: Geist (`https://vercel.com/design.md` + `https://vercel.com/design.dark.md`), Vercel dashboard and docs (monochrome, border-separated, typography-driven).
 
 **Anti-references**:
-- Generic SaaS dashboards (blue buttons, card grids, cookie-cutter layouts)
-- AI chatbot UIs (ChatGPT-style centered chat with big rounded bubbles and gradients)
-- Playful/consumer apps (bright colors, illustrations, emoji-heavy, gamification)
+- Warm/cream/editorial palettes (tinted neutrals, hue 60–80° oklch, "vintage" textures) — this product is deliberately not that.
+- Generic SaaS dashboards (blue buttons, card grids, cookie-cutter layouts).
+- AI chatbot UIs (ChatGPT-style centered chat with big rounded bubbles and gradients).
+- Glass-morphism, backdrop blur, ambient gradients, glows — surfaces are matte and opaque.
 
-**Theme**: Both light and dark as first-class citizens. Warm-tinted neutrals in both modes — never pure gray.
+**Theme**: Both light and dark as first-class citizens. Geist light (#fff canvas / #171717 ink) and Geist dark (#000 canvas / #ededed ink). Never tinted neutrals.
 
 ### Design Principles
 
 1. **Every pixel earns its place** — No decorative filler. If an element doesn't help the user accomplish their goal, remove it. Whitespace is a feature, not wasted space.
 
-2. **Warm precision** — Technical doesn't mean cold. Use warm color tints, generous spacing, and thoughtful transitions to make the tool feel human without being cute.
+2. **Borders over tint** — Hierarchy comes from hairline borders and text-color rank, not from surface color variety. When in doubt, add a border or drop a level of text contrast — never add a tint.
 
 3. **Progressive disclosure** — Start simple, reveal depth through interaction. The interface should feel approachable on first use and powerful on the hundredth.
 
@@ -42,17 +43,61 @@ Never show all options at once. Complexity exists but stays one interaction away
 - **Click to expand** — sidebar tree nodes, dropdown menus, and kanban column options are collapsed by default. Expanded state is driven by user action, not by default.
 - **Scrolling reveals depth** — additional features and settings appear as the user scrolls or explores. The first screen is always clean.
 
-## Color & Texture Philosophy
+## Color System — Geist
 
-Inspired by vintage Macintosh product photography — a warm cream object on a dusty periwinkle ground, matte textures, even lighting, and nothing competing for attention.
+Monochrome surfaces, near-neutral grays, color reserved strictly for state. The full system is tokenized in `src/web/src/app/globals.css` (`:root` = Geist light, `.dark` = Geist dark). Never hardcode color literals in components — use the tokens.
 
-### Lessons
+### Two backgrounds, that's all
 
-- **Temperature contrast over color variety** — One warm tone (cream/beige) against one cool tone (muted blue) creates more visual interest than five harmonious colors. Limit the palette, let temperature do the work.
-- **Desaturated > saturated** — Dusty, powdery, slightly muted tones feel confident and timeless. Fully saturated colors feel loud and cheap. When picking any accent, pull it 20-30% toward gray.
-- **Matte everything** — Avoid glossy effects, specular highlights, and glass-morphism. Matte surfaces feel tactile, calm, and honest. Shadows should be soft and diffuse, never sharp or dramatic.
-- **Generous negative space is the luxury** — One element with room to breathe feels more expensive than ten elements packed together. When in doubt, add space, not content.
-- **Nostalgia as warmth, not kitsch** — Reference the feeling of early personal computing (optimism, simplicity, human scale) without literal retro styling. Warm tints and rounded-but-not-bubbly shapes evoke this without cosplaying the past.
+- `--background`: `#ffffff` light / `#000000` dark — the canvas.
+- `--secondary` / `--muted` / `--accent`: `#fafafa` / `#f2f2f2` light, `#1a1a1a` dark — subtle separation, never a general fill.
+
+### Text ranks (gray scale)
+
+- Primary text: `--foreground` — `#171717` / `#ededed`.
+- Secondary text: `--muted-foreground` — `#4d4d4d` / `#a0a0a0`.
+- Borders and dividers: `--border` — gray-alpha that layers over any surface: `rgba(0,0,0,0.08)` light / `rgba(255,255,255,0.145)` dark.
+
+### Color is state, never decoration
+
+- **Blue** (`--ring`: `#006bff` light / `#47a8ff` dark) — links, focus rings, primary interactive state only.
+- **Red** (`--destructive`: `#ea001d` / `#e2162a`) — destructive actions and errors only.
+- **Green** (`--status-online`), plus amber/teal/purple scales — status indicators and charts only.
+- If a screen needs "more color", fix the hierarchy with borders and text rank instead.
+
+### Focus
+
+Two-layer ring on every interactive element via the shared `focus-geist` utility:
+
+```css
+box-shadow: 0 0 0 2px var(--background), 0 0 0 4px var(--ring);
+```
+
+### Shadows (quiet)
+
+Tonal borders do the hierarchy work. Shadows stay quiet:
+
+- `--e1`: `0 2px 2px rgba(0,0,0,0.04)` — cards at rest (light).
+- `--e2`: `0 1px 1px rgba(0,0,0,0.02), 0 4px 8px -4px rgba(0,0,0,0.04), 0 16px 24px -8px rgba(0,0,0,0.06)` — popovers, menus, modals.
+
+### Matte everything
+
+No glass-morphism, no `backdrop-blur` on chrome, no ambient gradients, no glows, no grain/paper textures. Surfaces are opaque and flat; borders separate them. The app shell is `bg-card` + alpha ring, never translucent.
+
+## Typography — Geist
+
+- **Geist Sans** for all UI text and headings (`--font-geist-sans`). Base size 14px / 20px line.
+- **Geist Mono** for code, data, timestamps, terminal-style surfaces (`--font-geist-mono`).
+- **Noto Sans Khmer** for Khmer content, kept as the first face in `--font-khmer` and in the `html[lang="km"]` fallback rules — Khmer clusters must never collapse.
+- Headings are 600-weight with tracking that tightens as size grows: `--tracking-heading: -0.02em` for 14–20px, `--tracking-display: -0.04em` for 24px and up.
+- Tight display tracking must not be applied to Khmer text (it stacks subscript clusters) — the `html[lang="km"]` guards in globals.css enforce normal letter-spacing there.
+
+## Geometry — Geist
+
+- 4px spacing base; 40px-tall default controls (32px small, 48px large), buttons padded `0 10px`.
+- One radius family per view: **6px** (`rounded-md`) on buttons/inputs/everyday surfaces, **12px** (`rounded-lg`) on menus/popovers/modals, **16px** (`rounded-xl`) on full-screen surfaces like the app shell main pane.
+- Menu items render as 32px rows.
+- Motion: 150ms state changes / 200ms popovers / 300ms overlays, `cubic-bezier(0.175, 0.885, 0.32, 1.1)` where a slight overshoot helps; 0ms when motion adds nothing. Honor `prefers-reduced-motion`.
 
 ## Visual Harmony
 
@@ -79,3 +124,4 @@ The loading skeleton and the loaded content must occupy the **same dimensions, p
 - **Empty states hold the frame** — When a section loads but has zero items, the empty state placeholder must fill the same region the skeleton occupied. Don't collapse the container.
 - **Stagger gracefully** — If multiple sections load independently, each section transitions on its own timeline. One section loading should never cause another to reflow.
 - **Avoid spinners as primary indicators** — Prefer inline skeletons over centered spinners. Spinners displace content and create a jarring before/after. Use spinners only for actions (button presses, form submissions) where there is no content to skeleton.
+- **Neutral shimmer** — Skeleton shimmer runs on neutral gray (`--shimmer` / `--shimmer-peak` tokens). Never tinted.

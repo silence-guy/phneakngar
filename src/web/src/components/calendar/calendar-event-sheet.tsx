@@ -544,7 +544,7 @@ export function CalendarEventSheet({
     : title.trim() || CALENDAR_LABELS.event.newA11yTitle;
 
   const titleInput = readonly ? (
-    <p className="w-full px-0 py-1 font-news text-xl sm:text-2xl md:text-3xl font-medium leading-[1.2] tracking-tight">
+    <p className="w-full px-0 py-1 font-sans text-xl sm:text-2xl md:text-3xl font-medium leading-[1.2] tracking-tight">
       {title || CALENDAR_LABELS.event.untitled}
     </p>
   ) : (
@@ -562,7 +562,7 @@ export function CalendarEventSheet({
       autoFocus={mode === "create"}
       rows={1}
       className={cn(
-        "w-full rounded-none border-0 bg-transparent px-0 py-1 font-news text-xl sm:text-2xl md:text-3xl font-medium leading-[1.2] tracking-tight",
+        "w-full rounded-none border-0 bg-transparent px-0 py-1 font-sans text-xl sm:text-2xl md:text-3xl font-medium leading-[1.2] tracking-tight",
         "shadow-none outline-none focus-visible:border-0 focus-visible:ring-0 focus-visible:ring-offset-0",
         "placeholder:text-muted-foreground/40 placeholder:font-normal"
       )}

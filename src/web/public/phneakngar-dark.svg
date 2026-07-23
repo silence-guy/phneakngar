@@ -1,17 +1,17 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none" role="img" aria-label="ភ្នាក់ងារ">
   <!--
-    Dark-mode mark: warm cream tile (DESIGN.md neutrals), deep ink figure.
+    Dark-mode mark (Geist monochrome): gray-1000 tile, pure-black figure.
   -->
-  <!-- Soft app tile — warm cream -->
-  <rect x="2" y="2" width="28" height="28" rx="8" fill="#E8DDD0"/>
+  <!-- Soft app tile — Geist gray-1000 -->
+  <rect x="2" y="2" width="28" height="28" rx="8" fill="#ededed"/>
 
   <!-- Agent head -->
-  <circle cx="16" cy="12.25" r="3.6" fill="#120E0A"/>
+  <circle cx="16" cy="12.25" r="3.6" fill="#000000"/>
 
   <!-- Agent shoulders / torso -->
   <path
     d="M9.2 22.8c.9-3.6 3.7-5.5 6.8-5.5s5.9 1.9 6.8 5.5"
-    stroke="#120E0A"
+    stroke="#000000"
     stroke-width="3.1"
     stroke-linecap="round"
     fill="none"
@@ -20,7 +20,7 @@
   <!-- Always-on signal arcs -->
   <path
     d="M21.6 8.2c1.1 1.05 1.75 2.45 1.75 4"
-    stroke="#120E0A"
+    stroke="#000000"
     stroke-width="1.7"
     stroke-linecap="round"
     fill="none"
@@ -28,7 +28,7 @@
   />
   <path
     d="M24 6.4c1.7 1.65 2.7 3.85 2.7 6.25"
-    stroke="#120E0A"
+    stroke="#000000"
     stroke-width="1.7"
     stroke-linecap="round"
     fill="none"
@@ -36,5 +36,5 @@
   />
 
   <!-- Live status core -->
-  <circle cx="23.1" cy="10.1" r="1.55" fill="#120E0A"/>
+  <circle cx="23.1" cy="10.1" r="1.55" fill="#000000"/>
 </svg>

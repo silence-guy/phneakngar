@@ -56,7 +56,6 @@ export function MarketingFooter() {
             <span
               className="text-lg tracking-tight"
               style={{
-                fontFamily: "var(--font-brand)",
                 color: "var(--landing-text)",
                 fontWeight: 700,
               }}

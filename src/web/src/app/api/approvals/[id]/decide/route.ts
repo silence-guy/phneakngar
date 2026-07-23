@@ -15,6 +15,8 @@ import { resolveServerEmailDomain } from "@/lib/email-domain";
 import { sendReleasedOutboundEmail } from "@/lib/outbound-email-dispatch";
 import { invalidate, cacheKeys } from "@/lib/cache";
 import { buildEmailDecisionSystemEvent } from "@/components/chat-primitives/timeline-chrome";
+import { handlePlaybookApprovalDecided } from "@/lib/services/playbook-engine";
+import { log } from "@/lib/logger";
 
 type OutboundEmailPayload = {
   emailId?: string;
@@ -220,6 +222,13 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
       });
     } catch {
       // activity_event may be missing pre-0054
+    }
+    if (pending.kind === ApprovalKind.PLAYBOOK_STEP_GATE) {
+      await handlePlaybookApprovalDecided(db, decided, {
+        emailDomain: resolveServerEmailDomain(ctx.env),
+      }).catch((hookErr) => {
+        log.warn("playbook hook failed on approval decide", { approvalId: id, err: String(hookErr) });
+      });
     }
     return writeJSON({ approval: approvalToResponse(decided) });
   }

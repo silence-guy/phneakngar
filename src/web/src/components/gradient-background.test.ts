@@ -4,12 +4,12 @@ import { describe, expect, it } from "vitest";
 import { GradientBackground } from "./gradient-background";
 
 describe("GradientBackground", () => {
-  it("renders warm light and dark background tokens with subtle grain", () => {
+  it("renders a flat Geist background with a faint neutral dot grid", () => {
     const markup = renderToStaticMarkup(createElement(GradientBackground));
 
-    expect(markup).toContain("bg-[oklch(0.94_0.014_78)]");
-    expect(markup).toContain("dark:bg-[oklch(0.15_0.008_60)]");
+    expect(markup).toContain("bg-background");
     expect(markup).toContain("radial-gradient");
-    expect(markup).toContain("data:image/svg+xml");
+    expect(markup).toContain("background-size:24px_24px");
+    expect(markup).not.toContain("oklch");
   });
 });

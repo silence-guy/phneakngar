@@ -168,7 +168,7 @@ function HomeAttentionStrip() {
           {pendingApprovals > 0 && (
             <Link
               href={`/w/${slug}/approvals`}
-              className="inline-flex h-7 items-center gap-1.5 px-2.5 rounded-full bg-background/90 backdrop-blur-sm ring-1 ring-foreground/8 shadow-sm text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+              className="inline-flex h-7 items-center gap-1.5 px-2.5 rounded-full bg-background ring-1 ring-foreground/8 shadow-sm text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
             >
               <span className="size-1.5 rounded-full bg-amber-500/80" />
               {pendingApprovalsLabel(pendingApprovals)}
@@ -177,7 +177,7 @@ function HomeAttentionStrip() {
           {blockedIssues > 0 && (
             <Link
               href={`/w/${slug}/issues`}
-              className="inline-flex h-7 items-center gap-1.5 px-2.5 rounded-full bg-background/90 backdrop-blur-sm ring-1 ring-foreground/8 shadow-sm text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+              className="inline-flex h-7 items-center gap-1.5 px-2.5 rounded-full bg-background ring-1 ring-foreground/8 shadow-sm text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
             >
               <span className="size-1.5 rounded-full bg-rose-500/70" />
               {blockedIssuesLabel(blockedIssues)}
@@ -530,7 +530,7 @@ function AgentCanvas({ onAgentClick }: { onAgentClick?: (agent: Agent) => void }
 
       {/* Custom floating toolbar */}
       <div
-        className="absolute bottom-4 left-4 z-40 bg-background/80 backdrop-blur-sm rounded-lg ring-1 ring-foreground/5 p-1 flex gap-0.5 animate-[fade-up_300ms_ease-out_both]"
+        className="absolute bottom-4 left-4 z-40 bg-background/50 rounded-lg ring-1 ring-foreground/5 p-1 flex gap-0.5 animate-[fade-up_300ms_ease-out_both]"
         style={{ animationDelay: "200ms" }}
       >
         <button
@@ -603,7 +603,7 @@ function AgentCanvas({ onAgentClick }: { onAgentClick?: (agent: Agent) => void }
 
       {/* No-links hint */}
       {showHint && (
-        <div className="absolute bottom-14 left-4 z-40 text-xs text-muted-foreground bg-background/80 backdrop-blur-sm rounded-md px-3 py-1.5 ring-1 ring-foreground/5">
+        <div className="absolute bottom-14 left-4 z-40 text-xs text-muted-foreground bg-background/50 rounded-md px-3 py-1.5 ring-1 ring-foreground/5">
           {HOME_LABELS.dragHint}
         </div>
       )}
@@ -628,7 +628,7 @@ function AgentCanvas({ onAgentClick }: { onAgentClick?: (agent: Agent) => void }
           render={
             <button
               type="button"
-              className="absolute top-4 right-4 z-40 size-8 rounded-lg bg-background/80 backdrop-blur-sm ring-1 ring-foreground/5 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-colors animate-[fade-up_300ms_ease-out_both]"
+              className="absolute top-4 right-4 z-40 size-8 rounded-lg bg-background/50 rounded-lg ring-1 ring-foreground/5 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-colors animate-[fade-up_300ms_ease-out_both]"
               style={{ animationDelay: "200ms" }}
               onClick={() => router.push(`/w/${slug}/agents/new`)}
             />
@@ -714,7 +714,7 @@ function MobileAgentList({ onAgentClick }: { onAgentClick?: (agent: Agent) => vo
           render={
             <button
               type="button"
-              className="absolute top-4 right-4 size-8 rounded-lg bg-background/80 backdrop-blur-sm ring-1 ring-foreground/5 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+              className="absolute top-4 right-4 size-8 rounded-lg bg-background/50 ring-1 ring-foreground/5 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
               onClick={() => router.push(`/w/${slug}/agents/new`)}
             />
           }

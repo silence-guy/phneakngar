@@ -28,7 +28,7 @@ export default function Error({
                   fontSize: "15px",
                   color: "var(--landing-text-muted)",
                   lineHeight: 1.7,
-                  borderBottom: "1px solid oklch(0.15 0.01 55 / 10%)",
+                  borderBottom: "1px solid rgba(0, 0, 0, 0.1)",
                   paddingBottom: "10px",
                   marginBottom: "12px",
                 }}

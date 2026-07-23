@@ -55,7 +55,7 @@ export function QuickstartSection() {
         className="pointer-events-none absolute inset-0"
         style={{
           backgroundImage:
-            "repeating-linear-gradient(to bottom, transparent 0px, transparent 1px, oklch(0 0 0 / 4%) 1px, oklch(0 0 0 / 4%) 2px)",
+            "repeating-linear-gradient(to bottom, transparent 0px, transparent 1px, rgba(0, 0, 0, 0.04) 1px, rgba(0, 0, 0, 0.04) 2px)",
           backgroundSize: "100% 2px",
         }}
       />
@@ -77,7 +77,7 @@ export function QuickstartSection() {
             fontFamily: "var(--font-crt)",
             color: "var(--landing-phosphor)",
             fontSize: "clamp(1.75rem, 4vw, 3rem)",
-            textShadow: "0 0 12px oklch(0.75 0.18 80 / 30%)",
+            textShadow: "0 0 12px rgba(237, 237, 237, 0.3)",
           }}
         >
           គ្រប់គ្រងហេដ្ឋារចនាសម្ព័ន្ធរបស់អ្នក
@@ -105,7 +105,7 @@ export function QuickstartSection() {
             style={{
               fontFamily: "var(--font-crt)",
               color: "var(--landing-phosphor)",
-              textShadow: "0 0 6px oklch(0.75 0.18 80 / 25%)",
+              textShadow: "0 0 6px rgba(237, 237, 237, 0.25)",
             }}
           >
             {point}
@@ -118,8 +118,8 @@ export function QuickstartSection() {
         <div
           className="rounded-lg border px-5 py-4"
           style={{
-            borderColor: "oklch(0.75 0.18 80 / 20%)",
-            backgroundColor: "oklch(0.12 0.01 55)",
+            borderColor: "rgba(237, 237, 237, 0.2)",
+            backgroundColor: "#0f0f0f",
           }}
         >
           <code
@@ -127,7 +127,7 @@ export function QuickstartSection() {
             style={{
               fontFamily: "var(--font-crt)",
               color: "var(--landing-phosphor)",
-              textShadow: "0 0 6px oklch(0.75 0.18 80 / 30%)",
+              textShadow: "0 0 6px rgba(237, 237, 237, 0.3)",
             }}
           >
             $ npx @phneakngar/app onboard
@@ -145,7 +145,7 @@ export function QuickstartSection() {
             color: "var(--landing-crt-bg)",
             backgroundColor: "var(--landing-phosphor)",
             letterSpacing: "0.12em",
-            boxShadow: "0 0 20px oklch(0.75 0.18 80 / 30%)",
+            boxShadow: "0 0 20px rgba(237, 237, 237, 0.3)",
           }}
         >
           ចាប់ផ្តើមក្រុមហ៊ុនរបស់អ្នក

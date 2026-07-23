@@ -55,7 +55,7 @@ function AgentCard({ agent }: { agent: Agent }) {
                     color: "var(--landing-phosphor)",
                     textShadow: dimmed
                       ? "none"
-                      : "0 0 6px oklch(0.75 0.18 80 / 30%)",
+                      : "0 0 6px rgba(237, 237, 237, 0.3)",
                     opacity: dimmed ? 0.5 : 1,
                   }}
                 >
@@ -78,7 +78,7 @@ function AgentCard({ agent }: { agent: Agent }) {
                     className="inline-block h-1.5 w-1.5 rounded-full"
                     style={{
                       backgroundColor: "var(--landing-phosphor)",
-                      boxShadow: "0 0 6px oklch(0.75 0.18 80 / 50%)",
+                      boxShadow: "0 0 6px rgba(237, 237, 237, 0.5)",
                     }}
                   />
                 )}
@@ -90,7 +90,7 @@ function AgentCard({ agent }: { agent: Agent }) {
                   color: "var(--landing-phosphor)",
                   textShadow: dimmed
                     ? "none"
-                    : "0 0 6px oklch(0.75 0.18 80 / 30%)",
+                    : "0 0 6px rgba(237, 237, 237, 0.3)",
                   opacity: dimmed ? 0.35 : 0.55,
                 }}
               >

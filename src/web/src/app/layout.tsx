@@ -1,12 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import {
-  DM_Sans,
-  DM_Mono,
-  Caveat,
-  VT323,
-  Literata,
-  Noto_Sans_Khmer,
-} from "next/font/google";
+import { Geist, Geist_Mono, Noto_Sans_Khmer } from "next/font/google";
 import { GoogleTagManager } from "@next/third-parties/google";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ToasterProvider } from "@/components/toaster-provider";
@@ -17,34 +10,14 @@ import { DEFAULT_WEB_LOCALE } from "@/lib/locale";
 import { resolveMetadataBase } from "@/lib/public-site-url";
 import "./globals.css";
 
-const dmSans = DM_Sans({
-  variable: "--font-dm-sans",
+const geistSans = Geist({
+  variable: "--font-geist-sans",
   subsets: ["latin"],
-  weight: ["400", "500", "600"],
 });
 
-const dmMono = DM_Mono({
-  variable: "--font-dm-mono",
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
   subsets: ["latin"],
-  weight: ["400"],
-});
-
-const caveat = Caveat({
-  variable: "--font-caveat",
-  subsets: ["latin"],
-  weight: ["700"],
-});
-
-const vt323 = VT323({
-  variable: "--font-vt323",
-  subsets: ["latin"],
-  weight: ["400"],
-});
-
-const literata = Literata({
-  variable: "--font-literata",
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
 });
 
 const notoSansKhmer = Noto_Sans_Khmer({
@@ -69,8 +42,8 @@ export const viewport: Viewport = {
   viewportFit: "cover",
   interactiveWidget: "resizes-visual",
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ede7dd" },
-    { media: "(prefers-color-scheme: dark)", color: "#262320" },
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#000000" },
   ],
 };
 
@@ -153,7 +126,7 @@ export default function RootLayout({
   return (
     <html
       lang={DEFAULT_WEB_LOCALE}
-      className={`${dmSans.variable} ${dmMono.variable} ${caveat.variable} ${vt323.variable} ${literata.variable} ${notoSansKhmer.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${notoSansKhmer.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <head>

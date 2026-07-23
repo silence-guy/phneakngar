@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { queries } from "@phneakngar/shared"
+import { queries, TASK_TYPES } from "@phneakngar/shared"
 import { getDb } from "@/lib/db"
 import { withAuth } from "@/lib/middleware/auth";
 import { withChhlatTaskAccess } from "@/lib/middleware/chhlat";
@@ -13,6 +13,9 @@ import {
 import { FailTaskRequestSchema } from "@phneakngar/shared";
 import { broadcastToUser } from "@/lib/broadcast";
 import { invalidate, invalidateInboxCounts, cacheKeys } from "@/lib/cache";
+import { handlePlaybookTaskTerminal } from "@/lib/services/playbook-engine";
+import { resolveServerEmailDomain } from "@/lib/email-domain";
+import { log } from "@/lib/logger";
 
 export const POST = withAuth(async (req: NextRequest, ctx) => {
   if (!ctx.workspaceId) {
@@ -41,6 +44,14 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
     if (conv) {
       invalidateInboxCounts(conv.userId, ctx.workspaceId).catch(() => {});
       broadcastToUser(conv.userId, { type: "task.updated", taskId, agentId: task.agentId, status: "failed" }).catch(() => {});
+    }
+    if (task.type === TASK_TYPES.PLAYBOOK_STEP) {
+      await handlePlaybookTaskTerminal(db, task, "failed", {
+        error: body.error || "task failed",
+        emailDomain: resolveServerEmailDomain(ctx.env),
+      }).catch((hookErr) => {
+        log.warn("playbook hook failed on fail", { taskId, err: String(hookErr) });
+      });
     }
     return writeJSON(taskToResponse(task));
   } catch (e: unknown) {

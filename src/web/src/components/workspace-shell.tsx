@@ -34,7 +34,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
             <GradientBackground />
             <div className="flex-1 min-h-0 px-2 pb-2 pt-2 flex flex-col">
               <MobileTopBar />
-              <main className="flex-1 min-h-0 rounded-xl bg-card/80 backdrop-blur-xl ring-1 ring-border/40 overflow-hidden flex flex-col">
+              <main className="flex-1 min-h-0 rounded-xl bg-card ring-1 ring-border overflow-hidden flex flex-col">
                 {children}
               </main>
             </div>
@@ -58,7 +58,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
         <GradientBackground />
         <AppSidebar />
         <div className="flex-1 flex flex-col min-w-0 pt-2 pr-2 pb-2">
-          <main className="flex-1 min-h-0 rounded-xl bg-card/80 backdrop-blur-xl shadow-lg ring-1 ring-border/40 overflow-hidden flex flex-col">
+          <main className="flex-1 min-h-0 rounded-xl bg-card shadow-[var(--e2)] ring-1 ring-border overflow-hidden flex flex-col">
             {children}
           </main>
         </div>

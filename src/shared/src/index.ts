@@ -264,6 +264,10 @@ export {
   RecruitAgentRequestSchema,
   CreateThreadRequestSchema,
   ChhlatPushMessageSchema,
+  CreatePlaybookRequestSchema,
+  UpdatePlaybookRequestSchema,
+  StartPlaybookRunRequestSchema,
+  AnswerPlaybookRunRequestSchema,
 } from "./schemas";
 
 export type {
@@ -334,6 +338,10 @@ export type {
   RecruitAgentRequest,
   CreateThreadRequest,
   ChhlatPushMessageType,
+  CreatePlaybookRequest,
+  UpdatePlaybookRequest,
+  StartPlaybookRunRequest,
+  AnswerPlaybookRunRequest,
 } from "./schemas";
 
 // Database
@@ -357,6 +365,26 @@ export { compactMemoryNotes, MEMORY_SUMMARY_KIND } from "./lib/memory-compact";
 export type { CompactableMemoryNote, CompactMemoryOptions } from "./lib/memory-compact";
 export { proposeSkillFromSuccess } from "./lib/skill-proposal";
 export type { TaskSuccessMetadata, SkillProposal } from "./lib/skill-proposal";
+export {
+  PlaybookStepKind,
+  PlaybookStatus,
+  PlaybookRunStatus,
+  PlaybookStepRunStatus,
+  TERMINAL_PLAYBOOK_RUN_STATUSES,
+  isTerminalPlaybookRunStatus,
+  playbookStepSchema,
+  playbookDefinitionSchema,
+  renderPlaybookPrompt,
+} from "./lib/playbook";
+export type {
+  PlaybookStepKindType,
+  PlaybookStatusType,
+  PlaybookRunStatusType,
+  PlaybookStepRunStatusType,
+  PlaybookStepDef,
+  PlaybookDefinition,
+  RenderContext,
+} from "./lib/playbook";
 export {
   shouldDeliverToChannel,
   parseDeliveryChannelId,

@@ -171,7 +171,7 @@ export function RuntimeVersionGate() {
               <TooltipTrigger
                 render={
                   <code
-                    className="block rounded bg-background px-2 py-1 font-mono text-[11px] cursor-pointer hover:bg-background/80 transition-colors"
+                    className="block rounded bg-background px-2 py-1 font-mono text-[11px] cursor-pointer hover:bg-background/50 transition-colors"
                     onClick={() => {
                       navigator.clipboard.writeText(MANUAL_UPDATE_CMD);
                       toast.success(COMPONENT_LABELS.runtime.copiedToClipboard);

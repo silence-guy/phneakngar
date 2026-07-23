@@ -47,7 +47,7 @@ export default async function BlogPage() {
       />
       <div className="mx-auto max-w-3xl px-6 pt-10 sm:pt-20 pb-24">
         <header className="mb-16">
-          {/* font-khmer + normal tracking: Literata/tracking-tight stacks Khmer clusters */}
+          {/* font-khmer + normal tracking: tight display tracking stacks Khmer clusters */}
           <h1 className="font-khmer text-5xl sm:text-6xl font-semibold tracking-normal leading-[1.35]">
             {BLOG_LABELS.list.title}
           </h1>

@@ -198,6 +198,20 @@ export {
 } from "./automations";
 export type { AutomationItem, AutomationPatternSuggestionItem } from "./automations";
 export {
+  listPlaybooks,
+  getPlaybook,
+  createPlaybook,
+  updatePlaybook,
+  deletePlaybook,
+  publishPlaybook,
+  listPlaybookRuns,
+  startPlaybookRun,
+  getPlaybookRun,
+  cancelPlaybookRun,
+  answerPlaybookRun,
+} from "./playbooks";
+export type { PlaybookItem, PlaybookRunItem, PlaybookStepRunItem } from "./playbooks";
+export {
   listGatewayBindings,
   listGatewayPeers,
   addGatewayPeer,

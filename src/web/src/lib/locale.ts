@@ -48,6 +48,10 @@ export const webNavigationLabels = {
     [Locale.EN]: "Automations",
     [Locale.KM]: "ស្វ័យប្រវត្តិកម្ម",
   },
+  playbooks: {
+    [Locale.EN]: "Playbooks",
+    [Locale.KM]: "សៀវភៅដំណើរការ",
+  },
   settings: {
     [Locale.EN]: "Settings",
     [Locale.KM]: "ការកំណត់",
@@ -95,6 +99,7 @@ export const appShellCopy = {
   approvals: webNavigationLabels.approvals,
   activity: webNavigationLabels.activity,
   automations: webNavigationLabels.automations,
+  playbooks: webNavigationLabels.playbooks,
   runtimes: {
     [Locale.EN]: "Runtimes",
     [Locale.KM]: "បរិស្ថានដំណើរការ",
