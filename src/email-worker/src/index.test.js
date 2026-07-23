@@ -1,0 +1,1162 @@
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { createMockR2, createMockFetcher, createMockMessage, createMockSendEmail } from "./__mocks__/cf";
+// Mock cloudflare:workers (DO base class) — needed because index.ts re-exports ImapPollerDO
+vi.mock("cloudflare:workers", () => ({
+    DurableObject: class {
+    },
+}));
+// Mock imap-client — imported transitively via imap-poller-do
+vi.mock("./lib/imap-client", () => ({
+    ImapClient: class {
+    },
+    ImapAuthError: class extends Error {
+    },
+    ImapError: class extends Error {
+    },
+}));
+// Mock worker-mailer
+const mockWorkerMailerSend = vi.fn().mockResolvedValue(undefined);
+const mockSafeEqualSecret = vi.fn().mockReturnValue(true);
+vi.mock("worker-mailer", () => ({
+    WorkerMailer: { send: (...args) => mockWorkerMailerSend(...args) },
+}));
+// Mock separate shared subpath exports.
+vi.mock("@phneakngar/shared/crypto", () => ({
+    encrypt: (val) => `encrypted:${val}`,
+    decrypt: (val) => `decrypted:${val}`,
+}));
+vi.mock("@phneakngar/shared/secrets", () => ({
+    safeEqualSecret: (...args) => mockSafeEqualSecret(...args),
+}));
+// Mock nanoid to return predictable IDs
+let nanoidCounter = 0;
+vi.mock("nanoid", () => ({
+    nanoid: () => `mock-id-${++nanoidCounter}`,
+}));
+// Mock cloudflare:email — capture the raw MIME passed to the CF SEND_EMAIL binding.
+vi.mock("cloudflare:email", () => ({
+    EmailMessage: class {
+        from;
+        to;
+        raw;
+        constructor(from, to, raw) {
+            this.from = from;
+            this.to = to;
+            this.raw = raw;
+        }
+    },
+}));
+// Mock @phneakngar/shared at module level — the handler never touches Drizzle
+const mockGetAgentByHandle = vi.fn();
+const mockGetAgent = vi.fn();
+const mockIsWhitelisted = vi.fn();
+const mockGetUser = vi.fn();
+const mockGetEmailAccount = vi.fn();
+const mockGetEmailById = vi.fn();
+const mockCreateDb = vi.fn().mockReturnValue({});
+vi.mock("@phneakngar/shared", async () => {
+    const real = await vi.importActual("@phneakngar/shared");
+    const noopLogger = {
+        debug: () => { },
+        info: () => { },
+        warn: () => { },
+        error: () => { },
+        child: () => noopLogger,
+    };
+    return {
+        buildMimeMessage: real.buildMimeMessage,
+        extractAttachmentMeta: real.extractAttachmentMeta,
+        filterDownloadableAttachments: real.filterDownloadableAttachments,
+        isEmailDraftAttachmentKeyForScope: real.isEmailDraftAttachmentKeyForScope,
+        EMAIL_NOTIFY_SECRET_HEADER: real.EMAIL_NOTIFY_SECRET_HEADER,
+        OutboundEmailDeliveryStatus: real.OutboundEmailDeliveryStatus,
+        createDb: (d1) => mockCreateDb(d1),
+        createLogger: () => noopLogger,
+        parseEmailHandle: real.parseEmailHandle,
+        toPhneakngarAddress: real.toPhneakngarAddress,
+        getEmailDomain: real.getEmailDomain,
+        resolveEmailDomain: real.resolveEmailDomain,
+        EMAIL_DOMAIN_EXPECTATION_HEADER: real.EMAIL_DOMAIN_EXPECTATION_HEADER,
+        DEV_WEB_URL: "http://localhost:3000",
+        queries: {
+            agent: {
+                getAgentByHandle: (db, handle) => mockGetAgentByHandle(db, handle),
+                getAgent: (db, id, workspaceId) => mockGetAgent(db, id, workspaceId),
+            },
+            whitelist: { isWhitelisted: (db, agentId, workspaceId, email) => mockIsWhitelisted(db, agentId, workspaceId, email) },
+            user: { getUser: (db, id) => mockGetUser(db, id) },
+            emailAccount: { getEmailAccount: (...args) => mockGetEmailAccount(...args), getEmailAccountById: (...args) => mockGetEmailAccount(...args) },
+            email: { getEmailById: (...args) => mockGetEmailById(...args) },
+        },
+    };
+});
+// Import handler after mocks are set up
+import { EMAIL_DOMAIN_EXPECTATION_HEADER } from "@phneakngar/shared";
+import handler from "./index";
+// Standard agent fixture
+const AGENT = {
+    id: "agent-1",
+    workspaceId: "ws-1",
+    ownerId: "user-1",
+    emailHandle: "jarvis",
+    name: "Jarvis",
+    status: "idle",
+};
+function setup(overrides) {
+    const agent = overrides?.agentOverrides === null
+        ? null
+        : { ...AGENT, ...(overrides?.agentOverrides ?? {}) };
+    mockGetAgentByHandle.mockResolvedValue(agent);
+    mockIsWhitelisted.mockResolvedValue(overrides?.isWhitelisted ?? false);
+    mockGetUser.mockResolvedValue(overrides?.userEmail !== undefined
+        ? (overrides.userEmail ? { id: "user-1", email: overrides.userEmail } : null)
+        : { id: "user-1", email: "owner@example.com" });
+    const { bucket, put } = createMockR2();
+    const { fetcher, fetch: wsFetch } = createMockFetcher();
+    const { sendEmail } = createMockSendEmail();
+    const { message, setReject, forward, rawText } = createMockMessage(overrides?.messageOpts ?? {
+        from: "owner@example.com",
+        to: "jarvis@agents.example",
+        subject: "Hello",
+        body: "Test body",
+    });
+    const env = { DB: {}, EMAIL_BUCKET: bucket, WEB_SERVICE: fetcher, SEND_EMAIL: sendEmail, IMAP_POLLER: {}, ENCRYPTION_KEY: "test-secret", EMAIL_NOTIFY_SECRET: "notify-secret", PHNEAKNGAR_DOMAIN: "agents.example" };
+    return { env, message, put, wsFetch, setReject, forward, rawText };
+}
+beforeEach(() => {
+    nanoidCounter = 0;
+    vi.clearAllMocks();
+});
+// ─── Group 1: Agent resolution ───
+describe("agent resolution", () => {
+    it("rejects when no agent found for handle", async () => {
+        const { env, message, setReject, put } = setup({ agentOverrides: null });
+        await handler.email(message, env);
+        expect(setReject).toHaveBeenCalledWith("No agent found for this address");
+        expect(put).not.toHaveBeenCalled();
+    });
+    it("parses handle from agents.example address and looks up agent", async () => {
+        const { env, message } = setup({ isWhitelisted: true });
+        await handler.email(message, env);
+        expect(mockGetAgentByHandle).toHaveBeenCalledWith(expect.anything(), "jarvis");
+    });
+    it("rejects for non-phneakngar domain (empty handle)", async () => {
+        const { env, message, setReject } = setup({
+            agentOverrides: null,
+            messageOpts: { from: "sender@example.com", to: "user@gmail.com", subject: "Hi" },
+        });
+        await handler.email(message, env);
+        expect(setReject).toHaveBeenCalledWith("No agent found for this address");
+    });
+});
+// ─── Group 2: R2 storage ───
+describe("R2 storage", () => {
+    it("stores raw email bytes at emails/{id}/raw with correct content-type", async () => {
+        const { env, message, put } = setup({ isWhitelisted: true });
+        await handler.email(message, env);
+        expect(put).toHaveBeenCalledOnce();
+        const [key, _body, opts] = put.mock.calls[0];
+        expect(key).toMatch(/^emails\/inbound\/ws-1\/agent-1\/[a-f0-9]{64}\/raw$/);
+        expect(opts).toEqual({ httpMetadata: { contentType: "message/rfc822" } });
+    });
+    it("R2 put receives ArrayBuffer matching raw email content", async () => {
+        const { env, message, put, rawText } = setup({ isWhitelisted: true });
+        await handler.email(message, env);
+        const storedBody = put.mock.calls[0][1];
+        const decoded = new TextDecoder().decode(storedBody);
+        expect(decoded).toBe(rawText);
+    });
+});
+// ─── Group 3: Whitelisted path ───
+describe("whitelisted path", () => {
+    it("notifies web service with isWhitelisted: true", async () => {
+        const { env, message, wsFetch } = setup({ isWhitelisted: true });
+        await handler.email(message, env);
+        expect(wsFetch).toHaveBeenCalledOnce();
+        const [url, init] = wsFetch.mock.calls[0];
+        expect(url).toBe("http://internal/api/email/notify");
+        expect(init.method).toBe("POST");
+        expect(init.headers["X-Phneakngar-Email-Notify-Secret"]).toBe("notify-secret");
+        const body = JSON.parse(init.body);
+        expect(body.agentId).toBe("agent-1");
+        expect(body.workspaceId).toBe("ws-1");
+        expect(body.r2Key).toMatch(/^emails\/inbound\/ws-1\/agent-1\/[a-f0-9]{64}\/raw$/);
+        expect(body.deliveryKey).toMatch(/^cf:agent-1:[a-f0-9]{64}$/);
+        expect(body.from).toBe("owner@example.com");
+        expect(body.subject).toBe("Hello");
+        expect(body.isWhitelisted).toBe(true);
+        expect(body.forwarded).toBeUndefined();
+    });
+    it("defaults subject to '(No Subject)' when header is missing", async () => {
+        const { env, message, wsFetch } = setup({
+            isWhitelisted: true,
+            messageOpts: { from: "owner@example.com", to: "jarvis@agents.example", subject: null },
+        });
+        await handler.email(message, env);
+        const notifyBody = JSON.parse(wsFetch.mock.calls[0][1].body);
+        expect(notifyBody.subject).toBe("(No Subject)");
+    });
+    it("does NOT call message.forward", async () => {
+        const { env, message, forward } = setup({ isWhitelisted: true });
+        await handler.email(message, env);
+        expect(forward).not.toHaveBeenCalled();
+    });
+    it("passes threading headers (Message-ID, In-Reply-To, References) to notify", async () => {
+        const { env, message, wsFetch } = setup({
+            isWhitelisted: true,
+            messageOpts: {
+                from: "owner@example.com",
+                to: "jarvis@agents.example",
+                subject: "Re: Thread",
+                extraHeaders: {
+                    "message-id": "<msg-123@example.com>",
+                    "in-reply-to": "<parent-456@example.com>",
+                    "references": "<root-789@example.com> <parent-456@example.com>",
+                },
+            },
+        });
+        await handler.email(message, env);
+        const body = JSON.parse(wsFetch.mock.calls[0][1].body);
+        expect(body.messageId).toBe("<msg-123@example.com>");
+        expect(body.inReplyTo).toBe("<parent-456@example.com>");
+        expect(body.references).toBe("<root-789@example.com> <parent-456@example.com>");
+    });
+    it("passes empty threading fields when headers are absent", async () => {
+        const { env, message, wsFetch } = setup({ isWhitelisted: true });
+        await handler.email(message, env);
+        const body = JSON.parse(wsFetch.mock.calls[0][1].body);
+        expect(body.messageId).toBe("");
+        expect(body.inReplyTo).toBe("");
+        expect(body.references).toBe("");
+    });
+});
+// ─── Group 3b: RFC 2047 subject decoding ───
+describe("RFC 2047 subject decoding", () => {
+    it("uses parsed.subject (decoded) over raw RFC 2047 Q-encoded header", async () => {
+        const encodedSubject = "=?UTF-8?q?Re:_=E6=96=B0=E6=B3=A8=E5=86=8C=E7=94=A8=E6=88=B7?=";
+        const { env, message, wsFetch } = setup({
+            isWhitelisted: true,
+            messageOpts: {
+                from: "owner@example.com",
+                to: "jarvis@agents.example",
+                subject: encodedSubject,
+                body: "Test body",
+            },
+        });
+        await handler.email(message, env);
+        const notifyBody = JSON.parse(wsFetch.mock.calls[0][1].body);
+        expect(notifyBody.subject).toBe("Re: 新注册用户");
+    });
+    it("uses parsed.subject (decoded) over raw RFC 2047 B-encoded header", async () => {
+        const encodedSubject = "=?UTF-8?B?5rWL6K+V5Li76aKY?=";
+        const { env, message, wsFetch } = setup({
+            isWhitelisted: true,
+            messageOpts: {
+                from: "owner@example.com",
+                to: "jarvis@agents.example",
+                subject: encodedSubject,
+                body: "Test body",
+            },
+        });
+        await handler.email(message, env);
+        const notifyBody = JSON.parse(wsFetch.mock.calls[0][1].body);
+        expect(notifyBody.subject).toBe("测试主题");
+    });
+    it("uses plain ASCII subject as-is (no encoding)", async () => {
+        const { env, message, wsFetch } = setup({
+            isWhitelisted: true,
+            messageOpts: {
+                from: "owner@example.com",
+                to: "jarvis@agents.example",
+                subject: "Plain subject",
+                body: "Test body",
+            },
+        });
+        await handler.email(message, env);
+        const notifyBody = JSON.parse(wsFetch.mock.calls[0][1].body);
+        expect(notifyBody.subject).toBe("Plain subject");
+    });
+    it("falls back to '(No Subject)' when both sources are empty", async () => {
+        const { env, message, wsFetch } = setup({
+            isWhitelisted: true,
+            messageOpts: {
+                from: "owner@example.com",
+                to: "jarvis@agents.example",
+                subject: null,
+                body: "Test body",
+            },
+        });
+        await handler.email(message, env);
+        const notifyBody = JSON.parse(wsFetch.mock.calls[0][1].body);
+        expect(notifyBody.subject).toBe("(No Subject)");
+    });
+    it("falls back to raw header when parsed.subject is empty string", async () => {
+        const headers = new Headers();
+        headers.set("subject", "Fallback Subject");
+        const rawText = [
+            "From: owner@example.com",
+            "To: jarvis@agents.example",
+            "Subject: ",
+            "",
+            "Test body",
+        ].join("\r\n");
+        const setReject = vi.fn();
+        const forward = vi.fn().mockResolvedValue(undefined);
+        const message = {
+            from: "owner@example.com",
+            to: "jarvis@agents.example",
+            headers,
+            raw: new Response(rawText).body,
+            rawSize: rawText.length,
+            setReject,
+            forward,
+            reply: vi.fn(),
+        };
+        mockGetAgentByHandle.mockResolvedValue(AGENT);
+        mockIsWhitelisted.mockResolvedValue(true);
+        const { bucket, put } = createMockR2();
+        const { fetcher, fetch: wsFetch } = createMockFetcher();
+        const { sendEmail } = createMockSendEmail();
+        const env = { DB: {}, EMAIL_BUCKET: bucket, WEB_SERVICE: fetcher, SEND_EMAIL: sendEmail, IMAP_POLLER: {}, ENCRYPTION_KEY: "test-secret", EMAIL_NOTIFY_SECRET: "notify-secret", PHNEAKNGAR_DOMAIN: "agents.example" };
+        await handler.email(message, env);
+        const notifyBody = JSON.parse(wsFetch.mock.calls[0][1].body);
+        expect(notifyBody.subject).toBe("Fallback Subject");
+    });
+});
+// ─── Group 4: Non-whitelisted path (rejected) ───
+describe("non-whitelisted path", () => {
+    const strangerOpts = {
+        messageOpts: { from: "stranger@example.com", to: "jarvis@agents.example", subject: "Spam" },
+    };
+    it("notifies web service with isWhitelisted: false and forwarded: false", async () => {
+        const { env, message, wsFetch } = setup({
+            ...strangerOpts,
+            isWhitelisted: false,
+        });
+        await handler.email(message, env);
+        expect(wsFetch).toHaveBeenCalledOnce();
+        const body = JSON.parse(wsFetch.mock.calls[0][1].body);
+        expect(body.isWhitelisted).toBe(false);
+        expect(body.forwarded).toBe(false);
+    });
+    it("rejects email with setReject", async () => {
+        const { env, message, setReject } = setup({
+            ...strangerOpts,
+            isWhitelisted: false,
+        });
+        await handler.email(message, env);
+        expect(setReject).toHaveBeenCalledWith("Sender not whitelisted");
+    });
+    it("does NOT forward email", async () => {
+        const { env, message, forward } = setup({
+            ...strangerOpts,
+            isWhitelisted: false,
+        });
+        await handler.email(message, env);
+        expect(forward).not.toHaveBeenCalled();
+    });
+    it("still stores raw email in R2", async () => {
+        const { env, message, put } = setup({
+            ...strangerOpts,
+            isWhitelisted: false,
+        });
+        await handler.email(message, env);
+        expect(put).toHaveBeenCalledOnce();
+    });
+});
+describe("GET /health", () => {
+    it("returns ok for an explicit valid domain", async () => {
+        const { env } = setup();
+        const response = await handler.fetch(new Request("http://localhost/health"), env);
+        expect(response.status).toBe(200);
+        expect(await response.json()).toEqual({ status: "ok" });
+    });
+    it.each([undefined, "https://private.example/path", "phneakngar.invalid"])("returns a generic 503 for unsafe production domain configuration", async (domain) => {
+        const { env } = setup();
+        const response = await handler.fetch(new Request("http://localhost/health"), { ...env, NODE_ENV: "production", PHNEAKNGAR_DOMAIN: domain });
+        const text = await response.text();
+        expect(response.status).toBe(503);
+        expect(JSON.parse(text)).toEqual({ status: "degraded" });
+        expect(text).not.toContain("PHNEAKNGAR_DOMAIN");
+        expect(text).not.toContain("private.example");
+        expect(text).not.toContain("phneakngar.invalid");
+    });
+    it("returns a generic 503 when the web Worker expects a different domain", async () => {
+        const { env } = setup();
+        const response = await handler.fetch(new Request("http://localhost/health", {
+            headers: { [EMAIL_DOMAIN_EXPECTATION_HEADER]: "other.example" },
+        }), { ...env, NODE_ENV: "production" });
+        expect(response.status).toBe(503);
+        expect(await response.json()).toEqual({ status: "degraded" });
+    });
+});
+// ─── Group 5: POST /send/otp ───
+describe("POST /send/otp", () => {
+    function makeOtpRequest(body) {
+        return new Request("http://localhost/send/otp", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+        });
+    }
+    function otpEnv() {
+        const { bucket } = createMockR2();
+        const { fetcher } = createMockFetcher();
+        const { sendEmail, send } = createMockSendEmail();
+        return {
+            env: { DB: {}, EMAIL_BUCKET: bucket, WEB_SERVICE: fetcher, SEND_EMAIL: sendEmail, IMAP_POLLER: {}, ENCRYPTION_KEY: "test-secret", EMAIL_NOTIFY_SECRET: "notify-secret", PHNEAKNGAR_DOMAIN: "agents.example" },
+            send,
+        };
+    }
+    it("sends OTP email via SEND_EMAIL binding", async () => {
+        const { env, send } = otpEnv();
+        const res = await handler.fetch(makeOtpRequest({ to: "user@example.com", subject: "Your code", html: "<p>123456</p>" }), env);
+        expect(res.status).toBe(200);
+        const json = await res.json();
+        expect(json.ok).toBe(true);
+        expect(send).toHaveBeenCalledOnce();
+        expect(send).toHaveBeenCalledWith({
+            from: "no-reply@agents.example",
+            to: "user@example.com",
+            subject: "Your code",
+            html: "<p>123456</p>",
+        });
+    });
+    it("refuses production fallback before calling SEND_EMAIL", async () => {
+        const { env, send } = otpEnv();
+        const res = await handler.fetch(makeOtpRequest({ to: "user@example.com", subject: "Your code" }), { ...env, NODE_ENV: "production", PHNEAKNGAR_DOMAIN: "phneakngar.invalid" });
+        expect(res.status).toBe(503);
+        expect(send).not.toHaveBeenCalled();
+    });
+    it("returns 400 when 'to' is missing", async () => {
+        const { env } = otpEnv();
+        const res = await handler.fetch(makeOtpRequest({ subject: "code", html: "<p>x</p>" }), env);
+        expect(res.status).toBe(400);
+    });
+    it("returns 400 when 'subject' is missing", async () => {
+        const { env } = otpEnv();
+        const res = await handler.fetch(makeOtpRequest({ to: "user@example.com", html: "<p>x</p>" }), env);
+        expect(res.status).toBe(400);
+    });
+});
+// ─── Group 6: POST /send/agent ───
+describe("POST /send/agent", () => {
+    function makeAgentSendRequest(body) {
+        return new Request("http://localhost/send/agent", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+        });
+    }
+    function agentSendEnv() {
+        const { bucket, put } = createMockR2();
+        const { fetcher } = createMockFetcher();
+        const { sendEmail, send } = createMockSendEmail();
+        return {
+            env: { DB: {}, EMAIL_BUCKET: bucket, WEB_SERVICE: fetcher, SEND_EMAIL: sendEmail, IMAP_POLLER: {}, ENCRYPTION_KEY: "test-secret", EMAIL_NOTIFY_SECRET: "notify-secret", PHNEAKNGAR_DOMAIN: "agents.example" },
+            send,
+            put,
+            bucket,
+        };
+    }
+    it("sends agent email and stores MIME archive in R2", async () => {
+        mockGetAgent.mockResolvedValue({ id: "agent-1", workspaceId: "ws-1", emailHandle: "jarvis" });
+        const { env, send, put } = agentSendEnv();
+        const res = await handler.fetch(makeAgentSendRequest({
+            agentId: "agent-1",
+            workspaceId: "ws-1",
+            to: "user@example.com",
+            subject: "Hello",
+            htmlBody: "<p>Hi there</p>",
+        }), env);
+        expect(res.status).toBe(200);
+        const json = await res.json();
+        expect(json.ok).toBe(true);
+        expect(json.r2Key).toMatch(/^emails\/mock-id-\d+\/raw$/);
+        // Verify SEND_EMAIL.send was called with a raw-MIME EmailMessage
+        expect(send).toHaveBeenCalledOnce();
+        const sendArg = send.mock.calls[0][0];
+        expect(sendArg.from).toBe("jarvis@agents.example");
+        expect(sendArg.to).toBe("user@example.com");
+        expect(sendArg.raw).toContain("From: jarvis@agents.example");
+        expect(sendArg.raw).toContain("To: user@example.com");
+        expect(sendArg.raw).toContain("Subject: Hello");
+        expect(sendArg.raw).toContain("<p>Hi there</p>");
+        // TC2/TC6: the Message-ID on the wire == the returned id == the archived id
+        expect(sendArg.raw).toContain("Message-ID: " + json.messageId);
+        // Verify R2 archive (same MIME as the wire message)
+        expect(put).toHaveBeenCalledOnce();
+        const [key, body, opts] = put.mock.calls[0];
+        expect(key).toMatch(/^emails\/mock-id-\d+\/raw$/);
+        expect(opts).toEqual({ httpMetadata: { contentType: "message/rfc822" } });
+        expect(body).toBe(sendArg.raw);
+        expect(body).toContain("From: jarvis@agents.example");
+        expect(body).toContain("To: user@example.com");
+        expect(body).toContain("Subject: Hello");
+        expect(body).toContain("Content-Type: text/html; charset=utf-8");
+    });
+    it("rejects send when emailId claim is pending_approval (409 pre_send)", async () => {
+        mockGetAgent.mockResolvedValue({ id: "agent-1", workspaceId: "ws-1", emailHandle: "jarvis" });
+        mockGetEmailById.mockResolvedValue({
+            id: "em_1",
+            agentId: "agent-1",
+            workspaceId: "ws-1",
+            status: "pending_approval",
+        });
+        const { env, send } = agentSendEnv();
+        const res = await handler.fetch(makeAgentSendRequest({
+            agentId: "agent-1",
+            workspaceId: "ws-1",
+            to: "user@example.com",
+            subject: "Needs approval",
+            htmlBody: "<p>Hi</p>",
+            emailId: "em_1",
+        }), env);
+        expect(res.status).toBe(409);
+        const json = await res.json();
+        expect(json.phase).toBe("pre_send");
+        expect(json.error).toContain("pending_approval");
+        expect(send).not.toHaveBeenCalled();
+        expect(mockGetEmailById).toHaveBeenCalledWith(expect.anything(), "em_1", "ws-1");
+    });
+    it("allows send when emailId claim status is sending", async () => {
+        mockGetAgent.mockResolvedValue({ id: "agent-1", workspaceId: "ws-1", emailHandle: "jarvis" });
+        mockGetEmailById.mockResolvedValue({
+            id: "em_2",
+            agentId: "agent-1",
+            workspaceId: "ws-1",
+            status: "sending",
+        });
+        const { env, send } = agentSendEnv();
+        const res = await handler.fetch(makeAgentSendRequest({
+            agentId: "agent-1",
+            workspaceId: "ws-1",
+            to: "user@example.com",
+            subject: "Claimed",
+            htmlBody: "<p>Go</p>",
+            emailId: "em_2",
+        }), env);
+        expect(res.status).toBe(200);
+        expect(send).toHaveBeenCalledOnce();
+    });
+    it("returns 404 pre_send when emailId claim is missing", async () => {
+        mockGetAgent.mockResolvedValue({ id: "agent-1", workspaceId: "ws-1", emailHandle: "jarvis" });
+        mockGetEmailById.mockResolvedValue(null);
+        const { env, send } = agentSendEnv();
+        const res = await handler.fetch(makeAgentSendRequest({
+            agentId: "agent-1",
+            workspaceId: "ws-1",
+            to: "user@example.com",
+            subject: "Missing claim",
+            htmlBody: "<p>x</p>",
+            emailId: "em_missing",
+        }), env);
+        expect(res.status).toBe(404);
+        const json = await res.json();
+        expect(json.phase).toBe("pre_send");
+        expect(json.error).toContain("not found");
+        expect(send).not.toHaveBeenCalled();
+    });
+    it("returns 403 pre_send when emailId claim agent mismatches", async () => {
+        mockGetAgent.mockResolvedValue({ id: "agent-1", workspaceId: "ws-1", emailHandle: "jarvis" });
+        mockGetEmailById.mockResolvedValue({
+            id: "em_3",
+            agentId: "agent-other",
+            workspaceId: "ws-1",
+            status: "sending",
+        });
+        const { env, send } = agentSendEnv();
+        const res = await handler.fetch(makeAgentSendRequest({
+            agentId: "agent-1",
+            workspaceId: "ws-1",
+            to: "user@example.com",
+            subject: "Wrong agent",
+            htmlBody: "<p>x</p>",
+            emailId: "em_3",
+        }), env);
+        expect(res.status).toBe(403);
+        const json = await res.json();
+        expect(json.phase).toBe("pre_send");
+        expect(json.error).toContain("mismatch");
+        expect(send).not.toHaveBeenCalled();
+    });
+    it("skips status gate for legacy callers without emailId", async () => {
+        mockGetAgent.mockResolvedValue({ id: "agent-1", workspaceId: "ws-1", emailHandle: "jarvis" });
+        const { env, send } = agentSendEnv();
+        const res = await handler.fetch(makeAgentSendRequest({
+            agentId: "agent-1",
+            workspaceId: "ws-1",
+            to: "user@example.com",
+            subject: "Legacy",
+            htmlBody: "<p>legacy</p>",
+        }), env);
+        expect(res.status).toBe(200);
+        expect(send).toHaveBeenCalledOnce();
+        expect(mockGetEmailById).not.toHaveBeenCalled();
+    });
+    it("skips status gate for whitespace-only emailId", async () => {
+        mockGetAgent.mockResolvedValue({ id: "agent-1", workspaceId: "ws-1", emailHandle: "jarvis" });
+        const { env, send } = agentSendEnv();
+        const res = await handler.fetch(makeAgentSendRequest({
+            agentId: "agent-1",
+            workspaceId: "ws-1",
+            to: "user@example.com",
+            subject: "Blank id",
+            htmlBody: "<p>x</p>",
+            emailId: "   ",
+        }), env);
+        expect(res.status).toBe(200);
+        expect(send).toHaveBeenCalledOnce();
+        expect(mockGetEmailById).not.toHaveBeenCalled();
+    });
+    it("rejects send when emailId claim is already sent or rejected", async () => {
+        mockGetAgent.mockResolvedValue({ id: "agent-1", workspaceId: "ws-1", emailHandle: "jarvis" });
+        const { env, send } = agentSendEnv();
+        for (const status of ["sent", "rejected", "failed", "ambiguous", "pending"]) {
+            mockGetEmailById.mockResolvedValue({
+                id: "em_term",
+                agentId: "agent-1",
+                workspaceId: "ws-1",
+                status,
+            });
+            const res = await handler.fetch(makeAgentSendRequest({
+                agentId: "agent-1",
+                workspaceId: "ws-1",
+                to: "user@example.com",
+                subject: `Status ${status}`,
+                htmlBody: "<p>x</p>",
+                emailId: "em_term",
+            }), env);
+            expect(res.status).toBe(409);
+            const json = await res.json();
+            expect(json.phase).toBe("pre_send");
+            expect(json.error).toContain(status);
+        }
+        expect(send).not.toHaveBeenCalled();
+    });
+    it("allows send when claim status has surrounding whitespace around sending", async () => {
+        mockGetAgent.mockResolvedValue({ id: "agent-1", workspaceId: "ws-1", emailHandle: "jarvis" });
+        mockGetEmailById.mockResolvedValue({
+            id: "em_pad",
+            agentId: "agent-1",
+            workspaceId: "ws-1",
+            status: "  sending  ",
+        });
+        const { env, send } = agentSendEnv();
+        const res = await handler.fetch(makeAgentSendRequest({
+            agentId: "agent-1",
+            workspaceId: "ws-1",
+            to: "user@example.com",
+            subject: "Padded",
+            htmlBody: "<p>Go</p>",
+            emailId: "  em_pad  ",
+        }), env);
+        expect(res.status).toBe(200);
+        expect(send).toHaveBeenCalledOnce();
+        expect(mockGetEmailById).toHaveBeenCalledWith(expect.anything(), "em_pad", "ws-1");
+    });
+    it("sends agent email with attachments from R2", async () => {
+        mockGetAgent.mockResolvedValue({ id: "agent-1", workspaceId: "ws-1", emailHandle: "jarvis" });
+        const { env, send, put, bucket } = agentSendEnv();
+        const fileContent = new TextEncoder().encode("file content");
+        bucket.get = vi.fn().mockResolvedValue({
+            arrayBuffer: () => Promise.resolve(fileContent.buffer),
+        });
+        const res = await handler.fetch(makeAgentSendRequest({
+            agentId: "agent-1",
+            workspaceId: "ws-1",
+            to: "user@example.com",
+            subject: "With attachment",
+            htmlBody: "<p>See attached</p>",
+            attachmentKeys: [
+                { key: "emails/drafts/ws-1/x/doc.txt", filename: "doc.txt", contentType: "text/plain" },
+            ],
+        }), env);
+        expect(res.status).toBe(200);
+        // Verify the raw-MIME wire message carries the attachment (base64-encoded)
+        const sendArg = send.mock.calls[0][0];
+        expect(sendArg.raw).toContain("multipart/mixed");
+        expect(sendArg.raw).toContain('Content-Disposition: attachment; filename="doc.txt"');
+        expect(sendArg.raw).toContain("Content-Transfer-Encoding: base64");
+        // TC2: attachment base64 round-trips intact in the rendered MIME
+        expect(sendArg.raw).toContain(btoa("file content"));
+        // Verify R2 MIME archive is the same MIME that went on the wire
+        const storedMime = put.mock.calls[0][1];
+        expect(storedMime).toBe(sendArg.raw);
+        expect(storedMime).toContain("multipart/mixed");
+        expect(storedMime).toContain('Content-Disposition: attachment; filename="doc.txt"');
+        expect(storedMime).toContain("Content-Transfer-Encoding: base64");
+    });
+    it("fetches multiple attachments in parallel and skips missing objects", async () => {
+        mockGetAgent.mockResolvedValue({ id: "agent-1", workspaceId: "ws-1", emailHandle: "jarvis" });
+        const { env, send, put } = agentSendEnv();
+        const file1 = new TextEncoder().encode("content1");
+        const file2 = new TextEncoder().encode("content2");
+        const fetchOrder = [];
+        env.EMAIL_BUCKET.get = vi.fn((key) => {
+            fetchOrder.push(key);
+            if (key === "emails/drafts/ws-1/x/missing.txt")
+                return Promise.resolve(null);
+            const content = key === "emails/drafts/ws-1/x/a.txt" ? file1 : file2;
+            return Promise.resolve({ arrayBuffer: () => Promise.resolve(content.buffer) });
+        });
+        const res = await handler.fetch(makeAgentSendRequest({
+            agentId: "agent-1",
+            workspaceId: "ws-1",
+            to: "user@example.com",
+            subject: "Multi-attach",
+            htmlBody: "<p>Files</p>",
+            attachmentKeys: [
+                { key: "emails/drafts/ws-1/x/a.txt", filename: "a.txt", contentType: "text/plain" },
+                { key: "emails/drafts/ws-1/x/missing.txt", filename: "missing.txt", contentType: "text/plain" },
+                { key: "emails/drafts/ws-1/x/b.txt", filename: "b.txt", contentType: "text/plain" },
+            ],
+        }), env);
+        expect(res.status).toBe(200);
+        // All R2 fetches were initiated (parallel)
+        expect(fetchOrder).toHaveLength(3);
+        expect(fetchOrder).toContain("emails/drafts/ws-1/x/a.txt");
+        expect(fetchOrder).toContain("emails/drafts/ws-1/x/missing.txt");
+        expect(fetchOrder).toContain("emails/drafts/ws-1/x/b.txt");
+        // Only non-null attachments included in the raw MIME (missing.txt skipped)
+        const sendArg = send.mock.calls[0][0];
+        expect(sendArg.raw).toContain('filename="a.txt"');
+        expect(sendArg.raw).toContain('filename="b.txt"');
+        expect(sendArg.raw).not.toContain('filename="missing.txt"');
+    });
+    it("rejects attachment keys outside the workspace draft scope", async () => {
+        mockGetAgent.mockResolvedValue({ id: "agent-1", workspaceId: "ws-1", emailHandle: "jarvis" });
+        const { env } = agentSendEnv();
+        const bucketGet = vi.fn();
+        env.EMAIL_BUCKET.get = bucketGet;
+        const res = await handler.fetch(makeAgentSendRequest({
+            agentId: "agent-1",
+            workspaceId: "ws-1",
+            to: "user@example.com",
+            subject: "Bad attachment",
+            htmlBody: "<p>Nope</p>",
+            attachmentKeys: [
+                { key: "emails/drafts/ws-2/x/doc.txt", filename: "doc.txt", contentType: "text/plain" },
+            ],
+        }), env);
+        expect(res.status).toBe(400);
+        const json = await res.json();
+        expect(json.error).toBe("invalid attachment key");
+        expect(bucketGet).not.toHaveBeenCalled();
+    });
+    it("returns 404 when agent not found in workspace", async () => {
+        mockGetAgent.mockResolvedValue(null);
+        const { env } = agentSendEnv();
+        const res = await handler.fetch(makeAgentSendRequest({
+            agentId: "agent-1",
+            workspaceId: "ws-1",
+            to: "user@example.com",
+            subject: "Hello",
+            htmlBody: "<p>Hi</p>",
+        }), env);
+        expect(res.status).toBe(404);
+    });
+    it("returns 400 when agent has no email handle", async () => {
+        mockGetAgent.mockResolvedValue({ id: "agent-1", workspaceId: "ws-1", emailHandle: "" });
+        const { env } = agentSendEnv();
+        const res = await handler.fetch(makeAgentSendRequest({
+            agentId: "agent-1",
+            workspaceId: "ws-1",
+            to: "user@example.com",
+            subject: "Hello",
+            htmlBody: "<p>Hi</p>",
+        }), env);
+        expect(res.status).toBe(400);
+    });
+    it("returns 400 when required fields are missing", async () => {
+        const { env } = agentSendEnv();
+        const res = await handler.fetch(makeAgentSendRequest({ agentId: "agent-1" }), env);
+        expect(res.status).toBe(400);
+    });
+    it("includes threading headers in outgoing MIME when inReplyTo/references provided", async () => {
+        mockGetAgent.mockResolvedValue({ id: "agent-1", workspaceId: "ws-1", emailHandle: "jarvis" });
+        const { env, send, put } = agentSendEnv();
+        const res = await handler.fetch(makeAgentSendRequest({
+            agentId: "agent-1",
+            workspaceId: "ws-1",
+            to: "user@example.com",
+            subject: "Re: Thread test",
+            htmlBody: "<p>Reply</p>",
+            inReplyTo: "<parent-123@example.com>",
+            references: "<root-000@example.com> <parent-123@example.com>",
+        }), env);
+        expect(res.status).toBe(200);
+        const json = await res.json();
+        expect(json.messageId).toMatch(/@agents.example>$/);
+        // Threading headers now ride the WIRE message (raw MIME), not just the archive.
+        const sendArg = send.mock.calls[0][0];
+        expect(sendArg.raw).toContain("Message-ID: " + json.messageId);
+        expect(sendArg.raw).toContain("In-Reply-To: <parent-123@example.com>");
+        expect(sendArg.raw).toContain("References: <root-000@example.com> <parent-123@example.com>");
+        const storedMime = put.mock.calls[0][1];
+        expect(storedMime).toContain("Message-ID: " + json.messageId);
+        expect(storedMime).toContain("In-Reply-To: <parent-123@example.com>");
+        expect(storedMime).toContain("References: <root-000@example.com> <parent-123@example.com>");
+    });
+    it("generates Message-ID but omits In-Reply-To/References when not provided", async () => {
+        mockGetAgent.mockResolvedValue({ id: "agent-1", workspaceId: "ws-1", emailHandle: "jarvis" });
+        const { env, put } = agentSendEnv();
+        const res = await handler.fetch(makeAgentSendRequest({
+            agentId: "agent-1",
+            workspaceId: "ws-1",
+            to: "user@example.com",
+            subject: "New email",
+            htmlBody: "<p>Fresh</p>",
+        }), env);
+        expect(res.status).toBe(200);
+        const json = await res.json();
+        expect(json.messageId).toMatch(/@agents.example>$/);
+        const storedMime = put.mock.calls[0][1];
+        expect(storedMime).toContain("Message-ID:");
+        expect(storedMime).not.toContain("In-Reply-To:");
+        expect(storedMime).not.toContain("References:");
+    });
+});
+// ─── Group 7: POST /send/agent with custom SMTP ───
+describe("POST /send/agent with custom SMTP", () => {
+    const CUSTOM_ACCOUNT = {
+        id: "aea_1",
+        agentId: "agent-1",
+        workspaceId: "ws-1",
+        emailAddress: "user@gmail.com",
+        displayName: "Custom User",
+        smtpHost: "smtp.gmail.com",
+        smtpPort: 587,
+        smtpUsername: "enc-user",
+        smtpPassword: "enc-pass",
+        smtpTls: 1,
+    };
+    function makeRequest(body) {
+        return new Request("http://localhost/send/agent", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+        });
+    }
+    function customSmtpEnv() {
+        const { bucket, put } = createMockR2();
+        const { fetcher } = createMockFetcher();
+        const { sendEmail, send } = createMockSendEmail();
+        return {
+            env: { DB: {}, EMAIL_BUCKET: bucket, WEB_SERVICE: fetcher, SEND_EMAIL: sendEmail, IMAP_POLLER: {}, ENCRYPTION_KEY: "test-secret", EMAIL_NOTIFY_SECRET: "notify-secret", PHNEAKNGAR_DOMAIN: "agents.example" },
+            send,
+            put,
+        };
+    }
+    it("sends via worker-mailer when customAccountId is provided", async () => {
+        mockGetAgent.mockResolvedValue({ id: "agent-1", workspaceId: "ws-1", emailHandle: "jarvis" });
+        mockGetEmailAccount.mockResolvedValue(CUSTOM_ACCOUNT);
+        const { env, send, put } = customSmtpEnv();
+        const res = await handler.fetch(makeRequest({
+            agentId: "agent-1",
+            workspaceId: "ws-1",
+            to: "recipient@example.com",
+            subject: "Custom SMTP test",
+            htmlBody: "<p>Hello</p>",
+            customAccountId: "aea_1",
+        }), env);
+        expect(res.status).toBe(200);
+        expect(send).not.toHaveBeenCalled();
+        expect(mockWorkerMailerSend).toHaveBeenCalledOnce();
+        const [smtpOpts, emailOpts] = mockWorkerMailerSend.mock.calls[0];
+        expect(smtpOpts.host).toBe("smtp.gmail.com");
+        expect(smtpOpts.port).toBe(587);
+        expect(smtpOpts.startTls).toBe(true);
+        expect(smtpOpts.credentials.username).toBe("decrypted:enc-user");
+        expect(smtpOpts.credentials.password).toBe("decrypted:enc-pass");
+        expect(emailOpts.from).toEqual({ name: "Custom User", email: "user@gmail.com" });
+        expect(emailOpts.to).toBe("recipient@example.com");
+        expect(emailOpts.subject).toBe("Custom SMTP test");
+        // TC3: wire Message-ID is controlled, uses the from-account domain, and equals
+        // the returned/archived id (so a human reply threads back).
+        const json = await res.json();
+        expect(emailOpts.headers["Message-ID"]).toBe(json.messageId);
+        expect(json.messageId).toMatch(/@gmail\.com>$/);
+        const storedMime = put.mock.calls[0][1];
+        expect(storedMime).toContain("Message-ID: " + json.messageId);
+    });
+    it("falls back to CF SendEmail when no customAccountId", async () => {
+        mockGetAgent.mockResolvedValue({ id: "agent-1", workspaceId: "ws-1", emailHandle: "jarvis" });
+        const { env, send } = customSmtpEnv();
+        const res = await handler.fetch(makeRequest({
+            agentId: "agent-1",
+            workspaceId: "ws-1",
+            to: "recipient@example.com",
+            subject: "Default path",
+            htmlBody: "<p>Hi</p>",
+        }), env);
+        expect(res.status).toBe(200);
+        expect(send).toHaveBeenCalledOnce();
+        expect(mockWorkerMailerSend).not.toHaveBeenCalled();
+    });
+    it("returns 404 when customAccountId not found", async () => {
+        mockGetAgent.mockResolvedValue({ id: "agent-1", workspaceId: "ws-1", emailHandle: "jarvis" });
+        mockGetEmailAccount.mockResolvedValue(null);
+        const { env } = customSmtpEnv();
+        const res = await handler.fetch(makeRequest({
+            agentId: "agent-1",
+            workspaceId: "ws-1",
+            to: "recipient@example.com",
+            subject: "Test",
+            customAccountId: "aea_nonexistent",
+        }), env);
+        expect(res.status).toBe(404);
+    });
+    it("sends attachments as base64 strings via worker-mailer", async () => {
+        mockGetAgent.mockResolvedValue({ id: "agent-1", workspaceId: "ws-1", emailHandle: "jarvis" });
+        mockGetEmailAccount.mockResolvedValue(CUSTOM_ACCOUNT);
+        const { env, send, put } = customSmtpEnv();
+        const fileContent = new TextEncoder().encode("hello attachment");
+        env.EMAIL_BUCKET.get = vi.fn().mockResolvedValue({
+            arrayBuffer: () => Promise.resolve(fileContent.buffer),
+        });
+        const res = await handler.fetch(makeRequest({
+            agentId: "agent-1",
+            workspaceId: "ws-1",
+            to: "recipient@example.com",
+            subject: "SMTP with attachment",
+            htmlBody: "<p>See file</p>",
+            customAccountId: "aea_1",
+            attachmentKeys: [
+                { key: "emails/drafts/ws-1/x/report.pdf", filename: "report.pdf", contentType: "application/pdf" },
+            ],
+        }), env);
+        expect(res.status).toBe(200);
+        expect(send).not.toHaveBeenCalled();
+        expect(mockWorkerMailerSend).toHaveBeenCalledOnce();
+        const [, emailOpts] = mockWorkerMailerSend.mock.calls[0];
+        expect(emailOpts.attachments).toHaveLength(1);
+        expect(emailOpts.attachments[0].filename).toBe("report.pdf");
+        expect(emailOpts.attachments[0].mimeType).toBe("application/pdf");
+        // WorkerMailer expects base64 string, NOT ArrayBuffer
+        expect(typeof emailOpts.attachments[0].content).toBe("string");
+        expect(emailOpts.attachments[0].content).toBe(btoa("hello attachment"));
+    });
+    it("returns 500 when SMTP send fails", async () => {
+        mockGetAgent.mockResolvedValue({ id: "agent-1", workspaceId: "ws-1", emailHandle: "jarvis" });
+        mockGetEmailAccount.mockResolvedValue(CUSTOM_ACCOUNT);
+        mockWorkerMailerSend.mockRejectedValueOnce(new Error("SMTP auth failed"));
+        const { env } = customSmtpEnv();
+        const res = await handler.fetch(makeRequest({
+            agentId: "agent-1",
+            workspaceId: "ws-1",
+            to: "recipient@example.com",
+            subject: "Test",
+            htmlBody: "<p>Hi</p>",
+            customAccountId: "aea_1",
+        }), env);
+        expect(res.status).toBe(500);
+        const json = await res.json();
+        expect(json.error).toContain("SMTP send failed");
+        expect(json.phase).toBe("send");
+    });
+    it("honors claimed messageId and r2Key for custom SMTP", async () => {
+        mockGetAgent.mockResolvedValue({ id: "agent-1", workspaceId: "ws-1", emailHandle: "jarvis" });
+        mockGetEmailAccount.mockResolvedValue(CUSTOM_ACCOUNT);
+        const { env, put } = customSmtpEnv();
+        const messageId = "<stable-smtp@gmail.com>";
+        const r2Key = "emails/stable-smtp/raw";
+        const res = await handler.fetch(makeRequest({
+            agentId: "agent-1",
+            workspaceId: "ws-1",
+            to: "recipient@example.com",
+            subject: "Stable",
+            htmlBody: "<p>Hi</p>",
+            customAccountId: "aea_1",
+            messageId,
+            r2Key,
+        }), env);
+        expect(res.status).toBe(200);
+        const json = await res.json();
+        expect(json.messageId).toBe(messageId);
+        expect(json.r2Key).toBe(r2Key);
+        expect(put).toHaveBeenCalledWith(r2Key, expect.any(String), expect.any(Object));
+        const [, emailOpts] = mockWorkerMailerSend.mock.calls[0];
+        expect(emailOpts.headers["Message-ID"]).toBe(messageId);
+    });
+});
+describe("POST /send/agent claimed identities", () => {
+    function makeAgentSendRequest(body) {
+        return new Request("http://localhost/send/agent", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+        });
+    }
+    it("reuses claimed messageId and r2Key on CF path and archives before send", async () => {
+        mockGetAgent.mockResolvedValue({ id: "agent-1", workspaceId: "ws-1", emailHandle: "jarvis" });
+        const { bucket, put } = createMockR2();
+        const { fetcher } = createMockFetcher();
+        const { sendEmail, send } = createMockSendEmail();
+        const env = {
+            DB: {},
+            EMAIL_BUCKET: bucket,
+            WEB_SERVICE: fetcher,
+            SEND_EMAIL: sendEmail,
+            IMAP_POLLER: {},
+            ENCRYPTION_KEY: "test-secret",
+            EMAIL_NOTIFY_SECRET: "notify-secret",
+            PHNEAKNGAR_DOMAIN: "agents.example",
+        };
+        const messageId = "<stable-cf@agents.example>";
+        const r2Key = "emails/stable-cf/raw";
+        const callOrder = [];
+        put.mockImplementation(async (...args) => {
+            callOrder.push("put");
+            return undefined;
+        });
+        send.mockImplementation(async (...args) => {
+            callOrder.push("send");
+            return { messageId: "ignored" };
+        });
+        const res = await handler.fetch(makeAgentSendRequest({
+            agentId: "agent-1",
+            workspaceId: "ws-1",
+            to: "user@example.com",
+            subject: "Stable CF",
+            htmlBody: "<p>Hi</p>",
+            messageId,
+            r2Key,
+        }), env);
+        expect(res.status).toBe(200);
+        const json = await res.json();
+        expect(json.messageId).toBe(messageId);
+        expect(json.r2Key).toBe(r2Key);
+        expect(callOrder).toEqual(["put", "send"]);
+        const sendArg = send.mock.calls[0][0];
+        expect(sendArg.raw).toContain("Message-ID: " + messageId);
+        expect(put.mock.calls[0][0]).toBe(r2Key);
+    });
+    it("marks CF provider failures as phase=send", async () => {
+        mockGetAgent.mockResolvedValue({ id: "agent-1", workspaceId: "ws-1", emailHandle: "jarvis" });
+        const { bucket } = createMockR2();
+        const { fetcher } = createMockFetcher();
+        const { sendEmail, send } = createMockSendEmail();
+        send.mockRejectedValueOnce(new Error("MTA unavailable"));
+        const env = {
+            DB: {},
+            EMAIL_BUCKET: bucket,
+            WEB_SERVICE: fetcher,
+            SEND_EMAIL: sendEmail,
+            IMAP_POLLER: {},
+            ENCRYPTION_KEY: "test-secret",
+            EMAIL_NOTIFY_SECRET: "notify-secret",
+            PHNEAKNGAR_DOMAIN: "agents.example",
+        };
+        const res = await handler.fetch(makeAgentSendRequest({
+            agentId: "agent-1",
+            workspaceId: "ws-1",
+            to: "user@example.com",
+            subject: "Fail",
+            htmlBody: "<p>Hi</p>",
+        }), env);
+        expect(res.status).toBe(502);
+        const json = await res.json();
+        expect(json.phase).toBe("send");
+        expect(json.error).toContain("email send failed");
+    });
+    it("marks validation failures as phase=pre_send", async () => {
+        mockGetAgent.mockResolvedValue(null);
+        const { bucket } = createMockR2();
+        const { fetcher } = createMockFetcher();
+        const { sendEmail } = createMockSendEmail();
+        const env = {
+            DB: {},
+            EMAIL_BUCKET: bucket,
+            WEB_SERVICE: fetcher,
+            SEND_EMAIL: sendEmail,
+            IMAP_POLLER: {},
+            ENCRYPTION_KEY: "test-secret",
+            EMAIL_NOTIFY_SECRET: "notify-secret",
+            PHNEAKNGAR_DOMAIN: "agents.example",
+        };
+        const res = await handler.fetch(makeAgentSendRequest({
+            agentId: "missing",
+            workspaceId: "ws-1",
+            to: "user@example.com",
+            subject: "Fail",
+        }), env);
+        expect(res.status).toBe(404);
+        const json = await res.json();
+        expect(json.phase).toBe("pre_send");
+    });
+});
+// ─── Group 8: fetch() routing ───
+describe("fetch() routing", () => {
+    function routingEnv() {
+        const { bucket } = createMockR2();
+        const { fetcher } = createMockFetcher();
+        const { sendEmail } = createMockSendEmail();
+        return { DB: {}, EMAIL_BUCKET: bucket, WEB_SERVICE: fetcher, SEND_EMAIL: sendEmail, IMAP_POLLER: {}, ENCRYPTION_KEY: "test-secret", EMAIL_NOTIFY_SECRET: "notify-secret", PHNEAKNGAR_DOMAIN: "agents.example" };
+    }
+    it("returns 404 for unknown paths", async () => {
+        const res = await handler.fetch(new Request("http://localhost/unknown", { method: "POST" }), routingEnv());
+        expect(res.status).toBe(404);
+    });
+    it("returns 405 for non-POST methods", async () => {
+        const res = await handler.fetch(new Request("http://localhost/send/otp", { method: "GET" }), routingEnv());
+        expect(res.status).toBe(405);
+    });
+});
+// ─── Group 8: IMAP management routes ───
+describe("IMAP management routes", () => {
+    function imapEnv() {
+        const { bucket } = createMockR2();
+        const { fetcher } = createMockFetcher();
+        const { sendEmail } = createMockSendEmail();
+        const doFetch = vi.fn().mockResolvedValue(Response.json({ ok: true }));
+        const mockStub = { fetch: doFetch };
+        const mockIdFromName = vi.fn().mockReturnValue("do-id-1");
+        const mockGet = vi.fn().mockReturnValue(mockStub);
+        const imapPoller = { idFromName: mockIdFromName, get: mockGet };
+        return {
+            env: { DB: {}, EMAIL_BUCKET: bucket, WEB_SERVICE: fetcher, SEND_EMAIL: sendEmail, IMAP_POLLER: imapPoller, ENCRYPTION_KEY: "test-secret", EMAIL_NOTIFY_SECRET: "notify-secret", PHNEAKNGAR_DOMAIN: "agents.example" },
+            doFetch,
+            mockIdFromName,
+            mockGet,
+        };
+    }
+    it("POST /imap/start forwards to DO with accountId", async () => {
+        const { env, doFetch, mockIdFromName } = imapEnv();
+        const res = await handler.fetch(new Request("http://localhost/imap/start?accountId=acc-1&workspaceId=ws-1", { method: "POST" }), env);
+        expect(res.status).toBe(200);
+        expect(mockIdFromName).toHaveBeenCalledWith("acc-1");
+        expect(doFetch).toHaveBeenCalledOnce();
+        const [req] = doFetch.mock.calls[0];
+        expect(new URL(req.url).pathname).toBe("/start");
+        const body = await req.json();
+        expect(body).toEqual({ accountId: "acc-1", workspaceId: "ws-1" });
+    });
+    it("POST /imap/stop forwards to DO", async () => {
+        const { env, doFetch } = imapEnv();
+        const res = await handler.fetch(new Request("http://localhost/imap/stop?accountId=acc-1&workspaceId=ws-1", { method: "POST" }), env);
+        expect(res.status).toBe(200);
+        const [req] = doFetch.mock.calls[0];
+        expect(new URL(req.url).pathname).toBe("/stop");
+    });
+    it("POST /imap/sync forwards to DO", async () => {
+        const { env, doFetch } = imapEnv();
+        const res = await handler.fetch(new Request("http://localhost/imap/sync?accountId=acc-1&workspaceId=ws-1", { method: "POST" }), env);
+        expect(res.status).toBe(200);
+        const [req] = doFetch.mock.calls[0];
+        expect(new URL(req.url).pathname).toBe("/sync");
+    });
+    it("GET /imap/status forwards to DO", async () => {
+        const { env, doFetch } = imapEnv();
+        const res = await handler.fetch(new Request("http://localhost/imap/status?accountId=acc-1&workspaceId=ws-1", { method: "GET" }), env);
+        expect(res.status).toBe(200);
+        const [req] = doFetch.mock.calls[0];
+        expect(new URL(req.url).pathname).toBe("/status");
+        expect(req.method).toBe("GET");
+    });
+    it("returns 400 when accountId is missing", async () => {
+        const { env } = imapEnv();
+        const res = await handler.fetch(new Request("http://localhost/imap/start", { method: "POST" }), env);
+        expect(res.status).toBe(400);
+    });
+});
