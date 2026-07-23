@@ -33,9 +33,9 @@ export function FileCard({
       type="button"
       onClick={onClick}
       disabled={!onClick}
-      className="card-grain w-104 max-w-full overflow-hidden rounded-(--radius) border border-(--border) bg-(--paper) text-left grid grid-cols-[44px_1fr] cursor-pointer [transition:translate_.2s_cubic-bezier(.2,.8,.2,1),box-shadow_.2s_ease] hover:-translate-y-0.5 [box-shadow:var(--e1)] hover:[box-shadow:var(--e2)]"
+      className="relative w-104 max-w-full overflow-hidden rounded-(--radius) border border-(--border) bg-(--paper) text-left grid grid-cols-[44px_1fr] cursor-pointer [transition:translate_.2s_cubic-bezier(.2,.8,.2,1),box-shadow_.2s_ease] hover:-translate-y-0.5 [box-shadow:var(--e1)] hover:[box-shadow:var(--e2)]"
     >
-      <span className="flex flex-col items-center justify-center border-r border-(--border) bg-[oklch(from_var(--tf)_l_c_h/0.08)] gap-0.5 p-2">
+      <span className="flex flex-col items-center justify-center border-r border-(--border) bg-[color-mix(in_srgb,var(--tf)_8%,transparent)] gap-0.5 p-2">
         <span className="flex flex-col gap-0.5 w-4.5">
           <i className="h-[1.5px] rounded-sm bg-(--tf) opacity-[0.28] w-full" />
           <i className="h-[1.5px] rounded-sm bg-(--tf) opacity-[0.28] w-[78%]" />

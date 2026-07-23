@@ -1139,3 +1139,111 @@ export const gatewayIngressDedupe = sqliteTable(
     index("idx_gateway_ingress_dedupe_ws").on(t.workspaceId, t.provider),
   ]
 );
+
+// ---------------------------------------------------------------------------
+// SOP Playbooks: structured, state-machine procedures executed by agent runtimes
+// ---------------------------------------------------------------------------
+
+/** Versioned SOP definition owned by a workspace, optionally bound to one agent. */
+export const playbook = sqliteTable(
+  "playbook",
+  {
+    id: text("id").primaryKey().$defaultFn(() => "pb_" + nanoid()),
+    workspaceId: text("workspace_id")
+      .notNull()
+      .references(() => workspace.id, { onDelete: "cascade" }),
+    /** Null = workspace-level playbook runnable by any permitted agent. */
+    agentId: text("agent_id"),
+    title: text("title").notNull(),
+    description: text("description").notNull().default(""),
+    /** JSON StepDef[] validated by the shared playbook schema. */
+    definition: text("definition", { mode: "json" }).notNull(),
+    version: integer("version").notNull().default(1),
+    status: text("status").notNull().default("draft"),
+    createdByUserId: text("created_by_user_id").references(() => user.id, {
+      onDelete: "set null",
+    }),
+    createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
+    updatedAt: text("updated_at").notNull().$defaultFn(() => new Date().toISOString()),
+  },
+  (t) => [
+    index("idx_playbook_ws_agent_status").on(t.workspaceId, t.agentId, t.status),
+    index("idx_playbook_ws_updated").on(t.workspaceId, t.updatedAt),
+    foreignKey({
+      columns: [t.agentId, t.workspaceId],
+      foreignColumns: [agent.id, agent.workspaceId],
+    }).onDelete("cascade"),
+  ]
+);
+
+/** One execution of a playbook; snapshots the definition at start time. */
+export const playbookRun = sqliteTable(
+  "playbook_run",
+  {
+    id: text("id").primaryKey().$defaultFn(() => "pbr_" + nanoid()),
+    workspaceId: text("workspace_id")
+      .notNull()
+      .references(() => workspace.id, { onDelete: "cascade" }),
+    playbookId: text("playbook_id")
+      .notNull()
+      .references(() => playbook.id, { onDelete: "cascade" }),
+    playbookVersion: integer("playbook_version").notNull(),
+    agentId: text("agent_id")
+      .notNull()
+      .references(() => agent.id, { onDelete: "cascade" }),
+    runtimeId: text("runtime_id").references(() => agentRuntime.id, {
+      onDelete: "set null",
+    }),
+    conversationId: text("conversation_id").references(() => conversation.id, {
+      onDelete: "set null",
+    }),
+    status: text("status").notNull().default("running"),
+    currentStepId: text("current_step_id"),
+    /** Frozen StepDef[] snapshot taken at run start. */
+    snapshot: text("snapshot", { mode: "json" }).notNull(),
+    input: text("input", { mode: "json" }),
+    /** Accumulated step outputs keyed by step id. */
+    output: text("output", { mode: "json" }),
+    startedByUserId: text("started_by_user_id").references(() => user.id, {
+      onDelete: "set null",
+    }),
+    currentTaskId: text("current_task_id"),
+    currentApprovalId: text("current_approval_id"),
+    createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
+    startedAt: text("started_at"),
+    finishedAt: text("finished_at"),
+    error: text("error"),
+  },
+  (t) => [
+    index("idx_playbook_run_ws_status").on(t.workspaceId, t.status),
+    index("idx_playbook_run_ws_playbook").on(t.workspaceId, t.playbookId, t.createdAt),
+    index("idx_playbook_run_ws_agent").on(t.workspaceId, t.agentId, t.status),
+  ]
+);
+
+/** Per-step execution record within a playbook run. */
+export const playbookStepRun = sqliteTable(
+  "playbook_step_run",
+  {
+    id: text("id").primaryKey().$defaultFn(() => "pbsr_" + nanoid()),
+    runId: text("run_id")
+      .notNull()
+      .references(() => playbookRun.id, { onDelete: "cascade" }),
+    workspaceId: text("workspace_id")
+      .notNull()
+      .references(() => workspace.id, { onDelete: "cascade" }),
+    stepId: text("step_id").notNull(),
+    stepKind: text("step_kind").notNull(),
+    status: text("status").notNull().default("pending"),
+    output: text("output"),
+    taskId: text("task_id"),
+    approvalId: text("approval_id"),
+    startedAt: text("started_at"),
+    finishedAt: text("finished_at"),
+    error: text("error"),
+  },
+  (t) => [
+    unique("playbook_step_run_run_step").on(t.runId, t.stepId),
+    index("idx_playbook_step_run_ws_run").on(t.workspaceId, t.runId),
+  ]
+);

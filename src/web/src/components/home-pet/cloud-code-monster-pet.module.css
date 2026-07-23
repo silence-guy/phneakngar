@@ -29,7 +29,7 @@
   width: 11px;
   height: 6px;
   border-radius: 3px;
-  background: color-mix(in oklch, var(--foreground) 26%, transparent);
+  background: color-mix(in srgb,var(--foreground) 26%, transparent);
   opacity: 0;
   transform: translate3d(var(--monster-footprint-x), var(--monster-footprint-y), 0)
     rotate(var(--monster-footprint-rotate, -8deg))
@@ -51,7 +51,7 @@
   border: 0;
   background: transparent;
   cursor: grab;
-  filter: drop-shadow(0 12px 18px color-mix(in oklch, var(--foreground) 16%, transparent));
+  filter: drop-shadow(0 12px 18px color-mix(in srgb,var(--foreground) 16%, transparent));
   pointer-events: auto;
   transform-origin: 50% 88%;
 }
@@ -66,7 +66,7 @@
 }
 
 .button:focus-visible {
-  outline: 2px solid color-mix(in oklch, var(--primary) 55%, transparent);
+  outline: 2px solid color-mix(in srgb,var(--primary) 55%, transparent);
   outline-offset: 5px;
   border-radius: 8px;
 }
@@ -152,7 +152,7 @@
 
 .pet[data-fainted="true"] .button {
   animation: cloud-code-monster-faint 10s ease-in-out both;
-  filter: drop-shadow(0 6px 9px color-mix(in oklch, var(--foreground) 12%, transparent));
+  filter: drop-shadow(0 6px 9px color-mix(in srgb,var(--foreground) 12%, transparent));
   transform-origin: 50% 92%;
 }
 
@@ -178,7 +178,7 @@
   height: 28px;
   place-items: center;
   background: transparent;
-  filter: drop-shadow(0 7px 10px color-mix(in oklch, var(--foreground) 20%, transparent));
+  filter: drop-shadow(0 7px 10px color-mix(in srgb,var(--foreground) 20%, transparent));
   image-rendering: pixelated;
   transform: translateX(-50%);
   animation: cloud-code-monster-bell-alert 980ms cubic-bezier(0.34, 1.56, 0.64, 1) infinite;

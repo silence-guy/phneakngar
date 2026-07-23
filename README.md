@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./assets/readme-banner.png" alt="ភ្នាក់ងារ — an open-source platform for running your personal AI company" width="800" />
+  <img src="./assets/readme-banner.svg" alt="ភ្នាក់ងារ — an open-source platform for running your personal AI company" width="800" />
 </p>
 
 <p align="center">

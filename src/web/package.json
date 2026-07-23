@@ -1,6 +1,6 @@
 {
   "name": "@phneakngar/web",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -18,7 +18,7 @@
     "test:watch": "vitest",
     "test:e2e": "vitest run --config vitest.e2e.config.ts",
     "knip": "knip",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "rm -rf .open-next && tsc --noEmit",
     "seo:check": "lhci autorun --config=lighthouserc.json && node scripts/print-lighthouse-scores.mjs"
   },
   "dependencies": {

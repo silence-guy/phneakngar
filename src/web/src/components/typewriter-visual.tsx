@@ -5,6 +5,7 @@ import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import { SplitText } from "gsap/SplitText";
 import { useLocalStorage } from "@/hooks/use-local-storage";
+import { useTheme } from "next-themes";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { toPublicPhneakngarAddress } from "@/lib/email-domain";
 
@@ -148,16 +149,22 @@ function BirthdayPicker({
 
 // CSS variables the typewriter CSS needs — self-provided so
 // the component works outside the `.landing` scope too.
-const TW_VARS: React.CSSProperties = {
-  "--tw-body": "oklch(0.25 0.01 60)",
-  "--tw-body-hi": "oklch(0.30 0.01 60)",
-  "--tw-body-lo": "oklch(0.18 0.01 55)",
-  "--tw-body-top": "oklch(0.28 0.01 60)",
-  "--tw-chrome": "oklch(0.72 0.01 75)",
-  "--tw-chrome-hi": "oklch(0.82 0.005 80)",
-  "--tw-paper": "oklch(0.97 0.008 80)",
-  "--tw-blob": "oklch(0.88 0.025 82)",
-  "--tw-roller": "oklch(0.15 0.01 55)",
+// Dark set dims the ambient blob so it reads on the pure-black Geist canvas.
+const TW_VARS_LIGHT: React.CSSProperties = {
+  "--tw-body": "#262626",
+  "--tw-body-hi": "#333333",
+  "--tw-body-lo": "#1a1a1a",
+  "--tw-body-top": "#2e2e2e",
+  "--tw-chrome": "#a3a3a3",
+  "--tw-chrome-hi": "#d4d4d4",
+  "--tw-paper": "#fafafa",
+  "--tw-blob": "#e5e5e5",
+  "--tw-roller": "#171717",
+} as React.CSSProperties;
+
+const TW_VARS_DARK: React.CSSProperties = {
+  ...TW_VARS_LIGHT,
+  "--tw-blob": "#1f1f1f",
 } as React.CSSProperties;
 
 interface TypewriterVisualProps {
@@ -190,6 +197,7 @@ export function TypewriterVisual({
   blobScale = 1,
   blobBottom,
 }: TypewriterVisualProps) {
+  const { resolvedTheme } = useTheme();
   const containerRef = useRef<HTMLDivElement>(null);
   const paperTlRef = useRef<gsap.core.Timeline | null>(null);
   const isAnimatingRef = useRef(false);
@@ -392,12 +400,13 @@ const shortDate = longDate;
   );
 
   const email = effectiveEmails[emailIndex];
+  const twVars = resolvedTheme === "dark" ? TW_VARS_DARK : TW_VARS_LIGHT;
 
   return (
     <div
       ref={containerRef}
       className={`typewriter-visual${className ? ` ${className}` : ""}`}
-      style={TW_VARS}
+      style={twVars}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
     >
@@ -423,23 +432,23 @@ const shortDate = longDate;
                         style={{
                           fontFamily: "var(--font-crt)",
                           fontSize: "15px",
-                          color: "oklch(0.45 0.01 55)",
+                          color: "#737373",
                           lineHeight: 1.7,
-                          borderBottom: "1px solid oklch(0.15 0.01 55 / 10%)",
+                          borderBottom: "1px solid rgba(0, 0, 0, 0.1)",
                           paddingBottom: "10px",
                           marginBottom: "12px",
                         }}
                       >
                         <div className="tw-email-line">
-<span style={{ color: "oklch(0.15 0.01 55)" }}>ពី:</span>{" "}
+<span style={{ color: "#171717" }}>ពី:</span>{" "}
                           {email.from}
                         </div>
                         <div className="tw-email-line">
-<span style={{ color: "oklch(0.15 0.01 55)" }}>ទៅ:</span>{" "}
+<span style={{ color: "#171717" }}>ទៅ:</span>{" "}
                           {email.to}
                         </div>
                         <div className="tw-email-line">
-<span style={{ color: "oklch(0.15 0.01 55)" }}>ប្រធានបទ:</span>{" "}
+<span style={{ color: "#171717" }}>ប្រធានបទ:</span>{" "}
                           {email.subject}
                         </div>
                       </div>
@@ -449,7 +458,7 @@ const shortDate = longDate;
                         aria-hidden
                         style={{
                           fontFamily: "var(--font-crt)",
-                          color: "oklch(0.45 0.01 55)",
+                          color: "#737373",
                           fontSize: "17px",
                           lineHeight: 1.6,
                         }}

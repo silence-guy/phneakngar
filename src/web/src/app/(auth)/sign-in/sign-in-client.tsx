@@ -304,7 +304,7 @@ function ProductGallery() {
           {galleryImages[active].label}
         </p>
       </div>
-      <div className="relative mt-5 w-full overflow-hidden rounded-lg border border-border/70 bg-background/70 shadow-[0_18px_45px_-30px_oklch(0.2_0.01_60/45%)]">
+      <div className="relative mt-5 w-full overflow-hidden rounded-lg border border-border bg-background shadow-[var(--e1)]">
         {galleryImages.map((img, i) => (
           <Image
             key={img.src}
@@ -376,7 +376,7 @@ export default function SignInPageClient({ isProd }: { isProd: boolean }) {
         <div className="mb-5 flex justify-center">
           <Logo size="lg" />
         </div>
-        <Card className="rounded-lg border border-foreground/10 bg-card/92 p-0 shadow-[0_24px_80px_-55px_oklch(0.2_0.01_60/65%)] backdrop-blur">
+        <Card className="rounded-lg border border-foreground/10 bg-card p-0 shadow-[var(--e2)]">
           <CardContent className="grid p-0 md:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)]">
             <div className="flex min-h-107.5 min-w-0 flex-col justify-center p-6 sm:p-8">
               <div className="mb-7 space-y-3">

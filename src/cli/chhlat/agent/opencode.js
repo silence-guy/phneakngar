@@ -1,0 +1,416 @@
+import { spawn } from "child_process";
+import { createInterface } from "readline";
+import { killProcessTree } from "../kill-tree.js";
+export class OpenCodeBackend {
+    cliPath;
+    name = "opencode";
+    lifecycle = { kind: "per_turn", inFlightWake: "coalesce_into_pending" };
+    busyDeliveryMode = "none";
+    supportsStdinNotification = false;
+    constructor(cliPath) {
+        this.cliPath = cliPath;
+    }
+    parseLine(line) {
+        if (!line.trim())
+            return [];
+        let event;
+        try {
+            event = JSON.parse(line);
+        }
+        catch {
+            return [{ kind: "log", content: line, level: "debug" }];
+        }
+        const events = [];
+        const eventType = event.type;
+        const part = event.part;
+        const eventSessionId = event.sessionID || event.session_id;
+        switch (eventType) {
+            case "session": {
+                const sessionId = event.session_id;
+                if (sessionId)
+                    events.push({ kind: "session_init", sessionId });
+                break;
+            }
+            case "message": {
+                const role = event.role;
+                const content = event.content;
+                if (role === "assistant" && content) {
+                    events.push({ kind: "text", text: content });
+                }
+                break;
+            }
+            case "text": {
+                const text = part?.text || event.content || "";
+                if (text)
+                    events.push({ kind: "text", text });
+                break;
+            }
+            case "thinking": {
+                const content = part?.thinking || event.content || "";
+                events.push({ kind: "thinking", text: content });
+                break;
+            }
+            case "tool_call":
+                events.push({
+                    kind: "tool_call",
+                    name: event.name || part?.name || "",
+                    callId: event.call_id || part?.id || "",
+                    input: event.input || part?.input,
+                });
+                break;
+            case "tool_result":
+                events.push({
+                    kind: "tool_output",
+                    callId: event.call_id || part?.id || "",
+                    output: event.output || part?.output || "",
+                });
+                break;
+            case "error": {
+                const content = event.message || event.content || part?.error || "";
+                events.push({ kind: "error", message: content });
+                events.push({ kind: "turn_end" });
+                break;
+            }
+            case "step_start":
+                break;
+            case "step_finish": {
+                const reason = part?.reason;
+                if (reason === "stop" || reason === "end_turn") {
+                    events.push({ kind: "turn_end" });
+                }
+                break;
+            }
+            case "done":
+            case "complete": {
+                const status = event.status;
+                if (status === "error" || status === "failed") {
+                    const output = event.output;
+                    events.push({ kind: "error", message: output || "task failed" });
+                }
+                events.push({ kind: "turn_end" });
+                break;
+            }
+            default:
+                events.push({ kind: "log", content: line, level: "debug" });
+        }
+        // Attach session info if available as first event
+        if (eventSessionId && events.length > 0 && events[0].kind !== "session_init") {
+            events.unshift({ kind: "session_init", sessionId: eventSessionId });
+        }
+        return events;
+    }
+    encodeStdinMessage() {
+        return null;
+    }
+    execute(prompt, options) {
+        const args = ["run", "--format", "json", "--dir", options.cwd];
+        if (options.model) {
+            args.push("--model", options.model);
+        }
+        if (options.resumeSessionId) {
+            args.push("--session", options.resumeSessionId);
+        }
+        // User prompt as positional argument (no flag)
+        args.push(prompt);
+        const proc = spawn(this.cliPath, args, {
+            cwd: options.cwd,
+            stdio: ["ignore", "pipe", "pipe"],
+            env: { ...process.env, ...options.env, OPENCODE_PERMISSION: '{"*":"allow"}' },
+            shell: process.platform === "win32",
+            windowsHide: true,
+            // POSIX: own process group (pgid === pid) so the session-runner can reap
+            // the CLI *and* its tool subprocesses via a group kill. No unref() — we
+            // keep the handle for stdio streaming and the result promise.
+            detached: process.platform !== "win32",
+        });
+        if (!proc.pid) {
+            const error = `Failed to start ${this.cliPath}: binary not found or not executable. Is 'opencode' installed and on PATH?`;
+            const failedResult = { status: "failed", output: "", error, durationMs: 0, sessionId: "" };
+            const emptyMessages = { [Symbol.asyncIterator]() { return { async next() { return { value: undefined, done: true }; } }; } };
+            return { pid: undefined, messages: emptyMessages, sessionId: Promise.resolve(""), result: Promise.resolve(failedResult) };
+        }
+        let timedOut = false;
+        let timeoutTimer;
+        if (options.timeout) {
+            timeoutTimer = setTimeout(() => {
+                timedOut = true;
+                // Reap the whole group (CLI + tool subprocesses), not just the leader.
+                if (proc.pid !== undefined)
+                    void killProcessTree(proc.pid);
+            }, options.timeout);
+        }
+        const startTime = Date.now();
+        let lastSessionId = "";
+        let lastOutput = "";
+        let lastError = "";
+        let resultStatus = "completed";
+        let resolveSessionId;
+        const sessionIdPromise = new Promise((resolve) => {
+            resolveSessionId = resolve;
+        });
+        let turnDoneTriggered = false;
+        const turnDone = () => {
+            if (turnDoneTriggered)
+                return;
+            turnDoneTriggered = true;
+            try {
+                proc.kill("SIGTERM");
+            }
+            catch { /* already dead */ }
+        };
+        const messageQueue = [];
+        let messageResolve = null;
+        let messageDone = false;
+        const parsedEventQueue = [];
+        let parsedEventResolve = null;
+        let parsedEventDone = false;
+        const pushMessage = (msg) => {
+            messageQueue.push(msg);
+            if (messageResolve) {
+                const r = messageResolve;
+                messageResolve = null;
+                r();
+            }
+        };
+        const pushParsedEvent = (evt) => {
+            parsedEventQueue.push(evt);
+            if (parsedEventResolve) {
+                const r = parsedEventResolve;
+                parsedEventResolve = null;
+                r();
+            }
+        };
+        const resultPromise = new Promise((resolve) => {
+            const stderrChunks = [];
+            proc.stderr?.on("data", (chunk) => {
+                stderrChunks.push(chunk.toString());
+            });
+            const rl = createInterface({ input: proc.stdout });
+            rl.on("line", (line) => {
+                if (!line.trim())
+                    return;
+                // Emit ParsedEvents for steering layer
+                const parsed = this.parseLine(line);
+                for (const pe of parsed)
+                    pushParsedEvent(pe);
+                let event;
+                try {
+                    event = JSON.parse(line);
+                }
+                catch {
+                    pushMessage({ type: "log", content: line, level: "debug" });
+                    return;
+                }
+                const eventType = event.type;
+                const part = event.part;
+                // Extract sessionID from any event (v1.14+ format)
+                const eventSessionId = event.sessionID || event.session_id;
+                if (eventSessionId && !lastSessionId) {
+                    lastSessionId = eventSessionId;
+                    resolveSessionId(eventSessionId);
+                }
+                switch (eventType) {
+                    case "session": {
+                        const sessionId = event.session_id;
+                        if (sessionId) {
+                            lastSessionId = sessionId;
+                            resolveSessionId(sessionId);
+                        }
+                        break;
+                    }
+                    case "message": {
+                        const role = event.role;
+                        const content = event.content;
+                        if (role === "assistant" && content) {
+                            lastOutput = content;
+                            pushMessage({ type: "text", content });
+                        }
+                        break;
+                    }
+                    // v1.14+ format: { type: "text", part: { text: "..." } }
+                    case "text": {
+                        const text = part?.text || event.content || "";
+                        if (text) {
+                            lastOutput = text;
+                            pushMessage({ type: "text", content: text });
+                        }
+                        break;
+                    }
+                    case "thinking": {
+                        const content = part?.thinking || event.content || "";
+                        pushMessage({ type: "thinking", content });
+                        break;
+                    }
+                    case "tool_call": {
+                        pushMessage({
+                            type: "tool-use",
+                            tool: event.name || part?.name || "",
+                            callId: event.call_id || part?.id || "",
+                            input: event.input || part?.input,
+                        });
+                        break;
+                    }
+                    case "tool_result": {
+                        pushMessage({
+                            type: "tool-result",
+                            callId: event.call_id || part?.id || "",
+                            output: event.output || part?.output || "",
+                        });
+                        break;
+                    }
+                    case "error": {
+                        const content = event.message || event.content || part?.error || "";
+                        lastError = content;
+                        // Mark the run failed (matches codex.ts + the done/spawn-error branches
+                        // below). Without this the run ends "completed", failTask never runs,
+                        // no assistant error message is persisted, and the error is lost on
+                        // reload — it only ever showed via the live task.messages broadcast.
+                        resultStatus = "failed";
+                        pushMessage({ type: "error", content });
+                        turnDone();
+                        break;
+                    }
+                    // v1.14+ signals
+                    case "step_start": {
+                        break;
+                    }
+                    case "step_finish": {
+                        const reason = part?.reason;
+                        if (reason === "stop" || reason === "end_turn") {
+                            turnDone();
+                        }
+                        break;
+                    }
+                    case "done":
+                    case "complete": {
+                        const output = event.output;
+                        const status = event.status;
+                        const sessionId = event.session_id;
+                        if (output)
+                            lastOutput = output;
+                        if (sessionId)
+                            lastSessionId = sessionId;
+                        if (status === "error" || status === "failed") {
+                            resultStatus = "failed";
+                            if (!lastError)
+                                lastError = output || "task failed";
+                        }
+                        turnDone();
+                        break;
+                    }
+                    default: {
+                        pushMessage({
+                            type: "log",
+                            content: line,
+                            level: "debug",
+                        });
+                    }
+                }
+            });
+            proc.on("error", (err) => {
+                resultStatus = "failed";
+                lastError = `spawn error: ${err.message}`;
+                resolveSessionId(lastSessionId);
+                messageDone = true;
+                parsedEventDone = true;
+                if (messageResolve) {
+                    const r = messageResolve;
+                    messageResolve = null;
+                    r();
+                }
+                if (parsedEventResolve) {
+                    const r = parsedEventResolve;
+                    parsedEventResolve = null;
+                    r();
+                }
+                resolve({
+                    status: "failed",
+                    output: "",
+                    error: lastError,
+                    durationMs: Date.now() - startTime,
+                    sessionId: lastSessionId,
+                });
+            });
+            proc.on("close", (code) => {
+                if (timeoutTimer)
+                    clearTimeout(timeoutTimer);
+                if (timedOut) {
+                    resultStatus = "timeout";
+                }
+                else if (code !== 0 && resultStatus === "completed" && !turnDoneTriggered) {
+                    if (!lastOutput) {
+                        resultStatus = "failed";
+                    }
+                }
+                const stderr = stderrChunks.join("");
+                if (stderr && !lastError) {
+                    lastError = stderr;
+                }
+                // Resolve sessionId promise (fallback if session event never fired)
+                resolveSessionId(lastSessionId);
+                messageDone = true;
+                parsedEventDone = true;
+                if (messageResolve) {
+                    const r = messageResolve;
+                    messageResolve = null;
+                    r();
+                }
+                if (parsedEventResolve) {
+                    const r = parsedEventResolve;
+                    parsedEventResolve = null;
+                    r();
+                }
+                resolve({
+                    status: resultStatus,
+                    output: lastOutput,
+                    error: lastError,
+                    durationMs: Date.now() - startTime,
+                    sessionId: lastSessionId,
+                });
+            });
+        });
+        const messages = {
+            [Symbol.asyncIterator]() {
+                return {
+                    async next() {
+                        while (messageQueue.length === 0 && !messageDone) {
+                            await new Promise((resolve) => {
+                                messageResolve = resolve;
+                            });
+                        }
+                        if (messageQueue.length > 0) {
+                            return { value: messageQueue.shift(), done: false };
+                        }
+                        return { value: undefined, done: true };
+                    },
+                };
+            },
+        };
+        const parsedEvents = {
+            [Symbol.asyncIterator]() {
+                return {
+                    async next() {
+                        while (parsedEventQueue.length === 0 && !parsedEventDone) {
+                            await new Promise((resolve) => {
+                                parsedEventResolve = resolve;
+                            });
+                        }
+                        if (parsedEventQueue.length > 0) {
+                            return { value: parsedEventQueue.shift(), done: false };
+                        }
+                        return { value: undefined, done: true };
+                    },
+                };
+            },
+        };
+        const send = () => {
+            return { ok: false, reason: "unsupported" };
+        };
+        const descriptor = {
+            lifecycle: this.lifecycle,
+            busyDeliveryMode: this.busyDeliveryMode,
+            supportsStdinNotification: this.supportsStdinNotification,
+        };
+        return { pid: proc.pid, messages, parsedEvents, sessionId: sessionIdPromise, result: resultPromise, send, descriptor };
+    }
+}

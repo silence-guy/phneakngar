@@ -46,7 +46,7 @@ export function PublicLayout({
 
   return (
     <div className="min-h-dvh flex flex-col bg-background text-foreground">
-      <nav className="sticky top-0 z-50 bg-background/90 backdrop-blur-sm border-b border-border/40">
+      <nav className="sticky top-0 z-50 bg-background border-b border-border/40">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-2.5">
           {leftSlot ? (
             <div className="flex items-center gap-1.5">{leftSlot}</div>
@@ -56,7 +56,6 @@ export function PublicLayout({
                 <BrandMark size={22} />
                 <span
                   className="text-lg tracking-tight font-bold"
-                  style={{ fontFamily: "var(--font-brand)" }}
                 >
                   ភ្នាក់ងារ
                 </span>
@@ -98,7 +97,6 @@ export function PublicLayout({
               <Link href="/" className="flex items-center gap-1">
                 <span
                   className="text-lg tracking-tight font-bold"
-                  style={{ fontFamily: "var(--font-brand)" }}
                 >
                   ភ្នាក់ងារ
                 </span>

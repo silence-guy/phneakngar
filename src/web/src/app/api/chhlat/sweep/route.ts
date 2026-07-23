@@ -25,7 +25,9 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
   if (chhlatAuth instanceof Response) return chhlatAuth;
 
   try {
-    await sweepStaleState(db, ctx.workspaceId);
+    await sweepStaleState(db, ctx.workspaceId, {
+      emailDomain: resolveServerEmailDomain(ctx.env),
+    });
   } catch (e) {
     log.warn("sweep failed", { workspaceId: ctx.workspaceId, err: String(e) });
   }

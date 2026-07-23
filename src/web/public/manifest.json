@@ -4,8 +4,8 @@
   "description": "ភ្នាក់ងារ AI របស់អ្នក បើកដំណើរការជានិច្ច។ ផ្តល់អ៊ីមែលដល់ពួកគេ ហើយទុកឲ្យពួកគេធ្វើការជូនអ្នកពេញម៉ោង។",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#f5f0e8",
-  "theme_color": "#f5f0e8",
+  "background_color": "#ffffff",
+  "theme_color": "#000000",
   "icons": [
     {
       "src": "/logo-mark.svg",

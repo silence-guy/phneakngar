@@ -94,6 +94,10 @@ The production-readiness audit validated the complete chain from an empty local 
   - `gateway_binding.secret_ref` — write-only bot/token vault pointer for live egress
   - `activity_event` — workspace-scoped activity feed (approve / egress / probe)
   - Live Telegram/Slack egress is production-wired when binding is `live` + secret vaulted; full commercial Helio/OpenClaw parity is still not claimed
+- `0055_playbooks.sql`, which is additive SOP playbook support:
+  - `playbook` — versioned SOP definitions (JSON step list), workspace-scoped, optionally agent-bound
+  - `playbook_run` — one execution; snapshots the definition at start; all run state durable in D1
+  - `playbook_step_run` — per-step records with `unique(run_id, step_id)` for idempotent advance
 
 
 Before applying `0048_task_message_idempotency.sql` to production, run this read-only preflight against the target D1 database and review any rows it returns:

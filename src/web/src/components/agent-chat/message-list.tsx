@@ -753,7 +753,7 @@ export const MessageItem = memo(function MessageItem({
                   onClick={() => onReplyInThread?.(msg.id)}
                   className="flex items-center gap-1.5 pt-1 cursor-pointer hover:opacity-75 transition-opacity"
                 >
-                  <span className="text-[11px] font-semibold text-[oklch(0.72_0.19_145)]">
+                  <span className="text-[11px] font-semibold text-status-online">
                     {repliesLabel(threadSummary.reply_count)}
                   </span>
                   {threadSummary.last_reply_at && (
@@ -905,7 +905,7 @@ export const MessageItem = memo(function MessageItem({
                 onClick={() => onReplyInThread?.(msg.id)}
                 className="flex items-center gap-1.5 pt-1 cursor-pointer hover:opacity-75 transition-opacity"
               >
-                <span className="text-[11px] font-semibold text-[oklch(0.72_0.19_145)]">
+                <span className="text-[11px] font-semibold text-status-online">
                   {repliesLabel(threadSummary.reply_count)}
                 </span>
                 {threadSummary.last_reply_at && (

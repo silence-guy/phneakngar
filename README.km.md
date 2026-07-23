@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./assets/readme-banner.png" alt="ភ្នាក់ងារ — វេទិកា open-source សម្រាប់ដំណើរការក្រុមហ៊ុន AI ផ្ទាល់ខ្លួន" width="800" />
+  <img src="./assets/readme-banner.svg" alt="ភ្នាក់ងារ — វេទិកា open-source សម្រាប់ដំណើរការក្រុមហ៊ុន AI ផ្ទាល់ខ្លួន" width="800" />
 </p>
 
 <p align="center">

@@ -144,7 +144,9 @@ describe("POST /api/chhlat/sweep", () => {
   it("calls sweepStaleState with correct db and workspaceId", async () => {
     await POST(postReq({ chhlat_id: "d1" }));
 
-    expect(mockSweepStaleState).toHaveBeenCalledWith({}, "w1");
+    expect(mockSweepStaleState).toHaveBeenCalledWith({}, "w1", {
+      emailDomain: "example.test",
+    });
   });
 
   it("calls promoteDueCalendarEventsForWorkspace (throttled)", async () => {

@@ -110,3 +110,24 @@ export async function decideApproval(
     .returning();
   return rows[0] ?? null;
 }
+
+/**
+ * System-side expiry for pending approvals whose owning workflow was
+ * cancelled (e.g. a playbook gate created moments before a cancel landed).
+ * Only touches pending rows; never overrides a human decision.
+ */
+export async function expireApproval(db: Database, id: string, workspaceId: string) {
+  const now = new Date().toISOString();
+  const rows = await db
+    .update(approval)
+    .set({ status: "expired", updatedAt: now })
+    .where(
+      and(
+        eq(approval.id, id),
+        eq(approval.workspaceId, workspaceId),
+        eq(approval.status, "pending")
+      )
+    )
+    .returning();
+  return rows[0] ?? null;
+}

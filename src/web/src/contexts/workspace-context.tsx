@@ -2,7 +2,9 @@
 
 import { createContext, useContext, useEffect, type ReactNode } from "react"
 
-export type MemberRole = "owner" | "member"
+import type { MemberRole } from "./workspace-role";
+export type { MemberRole } from "./workspace-role";
+export { normalizeMemberRole } from "./workspace-role";
 
 interface WorkspaceContextValue {
   workspaceId: string
@@ -16,10 +18,6 @@ export function useWorkspace() {
   const ctx = useContext(WorkspaceContext)
   if (!ctx) throw new Error("useWorkspace must be used within WorkspaceProvider")
   return ctx
-}
-
-export function normalizeMemberRole(role: string | null | undefined): MemberRole {
-  return role === "owner" ? "owner" : "member"
 }
 
 export function WorkspaceProvider({

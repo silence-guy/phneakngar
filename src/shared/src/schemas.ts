@@ -2,6 +2,7 @@ import { z } from "zod";
 import { IssueStatus, MAX_POLL_TASKS, TASK_TYPES } from "./constants";
 import { isPublicNetworkHost } from "./network-host";
 import { withChhlatIdFields } from "./chhlat-id";
+import { playbookDefinitionSchema } from "./lib/playbook";
 
 // ---------------------------------------------------------------------------
 // Task status
@@ -1086,3 +1087,51 @@ export const CreateThreadRequestSchema = z.object({
   attachment_ids: z.array(z.string()).optional(),
 });
 export type CreateThreadRequest = z.infer<typeof CreateThreadRequestSchema>;
+
+// ---------------------------------------------------------------------------
+// SOP Playbooks
+// ---------------------------------------------------------------------------
+
+export const CreatePlaybookRequestSchema = z.object({
+  agent_id: z.string().min(1).nullable().optional(),
+  title: z.string().min(1).max(200),
+  description: z.string().max(2_000).optional().default(""),
+  definition: playbookDefinitionSchema,
+});
+export type CreatePlaybookRequest = z.infer<typeof CreatePlaybookRequestSchema>;
+
+export const UpdatePlaybookRequestSchema = z
+  .object({
+    agent_id: z.string().min(1).nullable().optional(),
+    title: z.string().min(1).max(200).optional(),
+    description: z.string().max(2_000).optional(),
+    definition: playbookDefinitionSchema.optional(),
+  })
+  .refine(
+    (v) =>
+      v.title !== undefined ||
+      v.description !== undefined ||
+      v.definition !== undefined ||
+      v.agent_id !== undefined,
+    { message: "at least one field is required" },
+  );
+export type UpdatePlaybookRequest = z.infer<typeof UpdatePlaybookRequestSchema>;
+
+export const StartPlaybookRunRequestSchema = z.object({
+  agent_id: z.string().min(1),
+  input: z
+    .record(z.string(), z.union([z.string().max(10_000), z.number(), z.boolean(), z.null()]))
+    .refine((v) => Object.keys(v).length <= 50, { message: "input supports at most 50 keys" })
+    .refine((v) => JSON.stringify(v).length <= 100_000, {
+      message: "input exceeds the 100KB limit",
+    })
+    .nullable()
+    .optional(),
+  conversation_id: z.string().min(1).nullable().optional(),
+});
+export type StartPlaybookRunRequest = z.infer<typeof StartPlaybookRunRequestSchema>;
+
+export const AnswerPlaybookRunRequestSchema = z.object({
+  answer: z.string().min(1).max(10_000),
+});
+export type AnswerPlaybookRunRequest = z.infer<typeof AnswerPlaybookRunRequestSchema>;

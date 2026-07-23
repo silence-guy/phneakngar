@@ -58,7 +58,7 @@ const TERMINAL_STATUSES = new Set(["completed", "failed", "cancelled", "supersed
 function StatusDot({ status }: { status: string }) {
   const colorClass =
     status === "completed"
-      ? "bg-[oklch(0.72_0.19_145)]"
+      ? "bg-status-online"
       : status === "failed"
         ? "bg-destructive"
         : status === "running"

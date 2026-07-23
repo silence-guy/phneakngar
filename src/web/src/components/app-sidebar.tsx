@@ -10,7 +10,7 @@ import { FlagPopover } from "@/components/flag-popover";
 import { Logo } from "@/components/logo";
 import { appShellLabel } from "@/lib/locale";
 import { cn } from "@/lib/utils";
-import { Monitor, SunMoon, Plus, CalendarDays, Settings, ArrowLeftRight, Home, CircleDot, Folder, Ungroup, ArrowRightToLine, ShieldCheck, Repeat, Activity } from "lucide-react";
+import { Monitor, SunMoon, Plus, CalendarDays, Settings, ArrowLeftRight, Home, CircleDot, Folder, Ungroup, ArrowRightToLine, ShieldCheck, Repeat, Activity, BookOpenCheck } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { useTheme } from "next-themes";
@@ -255,6 +255,7 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void } = {}) {
   const isApprovals = pathname.startsWith(`${prefix}/approvals`);
   const isActivity = pathname.startsWith(`${prefix}/activity`);
   const isAutomations = pathname.startsWith(`${prefix}/automations`);
+  const isPlaybooks = pathname.startsWith(`${prefix}/playbooks`);
   const isSettings = pathname === `${prefix}/settings`;
   const isCreateAgent = pathname === `${prefix}/agents/new`;
 
@@ -503,6 +504,23 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void } = {}) {
             <Repeat className="size-4" />
           </TooltipTrigger>
           <TooltipContent side="right">{appShellLabel("automations")}</TooltipContent>
+        </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger render={
+            <button
+              type="button"
+              onClick={() => { router.push(`${prefix}/playbooks`); onNavigate?.(); }}
+              className={cn(
+                "flex items-center justify-center size-10 rounded-xl transition-colors duration-200 cursor-pointer",
+                "text-muted-foreground hover:text-foreground hover:bg-accent",
+                isPlaybooks && "bg-accent text-foreground"
+              )}
+            />
+          }>
+            <BookOpenCheck className="size-4" />
+          </TooltipTrigger>
+          <TooltipContent side="right">{appShellLabel("playbooks")}</TooltipContent>
         </Tooltip>
 
       </div>

@@ -38,3 +38,5 @@ export * as channelMember from "./queries/channel-member";
 export * as conversationMember from "./queries/conversation-member";
 export * as gatewayBinding from "./queries/gateway-binding";
 export * as activityEvent from "./queries/activity-event";
+export * as playbook from "./queries/playbook";
+export * as playbookRun from "./queries/playbook-run";

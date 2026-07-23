@@ -163,7 +163,7 @@ export function UseCasesSection() {
               className={`flex items-start gap-3 rounded-xl px-4 py-3 text-left transition-all duration-200 cursor-pointer shrink-0 md:shrink md:w-full ${
                 i === activeIndex
                   ? "ring-1 ring-[var(--landing-border)] shadow-sm"
-                  : "hover:bg-[oklch(0.88_0.02_75)] opacity-70 hover:opacity-100"
+                  : "hover:bg-(--muted) opacity-70 hover:opacity-100"
               }`}
               style={
                 i === activeIndex
@@ -211,7 +211,7 @@ export function UseCasesSection() {
           >
             <DemoWindow
               title={`phneakngar — ${scenarios[activeIndex].title}`}
-              className="shadow-[0_4px_24px_oklch(0.15_0.01_55/10%)]"
+              className="shadow-[0_4px_24px_rgba(0,0,0,0.1)]"
             >
               <div className="h-120 overflow-hidden">
                 <UseCaseDemo script={scenarios[activeIndex].script} />

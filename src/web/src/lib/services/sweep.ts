@@ -1,7 +1,9 @@
 import type { Database } from "@phneakngar/shared";
-import { queries } from "@phneakngar/shared";
+import { queries, TASK_TYPES } from "@phneakngar/shared";
 import { TaskService } from "./task";
 import { throttled, invalidate, cacheKeys } from "@/lib/cache";
+import { handlePlaybookTaskTerminal, advancePlaybookRun } from "./playbook-engine";
+import { log } from "@/lib/logger";
 
 const SWEEP_INTERVAL_S = 30;
 
@@ -13,7 +15,11 @@ export function _resetSweepThrottle() {}
  * stale state is cleaned up just calls this one function.
  * Rate-limited to once per 30s per workspace via KV (timestamp-based).
  */
-export async function sweepStaleState(db: Database, workspaceId: string) {
+export async function sweepStaleState(
+  db: Database,
+  workspaceId: string,
+  opts?: { emailDomain?: string },
+) {
   const lockKey = `sweep:${workspaceId}`;
   let shouldRun = false;
   try {
@@ -32,8 +38,35 @@ export async function sweepStaleState(db: Database, workspaceId: string) {
   // 2. Fail tasks stuck in "running" with no message activity for >1h
   const staleRunning = await queries.task.failStaleRunningTasks(db, workspaceId);
 
-  // 3. Reconcile agent status for all affected agents
+  // 2b. Recover playbook runs whose step task was failed by the sweeper.
+  // Without this, a stranded playbook-step task would leave the run stuck in
+  // "running" forever (the failure path needs no emailDomain: it never
+  // dispatches a next step).
   const allStale = [...staleDispatched, ...staleRunning];
+  for (const r of allStale) {
+    if (r.type !== TASK_TYPES.PLAYBOOK_STEP) continue;
+    await handlePlaybookTaskTerminal(
+      db,
+      { id: r.id, workspaceId: r.workspaceId, type: r.type, context: r.context },
+      "failed",
+      { error: "step task timed out (runtime likely disconnected)" },
+    ).catch((err) => {
+      log.warn("playbook: sweep recovery failed", { taskId: r.id, err: String(err) });
+    });
+  }
+
+  // 2c. Re-drive playbook runs whose current step is resolved but was never
+  // advanced (advance threw after the step CAS committed). Idempotent.
+  const stuckRuns = await queries.playbookRun.listStuckPlaybookRuns(db, workspaceId);
+  for (const r of stuckRuns) {
+    await advancePlaybookRun(db, workspaceId, r.runId, {
+      emailDomain: opts?.emailDomain,
+    }).catch((err) => {
+      log.warn("playbook: stuck-run advance failed", { runId: r.runId, err: String(err) });
+    });
+  }
+
+  // 3. Reconcile agent status for all affected agents
   if (allStale.length > 0) {
     const taskService = new TaskService(db);
     const seenAgents = new Set<string>();

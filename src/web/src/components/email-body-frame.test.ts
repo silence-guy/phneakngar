@@ -22,13 +22,13 @@ describe("buildSrcDoc", () => {
     const doc = buildSrcDoc(sampleHtml, true);
     expect(doc).toContain('name="color-scheme" content="dark"');
     expect(doc).toContain("color-scheme: dark");
-    expect(doc).toContain("color: #e8e5e0");
+    expect(doc).toContain("color: #ededed");
     expect(doc).toContain("background-color: transparent !important");
   });
 
   it("forces text color with !important in dark mode", () => {
     const doc = buildSrcDoc(sampleHtml, true);
-    expect(doc).toContain("color: #e8e5e0 !important");
+    expect(doc).toContain("color: #ededed !important");
   });
 
   it("sets max-width on images to prevent overflow", () => {
