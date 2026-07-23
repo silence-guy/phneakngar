@@ -38,7 +38,7 @@ function TypewriterIllustration({ agentEmail }: { agentEmail: string }) {
           padding: "20px 24px",
           background: "#ffffff",
           borderRadius: "4px 4px 0 0",
-          border: "1px solid #e0d9cc",
+          border: "1px solid rgba(0,0,0,0.08)",
           marginBottom: -2,
         }}
       >
@@ -46,22 +46,22 @@ function TypewriterIllustration({ agentEmail }: { agentEmail: string }) {
           style={{
             display: "flex",
             flexDirection: "column",
-            borderBottom: "1px solid #d5cec0",
+            borderBottom: "1px solid rgba(0,0,0,0.08)",
             paddingBottom: 10,
             marginBottom: 10,
           }}
         >
-          <div style={{ display: "flex", fontSize: 11, color: "#8a7e6e", marginBottom: 4 }}>
+          <div style={{ display: "flex", fontSize: 11, color: "#4d4d4d", marginBottom: 4 }}>
             From: {agentEmail}
           </div>
-          <div style={{ display: "flex", fontSize: 11, color: "#8a7e6e", marginBottom: 4 }}>
+          <div style={{ display: "flex", fontSize: 11, color: "#4d4d4d", marginBottom: 4 }}>
             To: you@email.com
           </div>
-          <div style={{ display: "flex", fontSize: 11, color: "#8a7e6e" }}>
+          <div style={{ display: "flex", fontSize: 11, color: "#4d4d4d" }}>
             Subject: Good morning!
           </div>
         </div>
-        <div style={{ display: "flex", fontSize: 12, color: "#8a7e6e", lineHeight: 1.5 }}>
+        <div style={{ display: "flex", fontSize: 12, color: "#4d4d4d", lineHeight: 1.5 }}>
           ភ្នាក់ងារបើកដំណើរការជានិច្ច។ ខ្ញុំបានដោះស្រាយគម្រោងទាំងអស់ពេលយប់។
         </div>
       </div>
@@ -72,7 +72,7 @@ function TypewriterIllustration({ agentEmail }: { agentEmail: string }) {
           display: "flex",
           width: 280,
           height: 14,
-          background: "#2a231a",
+          background: "#e0e0e0",
           borderRadius: 7,
         }}
       />
@@ -85,7 +85,7 @@ function TypewriterIllustration({ agentEmail }: { agentEmail: string }) {
           alignItems: "center",
           width: 320,
           padding: "16px 20px 24px",
-          background: "#3d3428",
+          background: "#f9fafb",
           borderRadius: 8,
           marginTop: -4,
         }}
@@ -113,8 +113,8 @@ function TypewriterIllustration({ agentEmail }: { agentEmail: string }) {
                     width: 22,
                     height: 22,
                     borderRadius: 11,
-                    background: "#b8a98e",
-                    border: "1px solid #8a7e6e",
+                    background: "#e5e7eb",
+                    border: "1px solid rgba(0,0,0,0.1)",
                     marginRight: ki < count - 1 ? 6 : 0,
                   }}
                 />
@@ -165,7 +165,7 @@ export async function GET(request: NextRequest) {
             <div style={{ display: "flex", fontSize: 52, fontWeight: 600, color: "#2a231a", lineHeight: 1.15 }}>
               {title}
             </div>
-            <div style={{ display: "flex", fontSize: 22, color: "#8a7e6e", marginTop: 20 }}>
+            <div style={{ display: "flex", fontSize: 22, color: "#4d4d4d", marginTop: 20 }}>
               ភ្នាក់ងារ AI ដែលសហការគ្នា បើកដំណើរការជានិច្ច និងរៀន។
             </div>
           </div>

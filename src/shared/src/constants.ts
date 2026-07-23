@@ -44,6 +44,7 @@ export const TASK_TYPES = {
   CALENDAR_EVENT: "calendar_event",
   ISSUE_EVENT: "issue_event",
   AUTOMATION_EVENT: "automation_event",
+  PLAYBOOK_STEP: "playbook_step",
   KILL_TASK: "kill_task",
 } as const;
 
@@ -162,6 +163,8 @@ export const ApprovalKind = {
   TOOL_ACTION: "tool_action",
   SKILL_INSTALL: "skill_install",
   AUTOMATION_PROMOTE: "automation_promote",
+  /** Workflow gate inside a playbook run; created by the playbook engine. */
+  PLAYBOOK_STEP_GATE: "playbook_step_gate",
 } as const;
 
 export type ApprovalKindType = (typeof ApprovalKind)[keyof typeof ApprovalKind];

@@ -593,7 +593,14 @@ export async function failStaleDispatchedTasks(db: Database, workspaceId: string
         lt(agentTaskQueue.dispatchedAt, threshold)
       )
     )
-    .returning({ agentId: agentTaskQueue.agentId, workspaceId: agentTaskQueue.workspaceId, conversationId: agentTaskQueue.conversationId });
+    .returning({
+      id: agentTaskQueue.id,
+      agentId: agentTaskQueue.agentId,
+      workspaceId: agentTaskQueue.workspaceId,
+      conversationId: agentTaskQueue.conversationId,
+      type: agentTaskQueue.type,
+      context: agentTaskQueue.context,
+    });
   return rows;
 }
 
@@ -854,7 +861,14 @@ export async function failStaleRunningTasks(db: Database, workspaceId: string, s
       visibleOutcomeStatus: "not_required",
     })
     .where(and(inArray(agentTaskQueue.id, staleIds), eq(agentTaskQueue.workspaceId, workspaceId), eq(agentTaskQueue.status, "running")))
-    .returning({ agentId: agentTaskQueue.agentId, workspaceId: agentTaskQueue.workspaceId, conversationId: agentTaskQueue.conversationId });
+    .returning({
+      id: agentTaskQueue.id,
+      agentId: agentTaskQueue.agentId,
+      workspaceId: agentTaskQueue.workspaceId,
+      conversationId: agentTaskQueue.conversationId,
+      type: agentTaskQueue.type,
+      context: agentTaskQueue.context,
+    });
   return rows;
 }
 

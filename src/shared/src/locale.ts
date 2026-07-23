@@ -292,6 +292,10 @@ export const taskTypeLabels = {
     [Locale.EN]: "Automation",
     [Locale.KM]: "ស្វ័យប្រវត្តិកម្ម",
   },
+  playbook_step: {
+    [Locale.EN]: "Playbook step",
+    [Locale.KM]: "ជំហានសៀវភៅដំណើរការ",
+  },
   kill_task: {
     [Locale.EN]: "Stop task",
     [Locale.KM]: "បញ្ឈប់ភារកិច្ច",

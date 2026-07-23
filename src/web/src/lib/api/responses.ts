@@ -448,3 +448,63 @@ export function conversationMemberToResponse(row: ConversationMemberRow) {
     created_at: formatTimestamp(row.createdAt),
   };
 }
+
+type PlaybookRow = typeof schema.playbook.$inferSelect;
+type PlaybookRunRow = typeof schema.playbookRun.$inferSelect;
+type PlaybookStepRunRow = typeof schema.playbookStepRun.$inferSelect;
+
+export function playbookToResponse(row: PlaybookRow) {
+  return {
+    id: row.id,
+    workspace_id: row.workspaceId,
+    agent_id: row.agentId ?? null,
+    title: row.title,
+    description: row.description ?? "",
+    definition: row.definition,
+    version: row.version,
+    status: row.status,
+    created_by_user_id: row.createdByUserId ?? null,
+    created_at: formatTimestamp(row.createdAt),
+    updated_at: formatTimestamp(row.updatedAt),
+  };
+}
+
+export function playbookRunToResponse(row: PlaybookRunRow) {
+  return {
+    id: row.id,
+    workspace_id: row.workspaceId,
+    playbook_id: row.playbookId,
+    playbook_version: row.playbookVersion,
+    agent_id: row.agentId,
+    runtime_id: row.runtimeId ?? null,
+    conversation_id: row.conversationId ?? null,
+    status: row.status,
+    current_step_id: row.currentStepId ?? null,
+    snapshot: row.snapshot,
+    input: row.input ?? null,
+    output: row.output ?? null,
+    started_by_user_id: row.startedByUserId ?? null,
+    current_task_id: row.currentTaskId ?? null,
+    current_approval_id: row.currentApprovalId ?? null,
+    created_at: formatTimestamp(row.createdAt),
+    started_at: formatTimestampNullable(row.startedAt),
+    finished_at: formatTimestampNullable(row.finishedAt),
+    error: row.error ?? null,
+  };
+}
+
+export function playbookStepRunToResponse(row: PlaybookStepRunRow) {
+  return {
+    id: row.id,
+    run_id: row.runId,
+    step_id: row.stepId,
+    step_kind: row.stepKind,
+    status: row.status,
+    output: row.output ?? null,
+    task_id: row.taskId ?? null,
+    approval_id: row.approvalId ?? null,
+    started_at: formatTimestampNullable(row.startedAt),
+    finished_at: formatTimestampNullable(row.finishedAt),
+    error: row.error ?? null,
+  };
+}

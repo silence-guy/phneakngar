@@ -19,6 +19,9 @@ This repository is a pnpm/Turbo monorepo for `ភ្នាក់ងារ`. Use 
 
 - Web app routes: `src/web/src/app/**`
 - Web API routes: `src/web/src/app/api/**/route.ts`
+- Playbook engine: `src/web/src/lib/services/playbook-engine.ts` (start/advance/cancel; hooked from task complete/fail and approval decide routes)
+- Playbook API: `src/web/src/app/api/playbooks/**`
+- Playbook UI: `src/web/src/app/(app)/w/[slug]/playbooks/**`
 - Web Cloudflare config: `src/web/wrangler.toml`
 - Web migrations: `src/web/migrations/*.sql`
 - Shared D1 schema: `src/shared/src/db/schema.ts`

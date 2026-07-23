@@ -8,6 +8,7 @@ const mockGetConversation = vi.fn();
 const mockGetTask = vi.fn();
 const mockGetAgentRuntimeForWorkspace = vi.fn();
 const mockMaybeCreateTaskDeliveryArtifact = vi.fn().mockResolvedValue(null);
+const mockHandlePlaybookTaskTerminal = vi.fn().mockResolvedValue(undefined);
 
 let mockAuthCtx: Record<string, unknown> = {
   env: {},
@@ -87,6 +88,15 @@ vi.mock("@/lib/cache", () => ({
 vi.mock("@/lib/services/delivery-artifact", () => ({
   maybeCreateTaskDeliveryArtifact: (...args: unknown[]) =>
     mockMaybeCreateTaskDeliveryArtifact(...args),
+}));
+vi.mock("@/lib/services/playbook-engine", () => ({
+  handlePlaybookTaskTerminal: (...args: unknown[]) => mockHandlePlaybookTaskTerminal(...args),
+}));
+vi.mock("@/lib/email-domain", () => ({
+  resolveServerEmailDomain: vi.fn(() => "test.dev"),
+}));
+vi.mock("@/lib/logger", () => ({
+  log: { warn: vi.fn(), info: vi.fn(), error: vi.fn(), debug: vi.fn() },
 }));
 
 import { TaskAlreadyTerminalError } from "@/lib/services/task";
@@ -268,5 +278,46 @@ describe("POST /api/chhlat/tasks/[taskId]/complete", () => {
     expect(res.status).toBe(403);
     expect(body.error).toBe("task runtime does not match token owner");
     expect(mockCompleteTask).not.toHaveBeenCalled();
+  });
+
+  it("advances the playbook run with emailDomain when the task is a playbook step", async () => {
+    const fakeTask = {
+      id: "t1",
+      agentId: "a1",
+      conversationId: "c1",
+      status: "completed",
+      type: "playbook_step",
+      context: { playbook_run_id: "pbr_1", playbook_step_id: "s1" },
+    };
+    mockCompleteTask.mockResolvedValue({ task: fakeTask, channelDelivery: null });
+    mockGetConversation.mockResolvedValue({ id: "c1", userId: "owner-u2" });
+    mockTaskToResponse.mockReturnValue({ id: "t1", status: "completed" });
+
+    const res = await POST(makeReq("t1", { output: "step done" }), withParams("t1"));
+    expect(res.status).toBe(200);
+    expect(mockHandlePlaybookTaskTerminal).toHaveBeenCalledWith(
+      {},
+      fakeTask,
+      "completed",
+      { output: "step done", emailDomain: "test.dev" },
+    );
+  });
+
+  it("does not call the playbook hook for non-playbook tasks", async () => {
+    const fakeTask = {
+      id: "t1",
+      agentId: "a1",
+      conversationId: "c1",
+      status: "completed",
+      type: "user_dm_message",
+      context: {},
+    };
+    mockCompleteTask.mockResolvedValue({ task: fakeTask, channelDelivery: null });
+    mockGetConversation.mockResolvedValue({ id: "c1", userId: "owner-u2" });
+    mockTaskToResponse.mockReturnValue({ id: "t1", status: "completed" });
+
+    const res = await POST(makeReq("t1", { output: "done" }), withParams("t1"));
+    expect(res.status).toBe(200);
+    expect(mockHandlePlaybookTaskTerminal).not.toHaveBeenCalled();
   });
 });

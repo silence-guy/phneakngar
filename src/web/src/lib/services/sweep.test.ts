@@ -33,14 +33,26 @@ vi.mock("@phneakngar/shared", async (importOriginal) => {
     conversation: {
       getConversation: (...args: unknown[]) => mockGetConversation(...args),
     },
+    playbookRun: {
+      listStuckPlaybookRuns: vi.fn().mockResolvedValue([]),
+    },
   },
-  TASK_TYPES: { USER_DM_MESSAGE: "user_dm_message", KILL_TASK: "kill_task" },
+  TASK_TYPES: {
+    USER_DM_MESSAGE: "user_dm_message",
+    KILL_TASK: "kill_task",
+    PLAYBOOK_STEP: "playbook_step",
+  },
   buildEmailMapKey: (agentId: string, threadId: string) => `email:${agentId}:${threadId}`,
   };
 });
 
 vi.mock("@/lib/logger", () => ({
   log: { warn: vi.fn(), info: vi.fn(), error: vi.fn() },
+}));
+
+vi.mock("@/lib/services/playbook-engine", () => ({
+  handlePlaybookTaskTerminal: vi.fn().mockResolvedValue(undefined),
+  advancePlaybookRun: vi.fn().mockResolvedValue(null),
 }));
 
 vi.mock("@/lib/broadcast", () => ({
