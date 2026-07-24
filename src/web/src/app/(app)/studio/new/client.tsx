@@ -247,8 +247,12 @@ export function StudioOnboardingClient({
       });
 
       if (!res.ok) {
-        const errBody = (await res.json()) as { error?: string };
-        throw new Error(errBody.error || onboardingLabel("failedToCreateCompany"));
+        let errMsg = onboardingLabel("failedToCreateCompany");
+        try {
+          const errBody = (await res.json()) as { error?: string };
+          if (errBody.error) errMsg = errBody.error;
+        } catch {}
+        throw new Error(errMsg);
       }
 
       const data = (await res.json()) as { workspace: { slug: string }; leader_agent_id: string };

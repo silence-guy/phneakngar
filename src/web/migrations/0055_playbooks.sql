@@ -44,7 +44,7 @@ CREATE TABLE IF NOT EXISTS `playbook_run` (
   `error` text,
   FOREIGN KEY (`workspace_id`) REFERENCES `workspace`(`id`) ON DELETE cascade,
   FOREIGN KEY (`playbook_id`) REFERENCES `playbook`(`id`) ON DELETE cascade,
-  FOREIGN KEY (`agent_id`) REFERENCES `agent`(`id`) ON DELETE cascade,
+  FOREIGN KEY (`agent_id`, `workspace_id`) REFERENCES `agent`(`id`, `workspace_id`) ON DELETE cascade,
   FOREIGN KEY (`runtime_id`) REFERENCES `agent_runtime`(`id`) ON DELETE set null,
   FOREIGN KEY (`conversation_id`) REFERENCES `conversation`(`id`) ON DELETE set null,
   FOREIGN KEY (`started_by_user_id`) REFERENCES `user`(`id`) ON DELETE set null

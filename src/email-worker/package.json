@@ -3,7 +3,7 @@
   "version": "0.0.5",
   "private": true,
   "scripts": {
-    "dev": "wrangler dev --persist-to ../web/.wrangler/state",
+    "dev": "wrangler dev --persist-to ../web/.wrangler/state --inspector-port 0",
     "deploy": "wrangler deploy",
     "knip": "knip",
     "test": "vitest run",
@@ -17,11 +17,11 @@
     "worker-mailer": "^1.2.1"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20260621.1",
+    "@cloudflare/workers-types": "^5.20260722.1",
     "@types/node": "^25.9.4",
     "knip": "^6.17.1",
     "typescript": "^6.0.3",
     "vitest": "^4.1.9",
-    "wrangler": "^4.103.0"
+    "wrangler": "^4.114.0"
   }
 }

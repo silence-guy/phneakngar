@@ -434,9 +434,13 @@ export async function listPendingTasksByRuntimes(
   const topPriority = max(agentTaskQueue.priority);
   const firstCreatedAt = min(agentTaskQueue.createdAt);
   const activeStatuses = sql`('dispatched', 'running')`;
+  const capacityTaskFrom = sql.raw(`"agent_task_queue" "capacity_task"`);
+  const capacityExcludingTaskFrom = sql.raw(`"agent_task_queue" "capacity_excluding_task"`);
+  const blockingTaskFrom = sql.raw(`"agent_task_queue" "blocking_task"`);
+  const steeringTaskFrom = sql.raw(`"agent_task_queue" "steering_task"`);
   const activeCount = sql<number>`(
     select count(*)
-    from ${capacityTask}
+    from ${capacityTaskFrom}
     where ${capacityTask.agentId} = ${agentTaskQueue.agentId}
       and ${capacityTask.workspaceId} = ${agentTaskQueue.workspaceId}
       and ${capacityTask.status} in ${activeStatuses}
@@ -444,7 +448,7 @@ export async function listPendingTasksByRuntimes(
   )`;
   const conversationIsClaimable = sql<boolean>`not exists (
     select 1
-    from ${blockingTask}
+    from ${blockingTaskFrom}
     where ${blockingTask.agentId} = ${agentTaskQueue.agentId}
       and ${blockingTask.workspaceId} = ${agentTaskQueue.workspaceId}
       and ${blockingTask.conversationId} = ${agentTaskQueue.conversationId}
@@ -460,7 +464,7 @@ export async function listPendingTasksByRuntimes(
     ${activeCount} < ${agent.maxConcurrentTasks}
     or exists (
       select 1
-      from ${steeringTask}
+      from ${steeringTaskFrom}
       where ${steeringTask.agentId} = ${agentTaskQueue.agentId}
         and ${steeringTask.workspaceId} = ${agentTaskQueue.workspaceId}
         and ${steeringTask.conversationId} = ${agentTaskQueue.conversationId}
@@ -470,7 +474,7 @@ export async function listPendingTasksByRuntimes(
         and ${agentTaskQueue.contextKey} = ${steeringTask.contextKey}
         and (
           select count(*)
-          from ${capacityExcludingTask}
+          from ${capacityExcludingTaskFrom}
           where ${capacityExcludingTask.agentId} = ${agentTaskQueue.agentId}
             and ${capacityExcludingTask.workspaceId} = ${agentTaskQueue.workspaceId}
             and ${capacityExcludingTask.status} in ${activeStatuses}

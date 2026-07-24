@@ -1188,9 +1188,7 @@ export const playbookRun = sqliteTable(
       .notNull()
       .references(() => playbook.id, { onDelete: "cascade" }),
     playbookVersion: integer("playbook_version").notNull(),
-    agentId: text("agent_id")
-      .notNull()
-      .references(() => agent.id, { onDelete: "cascade" }),
+    agentId: text("agent_id").notNull(),
     runtimeId: text("runtime_id").references(() => agentRuntime.id, {
       onDelete: "set null",
     }),
@@ -1218,6 +1216,10 @@ export const playbookRun = sqliteTable(
     index("idx_playbook_run_ws_status").on(t.workspaceId, t.status),
     index("idx_playbook_run_ws_playbook").on(t.workspaceId, t.playbookId, t.createdAt),
     index("idx_playbook_run_ws_agent").on(t.workspaceId, t.agentId, t.status),
+    foreignKey({
+      columns: [t.agentId, t.workspaceId],
+      foreignColumns: [agent.id, agent.workspaceId],
+    }).onDelete("cascade"),
   ]
 );
 

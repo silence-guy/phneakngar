@@ -83,6 +83,8 @@
   "devDependencies": {
     "@phneakngar/test-utils": "workspace:*",
     "@lhci/cli": "^0.15.1",
+    "@types/better-sqlite3": "^7.6.13",
+    "better-sqlite3": "^12.11.1",
     "@tailwindcss/node": "^4.3.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^25",
@@ -97,6 +99,6 @@
     "tsx": "^4.22.4",
     "typescript": "^6.0.3",
     "vitest": "^4.1.9",
-    "wrangler": "^4.103.0"
+    "wrangler": "^4.114.0"
   }
 }
