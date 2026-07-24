@@ -18,6 +18,7 @@ import { logsCommand } from "../commands/logs.js";
 import { initCommand } from "../commands/init.js";
 import { skillCommand } from "../commands/skill.js";
 import { webCommand } from "../commands/web.js";
+import { grantAccessCommand } from "../commands/grant-access.js";
 const program = new Command();
 program
     .name("phneakngar")
@@ -26,6 +27,7 @@ program
     .option("--profile <name>", "Profile name");
 program.addCommand(initCommand());
 program.addCommand(doctorCommand());
+program.addCommand(grantAccessCommand());
 program.addCommand(webCommand());
 program.addCommand(registerCommand());
 program.addCommand(loginCommand());

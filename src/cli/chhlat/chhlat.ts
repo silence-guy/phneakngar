@@ -33,6 +33,7 @@ import {
 import { TASK_TYPES } from "@phneakngar/shared";
 import { readDirectoryTree, readFileContent, validatePath } from "./workspace-files.js";
 import { startSkillScanner, stopSkillScanner } from "./skill-scanner.js";
+import { ensureFilesystemAccess, fsAccessStartupNotes } from "./fs-access.js";
 import { resolveLoginShellEnv } from "../lib/shell-env.js";
 import { existsSync, mkdirSync, openSync, closeSync, readdirSync, statSync, unlinkSync } from "fs";
 import { readdir, readFile, unlink, stat as fsStat } from "fs/promises";
@@ -315,6 +316,11 @@ export async function startChhlat(
   log.info(
     `Detected providers: ${providers.map((p) => `${p.type}@${p.version}`).join(", ")}`,
   );
+
+  const fsAccess = await ensureFilesystemAccess();
+  const fsNotes = fsAccessStartupNotes(fsAccess);
+  if (fsNotes.warn) log.warn(fsNotes.warn);
+  for (const line of fsNotes.info) log.info(line);
 
   const workspaceStates: WorkspaceState[] = [];
   const runtimeIndex = new Map<string, RuntimeData>();

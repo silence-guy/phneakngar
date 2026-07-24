@@ -1,12 +1,12 @@
 import { Command } from "commander";
 import { existsSync, accessSync, constants } from "fs";
-import { join } from "path";
 import { loadCLIConfigForProfile, configPath, configDir } from "../lib/config.js";
 import { getServerUrl, cmdPrefix } from "../lib/env.js";
 import { detectRuntimes } from "../lib/runtimes.js";
 import { getCurrentVersion } from "../lib/version.js";
 import { isProcessAlive, readChhlatPid } from "../chhlat/pidfile.js";
 import { chhlatLogFilePath, pidFilePath } from "../chhlat/config.js";
+import { checkFilesystemAccess } from "../chhlat/fs-access.js";
 import { webBrainDoctorCheck } from "./web.js";
 /**
  * Pure doctor row for approval-hold env override.
@@ -136,15 +136,29 @@ export function checkRegistration(profile) {
         detail: `workspace ${ws.name || "unknown"} (${ws.id || "no-id"}) — agent can use this PC once chhlat is running`,
     };
 }
-/** Info-only: agents never get whole-PC FS — only agent workdirs under workspaces root. */
-export function checkAgentWorkdirScope(profile) {
-    // workspacesRoot lives under configDir (or profile suffix); keep message stable for doctor.
-    void profile;
-    const root = join(configDir(), "workspaces");
+/**
+ * Probes whether the agent runtime can read the user's files across the whole
+ * machine (Hermes / OpenClaw-style full-FS read access). On macOS this is gated
+ * by TCC (Full Disk Access); on Linux/Windows the user's own files are readable
+ * by default. Memory/index files stay scoped to the per-agent workdir, but that
+ * is a write-scoping rule, not a read restriction — hence warn (not fail) when
+ * blocked, since agents remain fully functional inside their workdir.
+ */
+export async function checkFilesystemAccessDoctor() {
+    const result = await checkFilesystemAccess();
+    if (result.ok) {
+        return {
+            name: "Filesystem access",
+            status: "pass",
+            detail: `full read access on ${result.platform} (agents can read the whole machine; ` +
+                `memory/index files stay in the per-agent workdir)`,
+        };
+    }
     return {
-        name: "Agent workdir scope",
-        status: "info",
-        detail: `agents only access agent workdirs under ${root} (not the whole PC)`,
+        name: "Filesystem access",
+        status: "warn",
+        detail: `blocked by OS privacy gate: ${result.blocked.join(", ")}`,
+        hint: `${result.hint} Run '${cmdPrefix()} grant-access' to re-open the settings pane.`,
     };
 }
 export function checkRuntimes() {
@@ -295,13 +309,9 @@ export async function runDoctor(profile, options = {}) {
         checkCliVersion(),
         checkConfig(profile),
         checkRegistration(profile),
-        checkAgentWorkdirScope(profile),
-        checkRuntimes(),
-        checkChhlat(profile),
-        checkGatewayWebhookConfig(),
-        webBrainDoctorCheck(),
-        checkApprovalHoldEnv(),
     ];
+    checks.push(await checkFilesystemAccessDoctor());
+    checks.push(checkRuntimes(), checkChhlat(profile), checkGatewayWebhookConfig(), webBrainDoctorCheck(), checkApprovalHoldEnv());
     if (!options.skipNetwork) {
         checks.push(await checkChhlatHealth(profile, fetchImpl));
         checks.push(await checkServerReachability(profile, fetchImpl));

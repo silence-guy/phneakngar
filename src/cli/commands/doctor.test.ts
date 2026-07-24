@@ -5,7 +5,7 @@ import { tmpdir } from "os";
 import {
   checkNodeVersion,
   checkRegistration,
-  checkAgentWorkdirScope,
+  checkFilesystemAccessDoctor,
   checkRuntimes,
   checkConfig,
   checkApprovalHoldEnv,
@@ -107,13 +107,17 @@ describe("checkConfig / checkRegistration", () => {
   });
 });
 
-describe("checkAgentWorkdirScope", () => {
-  it("is info-only and documents workdir-only access (not whole PC)", () => {
-    const result = checkAgentWorkdirScope();
-    expect(result.status).toBe("info");
-    expect(result.detail).toMatch(/workdir/i);
-    expect(result.detail).toMatch(/workspaces/);
-    expect(result.detail).toMatch(/not (the )?whole (PC|machine|filesystem)/i);
+describe("checkFilesystemAccessDoctor", () => {
+  it("reports pass or warn (never a hard fail) and names the check", async () => {
+    const result = await checkFilesystemAccessDoctor();
+    expect(result.name).toBe("Filesystem access");
+    expect(["pass", "warn"]).toContain(result.status);
+    if (result.status === "warn") {
+      expect(result.hint).toBeTruthy();
+      expect(result.detail).toMatch(/blocked/i);
+    } else {
+      expect(result.detail).toMatch(/full read access/i);
+    }
   });
 });
 
@@ -134,15 +138,15 @@ describe("runDoctor", () => {
     const names = result.checks.map((c: DoctorCheck) => c.name);
     expect(names).toContain("Registration");
     expect(names).toContain("Chhlat");
-    expect(names).toContain("Agent workdir scope");
+    expect(names).toContain("Filesystem access");
     const reg = result.checks.find((c) => c.name === "Registration")!;
     expect(reg.status).toBe("fail");
     expect(reg.hint).toMatch(/register --token al_/);
-    const scope = result.checks.find((c) => c.name === "Agent workdir scope")!;
-    expect(scope.status).toBe("info");
+    const fsAccess = result.checks.find((c) => c.name === "Filesystem access")!;
+    expect(["pass", "warn"]).toContain(fsAccess.status);
   });
 
-  it("passes registration when token present (skip network) and still includes workdir info", async () => {
+  it("passes registration when token present (skip network) and still includes filesystem access", async () => {
     writeConfig({
       server_url: "https://example.com",
       watched_workspaces: [
@@ -152,8 +156,8 @@ describe("runDoctor", () => {
     const result = await runDoctor(undefined, { skipNetwork: true });
     const reg = result.checks.find((c) => c.name === "Registration")!;
     expect(reg.status).toBe("pass");
-    const scope = result.checks.find((c) => c.name === "Agent workdir scope")!;
-    expect(scope.status).toBe("info");
+    const fsAccess = result.checks.find((c) => c.name === "Filesystem access")!;
+    expect(["pass", "warn"]).toContain(fsAccess.status);
     // Registration pass alone is not enough for overall ok if chhlat/runtimes fail —
     // but registration must not be a fail when token present.
     expect(result.checks.some((c) => c.name === "Registration" && c.status === "fail")).toBe(

@@ -65,6 +65,22 @@ vi.mock("./config.js", () => ({
   ),
 }));
 
+vi.mock("./fs-access.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./fs-access.js")>();
+  return {
+    ...actual,
+    ensureFilesystemAccess: vi.fn(() => ({
+      platform: "darwin",
+      ok: true,
+      checked: [],
+      blocked: [],
+      hint: "",
+      opened: false,
+      throttled: false,
+    })),
+  };
+});
+
 const mockDetectHeadroomHealth = vi.fn(() => ({
   status: "missing" as const,
   configured: true,

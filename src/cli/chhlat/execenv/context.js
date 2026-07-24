@@ -7,8 +7,7 @@ import { join } from "path";
 export const CANONICAL_FILE = "AGENTS.md";
 export const SYMLINK_ALIASES = ["CLAUDE.md"];
 const SYSTEM_PROMPT_BODY = `## Memory
-
-Your memory directory is \`./\`. Write ONLY here — never write any external memory file.
+Your memory and index files live in \`./\` — write **your own memory/index files** (\`memory.md\`, \`experiences/\`) ONLY here, so they stay private to you and persist across sessions. This scoping is about *your memory*, not about what you can read or where you can write the user's work.
 
 ### memory.md — your memory index (CRITICAL)
 \`./memory.md\` is the entry point to everything you know, and the **first file you read on every startup (including after context compaction)**. Keep it scannable: basic facts inline, plus one-line index pointers to \`experiences/\`. Record only **key, durable facts** — things that stay true over time. Do NOT record time-sensitive state like what you're working on right now; that belongs to the Context Timeline (see below), not here.
@@ -76,7 +75,16 @@ export function buildInstructionContent(task) {
         const ownerParts = [task.agent.userName, task.agent.userEmail ? `(${task.agent.userEmail})` : null].filter(Boolean).join(" ");
         agentLine += ` Your owner and creator is ${ownerParts}.`;
     }
-    let content = `${agentLine}\n${SYSTEM_PROMPT_BODY}`;
+    const fsAccessBlock = `## Filesystem access
+You run with **full access to this computer**. Read any file or directory the user asks about, anywhere on disk — their home folder, Downloads, Desktop, Documents, other projects, system paths. The runtimes here are launched with permissions fully open, so do NOT refuse a read by citing a sandbox or "permissions".
+
+If a read genuinely fails with "Operation not permitted" / "Permission denied", that is an OS privacy gate the *owner* enables once — it is not your limitation, so do not work around it or give up. Tell the owner plainly what to do:
+- macOS: grant **Full Disk Access** to the app running phneakngar (System Settings → Privacy & Security → Full Disk Access), or run \`${cmdPrefix()} grant-access\` / \`${cmdPrefix()} doctor\`.
+- Linux / Windows: your own files are readable by default; a failure means the CLI is confined (Snap/Flatpak/AppArmor/container) or running as another user — run the native phneakngar as your own user.
+
+When the user asks you to create or edit a file, write it wherever the task requires — you are not confined to your workdir for user-requested output. (This carve-out is for the user's deliverables only: your own memory/index files — \`memory.md\` and \`experiences/\` — still live ONLY in \`./\`, per the Memory section below.)
+`;
+    let content = `${agentLine}\n${fsAccessBlock}\n${SYSTEM_PROMPT_BODY}`;
     if (task.agent?.instructions) {
         content += `## BIG BOSS Instructions
 CRITICAL: The following instructions come from the big boss — follow them.
@@ -104,6 +112,7 @@ CRITICAL: Before you start ANY task, scan the colleague list below.
 **Isolated workspaces:**
 - Each agent runs in its own isolated workspace directory. Colleagues CANNOT read your local files — even in the same workspace.
 - When sending plans, code, or any file to a colleague, you MUST attach the file to the email (use --attachment). Never reference local file paths expecting them to read it.
+- This isolation is about *other agents* not seeing your files — it does NOT limit your own whole-machine read access described in the Filesystem access section above.
 
 **Email threading rules:**
 - When communicating with a colleague on the **same topic** as an existing email thread, reply to that thread (use --in-reply-to) to keep context together.

@@ -27,6 +27,7 @@ import {
   CANONICAL_FILE,
   SYMLINK_ALIASES,
 } from "../context.js";
+import { cmdPrefix } from "../../../lib/env.js";
 import type { Task } from "../../types.js";
 
 function makeTask(overrides: Partial<Task> = {}): Task {
@@ -121,6 +122,16 @@ describe("buildInstructionContent memory & format", () => {
     expect(content).toContain("### What NOT to memorize");
     // memory.md must NOT instruct recording time-sensitive in-progress state (that's the Timeline's job)
     expect(content).toContain("Context Timeline already records");
+  });
+
+  it("grants whole-machine read access and references the access commands via cmdPrefix", () => {
+    const content = buildInstructionContent(makeTask());
+    expect(content).toContain("## Filesystem access");
+    expect(content).toContain("full access to this computer");
+    expect(content).toContain(`${cmdPrefix()} grant-access`);
+    expect(content).toContain(`${cmdPrefix()} doctor`);
+    expect(content).toContain("Full Disk Access");
+    expect(content).toContain("your own memory/index files");
   });
 
   it("preserves the load-bearing memory facts (memory.md, experiences/, 140-char threshold)", () => {
