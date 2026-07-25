@@ -45,7 +45,7 @@ describe("GET /onboard.md", () => {
     const response = await GET();
     const body = await response.text();
     expect(body).toContain("pnpm dev:cli login");
-    expect(body).toContain("http://localhost:3000/templates");
+    expect(body).toContain("http://localhost:15210/templates");
   });
 
   it("uses npx @phneakngar/app cli for self-hosted (app mode)", async () => {
