@@ -59,6 +59,18 @@ mkdirSync(webDest, { recursive: true });
 cpSync(join(webSrc, ".open-next"), join(webDest, ".open-next"), { recursive: true });
 rmSync(join(webDest, ".open-next", "cache"), { recursive: true, force: true });
 rewriteAbsolutePaths(webDest);
+
+// Copy missing OG assets (Geist font + resvg.wasm) for local dev server-functions bundle
+const ogAssetsDir = join(webDest, ".open-next/server-functions/default/node_modules/next/dist/compiled/@vercel/og");
+const nextOgDir = join(monoRoot, "node_modules/next/dist/compiled/@vercel/og");
+if (!existsSync(ogAssetsDir)) {
+  mkdirSync(ogAssetsDir, { recursive: true });
+}
+if (existsSync(nextOgDir)) {
+  cpSync(nextOgDir, ogAssetsDir, { recursive: true });
+  console.log(`[bundle] Copied OG assets from Next.js dist to server-functions node_modules`);
+}
+
 cpSync(join(webSrc, "wrangler.toml"), join(webDest, "wrangler.toml"));
 cpSync(join(webSrc, "custom-worker.ts"), join(webDest, "custom-worker.ts"));
 cpSync(join(webSrc, "migrations"), join(webDest, "migrations"), { recursive: true });
