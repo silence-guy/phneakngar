@@ -4,7 +4,7 @@ import { queries } from "@phneakngar/shared";
 import { getDb } from "@/lib/db";
 import { requireSession } from "@/lib/session";
 import { getTemplateById } from "@/lib/templates";
-import { normalizeMemberRole } from "@/contexts/workspace-context";
+import { normalizeMemberRole } from "@/contexts/workspace-role";
 import { StudioOnboardingClient } from "./client";
 
 export default async function StudioNewPage({
