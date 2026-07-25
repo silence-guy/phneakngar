@@ -1,6 +1,6 @@
 {
   "productName": "ភ្នាក់ងារ",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "identifier": "ai.phneakngar.desktop",
   "build": {
     "devUrl": "http://localhost:3000/workspaces?auto",
