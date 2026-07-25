@@ -153,7 +153,7 @@ function SignInForm({ postLoginUrl, isProd }: { postLoginUrl: string; isProd: bo
   return (
     <FieldGroup>
       <div className="flex flex-col items-center gap-2 text-center">
-        <h1 className="text-2xl font-semibold tracking-tight">{SIGN_IN_LABELS.title}</h1>
+        <h1 className="text-2xl font-semibold tracking-[-0.02em] font-heading text-foreground">{SIGN_IN_LABELS.title}</h1>
         <p className="max-w-64 text-sm leading-relaxed text-muted-foreground wrap-anywhere">
           {SIGN_IN_LABELS.subtitle}
         </p>
@@ -376,7 +376,7 @@ export default function SignInPageClient({ isProd }: { isProd: boolean }) {
         <div className="mb-5 flex justify-center">
           <Logo size="lg" />
         </div>
-        <Card className="rounded-lg border border-foreground/10 bg-card p-0 shadow-[var(--e2)]">
+        <Card className="rounded-xl border border-foreground/10 bg-card p-0 shadow-[var(--e2)]">
           <CardContent className="grid p-0 md:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)]">
             <div className="flex min-h-107.5 min-w-0 flex-col justify-center p-6 sm:p-8">
               <div className="mb-7 space-y-3">
@@ -384,7 +384,7 @@ export default function SignInPageClient({ isProd }: { isProd: boolean }) {
                   {SIGN_IN_LABELS.surface.status}
                 </p>
                 <div className="space-y-2">
-                  <h2 className="text-balance text-2xl font-semibold tracking-tight text-foreground">
+                  <h2 className="text-balance text-2xl font-semibold tracking-[-0.02em] font-heading text-foreground">
                     {SIGN_IN_LABELS.surface.heading}
                   </h2>
                   <p className="text-sm leading-7 text-muted-foreground wrap-anywhere">

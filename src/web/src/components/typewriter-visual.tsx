@@ -400,13 +400,17 @@ const shortDate = longDate;
   );
 
   const email = effectiveEmails[emailIndex];
-  const twVars = resolvedTheme === "dark" ? TW_VARS_DARK : TW_VARS_LIGHT;
+  const twVars = useMemo(
+    () => (resolvedTheme === "dark" ? TW_VARS_DARK : TW_VARS_LIGHT),
+    [resolvedTheme]
+  );
 
   return (
     <div
       ref={containerRef}
       className={`typewriter-visual${className ? ` ${className}` : ""}`}
       style={twVars}
+      suppressHydrationWarning={true}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
     >
