@@ -48,13 +48,13 @@
     "pre-commit": "pnpm typecheck && pnpm lint && pnpm test"
   },
   "devDependencies": {
-    "@vitest/coverage-v8": "^4.1.9",
-    "eslint": "^10.3.0",
+    "@vitest/coverage-v8": "^4.1.10",
+    "eslint": "^9.39.5",
     "simple-git-hooks": "^2.13.1",
-    "turbo": "^2.9.18",
+    "turbo": "^2.10.6",
     "typescript": "^6.0.3",
-    "typescript-eslint": "^8.61.1",
-    "vitest": "^4.1.9",
+    "typescript-eslint": "^8.65.0",
+    "vitest": "^4.1.10",
     "wrangler": "^4.114.0"
   }
 }
