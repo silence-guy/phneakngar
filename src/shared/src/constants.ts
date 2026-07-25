@@ -129,7 +129,7 @@ export const TERMINAL_MEETING_STATUSES: readonly MeetingStatusType[] = [
 export const DEV_PASSWORD = "dev-password-000";
 
 // Local dev URLs (used for service-binding fallbacks)
-export const DEV_WEB_URL = process.env.PHNEAKNGAR_SERVER_URL || "http://localhost:3000";
+export const DEV_WEB_URL = process.env.PHNEAKNGAR_SERVER_URL || "http://localhost:15210";
 export const DEV_WS_DO_URL = process.env.DEV_WS_DO_URL || "http://localhost:15212";
 export const DEV_EMAIL_WORKER_URL = process.env.DEV_EMAIL_WORKER_URL || "http://localhost:8787";
 

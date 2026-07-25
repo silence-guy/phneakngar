@@ -112,7 +112,7 @@ export interface BaseUrlSignals {
  */
 export const DEFAULT_BASE_URL =
   "https://phneakngar-web.thatsilenceguy.workers.dev";
-const DEV_BASE_URL = "http://localhost:3000";
+const DEV_BASE_URL = "http://localhost:15210";
 
 export function getBaseUrl(signals: BaseUrlSignals): string {
   if (signals.serverUrl) return signals.serverUrl;

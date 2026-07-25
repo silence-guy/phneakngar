@@ -3,7 +3,7 @@
   "version": "0.0.5",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -p 15210",
     "build": "tsx scripts/validate-blog-assets.ts && next build",
     "build:worker": "tsx scripts/validate-blog-assets.ts && opennextjs-cloudflare build",
     "verify:email-domain-build": "node scripts/assert-email-domain-build.mjs",

@@ -335,7 +335,7 @@ describe("getBaseUrl", () => {
   });
 
   it("returns localhost in development when no URLs set", () => {
-    expect(getBaseUrl({ nodeEnv: "development" })).toBe("http://localhost:3000");
+    expect(getBaseUrl({ nodeEnv: "development" })).toBe("http://localhost:15210");
   });
 
   it("returns Cloudflare production URL when no signals", () => {

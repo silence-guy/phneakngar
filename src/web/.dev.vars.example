@@ -10,7 +10,7 @@ NODE_ENV=development
 
 # Session signing secret (generate with: openssl rand -base64 32)
 BETTER_AUTH_SECRET=
-BETTER_AUTH_URL=http://localhost:3000
+BETTER_AUTH_URL=http://localhost:15210
 
 # Encryption key for IMAP/SMTP credentials (generate with: openssl rand -base64 32)
 ENCRYPTION_KEY=
@@ -37,3 +37,7 @@ DEVICE_CLIENT_IDS=phneakngar-cli
 PHNEAKNGAR_DOMAIN=phneakngar.invalid
 NEXT_PUBLIC_PHNEAKNGAR_DOMAIN=phneakngar.invalid
 NEXT_PUBLIC_PHNEAKNGAR_ENVIRONMENT=development
+
+# Trusted origins for better-auth (required for local dev sign-in origin validation).
+# Canonical local web port is 15210 (matches package.json dev script, README, and dev:cli).
+AUTH_TRUSTED_ORIGINS=http://localhost:15210,https://localhost:15210,http://127.0.0.1:15210,https://127.0.0.1:15210
