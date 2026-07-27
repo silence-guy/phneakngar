@@ -5,10 +5,10 @@
  */
 
 import { NextRequest } from "next/server";
-import { queries } from "@phneakngar/shared";
+import { queries, readGatewaySecret } from "@phneakngar/shared";
 import { getDb } from "@/lib/db";
 import { withAuth } from "@/lib/middleware/auth";
-import { withWorkspaceMember } from "@/lib/middleware/workspace";
+import { withWorkspaceOwner } from "@/lib/middleware/workspace";
 import { writeError, writeJSON } from "@/lib/middleware/helpers";
 
 async function safeJson(res: Response): Promise<unknown> {
@@ -69,7 +69,8 @@ export async function probeProvider(
 }
 
 export const POST = withAuth(async (req: NextRequest, ctx) => {
-  const ws = await withWorkspaceMember(req, ctx);
+  // Owner-only: probing exercises the vaulted bot token against the live provider.
+  const ws = await withWorkspaceOwner(req, ctx);
   if (ws instanceof Response) return ws;
 
   const id = ctx.params?.id;
@@ -79,7 +80,7 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
   const binding = await queries.gatewayBinding.getGatewayBinding(db, ws.workspaceId, id);
   if (!binding) return writeError("binding not found", 404);
 
-  const token = (binding.secretRef ?? "").trim();
+  const token = readGatewaySecret(binding.secretRef, ctx.env.ENCRYPTION_KEY);
   if (!token) {
     return writeError("binding has no vaulted bot token", 400);
   }

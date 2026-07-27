@@ -129,6 +129,111 @@ export async function verifyDiscordSignature(opts: {
   }
 }
 
+/**
+ * Lark/Feishu event subscription signature.
+ * signature = sha256(timestamp + nonce + encryptKey + rawBody), hex.
+ * https://open.feishu.cn/document/server-docs/event-subscription-guide/event-subscription-configure-/encrypt-key-encryption-configuration-case
+ */
+export async function verifyLarkSignature(opts: {
+  headers: Headers | { get(name: string): string | null };
+  rawBody: string;
+  encryptKey: string;
+  /** Max age seconds (default 5 minutes). */
+  maxAgeSec?: number;
+  nowSec?: number;
+}): Promise<GatewayVerifyResult> {
+  const timestamp = opts.headers.get("x-lark-request-timestamp")?.trim() ?? "";
+  const nonce = opts.headers.get("x-lark-request-nonce")?.trim() ?? "";
+  const signature = opts.headers.get("x-lark-signature")?.trim() ?? "";
+  if (!timestamp || !nonce || !signature) {
+    return { ok: false, error: "missing lark signature headers", status: 401 };
+  }
+  if (!opts.encryptKey?.trim()) {
+    return { ok: false, error: "lark encrypt key not configured", status: 503 };
+  }
+  const ts = Number(timestamp);
+  if (!Number.isFinite(ts)) {
+    return { ok: false, error: "invalid lark timestamp", status: 401 };
+  }
+  const now = opts.nowSec ?? Math.floor(Date.now() / 1000);
+  const maxAge = opts.maxAgeSec ?? 60 * 5;
+  if (Math.abs(now - ts) > maxAge) {
+    return { ok: false, error: "lark timestamp out of range", status: 401 };
+  }
+
+  const base = `${timestamp}${nonce}${opts.encryptKey.trim()}${opts.rawBody}`;
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(base));
+  const expected = [...new Uint8Array(digest)]
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+  if (!timingSafeEqualString(expected, signature.toLowerCase())) {
+    return { ok: false, error: "unauthorized", status: 401 };
+  }
+  return { ok: true, method: "provider" };
+}
+
+/**
+ * Microsoft Teams outgoing-webhook HMAC.
+ * Authorization: HMAC <base64(hmac-sha256(rawBody, base64Decode(secret)))>
+ * https://learn.microsoft.com/en-us/microsoftteams/platform/webhooks-and-connectors/how-to/add-outgoing-webhook
+ */
+export async function verifyTeamsSignature(opts: {
+  headers: Headers | { get(name: string): string | null };
+  rawBody: string;
+  /** Base64 secret issued by Teams when the outgoing webhook is registered. */
+  secretBase64: string;
+}): Promise<GatewayVerifyResult> {
+  const auth = opts.headers.get("authorization")?.trim() ?? "";
+  const match = /^HMAC\s+(.+)$/i.exec(auth);
+  if (!match) {
+    return { ok: false, error: "missing teams HMAC authorization header", status: 401 };
+  }
+  if (!opts.secretBase64?.trim()) {
+    return { ok: false, error: "teams secret not configured", status: 503 };
+  }
+  const provided = match[1].trim();
+  let keyBytes: Uint8Array;
+  try {
+    keyBytes = base64ToBytes(opts.secretBase64.trim());
+  } catch {
+    return { ok: false, error: "teams secret is not valid base64", status: 503 };
+  }
+  try {
+    const key = await crypto.subtle.importKey(
+      "raw",
+      keyBytes as BufferSource,
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["sign"],
+    );
+    const mac = await crypto.subtle.sign(
+      "HMAC",
+      key,
+      new TextEncoder().encode(opts.rawBody),
+    );
+    const expected = bytesToBase64(new Uint8Array(mac));
+    if (!timingSafeEqualString(expected, provided)) {
+      return { ok: false, error: "unauthorized", status: 401 };
+    }
+    return { ok: true, method: "provider" };
+  } catch {
+    return { ok: false, error: "teams signature verification failed", status: 401 };
+  }
+}
+
+function base64ToBytes(b64: string): Uint8Array {
+  const bin = atob(b64);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+
+function bytesToBase64(bytes: Uint8Array): string {
+  let bin = "";
+  for (const b of bytes) bin += String.fromCharCode(b);
+  return btoa(bin);
+}
+
 function hexToBytes(hex: string): Uint8Array {
   const clean = hex.startsWith("0x") ? hex.slice(2) : hex;
   if (clean.length % 2 !== 0) throw new Error("invalid hex");
@@ -151,6 +256,91 @@ export function verifySharedGatewaySecret(
     return { ok: false, error: "unauthorized", status: 401 };
   }
   return { ok: true, method: "shared_secret" };
+}
+
+/** Env slice consulted when resolving gateway webhook authentication. */
+export interface GatewayVerifyEnv {
+  GATEWAY_WEBHOOK_SECRET?: string;
+  TELEGRAM_WEBHOOK_SECRET?: string;
+  SLACK_SIGNING_SECRET?: string;
+  DISCORD_PUBLIC_KEY?: string;
+  LARK_APP_SECRET?: string;
+  TEAMS_APP_PASSWORD?: string;
+}
+
+/** Which env var carries the provider-native secret for each provider. */
+const PROVIDER_SECRET_ENV: Record<GatewayVerifyProvider, keyof GatewayVerifyEnv> = {
+  slack: "SLACK_SIGNING_SECRET",
+  telegram: "TELEGRAM_WEBHOOK_SECRET",
+  discord: "DISCORD_PUBLIC_KEY",
+  lark: "LARK_APP_SECRET",
+  teams: "TEAMS_APP_PASSWORD",
+};
+
+/**
+ * Single authentication gate for every gateway webhook.
+ *
+ * Provider-native verification is preferred; the shared GATEWAY_WEBHOOK_SECRET is the
+ * fallback. When neither is configured the request is REFUSED (503) rather than allowed —
+ * an unauthenticated webhook writes attacker text straight into an agent's task queue, so
+ * "no secret configured" must never mean "no authentication".
+ *
+ * GATEWAY_TEAM_MAP is deliberately not consulted: whether a legacy env map happens to be
+ * set has no bearing on whether an inbound request is authentic.
+ */
+export async function verifyGatewayRequest(opts: {
+  provider: GatewayVerifyProvider;
+  headers: Headers | { get(name: string): string | null };
+  rawBody: string;
+  env: GatewayVerifyEnv;
+  nowSec?: number;
+}): Promise<GatewayVerifyResult> {
+  const { provider, headers, rawBody, env } = opts;
+  const providerSecret = env[PROVIDER_SECRET_ENV[provider]]?.trim() || "";
+  const sharedSecret = env.GATEWAY_WEBHOOK_SECRET?.trim() || "";
+
+  if (providerSecret) {
+    switch (provider) {
+      case "telegram":
+        return verifyTelegramSecretToken(headers, providerSecret);
+      case "slack":
+        return await verifySlackSignature({
+          headers,
+          rawBody,
+          signingSecret: providerSecret,
+          nowSec: opts.nowSec,
+        });
+      case "discord":
+        return await verifyDiscordSignature({
+          headers,
+          rawBody,
+          publicKeyHex: providerSecret,
+        });
+      case "lark":
+        return await verifyLarkSignature({
+          headers,
+          rawBody,
+          encryptKey: providerSecret,
+          nowSec: opts.nowSec,
+        });
+      case "teams":
+        return await verifyTeamsSignature({
+          headers,
+          rawBody,
+          secretBase64: providerSecret,
+        });
+    }
+  }
+
+  if (sharedSecret) {
+    return verifySharedGatewaySecret(headers, sharedSecret);
+  }
+
+  return {
+    ok: false,
+    error: `${provider} webhook verification not configured: set ${PROVIDER_SECRET_ENV[provider]} or GATEWAY_WEBHOOK_SECRET`,
+    status: 503,
+  };
 }
 
 /**

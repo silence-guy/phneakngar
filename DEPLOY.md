@@ -126,6 +126,44 @@ Set these on `phneakngar-web`:
 
 `NEXT_PUBLIC_PHNEAKNGAR_DOMAIN` and its environment marker are embedded into browser JavaScript at build time. A Wrangler runtime variable cannot retrofit an already-built client bundle, so export both domain variables before `build:worker` and verify the generated browser assets before deployment.
 
+#### Chat gateway webhook secrets (required per provider in use)
+
+Inbound gateway messages become the literal prompt handed to an agent with live tool
+permissions, so `/api/webhooks/{provider}` authenticates **every** request. Each provider you
+have bound must have either its native signature secret or the shared fallback configured.
+When neither is set, that provider's route returns HTTP 503 and no message is ingested.
+
+| Name | Requirement |
+|---|---|
+| `GATEWAY_WEBHOOK_SECRET` | Shared fallback, presented as `x-gateway-secret` or `Authorization: Bearer`. Covers any provider with no native secret set. Prefer the native secrets below |
+| `SLACK_SIGNING_SECRET` | Slack signing secret; verifies `x-slack-signature` (v0 HMAC, 5-minute window) |
+| `TELEGRAM_WEBHOOK_SECRET` | Value passed to Telegram `setWebhook` as `secret_token`; verifies `x-telegram-bot-api-secret-token` |
+| `DISCORD_PUBLIC_KEY` | Discord application public key (hex); verifies `x-signature-ed25519` |
+| `LARK_APP_SECRET` | Lark/Feishu event-subscription encrypt key; verifies `x-lark-signature` |
+| `TEAMS_APP_PASSWORD` | Teams outgoing-webhook HMAC secret (base64); verifies the `Authorization: HMAC …` header |
+
+`GATEWAY_TEAM_MAP` is a legacy bootstrap mapping only. It does **not** influence whether
+authentication runs — previously it did, which meant a deployment using the documented D1
+`gateway_binding` path with no secrets configured accepted unauthenticated webhooks.
+
+> **Breaking change when upgrading.** If you currently run gateway webhooks with no secret
+> configured, those routes begin returning 503 immediately after deploy. Set the relevant
+> secret for each provider you use *before* deploying, then re-point the provider's webhook
+> configuration if needed. Verify with a signed test event per provider.
+
+```bash
+pnpm exec wrangler secret put GATEWAY_WEBHOOK_SECRET --config src/web/wrangler.toml
+pnpm exec wrangler secret put SLACK_SIGNING_SECRET --config src/web/wrangler.toml
+pnpm exec wrangler secret put TELEGRAM_WEBHOOK_SECRET --config src/web/wrangler.toml
+pnpm exec wrangler secret put DISCORD_PUBLIC_KEY --config src/web/wrangler.toml
+pnpm exec wrangler secret put LARK_APP_SECRET --config src/web/wrangler.toml
+pnpm exec wrangler secret put TEAMS_APP_PASSWORD --config src/web/wrangler.toml
+```
+
+Gateway bot tokens (`gateway_binding.secret_ref`) are encrypted at rest with `ENCRYPTION_KEY`.
+Rows written before this change remain readable as plaintext and are re-encrypted on next
+update, so no data migration is required.
+
 Example secret commands:
 
 ```bash
