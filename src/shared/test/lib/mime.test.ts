@@ -227,3 +227,95 @@ describe("buildMimeMessage", () => {
     expect(msg).toMatch(/--.*--$/);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Header injection (CWE-93). Header values are interpolated into the raw
+// message, so an embedded CRLF would let a caller append arbitrary headers.
+// ---------------------------------------------------------------------------
+
+describe("buildMimeMessage header injection", () => {
+  const base = {
+    from: "agent@agents.example",
+    to: "user@example.com",
+    subject: "Hello",
+    body: "<p>hi</p>",
+  };
+
+  it("rejects CRLF in subject (forged Bcc)", () => {
+    expect(() =>
+      buildMimeMessage({ ...base, subject: "hi\r\nBcc: attacker@evil.example" }),
+    ).toThrow(/subject must not contain line breaks/);
+  });
+
+  it("rejects a bare LF as well as CRLF", () => {
+    expect(() => buildMimeMessage({ ...base, subject: "hi\nBcc: a@b.c" })).toThrow(
+      /subject must not contain line breaks/,
+    );
+    expect(() => buildMimeMessage({ ...base, subject: "hi\rBcc: a@b.c" })).toThrow(
+      /subject must not contain line breaks/,
+    );
+  });
+
+  it("rejects CRLF in to, from, inReplyTo, references and messageId", () => {
+    expect(() => buildMimeMessage({ ...base, to: "a@b.c\r\nBcc: x@y.z" })).toThrow(
+      /to must not contain line breaks/,
+    );
+    expect(() => buildMimeMessage({ ...base, from: "a@b.c\r\nBcc: x@y.z" })).toThrow(
+      /from must not contain line breaks/,
+    );
+    expect(() => buildMimeMessage({ ...base, inReplyTo: "<a>\r\nBcc: x@y.z" })).toThrow(
+      /inReplyTo must not contain line breaks/,
+    );
+    expect(() => buildMimeMessage({ ...base, references: "<a>\r\nBcc: x@y.z" })).toThrow(
+      /references must not contain line breaks/,
+    );
+    expect(() => buildMimeMessage({ ...base, messageId: "<a>\r\nBcc: x@y.z" })).toThrow(
+      /messageId must not contain line breaks/,
+    );
+  });
+
+  it("rejects CRLF in attachment filename and contentType", () => {
+    const att = { filename: "ok.txt", contentType: "text/plain", base64: "aGk=" };
+    expect(() =>
+      buildMimeMessage({
+        ...base,
+        attachments: [{ ...att, filename: 'a"\r\nContent-Type: text/html\r\n\r\n<script>' }],
+      }),
+    ).toThrow(/attachment filename must not contain line breaks/);
+    expect(() =>
+      buildMimeMessage({
+        ...base,
+        attachments: [{ ...att, contentType: "text/plain\r\nX-Injected: 1" }],
+      }),
+    ).toThrow(/attachment contentType must not contain line breaks/);
+  });
+
+  it("escapes quotes in an attachment filename instead of breaking out of the param", () => {
+    const mime = buildMimeMessage({
+      ...base,
+      attachments: [
+        { filename: 'in"quote.txt', contentType: "text/plain", base64: "aGk=" },
+      ],
+    });
+    expect(mime).toContain('filename="in\\"quote.txt"');
+    // The raw unescaped form must not appear — it would terminate the quoted string.
+    expect(mime).not.toContain('filename="in"quote.txt"');
+  });
+
+  it("escapes backslashes in an attachment filename", () => {
+    const mime = buildMimeMessage({
+      ...base,
+      attachments: [
+        { filename: "back\\slash.txt", contentType: "text/plain", base64: "aGk=" },
+      ],
+    });
+    expect(mime).toContain('filename="back\\\\slash.txt"');
+  });
+
+  it("still builds a normal message with unicode and a long subject", () => {
+    const subject = "Résumé — ភ្នាក់ងារ " + "x".repeat(200);
+    const mime = buildMimeMessage({ ...base, subject });
+    expect(mime).toContain(`Subject: ${subject}`);
+    expect(mime).toContain("To: user@example.com");
+  });
+});

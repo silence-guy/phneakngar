@@ -48,11 +48,39 @@ export interface BuildMimeOptions {
   attachments?: MimeAttachment[];
 }
 
+/**
+ * Reject CR/LF in a value destined for an RFC822 header.
+ *
+ * Header values are interpolated into the raw message, so an embedded CRLF lets a caller
+ * append arbitrary headers (a forged `Bcc:` being the obvious one). Throwing rather than
+ * silently stripping keeps the bug visible: a caller passing a newline has a defect, and
+ * quietly repairing it hides that from them.
+ */
+function assertHeaderSafe(value: string, field: string): string {
+  if (/[\r\n]/.test(value)) {
+    throw new Error(`${field} must not contain line breaks`);
+  }
+  return value;
+}
+
+/**
+ * Escape a value used inside a quoted MIME parameter (filename="...").
+ * Rejects CR/LF, then backslash-escapes quotes and backslashes so the value cannot
+ * terminate the quoted string early and inject further parameters.
+ */
+function quoteMimeParam(value: string, field: string): string {
+  return assertHeaderSafe(value, field).replace(/[\\"]/g, "\\$&");
+}
+
 export function buildMimeMessage(opts: BuildMimeOptions): string {
+  const from = assertHeaderSafe(opts.from, "from");
+  const to = assertHeaderSafe(opts.to, "to");
+  const subject = assertHeaderSafe(opts.subject, "subject");
+
   const threadingHeaders: string[] = [];
-  if (opts.messageId) threadingHeaders.push(`Message-ID: ${opts.messageId}`);
-  if (opts.inReplyTo) threadingHeaders.push(`In-Reply-To: ${opts.inReplyTo}`);
-  if (opts.references) threadingHeaders.push(`References: ${opts.references}`);
+  if (opts.messageId) threadingHeaders.push(`Message-ID: ${assertHeaderSafe(opts.messageId, "messageId")}`);
+  if (opts.inReplyTo) threadingHeaders.push(`In-Reply-To: ${assertHeaderSafe(opts.inReplyTo, "inReplyTo")}`);
+  if (opts.references) threadingHeaders.push(`References: ${assertHeaderSafe(opts.references, "references")}`);
 
   const date = opts.date ?? new Date().toUTCString();
   const bodyType = opts.bodyType ?? "text/html";
@@ -60,9 +88,9 @@ export function buildMimeMessage(opts: BuildMimeOptions): string {
 
   if (attachments.length === 0) {
     return [
-      `From: ${opts.from}`,
-      `To: ${opts.to}`,
-      `Subject: ${opts.subject}`,
+      `From: ${from}`,
+      `To: ${to}`,
+      `Subject: ${subject}`,
       `Date: ${date}`,
       ...threadingHeaders,
       `MIME-Version: 1.0`,
@@ -74,9 +102,9 @@ export function buildMimeMessage(opts: BuildMimeOptions): string {
 
   const boundary = `----=_Part_${nanoid(16)}`;
   const parts = [
-    `From: ${opts.from}`,
-    `To: ${opts.to}`,
-    `Subject: ${opts.subject}`,
+    `From: ${from}`,
+    `To: ${to}`,
+    `Subject: ${subject}`,
     `Date: ${date}`,
     ...threadingHeaders,
     `MIME-Version: 1.0`,
@@ -90,11 +118,13 @@ export function buildMimeMessage(opts: BuildMimeOptions): string {
   ];
 
   for (const att of attachments) {
+    const contentType = assertHeaderSafe(att.contentType, "attachment contentType");
+    const filename = quoteMimeParam(att.filename, "attachment filename");
     parts.push(
       [
         `--${boundary}`,
-        `Content-Type: ${att.contentType}; name="${att.filename}"`,
-        `Content-Disposition: attachment; filename="${att.filename}"`,
+        `Content-Type: ${contentType}; name="${filename}"`,
+        `Content-Disposition: attachment; filename="${filename}"`,
         `Content-Transfer-Encoding: base64`,
         "",
         att.base64.match(/.{1,76}/g)?.join("\r\n") ?? att.base64,
