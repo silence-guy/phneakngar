@@ -52,8 +52,11 @@ export const PATCH = withAuth(async (req, ctx) => {
   const accountId = ctx.params?.accountId
   if (!agentId || !accountId) return writeError("missing params", 400)
 
+  // Credential management is an ownership operation, not a view/collaboration one:
+  // getAgent also succeeds for public agents and agentAccess collaborators.
   const agent = await queries.agent.getAgent(db, agentId, ws.workspaceId, ctx.userId)
   if (!agent) return writeError("not found", 404)
+  if (agent.ownerId !== ctx.userId) return writeError("agent owner access required", 403)
 
   const existing = await queries.emailAccount.getEmailAccountScoped(db, accountId, agentId, ws.workspaceId)
   if (!existing) return writeError("not found", 404)
@@ -105,8 +108,11 @@ export const DELETE = withAuth(async (req, ctx) => {
   const accountId = ctx.params?.accountId
   if (!agentId || !accountId) return writeError("missing params", 400)
 
+  // Credential management is an ownership operation, not a view/collaboration one:
+  // getAgent also succeeds for public agents and agentAccess collaborators.
   const agent = await queries.agent.getAgent(db, agentId, ws.workspaceId, ctx.userId)
   if (!agent) return writeError("not found", 404)
+  if (agent.ownerId !== ctx.userId) return writeError("agent owner access required", 403)
 
   const existing = await queries.emailAccount.getEmailAccountScoped(db, accountId, agentId, ws.workspaceId)
   if (!existing) return writeError("not found", 404)

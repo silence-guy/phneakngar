@@ -64,8 +64,18 @@ const VALID_BODY = {
 beforeEach(() => vi.clearAllMocks());
 
 describe("GET /api/agents/[id]/email-accounts", () => {
+  it("still lists accounts for a non-owner collaborator (read access unchanged)", async () => {
+    mockGetAgent.mockResolvedValue({ id: "a1", ownerId: "someone-else" });
+    mockGetAccounts.mockResolvedValue([ACCOUNT_ROW]);
+    const res = await GET(
+      new NextRequest("http://localhost/api/agents/a1/email-accounts"),
+      { params: { id: "a1" } } as never,
+    );
+    expect(res.status).toBe(200);
+  });
+
   it("lists accounts scoped to agent + workspace", async () => {
-    mockGetAgent.mockResolvedValue({ id: "a1" });
+    mockGetAgent.mockResolvedValue({ id: "a1", ownerId: "u1" });
     mockGetAccounts.mockResolvedValue([ACCOUNT_ROW]);
     const req = new NextRequest("http://localhost/api/agents/a1/email-accounts");
     const res = await GET(req, { params: { id: "a1" } });
@@ -102,7 +112,7 @@ describe("POST /api/agents/[id]/email-accounts", () => {
   }
 
   it("creates an account, encrypts credentials, starts the worker (201)", async () => {
-    mockGetAgent.mockResolvedValue({ id: "a1" });
+    mockGetAgent.mockResolvedValue({ id: "a1", ownerId: "u1" });
     mockCreateAccount.mockResolvedValue(ACCOUNT_ROW);
     const res = await post(VALID_BODY);
     expect(res.status).toBe(201);
@@ -118,8 +128,25 @@ describe("POST /api/agents/[id]/email-accounts", () => {
     expect(res.status).toBe(404);
   });
 
+  it("403 for a non-owner collaborator with agentAccess", async () => {
+    // getAgent succeeds on a view/collaboration grant; creating mailbox credentials
+    // (pointed at any IMAP/SMTP host) is an ownership operation.
+    mockGetAgent.mockResolvedValue({ id: "a1", ownerId: "someone-else" });
+    const res = await post(VALID_BODY);
+    expect(res.status).toBe(403);
+    expect(mockCreateAccount).not.toHaveBeenCalled();
+    expect(mockEmailWorkerFetch).not.toHaveBeenCalled();
+  });
+
+  it("403 for a non-owner on a public-visibility agent", async () => {
+    mockGetAgent.mockResolvedValue({ id: "a1", visibility: "public", ownerId: "someone-else" });
+    const res = await post(VALID_BODY);
+    expect(res.status).toBe(403);
+    expect(mockCreateAccount).not.toHaveBeenCalled();
+  });
+
   it("400 on unsafe mail host", async () => {
-    mockGetAgent.mockResolvedValue({ id: "a1" });
+    mockGetAgent.mockResolvedValue({ id: "a1", ownerId: "u1" });
     const res = await post({ ...VALID_BODY, imapHost: "127.0.0.1" });
     expect(res.status).toBe(400);
     expect(mockCreateAccount).not.toHaveBeenCalled();
@@ -127,7 +154,7 @@ describe("POST /api/agents/[id]/email-accounts", () => {
   });
 
   it("400 on invalid body", async () => {
-    mockGetAgent.mockResolvedValue({ id: "a1" });
+    mockGetAgent.mockResolvedValue({ id: "a1", ownerId: "u1" });
     const res = await post({ emailAddress: "x@t.com" });
     expect(res.status).toBe(400);
   });

@@ -76,6 +76,16 @@ describe("PATCH /api/agents/[id]/email-accounts/[accountId]", () => {
     );
   }
 
+  it("403 for a non-owner collaborator overwriting credentials", async () => {
+    // The scan's exact scenario: a collaborator repoints imapHost/smtpHost at attacker
+    // infrastructure, and the handler then restarts the poller against it.
+    mockGetAgent.mockResolvedValue({ id: "a1", visibility: "public", ownerId: "someone-else" });
+    mockGetScoped.mockResolvedValue(ROW);
+    const res = await patch({ imapHost: "attacker.example", imapPassword: "p" });
+    expect(res.status).toBe(403);
+    expect(mockUpdate).not.toHaveBeenCalled();
+  });
+
   it("updates a scoped account (display name only, no worker restart)", async () => {
     mockGetScoped.mockResolvedValue(ROW);
     mockUpdate.mockResolvedValue(ROW);
