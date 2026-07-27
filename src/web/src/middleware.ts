@@ -1,13 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getCloudflareContext } from "@opennextjs/cloudflare"
 import { createAuth } from "@/lib/auth"
-
-function isSafeRedirect(path: string): boolean {
-  // Must be a relative path. Reject scheme-relative ("//evil.com") and
-  // backslash tricks ("/\evil.com") — the WHATWG URL parser treats "\" as "/",
-  // so both resolve to an external origin and would be an open redirect.
-  return path.startsWith("/") && path[1] !== "/" && path[1] !== "\\"
-}
+import { isSafeRedirectPath } from "@phneakngar/shared"
 
 const AUTH_REQUIRED_PREFIXES = ["/invite/", "/w/", "/workspaces", "/dashboard"]
 
@@ -59,7 +53,7 @@ export async function middleware(request: NextRequest) {
 
     if (result?.response) {
       const redirect = request.nextUrl.searchParams.get("redirect")
-      const target = redirect && isSafeRedirect(redirect)
+      const target = redirect && isSafeRedirectPath(redirect)
         ? new URL(redirect, request.url)
         : new URL("/workspaces?auto", request.url)
       const res = NextResponse.redirect(target)

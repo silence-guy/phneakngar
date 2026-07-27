@@ -177,6 +177,16 @@ describe("upstream config exports", () => {
     expect(hasUpstreamConfig(config)).toBe(true);
   });
 
+  const ORIGINAL_HOSTS = process.env.PHNEAKNGAR_HEADROOM_UPSTREAM_HOSTS;
+  beforeEach(() => {
+    // test.com stands in for an operator-approved third-party gateway.
+    process.env.PHNEAKNGAR_HEADROOM_UPSTREAM_HOSTS = "test.com";
+  });
+  afterEach(() => {
+    if (ORIGINAL_HOSTS === undefined) delete process.env.PHNEAKNGAR_HEADROOM_UPSTREAM_HOSTS;
+    else process.env.PHNEAKNGAR_HEADROOM_UPSTREAM_HOSTS = ORIGINAL_HOSTS;
+  });
+
   it("generateUpstreamConfig generates valid YAML for Claude", () => {
     const config = normalizeHeadroomRuntimeConfig({
       headroom: { enabled: true, upstream: { claude: "https://test.com" } },

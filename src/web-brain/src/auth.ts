@@ -16,6 +16,45 @@ export type AuthConfig = {
   source?: string;
 };
 
+/**
+ * Hosts the env cookie may be sent to, from PHNEAKNGAR_AUTH_COOKIE_HOSTS
+ * (comma-separated; suffix match, so "example.com" covers "docs.example.com").
+ */
+function envCookieAllowedHosts(): string[] {
+  return (process.env.PHNEAKNGAR_AUTH_COOKIE_HOSTS ?? "")
+    .split(",")
+    .map((h) => h.trim().toLowerCase().replace(/^\./, ""))
+    .filter(Boolean);
+}
+
+/**
+ * Whether PHNEAKNGAR_AUTH_COOKIE_HEADER may be attached to a request for `host`.
+ *
+ * Fails closed: with no allowlist configured the cookie is never attached, because the
+ * alternative is sending it to every host the agent is pointed at.
+ */
+export function envCookieHostAllowed(host: string | undefined): boolean {
+  const allowed = envCookieAllowedHosts();
+  if (allowed.length === 0) return false;
+  if (!host) return false;
+  const h = host.trim().toLowerCase();
+  return allowed.some((a) => h === a || h.endsWith(`.${a}`));
+}
+
+let envCookieWarned = false;
+function warnEnvCookieSkipped(host: string | undefined): void {
+  if (envCookieWarned) return;
+  envCookieWarned = true;
+  const allowed = envCookieAllowedHosts();
+  console.warn(
+    allowed.length === 0
+      ? "[web-brain] PHNEAKNGAR_AUTH_COOKIE_HEADER is set but PHNEAKNGAR_AUTH_COOKIE_HOSTS is not; " +
+          "the cookie will not be sent. Set the allowlist to the host(s) it belongs to."
+      : `[web-brain] not attaching PHNEAKNGAR_AUTH_COOKIE_HEADER to ${host ?? "unknown host"}: ` +
+          `not in PHNEAKNGAR_AUTH_COOKIE_HOSTS (${allowed.join(", ")}).`,
+  );
+}
+
 function defaultAuthPaths(): string[] {
   const home = homedir();
   return [
@@ -91,7 +130,14 @@ export function resolveAuth(
 
   const envCookie = process.env.PHNEAKNGAR_AUTH_COOKIE_HEADER;
   if (envCookie) {
-    return { cookieHeader: envCookie, source: "env:PHNEAKNGAR_AUTH_COOKIE_HEADER" };
+    // Scope by host exactly like the file-based sources below. Without this the operator's
+    // session cookie is attached to every destination once use_auth is set — including a
+    // redirect hop or a cross-origin link discovered mid-crawl — which hands it to whatever
+    // host the agent was steered at.
+    if (envCookieHostAllowed(opts.host)) {
+      return { cookieHeader: envCookie, source: "env:PHNEAKNGAR_AUTH_COOKIE_HEADER" };
+    }
+    warnEnvCookieSkipped(opts.host);
   }
 
   const paths = opts.authStatePath

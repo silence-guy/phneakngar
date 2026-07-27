@@ -23,7 +23,7 @@ import { SiGoogle } from "@icons-pack/react-simple-icons"
 import Image from "next/image"
 import { GradientBackground } from "@/components/gradient-background"
 import { Logo } from "@/components/logo"
-import { DEV_PASSWORD } from "@phneakngar/shared"
+import { DEV_PASSWORD, safeRedirectPath } from "@phneakngar/shared"
 import { cn } from "@/lib/utils"
 import {
   SIGN_IN_LABELS,
@@ -35,10 +35,8 @@ import {
 const DEFAULT_POST_LOGIN = "/workspaces?auto"
 
 function safeRedirectUrl(redirect: string | null): string {
-  if (redirect && redirect.startsWith("/") && !redirect.startsWith("//")) {
-    return redirect
-  }
-  return DEFAULT_POST_LOGIN
+  // Shared with middleware.ts so the two validators cannot diverge again.
+  return safeRedirectPath(redirect, DEFAULT_POST_LOGIN)
 }
 
 function SignInForm({ postLoginUrl, isProd }: { postLoginUrl: string; isProd: boolean }) {
