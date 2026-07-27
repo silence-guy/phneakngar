@@ -1,7 +1,7 @@
 import { DurableObject } from "cloudflare:workers"
 import PostalMime from "postal-mime"
 import { nanoid } from "nanoid"
-import { createDb, queries, createLogger, parseIcs, extractAttachmentMeta, EMAIL_NOTIFY_SECRET_HEADER } from "@phneakngar/shared"
+import { createDb, queries, createLogger, parseIcs, extractAttachmentMeta, EMAIL_NOTIFY_SECRET_HEADER, resolveWhitelistTrust, shouldRequireSenderAuth, extractAuthResultsFromRaw } from "@phneakngar/shared"
 import type { MeetingInfo } from "@phneakngar/shared"
 import { decrypt } from "@phneakngar/shared/crypto"
 import { ImapClient, ImapAuthError } from "./lib/imap-client"
@@ -237,7 +237,18 @@ export class ImapPollerDO extends DurableObject<EmailEnv> {
         })
 
         const fromAddr = parsed.from?.address || parsed.from?.name || ""
-        const isWhitelisted = whitelist.check(fromAddr)
+        // The From header is attacker-controlled; require an aligned DKIM/SPF/DMARC pass
+        // from the receiving MTA before trusting a whitelist match.
+        const trust = resolveWhitelistTrust({
+          whitelisted: whitelist.check(fromAddr),
+          authResultsHeader: extractAuthResultsFromRaw(rawEmail),
+          fromAddress: fromAddr,
+          requireAuth: shouldRequireSenderAuth(this.env.EMAIL_REQUIRE_SENDER_AUTH),
+        })
+        const isWhitelisted = trust.trusted
+        if (trust.reason === "unauthenticated_sender") {
+          pollLog.warn("whitelisted sender failed authenticity check, treating as untrusted", { uid })
+        }
 
         let meetingInfo: MeetingInfo | null = null
         const icsAttachment = parsed.attachments?.find(

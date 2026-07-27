@@ -37,6 +37,10 @@ name = "SEND_EMAIL"
 [vars]
 NODE_ENV = "production"
 PHNEAKNGAR_DOMAIN = "cieee.xyz"
+# Require a passing DKIM/SPF/DMARC result aligned with the From domain before a whitelist
+# match is trusted enough to auto-dispatch an agent task. Set to "false" only if the
+# upstream MTA strips Authentication-Results.
+EMAIL_REQUIRE_SENDER_AUTH = "true"
 
 [[durable_objects.bindings]]
 name = "IMAP_POLLER"

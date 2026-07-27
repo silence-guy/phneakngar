@@ -29,3 +29,21 @@ src/app/LICENSE
 
 # npm pack artifacts
 *.tgz
+
+# Compiled JS emitted next to TS sources.
+# These shadow their .ts siblings: ESM ".js" import specifiers and extensionless
+# resolution both prefer a real .js on disk, so a stale one silently replaces the
+# source in tests and at runtime. Build output belongs in dist/.
+src/*/src/**/*.js
+src/*/*.js
+src/cli/chhlat/**/*.js
+src/cli/commands/**/*.js
+src/cli/lib/**/*.js
+!src/*/vitest.config.js
+!src/*/vitest.shared.js
+!src/*/next.config.js
+!src/*/eslint.config.js
+!src/*/postcss.config.js
+!src/*/tailwind.config.js
+!src/web/custom-worker.js
+!src/app/src/**/*.js
