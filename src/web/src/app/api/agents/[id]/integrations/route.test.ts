@@ -70,7 +70,7 @@ const ROW = {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mockGetAgent.mockResolvedValue({ id: "a1" });
+  mockGetAgent.mockResolvedValue({ id: "a1", ownerId: "u1" });
 });
 
 describe("GET /api/agents/[id]/integrations", () => {
@@ -123,6 +123,13 @@ describe("POST /api/agents/[id]/integrations", () => {
       { params }
     );
   }
+
+  it("403 for a non-owner collaborator attaching a secret_ref", async () => {
+    mockGetAgent.mockResolvedValue({ id: "a1", ownerId: "someone-else" });
+    const res = await post({ provider: "slack", secret_ref: "attacker-token" });
+    expect(res.status).toBe(403);
+    expect(mockCreate).not.toHaveBeenCalled();
+  });
 
   it("creates integration and strips secret from response", async () => {
     mockCreate.mockResolvedValue(ROW);

@@ -74,6 +74,9 @@ vi.mock("@phneakngar/shared", async () => {
     getEmailDomain: real.getEmailDomain,
     resolveEmailDomain: real.resolveEmailDomain,
     EMAIL_DOMAIN_EXPECTATION_HEADER: real.EMAIL_DOMAIN_EXPECTATION_HEADER,
+    resolveWhitelistTrust: real.resolveWhitelistTrust,
+    shouldRequireSenderAuth: real.shouldRequireSenderAuth,
+    extractAuthResultsFromRaw: real.extractAuthResultsFromRaw,
     DEV_WEB_URL: "http://localhost:3000",
     queries: {
       agent: {
@@ -91,6 +94,9 @@ vi.mock("@phneakngar/shared", async () => {
 // Import handler after mocks are set up
 import { EMAIL_DOMAIN_EXPECTATION_HEADER } from "@phneakngar/shared"
 import handler from "./index"
+
+/** Passing DKIM aligned with owner@example.com. */
+const AUTH_RESULTS_PASS = "mx.cloudflare.com; dkim=pass header.d=example.com; spf=pass"
 
 // Standard agent fixture
 const AGENT = {
@@ -129,6 +135,8 @@ function setup(overrides?: {
       to: "jarvis@agents.example",
       subject: "Hello",
       body: "Test body",
+      // A whitelist match is only trusted when sender authenticity checks out.
+      extraHeaders: { "authentication-results": AUTH_RESULTS_PASS },
     }
   )
 
@@ -388,6 +396,90 @@ describe("RFC 2047 subject decoding", () => {
 
     const notifyBody = JSON.parse(wsFetch.mock.calls[0][1].body)
     expect(notifyBody.subject).toBe("Fallback Subject")
+  })
+})
+
+// ─── Sender authenticity gate (spoofed From) ───
+
+describe("sender authenticity", () => {
+  function notifyBody(wsFetch: ReturnType<typeof vi.fn>) {
+    return JSON.parse(wsFetch.mock.calls[0][1].body)
+  }
+
+  it("does not trust a whitelisted sender with no Authentication-Results", async () => {
+    // message.from is the unauthenticated SMTP envelope sender: anyone can claim
+    // owner@example.com. Without an authenticity signal it must not dispatch an agent task.
+    const { env, message, wsFetch } = setup({
+      isWhitelisted: true,
+      messageOpts: { from: "owner@example.com", to: "jarvis@agents.example", subject: "Hello" },
+    })
+
+    await handler.email(message, env)
+
+    expect(notifyBody(wsFetch).isWhitelisted).toBe(false)
+  })
+
+  it("does not trust a dkim=pass signed by an unrelated domain", async () => {
+    const { env, message, wsFetch } = setup({
+      isWhitelisted: true,
+      messageOpts: {
+        from: "owner@example.com",
+        to: "jarvis@agents.example",
+        subject: "Hello",
+        extraHeaders: { "authentication-results": "mx; dkim=pass header.d=attacker.example" },
+      },
+    })
+
+    await handler.email(message, env)
+
+    expect(notifyBody(wsFetch).isWhitelisted).toBe(false)
+  })
+
+  it("does not trust dkim=fail", async () => {
+    const { env, message, wsFetch } = setup({
+      isWhitelisted: true,
+      messageOpts: {
+        from: "owner@example.com",
+        to: "jarvis@agents.example",
+        subject: "Hello",
+        extraHeaders: { "authentication-results": "mx; dkim=fail header.d=example.com" },
+      },
+    })
+
+    await handler.email(message, env)
+
+    expect(notifyBody(wsFetch).isWhitelisted).toBe(false)
+  })
+
+  it("trusts a whitelisted sender with an aligned dkim=pass", async () => {
+    const { env, message, wsFetch } = setup({ isWhitelisted: true })
+
+    await handler.email(message, env)
+
+    expect(notifyBody(wsFetch).isWhitelisted).toBe(true)
+  })
+
+  it("restores legacy trust when EMAIL_REQUIRE_SENDER_AUTH is disabled", async () => {
+    const { env, message, wsFetch } = setup({
+      isWhitelisted: true,
+      messageOpts: { from: "owner@example.com", to: "jarvis@agents.example", subject: "Hello" },
+    })
+
+    await handler.email(message, { ...env, EMAIL_REQUIRE_SENDER_AUTH: "false" })
+
+    expect(notifyBody(wsFetch).isWhitelisted).toBe(true)
+  })
+
+  it("still stores and notifies for an unauthenticated sender (no silent drop)", async () => {
+    const { env, message, wsFetch, put } = setup({
+      isWhitelisted: true,
+      messageOpts: { from: "owner@example.com", to: "jarvis@agents.example", subject: "Hello" },
+    })
+
+    await handler.email(message, env)
+
+    expect(put).toHaveBeenCalled()
+    expect(wsFetch).toHaveBeenCalledOnce()
   })
 })
 

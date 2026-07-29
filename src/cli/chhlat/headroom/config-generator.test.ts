@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { generateUpstreamConfig, hasUpstreamConfig } from "./config-generator.js";
 import type { HeadroomRuntimeConfig } from "./config.js";
 
@@ -12,6 +12,25 @@ const baseConfig: HeadroomRuntimeConfig = {
   port: 8799,
   executable: "headroom",
 };
+
+/**
+ * These cases exercise the supported custom-gateway feature (LiteLLM / OpenRouter / a
+ * corporate proxy), which now requires the operator to approve the host locally instead of
+ * accepting whatever host the control plane pushes.
+ */
+const ORIGINAL_UPSTREAM_HOSTS = process.env.PHNEAKNGAR_HEADROOM_UPSTREAM_HOSTS;
+
+beforeEach(() => {
+  process.env.PHNEAKNGAR_HEADROOM_UPSTREAM_HOSTS = "proxy.com";
+});
+
+afterEach(() => {
+  if (ORIGINAL_UPSTREAM_HOSTS === undefined) {
+    delete process.env.PHNEAKNGAR_HEADROOM_UPSTREAM_HOSTS;
+  } else {
+    process.env.PHNEAKNGAR_HEADROOM_UPSTREAM_HOSTS = ORIGINAL_UPSTREAM_HOSTS;
+  }
+});
 
 describe("generateUpstreamConfig", () => {
   it("generates YAML with Claude endpoint", () => {

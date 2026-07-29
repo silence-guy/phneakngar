@@ -77,6 +77,9 @@ vi.mock("@phneakngar/shared", async () => {
     resolveEmailDomain: real.resolveEmailDomain,
     DEV_WEB_URL: "http://localhost:3000",
     EMAIL_NOTIFY_SECRET_HEADER: real.EMAIL_NOTIFY_SECRET_HEADER,
+    resolveWhitelistTrust: real.resolveWhitelistTrust,
+    shouldRequireSenderAuth: real.shouldRequireSenderAuth,
+    extractAuthResultsFromRaw: real.extractAuthResultsFromRaw,
     queries: {
       emailAccount: {
         getEmailAccount: (...args: any[]) => mockGetEmailAccount(...args),
@@ -164,8 +167,13 @@ function buildFetchResponse(uid: number, rawEmail: string): string {
   return `* 1 FETCH (UID ${uid} BODY[] {${rawEmail.length}}\r\n${rawEmail}\r\n)\r\nF${uid} OK UID FETCH completed\r\n`
 }
 
-const RAW_EMAIL_1 = "From: alice@example.com\r\nSubject: Hi\r\nMessage-ID: <msg1>\r\n\r\nHello"
-const RAW_EMAIL_2 = "From: bob@example.com\r\nSubject: Hey\r\nMessage-ID: <msg2>\r\n\r\nWorld"
+// Fixtures carry a passing DKIM result aligned with the From domain: the poller now
+// requires an authenticity signal before it will trust a whitelist match.
+const AUTH_OK_1 = "Authentication-Results: mx.example; dkim=pass header.d=example.com"
+const RAW_EMAIL_1 = `From: alice@example.com\r\n${AUTH_OK_1}\r\nSubject: Hi\r\nMessage-ID: <msg1>\r\n\r\nHello`
+const RAW_EMAIL_2 = `From: bob@example.com\r\n${AUTH_OK_1}\r\nSubject: Hey\r\nMessage-ID: <msg2>\r\n\r\nWorld`
+/** Same message with no Authentication-Results — spoofable From. */
+const RAW_EMAIL_UNVERIFIED = "From: alice@example.com\r\nSubject: Hi\r\nMessage-ID: <msg1>\r\n\r\nHello"
 
 beforeEach(() => {
   nanoidCounter = 0

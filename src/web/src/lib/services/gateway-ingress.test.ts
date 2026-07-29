@@ -115,9 +115,17 @@ describe("extract helpers", () => {
     expect(extractChannelId("slack", body)).toBe("C9");
   });
 
-  it("prefers X-Team-Id header over body", () => {
+  it("ignores an x-team-id header and routes on the signed body instead", () => {
+    // Honouring a caller-supplied header would let anyone redirect ingress into another
+    // tenant's workspace, so only signature-covered body fields are trusted.
     const headers = new Headers({ "X-Team-Id": "T-header" });
-    expect(extractTeamId("slack", { team_id: "T-body" }, headers)).toBe("T-header");
+    expect(
+      (extractTeamId as (p: string, b: unknown, h?: Headers) => string | null)(
+        "slack",
+        { team_id: "T-body" },
+        headers,
+      ),
+    ).toBe("T-body");
   });
 
   it("extracts discord and telegram fields", () => {
@@ -144,11 +152,17 @@ describe("extract helpers", () => {
     expect(extractChannelId("lark", body)).toBe("oc_chat");
   });
 
-  it("extracts lark tenant from x-lark-tenant-key header", () => {
+  it("ignores x-lark-tenant-key header; tenant must come from the signed body", () => {
     const headers = new Headers({ "x-lark-tenant-key": "tenant-from-header" });
-    expect(extractTeamId("lark", { event: { message: { chat_id: "oc" } } }, headers)).toBe(
-      "tenant-from-header",
-    );
+    expect(
+      (extractTeamId as (p: string, b: unknown, h?: Headers) => string | null)(
+        "lark",
+        { event: { message: { chat_id: "oc" } } },
+        headers,
+      ),
+    ).toBeNull();
+    // Body-carried tenant_key still resolves.
+    expect(extractTeamId("lark", { tenant_key: "tenant_1" })).toBe("tenant_1");
   });
 
   it("extracts teams team/text/channel", () => {

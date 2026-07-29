@@ -20,15 +20,26 @@ declare namespace Cloudflare {
     /**
      * Optional JSON map of external chat team/guild/chat ids to workspace bindings.
      * Shape: { "slack:T123": { "workspaceId": "...", "agentId": "...", "userId": "..." }, ... }
-     * When set, GATEWAY_WEBHOOK_SECRET is required.
+     * Legacy bootstrap path; D1 gateway_binding is the product source of truth.
+     * Does NOT affect whether webhook authentication runs — see gateway-verify.ts.
      */
     GATEWAY_TEAM_MAP?: string
-    /** Shared secret for chat gateway webhooks (header x-gateway-secret or Bearer). */
+    /**
+     * Shared fallback secret for chat gateway webhooks (header x-gateway-secret or Bearer).
+     * Used when a provider has no native signature secret configured. Every gateway webhook
+     * requires either its provider secret below or this one, otherwise the route fails closed.
+     */
     GATEWAY_WEBHOOK_SECRET?: string
-    /** Optional Telegram Bot API webhook secret_token (x-telegram-bot-api-secret-token). */
+    /** Telegram Bot API webhook secret_token (x-telegram-bot-api-secret-token). */
     TELEGRAM_WEBHOOK_SECRET?: string
-    /** Optional Slack signing secret for x-slack-signature HMAC. */
+    /** Slack signing secret for x-slack-signature HMAC. */
     SLACK_SIGNING_SECRET?: string
+    /** Discord application public key (hex) for x-signature-ed25519 verification. */
+    DISCORD_PUBLIC_KEY?: string
+    /** Lark/Feishu event-subscription verification token for x-lark-signature HMAC. */
+    LARK_APP_SECRET?: string
+    /** Microsoft Teams outgoing-webhook HMAC secret (base64, from the Teams app config). */
+    TEAMS_APP_PASSWORD?: string
     WS_SERVICE_SECRET: string
     RATE_LIMIT_KV: KVNamespace
     CACHE_KV: KVNamespace

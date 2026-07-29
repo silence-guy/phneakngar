@@ -57,8 +57,11 @@ export const POST = withAuth(async (req, ctx) => {
   const agentId = ctx.params?.id
   if (!agentId) return writeError("agent id is required", 400)
 
+  // Credential management is an ownership operation, not a view/collaboration one:
+  // getAgent also succeeds for public agents and agentAccess collaborators.
   const agent = await queries.agent.getAgent(db, agentId, ws.workspaceId, ctx.userId)
   if (!agent) return writeError("agent not found", 404)
+  if (agent.ownerId !== ctx.userId) return writeError("agent owner access required", 403)
 
   const [body, err] = await parseBody(req, CreateEmailAccountSchema)
   if (err) return err

@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { GatewayPeerAllowlistRequestSchema, queries } from "@phneakngar/shared";
 import { getDb } from "@/lib/db";
 import { withAuth } from "@/lib/middleware/auth";
-import { withWorkspaceMember } from "@/lib/middleware/workspace";
+import { withWorkspaceMember, withWorkspaceOwner } from "@/lib/middleware/workspace";
 import { parseBody, writeError, writeJSON } from "@/lib/middleware/helpers";
 
 export const GET = withAuth(async (req: NextRequest, ctx) => {
@@ -37,7 +37,7 @@ export const GET = withAuth(async (req: NextRequest, ctx) => {
 });
 
 export const POST = withAuth(async (req: NextRequest, ctx) => {
-  const ws = await withWorkspaceMember(req, ctx);
+  const ws = await withWorkspaceOwner(req, ctx);
   if (ws instanceof Response) return ws;
 
   const bindingId = ctx.params?.id;
@@ -76,7 +76,7 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
 });
 
 export const DELETE = withAuth(async (req: NextRequest, ctx) => {
-  const ws = await withWorkspaceMember(req, ctx);
+  const ws = await withWorkspaceOwner(req, ctx);
   if (ws instanceof Response) return ws;
 
   const bindingId = ctx.params?.id;

@@ -1,6 +1,6 @@
 import { nanoid } from "nanoid"
 import PostalMime from "postal-mime"
-import { createDb, queries, parseEmailHandle, toPhneakngarAddress, getEmailDomain, createLogger, buildMimeMessage, extractAttachmentMeta, isEmailDraftAttachmentKeyForScope, EMAIL_NOTIFY_SECRET_HEADER, EMAIL_DOMAIN_EXPECTATION_HEADER, OutboundEmailDeliveryStatus } from "@phneakngar/shared"
+import { createDb, queries, parseEmailHandle, toPhneakngarAddress, getEmailDomain, createLogger, buildMimeMessage, extractAttachmentMeta, isEmailDraftAttachmentKeyForScope, EMAIL_NOTIFY_SECRET_HEADER, EMAIL_DOMAIN_EXPECTATION_HEADER, OutboundEmailDeliveryStatus, resolveWhitelistTrust, shouldRequireSenderAuth } from "@phneakngar/shared"
 import { decrypt } from "@phneakngar/shared/crypto"
 import { safeEqualSecret } from "@phneakngar/shared/secrets"
 import { WorkerMailer, type AuthType } from "worker-mailer"
@@ -494,7 +494,23 @@ export default {
 
     emailLog.info("email received", { agentId: agent.id, handle })
 
-    const whitelisted = await queries.whitelist.isWhitelisted(db, agent.id, agent.workspaceId, message.from, emailDomain)
+    const whitelistMatch = await queries.whitelist.isWhitelisted(db, agent.id, agent.workspaceId, message.from, emailDomain)
+
+    // message.from is the unauthenticated SMTP envelope sender — any client can claim any
+    // address. Require a passing DKIM/SPF/DMARC result aligned with the claimed From domain
+    // before a whitelist match is trusted enough to dispatch an agent task.
+    const trust = resolveWhitelistTrust({
+      whitelisted: whitelistMatch,
+      authResultsHeader: message.headers.get("authentication-results"),
+      fromAddress: message.from,
+      requireAuth: shouldRequireSenderAuth(env.EMAIL_REQUIRE_SENDER_AUTH),
+    })
+    const whitelisted = trust.trusted
+    if (trust.reason === "unauthenticated_sender") {
+      emailLog.warn("whitelisted sender failed authenticity check, treating as untrusted", {
+        agentId: agent.id,
+      })
+    }
 
     const rawBytes = await new Response(message.raw).arrayBuffer()
     const rawDigest = await sha256Hex(rawBytes)

@@ -84,25 +84,18 @@ export function resolveGatewayMapping(
   return map[gatewayMapKey(provider, teamId)] ?? null;
 }
 
+/**
+ * Derive the external team/tenant id purely from the verified request body.
+ *
+ * Caller-supplied headers are deliberately NOT consulted: the team id selects which
+ * workspace's agent receives the message, so honouring an `x-team-id` header would let any
+ * caller redirect ingress into an arbitrary tenant. Only fields covered by the provider's
+ * signature are trusted.
+ */
 export function extractTeamId(
   provider: GatewayProvider,
   body: unknown,
-  headers?: Headers | { get(name: string): string | null },
 ): string | null {
-  const headerTeam =
-    headers?.get("x-team-id") ??
-    headers?.get("X-Team-Id") ??
-    headers?.get("x-external-team-id") ??
-    null;
-  if (headerTeam?.trim()) return headerTeam.trim();
-
-  // Lark/Feishu tenant header (provider-specific; not used as a generic team override).
-  if (provider === "lark") {
-    const larkTenantHeader =
-      headers?.get("x-lark-tenant-key") ?? headers?.get("X-Lark-Tenant-Key") ?? null;
-    if (larkTenantHeader?.trim()) return larkTenantHeader.trim();
-  }
-
   if (!isRecord(body)) return null;
 
   if (provider === "slack") {
@@ -319,7 +312,6 @@ export async function ingressGatewayMessage(
   opts: {
     provider: GatewayProvider;
     body: unknown;
-    headers?: Headers | { get(name: string): string | null };
     teamMapRaw?: string | null;
   },
 ): Promise<GatewayIngressResult> {
@@ -342,7 +334,7 @@ export async function ingressGatewayMessage(
     };
   }
 
-  const teamId = extractTeamId(opts.provider, opts.body, opts.headers);
+  const teamId = extractTeamId(opts.provider, opts.body);
   if (!teamId) {
     return { ok: false, status: 400, error: "team_id required" };
   }

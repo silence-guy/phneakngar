@@ -49,16 +49,71 @@ export function canonicalForOutput(url: string): string {
   }
 }
 
-/** Regex whitelist/blacklist on full URL string. Empty include = allow all. */
+/** Caps on agent-supplied crawl patterns (ReDoS guard). */
+const MAX_PATTERNS = 32;
+const MAX_PATTERN_LENGTH = 200;
+
+/**
+ * Reject patterns whose shape invites catastrophic backtracking.
+ *
+ * include_patterns/exclude_patterns arrive from an MCP tool call and are compiled with
+ * `new RegExp` then run against every discovered link, with no timeout — so `(a+)+$` freezes
+ * the process. JS has no regex execution budget, so the only cheap defence is refusing
+ * nested quantifiers before compiling.
+ */
+export function isSafeCrawlPattern(pattern: string): boolean {
+  if (typeof pattern !== "string") return false;
+  if (!pattern || pattern.length > MAX_PATTERN_LENGTH) return false;
+  // A quantified group that itself contains a quantifier: (a+)+, (a*)*, (a+){2,}, (?:a+)+ …
+  if (/\([^)]*[+*}][^)]*\)\s*[+*{]/.test(pattern)) return false;
+  // Nested/adjacent unbounded quantifiers outside groups: a**, a+*, a{2,}+
+  if (/[+*]\s*[+*]/.test(pattern)) return false;
+  try {
+    new RegExp(pattern);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Compile the safe subset of a pattern list, dropping (and reporting) the rest. */
+export function compileCrawlPatterns(patterns: string[] | undefined): {
+  regexes: RegExp[];
+  rejected: string[];
+} {
+  if (!patterns?.length) return { regexes: [], rejected: [] };
+  const regexes: RegExp[] = [];
+  const rejected: string[] = [];
+  for (const p of patterns.slice(0, MAX_PATTERNS)) {
+    if (isSafeCrawlPattern(p)) {
+      regexes.push(new RegExp(p));
+    } else {
+      rejected.push(p);
+    }
+  }
+  if (patterns.length > MAX_PATTERNS) {
+    rejected.push(...patterns.slice(MAX_PATTERNS));
+  }
+  return { regexes, rejected };
+}
+
+/**
+ * Regex whitelist/blacklist on full URL string. Empty include = allow all.
+ *
+ * Patterns that fail the safety check are treated as non-matching rather than compiled.
+ * A rejected include pattern therefore excludes the URL (fail closed), and a rejected
+ * exclude pattern does not block it.
+ */
 export function matchesPatterns(
   url: string,
   includePatterns?: string[],
   excludePatterns?: string[],
 ): boolean {
   if (includePatterns && includePatterns.length > 0) {
-    const ok = includePatterns.some((p) => {
+    const { regexes } = compileCrawlPatterns(includePatterns);
+    const ok = regexes.some((re) => {
       try {
-        return new RegExp(p).test(url);
+        return re.test(url);
       } catch {
         return false;
       }
@@ -66,9 +121,10 @@ export function matchesPatterns(
     if (!ok) return false;
   }
   if (excludePatterns && excludePatterns.length > 0) {
-    const blocked = excludePatterns.some((p) => {
+    const { regexes } = compileCrawlPatterns(excludePatterns);
+    const blocked = regexes.some((re) => {
       try {
-        return new RegExp(p).test(url);
+        return re.test(url);
       } catch {
         return false;
       }

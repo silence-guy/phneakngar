@@ -361,6 +361,16 @@ export { parseIcs } from "./lib/ics-parser";
 export type { MeetingInfo } from "./lib/ics-parser";
 export { buildMimeMessage, extractAttachmentMeta, filterDownloadableAttachments } from "./lib/mime";
 export type { MimeAttachment, BuildMimeOptions, InboundAttachmentMeta } from "./lib/mime";
+export { sealGatewaySecret, readGatewaySecret } from "./lib/gateway-secret";
+export { isSafeRedirectPath, safeRedirectPath } from "./lib/redirect";
+export {
+  isSenderAuthenticated,
+  resolveWhitelistTrust,
+  shouldRequireSenderAuth,
+  extractAuthResultsFromRaw,
+  emailDomainOf,
+} from "./lib/email-authenticity";
+export type { SenderAuthenticityInput } from "./lib/email-authenticity";
 export { compactMemoryNotes, MEMORY_SUMMARY_KIND } from "./lib/memory-compact";
 export type { CompactableMemoryNote, CompactMemoryOptions } from "./lib/memory-compact";
 export { proposeSkillFromSuccess } from "./lib/skill-proposal";

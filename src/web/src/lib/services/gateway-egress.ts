@@ -9,8 +9,10 @@
 import {
   extractChannelDeliveryContent,
   queries,
+  readGatewaySecret,
   type Database,
 } from "@phneakngar/shared";
+import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { log } from "@/lib/logger";
 import {
   isLiveOutboundMode,
@@ -113,6 +115,20 @@ export function shouldAttemptGatewayLiveEgress(context: unknown): {
 }
 
 /**
+ * Read ENCRYPTION_KEY for unsealing binding secrets.
+ * Returns "" when unavailable (e.g. unit tests that inject a token directly), which makes
+ * readGatewaySecret fall back to treating the stored value as legacy plaintext.
+ */
+async function resolveEncryptionKey(): Promise<string> {
+  try {
+    const { env } = await getCloudflareContext({ async: true });
+    return (env as Cloudflare.Env).ENCRYPTION_KEY ?? "";
+  } catch {
+    return "";
+  }
+}
+
+/**
  * Attempt live external send for a completed gateway task.
  * Soft-fail: never throws to caller; records activity_event when possible.
  */
@@ -163,7 +179,8 @@ export async function deliverTaskResultToGatewayLive(
     if (!isLiveOutboundMode(binding.outboundMode)) {
       return { ok: true, skipped: "binding_preview" };
     }
-    token = (binding.secretRef ?? "").trim();
+    // secret_ref is encrypted at rest; readGatewaySecret tolerates legacy plaintext rows.
+    token = readGatewaySecret(binding.secretRef, await resolveEncryptionKey());
     if (!token) {
       return { ok: true, skipped: "missing_token" };
     }

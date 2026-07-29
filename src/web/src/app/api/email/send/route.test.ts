@@ -407,6 +407,34 @@ describe("POST /api/email/send", () => {
     expect(res.status).toBe(400);
   });
 
+  it("returns 400 for a CRLF-injected subject instead of building forged headers", async () => {
+    // Rejected at the schema boundary, so the value never reaches buildMimeMessage
+    // (which would throw and surface as a 500).
+    mockGetAgent.mockResolvedValue({ id: "a1", emailHandle: "sender-agent", workspaceId: "ws1" });
+    const req = makeReq({
+      agentId: "a1",
+      to: "user@example.com",
+      subject: "hi\r\nBcc: attacker@evil.example",
+      htmlBody: "<p>Hi</p>",
+    });
+
+    const res = await POST(req, {} as any);
+    expect(res.status).toBe(400);
+  });
+
+  it("returns 400 for a CRLF-injected recipient", async () => {
+    mockGetAgent.mockResolvedValue({ id: "a1", emailHandle: "sender-agent", workspaceId: "ws1" });
+    const req = makeReq({
+      agentId: "a1",
+      to: "user@example.com\r\nBcc: attacker@evil.example",
+      subject: "Hi",
+      htmlBody: "<p>Hi</p>",
+    });
+
+    const res = await POST(req, {} as any);
+    expect(res.status).toBe(400);
+  });
+
   // --- Local delivery tests ---
 
   describe("local delivery shortcut", () => {

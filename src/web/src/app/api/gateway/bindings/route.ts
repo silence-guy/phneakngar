@@ -3,10 +3,11 @@ import {
   CreateGatewayBindingRequestSchema,
   isUniqueConstraintError,
   queries,
+  sealGatewaySecret,
 } from "@phneakngar/shared";
 import { getDb } from "@/lib/db";
 import { withAuth } from "@/lib/middleware/auth";
-import { withWorkspaceMember } from "@/lib/middleware/workspace";
+import { withWorkspaceMember, withWorkspaceOwner } from "@/lib/middleware/workspace";
 import { parseBody, writeError, writeJSON } from "@/lib/middleware/helpers";
 import { outboundModeBadge } from "@/lib/services/gateway-live-outbound";
 
@@ -53,7 +54,9 @@ export const GET = withAuth(async (req: NextRequest, ctx) => {
 });
 
 export const POST = withAuth(async (req: NextRequest, ctx) => {
-  const ws = await withWorkspaceMember(req, ctx);
+  // Owner-only: a binding is the trust anchor inbound webhooks route on, and it vaults a
+  // live bot token used for outbound sends.
+  const ws = await withWorkspaceOwner(req, ctx);
   if (ws instanceof Response) return ws;
 
   const db = getDb(ctx.env.DB);
@@ -67,6 +70,11 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
   const member = await queries.member.getMemberByUserAndWorkspace(db, userId, ws.workspaceId);
   if (!member) return writeError("user not a workspace member", 404);
 
+  const encryptionKey = ctx.env.ENCRYPTION_KEY;
+  if (body.secret_ref?.trim() && !encryptionKey) {
+    return writeError("encryption not configured", 500);
+  }
+
   try {
     const created = await queries.gatewayBinding.createGatewayBinding(db, {
       workspaceId: ws.workspaceId,
@@ -78,7 +86,7 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
       status: body.status,
       dmPolicy: body.dm_policy,
       outboundMode: body.outbound_mode,
-      secretRef: body.secret_ref ?? null,
+      secretRef: sealGatewaySecret(body.secret_ref, encryptionKey),
     });
     if (!created) return writeError("failed to create binding", 500);
     return writeJSON({ binding: bindingToResponse(created) }, 201);

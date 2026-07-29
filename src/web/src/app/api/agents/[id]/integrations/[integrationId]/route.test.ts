@@ -42,7 +42,7 @@ import { DELETE } from "./route";
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mockGetAgent.mockResolvedValue({ id: "a1" });
+  mockGetAgent.mockResolvedValue({ id: "a1", ownerId: "u1" });
 });
 
 describe("DELETE /api/agents/[id]/integrations/[integrationId]", () => {

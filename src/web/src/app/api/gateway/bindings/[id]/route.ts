@@ -1,8 +1,12 @@
 import { NextRequest } from "next/server";
-import { UpdateGatewayBindingRequestSchema, queries } from "@phneakngar/shared";
+import {
+  UpdateGatewayBindingRequestSchema,
+  queries,
+  sealGatewaySecret,
+} from "@phneakngar/shared";
 import { getDb } from "@/lib/db";
 import { withAuth } from "@/lib/middleware/auth";
-import { withWorkspaceMember } from "@/lib/middleware/workspace";
+import { withWorkspaceMember, withWorkspaceOwner } from "@/lib/middleware/workspace";
 import { parseBody, writeError, writeJSON } from "@/lib/middleware/helpers";
 import { outboundModeBadge } from "@/lib/services/gateway-live-outbound";
 
@@ -53,7 +57,9 @@ export const GET = withAuth(async (req: NextRequest, ctx) => {
 });
 
 export const PATCH = withAuth(async (req: NextRequest, ctx) => {
-  const ws = await withWorkspaceMember(req, ctx);
+  // Owner-only: PATCH can rebind the agent, swap the vaulted bot token, or relax dm_policy
+  // on a binding another member configured.
+  const ws = await withWorkspaceOwner(req, ctx);
   if (ws instanceof Response) return ws;
 
   const id = ctx.params?.id;
@@ -79,20 +85,27 @@ export const PATCH = withAuth(async (req: NextRequest, ctx) => {
     if (!member) return writeError("user not a workspace member", 404);
   }
 
+  const encryptionKey = ctx.env.ENCRYPTION_KEY;
+  if (body.secret_ref?.trim() && !encryptionKey) {
+    return writeError("encryption not configured", 500);
+  }
+
   const updated = await queries.gatewayBinding.updateGatewayBinding(db, ws.workspaceId, id, {
     status: body.status,
     dmPolicy: body.dm_policy,
     outboundMode: body.outbound_mode,
     agentId: body.agent_id,
     userId: body.user_id,
-    ...(body.secret_ref !== undefined ? { secretRef: body.secret_ref } : {}),
+    ...(body.secret_ref !== undefined
+      ? { secretRef: sealGatewaySecret(body.secret_ref, encryptionKey) }
+      : {}),
   });
   if (!updated) return writeError("binding not found", 404);
   return writeJSON({ binding: bindingToResponse(updated) });
 });
 
 export const DELETE = withAuth(async (req: NextRequest, ctx) => {
-  const ws = await withWorkspaceMember(req, ctx);
+  const ws = await withWorkspaceOwner(req, ctx);
   if (ws instanceof Response) return ws;
 
   const id = ctx.params?.id;
