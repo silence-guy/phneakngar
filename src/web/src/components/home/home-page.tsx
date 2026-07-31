@@ -6,6 +6,7 @@ import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useHomePetSettings } from "@/lib/home-pet-settings";
+import { PetSelector } from "@/components/home-pet/pet-selector";
 import type { CloudCodeMonsterPetProps } from "@/components/home-pet/cloud-code-monster-pet";
 import { HeroSection } from "./hero-section";
 import { FeatureShowcase } from "./feature-showcase";
@@ -15,6 +16,7 @@ import { MarketingFooter } from "./marketing-footer";
 import { ByoaSection } from "./byoa-section";
 import { UseCasesSection } from "./use-cases-section";
 import { QuickstartSection } from "./quickstart-section";
+import { LandingLocaleProvider } from "./use-landing-locale";
 
 const CloudCodeMonsterPet = dynamic<CloudCodeMonsterPetProps>(
   () =>
@@ -65,22 +67,26 @@ export function HomePage({ isLoggedIn }: { isLoggedIn: boolean }) {
   );
 
   return (
-    <div
-      ref={mainRef}
-      className="landing relative flex-1 overflow-x-clip"
-      style={{ backgroundColor: "var(--landing-bg)" }}
-    >
-      <MarketingNav isLoggedIn={isLoggedIn} />
-      <HeroSection isLoggedIn={isLoggedIn} />
-      <UseCasesSection />
-      <FeatureShowcase />
-      <ByoaSection />
-      <QuickstartSection />
-      <ArchitectureOverview />
-      <MarketingFooter />
-      {isLoggedIn && petSettings.enabled ? (
-        <CloudCodeMonsterPet boundaryRef={mainRef} />
-      ) : null}
-    </div>
+    <LandingLocaleProvider>
+      <div
+        ref={mainRef}
+        className="landing relative flex-1 overflow-x-clip"
+        style={{ backgroundColor: "var(--landing-bg)" }}
+      >
+        <MarketingNav isLoggedIn={isLoggedIn} />
+        <HeroSection isLoggedIn={isLoggedIn} />
+        <UseCasesSection />
+        <FeatureShowcase />
+        <ByoaSection />
+        <QuickstartSection />
+        <ArchitectureOverview />
+        <MarketingFooter />
+        {isLoggedIn && petSettings.enabled ? (
+          <CloudCodeMonsterPet boundaryRef={mainRef} />
+        ) : null}
+        {/* Pet Selector - visible to all users */}
+        <PetSelector />
+      </div>
+    </LandingLocaleProvider>
   );
 }

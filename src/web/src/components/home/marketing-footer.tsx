@@ -2,20 +2,21 @@
 
 import { useRef } from "react";
 import Link from "next/link";
+import { useTheme } from "next-themes";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { SunMoon } from "lucide-react";
+import { useLandingLocale } from "./use-landing-locale";
+import { LANDING_FOOTER_LABELS } from "./landing-labels";
 
 gsap.registerPlugin(ScrollTrigger);
 
-const footerLinks = [
-  { href: "/templates", label: "គំរូ" },
-  { href: "/blog", label: "ប្លុក" },
-  { href: "/privacy", label: "ឯកជនភាព" },
-];
-
 export function MarketingFooter() {
   const footerRef = useRef<HTMLElement>(null);
+  const { resolvedTheme, setTheme } = useTheme();
+  const { locale } = useLandingLocale();
+  const labels = LANDING_FOOTER_LABELS[locale];
 
   useGSAP(
     () => {
@@ -41,6 +42,16 @@ export function MarketingFooter() {
     letterSpacing: "0",
   };
 
+  const toggleTheme = () => {
+    setTheme(resolvedTheme === "dark" ? "light" : "dark");
+  };
+
+  const footerLinks = [
+    { href: "/templates", label: labels.templates },
+    { href: "/blog", label: labels.blog },
+    { href: "/privacy", label: labels.privacy },
+  ];
+
   return (
     <footer
       ref={footerRef}
@@ -54,13 +65,12 @@ export function MarketingFooter() {
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-1">
             <span
-              className="text-lg tracking-tight"
+              className="text-lg tracking-tight font-bold"
               style={{
                 color: "var(--landing-text)",
-                fontWeight: 700,
               }}
             >
-              ភ្នាក់ងារ
+              {labels.brand}
             </span>
           </div>
           <span
@@ -70,7 +80,7 @@ export function MarketingFooter() {
               color: "var(--landing-text-muted)",
             }}
           >
-          ក្រុមហ៊ុនផ្ទាល់ខ្លួនរបស់អ្នក
+            {labels.tagline}
           </span>
         </div>
 
@@ -87,7 +97,16 @@ export function MarketingFooter() {
           ))}
         </nav>
 
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-4">
+          <button
+            type="button"
+            onClick={toggleTheme}
+            className="flex items-center justify-center size-8 rounded-md transition-colors hover:bg-[var(--landing-border)] cursor-pointer"
+            style={{ color: "var(--landing-text-muted)" }}
+            aria-label="Toggle theme"
+          >
+            <SunMoon className="size-4" />
+          </button>
           <span
             className="text-[10px] uppercase tracking-[0.2em]"
             style={{
@@ -96,7 +115,7 @@ export function MarketingFooter() {
               opacity: 0.5,
             }}
           >
-            &copy; {new Date().getFullYear()} ភ្នាក់ងារ AI
+            &copy; {new Date().getFullYear()} {labels.brand}
           </span>
         </div>
       </div>

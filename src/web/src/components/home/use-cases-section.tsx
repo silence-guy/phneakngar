@@ -16,71 +16,46 @@ import {
   fillFormScript,
 } from "./demo-pad/use-case-scripts";
 import type { UseCaseScript } from "./demo-pad/use-case-demo";
+import { useLandingLocale } from "./use-landing-locale";
+import { LANDING_USE_CASES_LABELS } from "./landing-labels";
 
 gsap.registerPlugin(ScrollTrigger);
 
 /* ─────────────────────────────────────────────
-   Scenario Data
+   Scenario Data (icons and scripts are shared)
    ───────────────────────────────────────────── */
 
 interface Scenario {
   id: string;
-  title: string;
-  subtitle: string;
   icon: React.ReactNode;
   script: UseCaseScript;
 }
 
-const scenarios: Scenario[] = [
-  {
-    id: "lead-followup",
-    title: "តាមដាន lead ដោយស្វ័យប្រវត្តិ",
-    subtitle: "ឆ្លើយតបផ្ទាល់ខ្លួនក្នុងប៉ុន្មាននាទី មិនមែនប៉ុន្មានម៉ោង។",
-    icon: <DollarSign className="size-4" />,
-    script: leadFollowupScript,
-  },
-  {
-    id: "weekly-brief",
-    title: "សង្ខេបថ្ងៃចន្ទ ម៉ោង 8 ព្រឹក",
-    subtitle: "សប្តាហ៍របស់អ្នកត្រូវបានរៀបចំមុនកាហ្វេ។",
-    icon: <Calendar className="size-4" />,
-    script: weeklyBriefScript,
-  },
-  {
-    id: "store-ops",
-    title: "ប្រតិបត្តិការហាងប្រចាំថ្ងៃ",
-    subtitle: "អ្នកគ្រប់គ្រងប្រតិបត្តិការ AI ពិនិត្យរាល់ព្រឹក។",
-    icon: <BarChart3 className="size-4" />,
-    script: storeOpsScript,
-  },
-  {
-    id: "bug-to-pr",
-    title: "របាយការណ៍ bug → PR រួចរាល់",
-    subtitle: "ភ្នាក់ងារ 3 បម្លែងអ៊ីមែល bug ទៅជា fix ដែល merge រួច។",
-    icon: <Bug className="size-4" />,
-    script: bugToPrScript,
-  },
-  {
-    id: "post-update",
-    title: "\"បង្ហោះ update\"",
-    subtitle: "មួយប្រយោគ។ ប្រាំនាទី។ បោះពុម្ពផ្សាយ។",
-    icon: <MessageSquare className="size-4" />,
-    script: postUpdateScript,
-  },
-  {
-    id: "fill-form",
-    title: "\"Fill this form\"",
-    subtitle: "វាចងចាំអ្វីៗទាំងអស់។ អ្នកគ្រាន់តែចុះហត្ថលេខា។",
-    icon: <Brain className="size-4" />,
-    script: fillFormScript,
-  },
-];
+const scenarioIcons: Record<string, React.ReactNode> = {
+  "lead-followup": <DollarSign className="size-4" />,
+  "weekly-brief": <Calendar className="size-4" />,
+  "store-ops": <BarChart3 className="size-4" />,
+  "bug-to-pr": <Bug className="size-4" />,
+  "post-update": <MessageSquare className="size-4" />,
+  "fill-form": <Brain className="size-4" />,
+};
+
+const scenarioScripts: Record<string, UseCaseScript> = {
+  "lead-followup": leadFollowupScript,
+  "weekly-brief": weeklyBriefScript,
+  "store-ops": storeOpsScript,
+  "bug-to-pr": bugToPrScript,
+  "post-update": postUpdateScript,
+  "fill-form": fillFormScript,
+};
 
 /* ─────────────────────────────────────────────
    Main Section: Left Picker + Right Demo
    ───────────────────────────────────────────── */
 
 export function UseCasesSection() {
+  const { locale } = useLandingLocale();
+  const labels = LANDING_USE_CASES_LABELS;
   const sectionRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const [slideDir, setSlideDir] = useState<"left" | "right">("left");
@@ -128,7 +103,7 @@ export function UseCasesSection() {
             color: "var(--landing-text-muted)",
           }}
         >
-          ករណីប្រើប្រាស់
+          {labels.sectionLabel[locale]}
         </div>
         <h2
           style={{
@@ -137,7 +112,7 @@ export function UseCasesSection() {
             fontSize: "clamp(1.75rem, 4vw, 3rem)",
           }}
         >
-          មើលវាដំណើរការពិត
+          {labels.heading[locale]}
         </h2>
         <p
           className="mx-auto mt-3 max-w-xl"
@@ -147,7 +122,7 @@ export function UseCasesSection() {
             fontSize: "0.85rem",
           }}
         >
-          ស្ថានភាពពិតៗដែលរត់លើភ្នាក់ងារពិត រាល់ថ្ងៃ។
+          {labels.description[locale]}
         </p>
       </div>
 
@@ -155,7 +130,7 @@ export function UseCasesSection() {
       <div className="usecase-layout mx-auto flex max-w-5xl flex-col gap-6 md:flex-row md:items-start md:gap-8">
         {/* Left: Scenario picker */}
         <div className="flex flex-row gap-2 overflow-x-auto thin-scrollbar pb-2 md:w-72 md:shrink-0 md:flex-col md:overflow-x-visible md:pb-0">
-          {scenarios.map((scenario, i) => (
+          {labels.scenarios[locale].map((scenario, i) => (
             <button
               key={scenario.id}
               type="button"
@@ -175,7 +150,7 @@ export function UseCasesSection() {
                 className="mt-0.5 shrink-0"
                 style={{ color: i === activeIndex ? "var(--landing-text)" : "var(--landing-text-muted)" }}
               >
-                {scenario.icon}
+                {scenarioIcons[scenario.id]}
               </span>
               <div className="min-w-0">
                 <div
@@ -210,11 +185,11 @@ export function UseCasesSection() {
             className={`overflow-hidden ${slideDir === "left" ? "usecase-demo-slide-left" : "usecase-demo-slide-right"}`}
           >
             <DemoWindow
-              title={`phneakngar — ${scenarios[activeIndex].title}`}
+              title={`phneakngar — ${labels.scenarios[locale][activeIndex].title}`}
               className="shadow-[0_4px_24px_rgba(0,0,0,0.1)]"
             >
               <div className="h-120 overflow-hidden">
-                <UseCaseDemo script={scenarios[activeIndex].script} />
+                <UseCaseDemo script={scenarioScripts[labels.scenarios[locale][activeIndex].id]} />
               </div>
             </DemoWindow>
           </div>
