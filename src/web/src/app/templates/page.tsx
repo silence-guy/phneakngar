@@ -9,12 +9,20 @@ const description =
 export const metadata: Metadata = {
   title: "Templates",
   description,
-  alternates: { canonical: "https://phneakngar.ai/templates" },
+  alternates: {
+    canonical: "https://phneakngar.ai/templates",
+    languages: {
+      en: "https://phneakngar.ai/templates",
+      km: "https://phneakngar.ai/km/templates",
+    },
+  },
   openGraph: {
     title: "AI Company Templates — ភ្នាក់ងារ",
     description,
     url: "https://phneakngar.ai/templates",
     images: [{ url: "/og?title=AI Company Templates", width: 1200, height: 630 }],
+    locale: "en_US",
+    alternateLocale: ["km_KH"],
   },
   twitter: {
     card: "summary_large_image",

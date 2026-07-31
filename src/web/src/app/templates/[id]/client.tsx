@@ -4,16 +4,59 @@ import Link from "next/link";
 import { Check } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { PublicLayout } from "@/components/public-layout";
+import { LocaleToggle } from "@/components/locale-toggle";
+import { LandingLocaleProvider, useLandingLocale } from "@/components/home/use-landing-locale";
 import { MemberCard } from "./_components/member-card";
 import type { TemplatePreset } from "@/lib/templates";
 import { isHelioScenario } from "@/lib/templates";
 import {
-  TEMPLATES_LABELS,
+  getTemplatesLabels,
   templateCategoryLabel,
   templateGroupLabel,
   templateRoleLabel,
   templateAgentsWorkingLabel,
 } from "../templates-labels";
+
+function TemplateDetailHeader({
+  isLoggedIn,
+  locale,
+}: {
+  isLoggedIn: boolean;
+  locale: string | null;
+}) {
+  const labels = getTemplatesLabels(locale);
+  return (
+    <>
+      <Link
+        href="/templates"
+        className="hidden sm:block px-3 py-1.5 text-xs uppercase tracking-widest font-mono transition-opacity hover:opacity-70"
+      >
+        {labels.nav.templates}
+      </Link>
+      <Link
+        href="/blog"
+        className="hidden sm:block px-3 py-1.5 text-xs uppercase tracking-widest font-mono transition-opacity hover:opacity-70"
+      >
+        {labels.nav.blog}
+      </Link>
+      {isLoggedIn ? (
+        <Link
+          href="/workspaces?auto"
+          className="inline-flex items-center gap-1.5 px-4 py-1.5 text-xs uppercase tracking-widest font-mono border border-current transition-opacity hover:opacity-70"
+        >
+          {labels.nav.app}
+        </Link>
+      ) : (
+        <Link
+          href="/sign-in"
+          className="inline-flex items-center gap-1.5 px-4 py-1.5 text-xs uppercase tracking-widest font-mono bg-foreground text-background transition-opacity hover:opacity-70"
+        >
+          {labels.nav.getStarted}
+        </Link>
+      )}
+    </>
+  );
+}
 
 export function TemplateDetailClient({
   template,
@@ -24,6 +67,28 @@ export function TemplateDetailClient({
   isLoggedIn: boolean;
   workspaceId?: string;
 }) {
+  return (
+    <LandingLocaleProvider>
+      <TemplateDetailClientInner
+        template={template}
+        isLoggedIn={isLoggedIn}
+        workspaceId={workspaceId}
+      />
+    </LandingLocaleProvider>
+  );
+}
+
+function TemplateDetailClientInner({
+  template,
+  isLoggedIn,
+  workspaceId,
+}: {
+  template: TemplatePreset;
+  isLoggedIn: boolean;
+  workspaceId?: string;
+}) {
+  const { locale } = useLandingLocale();
+  const labels = getTemplatesLabels(locale);
   const getUrl = workspaceId
     ? `/studio/new?template=${template.id}&workspace_id=${workspaceId}`
     : `/studio/new?template=${template.id}`;
@@ -33,36 +98,10 @@ export function TemplateDetailClient({
 
   return (
     <PublicLayout
-      maxWidth="4xl"
       rightSlot={
         <>
-          <Link
-            href="/templates"
-            className="hidden sm:block px-3 py-1.5 text-xs uppercase tracking-widest font-mono transition-opacity hover:opacity-70"
-          >
-            {TEMPLATES_LABELS.nav.templates}
-          </Link>
-          <Link
-            href="/blog"
-            className="hidden sm:block px-3 py-1.5 text-xs uppercase tracking-widest font-mono transition-opacity hover:opacity-70"
-          >
-            {TEMPLATES_LABELS.nav.blog}
-          </Link>
-          {isLoggedIn ? (
-            <Link
-              href="/workspaces?auto"
-              className="inline-flex items-center gap-1.5 px-4 py-1.5 text-xs uppercase tracking-widest font-mono border border-current transition-opacity hover:opacity-70"
-            >
-              {TEMPLATES_LABELS.nav.app}
-            </Link>
-          ) : (
-            <Link
-              href="/sign-in"
-              className="inline-flex items-center gap-1.5 px-4 py-1.5 text-xs uppercase tracking-widest font-mono bg-foreground text-background transition-opacity hover:opacity-70"
-            >
-              {TEMPLATES_LABELS.nav.getStarted}
-            </Link>
-          )}
+          <TemplateDetailHeader isLoggedIn={isLoggedIn} locale={locale} />
+          <LocaleToggle />
         </>
       }
     >
@@ -70,7 +109,7 @@ export function TemplateDetailClient({
         {/* Breadcrumb */}
         <nav className="mb-8 flex items-center gap-1.5 text-xs text-muted-foreground">
           <Link href="/templates" className="hover:text-foreground transition-colors">
-            {TEMPLATES_LABELS.nav.templates}
+            {labels.nav.templates}
           </Link>
           <span className="text-muted-foreground/50">/</span>
           <span className="text-foreground">{template.name}</span>
@@ -86,15 +125,15 @@ export function TemplateDetailClient({
               <div>
                 {isHelioScenario(template) ? (
                   <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                    {templateGroupLabel("helio-scenarios")}
+                    {templateGroupLabel("helio-scenarios", locale)}
                     <span className="mx-1.5 text-muted-foreground/40">·</span>
                     <span className="font-normal normal-case tracking-normal">
-                      {templateCategoryLabel(template.category)}
+                      {templateCategoryLabel(template.category, locale)}
                     </span>
                   </p>
                 ) : (
                   <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                    {templateCategoryLabel(template.category)}
+                    {templateCategoryLabel(template.category, locale)}
                   </p>
                 )}
                 <h1 className="mt-0.5 font-khmer text-2xl font-semibold tracking-normal leading-[1.4]">
@@ -117,10 +156,10 @@ export function TemplateDetailClient({
           {/* CTA */}
           <div className="shrink-0 sm:ml-8 sm:pt-2">
             <Link href={href} className={buttonVariants({ size: "default" }) + " w-full sm:w-auto"}>
-              {TEMPLATES_LABELS.detail.useThisTemplate}
+              {labels.detail.useThisTemplate}
             </Link>
             <p className="mt-1.5 text-center text-xs text-muted-foreground sm:text-right">
-              {TEMPLATES_LABELS.detail.freeToDeploy}
+              {labels.detail.freeToDeploy}
             </p>
           </div>
         </div>
@@ -130,7 +169,7 @@ export function TemplateDetailClient({
 
         {/* Features */}
         <section className="max-w-2xl">
-          <h2 className="text-base font-semibold tracking-tight">{TEMPLATES_LABELS.detail.whatItDoes}</h2>
+          <h2 className="text-base font-semibold tracking-tight">{labels.detail.whatItDoes}</h2>
           <ul className="mt-4 space-y-2.5">
             {template.features.map((feature) => (
               <li key={feature} className="flex items-start gap-2.5 text-sm text-foreground/80">
@@ -143,7 +182,7 @@ export function TemplateDetailClient({
 
         {/* Use Cases */}
         <section className="mt-12 max-w-2xl">
-          <h2 className="text-base font-semibold tracking-tight">{TEMPLATES_LABELS.detail.useCases}</h2>
+          <h2 className="text-base font-semibold tracking-tight">{labels.detail.useCases}</h2>
           <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {template.useCases.map((uc) => (
               <div key={uc.title} className="rounded-lg bg-muted/40 p-4">
@@ -158,16 +197,16 @@ export function TemplateDetailClient({
 
         {/* Company */}
         <section className="mt-12 max-w-2xl">
-          <h2 className="text-base font-semibold tracking-tight">{TEMPLATES_LABELS.detail.yourCompany}</h2>
+          <h2 className="text-base font-semibold tracking-tight">{labels.detail.yourCompany}</h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            {templateAgentsWorkingLabel(template.members.length)}
+            {templateAgentsWorkingLabel(template.members.length, locale)}
           </p>
           <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
             {template.members.map((member, i) => (
               <MemberCard
                 key={i}
                 role={member.role}
-                roleLabel={templateRoleLabel(member.role)}
+                roleLabel={templateRoleLabel(member.role, locale)}
                 description={member.description}
               />
             ))}
@@ -177,13 +216,13 @@ export function TemplateDetailClient({
         {/* Bottom CTA */}
         <div className="mt-16 flex items-center justify-between rounded-xl bg-muted/40 p-6">
           <div>
-            <p className="text-sm font-medium">{TEMPLATES_LABELS.detail.readyToDeploy}</p>
+            <p className="text-sm font-medium">{labels.detail.readyToDeploy}</p>
             <p className="mt-0.5 text-xs text-muted-foreground">
-              {TEMPLATES_LABELS.detail.readyToDeploySubtext}
+              {labels.detail.readyToDeploySubtext}
             </p>
           </div>
           <Link href={href} className={buttonVariants({ size: "sm" })}>
-            {TEMPLATES_LABELS.nav.getStarted}
+            {labels.nav.getStarted}
           </Link>
         </div>
       </div>

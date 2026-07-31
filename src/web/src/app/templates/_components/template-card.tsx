@@ -6,7 +6,8 @@ import { ArrowUpRight } from "lucide-react";
 import type { TemplatePreset } from "@/lib/templates";
 import { isHelioScenario } from "@/lib/templates";
 import { trackTemplateUsed } from "@/lib/analytics";
-import { TEMPLATES_LABELS, templateAgentCountLabel } from "../templates-labels";
+import { useLandingLocale } from "@/components/home/use-landing-locale";
+import { getTemplatesLabels, templateAgentCountLabel } from "../templates-labels";
 
 const ROLE_DOT_COLORS: Record<string, string> = {
   leader: "bg-amber-500/70 dark:bg-amber-400/60",
@@ -25,6 +26,8 @@ export function TemplateCard({
   workspaceId?: string;
 }) {
   const router = useRouter();
+  const { locale } = useLandingLocale();
+  const labels = getTemplatesLabels(locale);
   const getUrl = workspaceId
     ? `/studio/new?template=${template.id}&workspace_id=${workspaceId}`
     : `/studio/new?template=${template.id}`;
@@ -48,7 +51,7 @@ export function TemplateCard({
         </span>
         {isHelioScenario(template) ? (
           <span className="shrink-0 rounded-full bg-muted/70 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-            {TEMPLATES_LABELS.card.scenarioBadge}
+            {labels.card.scenarioBadge}
           </span>
         ) : null}
       </div>
@@ -73,7 +76,7 @@ export function TemplateCard({
             />
           ))}
           <span className="ml-1.5 text-xs text-muted-foreground">
-            {templateAgentCountLabel(template.members.length)}
+            {templateAgentCountLabel(template.members.length, locale)}
           </span>
         </div>
 
@@ -87,7 +90,7 @@ export function TemplateCard({
           }}
           className="flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-medium text-muted-foreground opacity-0 transition-all duration-150 group-hover:opacity-100 group-hover:bg-foreground group-hover:text-background"
         >
-          {TEMPLATES_LABELS.card.use}
+          {labels.card.use}
           <ArrowUpRight className="size-3" />
         </button>
       </div>

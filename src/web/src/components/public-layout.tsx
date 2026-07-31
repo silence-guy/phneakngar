@@ -1,21 +1,15 @@
 import Link from "next/link";
 import { BrandMark } from "@/components/brand-mark";
-import { BLOG_LABELS } from "@/lib/blog/blog-labels";
-
-const footerLinks = [
-  { href: "/templates", label: BLOG_LABELS.footer.templates },
-  { href: "/blog", label: BLOG_LABELS.footer.blog },
-  { href: "/privacy", label: BLOG_LABELS.footer.privacy },
-];
+import { PublicLayoutFooter } from "@/components/public-layout-footer";
 
 export type PublicBreadcrumb =
   | string
   | {
-      label: string;
+      label: React.ReactNode;
       href: string;
     };
 
-function resolveBreadcrumb(breadcrumb: PublicBreadcrumb): { label: string; href: string } {
+function resolveBreadcrumb(breadcrumb: PublicBreadcrumb): { label: React.ReactNode; href: string } {
   if (typeof breadcrumb === "string") {
     return { label: breadcrumb, href: `/${breadcrumb.toLowerCase()}` };
   }
@@ -23,7 +17,6 @@ function resolveBreadcrumb(breadcrumb: PublicBreadcrumb): { label: string; href:
 }
 
 export function PublicLayout({
-  maxWidth = "5xl",
   breadcrumb,
   leftSlot,
   centerSlot,
@@ -32,7 +25,6 @@ export function PublicLayout({
   mainClassName,
   children,
 }: {
-  maxWidth?: "4xl" | "5xl";
   breadcrumb?: PublicBreadcrumb;
   leftSlot?: React.ReactNode;
   centerSlot?: React.ReactNode;
@@ -41,7 +33,6 @@ export function PublicLayout({
   mainClassName?: string;
   children: React.ReactNode;
 }) {
-  const maxWClass = maxWidth === "4xl" ? "max-w-4xl" : "max-w-5xl";
   const crumb = breadcrumb ? resolveBreadcrumb(breadcrumb) : null;
 
   return (
@@ -57,7 +48,7 @@ export function PublicLayout({
                 <span
                   className="text-lg tracking-tight font-bold"
                 >
-                  ភ្នាក់ងារ
+                  Phneakngar
                 </span>
               </Link>
               {crumb && (
@@ -80,50 +71,7 @@ export function PublicLayout({
 
       <main className={mainClassName ? `flex-1 ${mainClassName}` : "flex-1"}>{children}</main>
 
-      {footer === "simple" && (
-        <footer className="border-t border-border px-6 py-12">
-          <div className={`mx-auto flex ${maxWClass} items-center justify-center`}>
-            <span className="text-[10px] uppercase tracking-[0.2em] font-mono text-muted-foreground/50">
-              &copy; {new Date().getFullYear()} ភ្នាក់ងារ AI
-            </span>
-          </div>
-        </footer>
-      )}
-
-      {footer === "rich" && (
-        <footer className="border-t border-border px-6 py-12">
-          <div className={`mx-auto flex ${maxWClass} flex-col items-center justify-between gap-6 md:flex-row`}>
-            <div className="flex items-center gap-4">
-              <Link href="/" className="flex items-center gap-1">
-                <span
-                  className="text-lg tracking-tight font-bold"
-                >
-                  ភ្នាក់ងារ
-                </span>
-              </Link>
-              <span className="text-[10px] tracking-[0.12em] font-mono text-muted-foreground">
-                {BLOG_LABELS.footer.tagline}
-              </span>
-            </div>
-
-            <nav className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2" aria-label="Footer navigation">
-              {footerLinks.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className="text-[11px] tracking-[0.12em] font-mono text-muted-foreground transition-opacity hover:opacity-70"
-                >
-                  {link.label}
-                </Link>
-              ))}
-            </nav>
-
-            <span className="text-[10px] uppercase tracking-[0.2em] font-mono text-muted-foreground/50">
-              &copy; {new Date().getFullYear()} ភ្នាក់ងារ AI
-            </span>
-          </div>
-        </footer>
-      )}
+      {footer !== "none" && <PublicLayoutFooter variant={footer} />}
     </div>
   );
 }

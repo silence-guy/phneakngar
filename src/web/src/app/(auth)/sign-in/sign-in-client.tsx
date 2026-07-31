@@ -23,13 +23,16 @@ import { SiGoogle } from "@icons-pack/react-simple-icons"
 import Image from "next/image"
 import { GradientBackground } from "@/components/gradient-background"
 import { Logo } from "@/components/logo"
+import { LocaleToggle } from "@/components/locale-toggle"
+import { LandingLocaleProvider, useLandingLocale } from "@/components/home/use-landing-locale"
 import { DEV_PASSWORD, safeRedirectPath } from "@phneakngar/shared"
 import { cn } from "@/lib/utils"
 import {
-  SIGN_IN_LABELS,
+  getSignInLabels,
   showImageAriaLabel,
   tooManyRequestsLabel,
   waitSecondsLabel,
+  type SignInLabels,
 } from "./sign-in-labels"
 
 const DEFAULT_POST_LOGIN = "/workspaces?auto"
@@ -39,7 +42,7 @@ function safeRedirectUrl(redirect: string | null): string {
   return safeRedirectPath(redirect, DEFAULT_POST_LOGIN)
 }
 
-function SignInForm({ postLoginUrl, isProd }: { postLoginUrl: string; isProd: boolean }) {
+function SignInForm({ postLoginUrl, isProd, labels }: { postLoginUrl: string; isProd: boolean; labels: SignInLabels }) {
   const [email, setEmail] = useState("")
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
@@ -78,12 +81,12 @@ function SignInForm({ postLoginUrl, isProd }: { postLoginUrl: string; isProd: bo
         fetchOptions: rateLimitHandler,
       })
       if (error) {
-        if (error.status !== 429) setError(error.message ?? SIGN_IN_LABELS.error.failedToSendCode)
+        if (error.status !== 429) setError(error.message ?? labels.error.failedToSendCode)
       } else {
         setStep("code")
       }
     } catch {
-      setError(SIGN_IN_LABELS.error.failedToSendCode)
+      setError(labels.error.failedToSendCode)
     }
     setLoading(false)
   }
@@ -100,14 +103,14 @@ function SignInForm({ postLoginUrl, isProd }: { postLoginUrl: string; isProd: bo
         otp: value,
       })
       if (error) {
-        setError(error.message ?? SIGN_IN_LABELS.error.invalidCode)
+        setError(error.message ?? labels.error.invalidCode)
         setCode("")
       } else {
         window.location.href = postLoginUrl
         return
       }
     } catch {
-      setError(SIGN_IN_LABELS.error.invalidCode)
+      setError(labels.error.invalidCode)
       setCode("")
     }
     setLoading(false)
@@ -127,7 +130,7 @@ function SignInForm({ postLoginUrl, isProd }: { postLoginUrl: string; isProd: bo
         { onError: () => {} },
       )
       if (signUpErr) {
-        setError(signUpErr.message ?? SIGN_IN_LABELS.error.failedToSignIn)
+        setError(signUpErr.message ?? labels.error.failedToSignIn)
         setLoading(false)
         return
       }
@@ -137,23 +140,23 @@ function SignInForm({ postLoginUrl, isProd }: { postLoginUrl: string; isProd: bo
 
   const isCoolingDown = retryAfter != null
   const sendLabel = loading
-    ? SIGN_IN_LABELS.action.sending
+    ? labels.action.sending
     : isCoolingDown
     ? waitSecondsLabel(retryAfter)
-    : SIGN_IN_LABELS.action.sendCode
+    : labels.action.sendCode
 
   const subtitle = isProd && step === "code"
-    ? SIGN_IN_LABELS.prompt.enterCode
+    ? labels.prompt.enterCode
     : isProd
-    ? SIGN_IN_LABELS.prompt.enterEmail
+    ? labels.prompt.enterEmail
     : undefined
 
   return (
     <FieldGroup>
       <div className="flex flex-col items-center gap-2 text-center">
-        <h1 className="text-2xl font-semibold tracking-[-0.02em] font-heading text-foreground">{SIGN_IN_LABELS.title}</h1>
+        <h1 className="text-2xl font-semibold tracking-[-0.02em] font-heading text-foreground">{labels.title}</h1>
         <p className="max-w-64 text-sm leading-relaxed text-muted-foreground wrap-anywhere">
-          {SIGN_IN_LABELS.subtitle}
+          {labels.subtitle}
         </p>
         {subtitle && (
           <p className="text-balance text-sm leading-relaxed text-muted-foreground wrap-anywhere">{subtitle}</p>
@@ -172,7 +175,7 @@ function SignInForm({ postLoginUrl, isProd }: { postLoginUrl: string; isProd: bo
           <form onSubmit={handleSendCode}>
             <FieldGroup>
               <Field>
-                <FieldLabel htmlFor="email">{SIGN_IN_LABELS.field.email}</FieldLabel>
+                <FieldLabel htmlFor="email">{labels.field.email}</FieldLabel>
                 <Input
                   id="email"
                   type="email"
@@ -197,7 +200,7 @@ function SignInForm({ postLoginUrl, isProd }: { postLoginUrl: string; isProd: bo
         ) : (
           <>
             <p className="text-sm text-muted-foreground text-center">
-              {SIGN_IN_LABELS.sentCodeToPrefix}<strong>{email}</strong>
+              {labels.sentCodeToPrefix}<strong>{email}</strong>
             </p>
             <div className="flex justify-center">
               <InputOTP
@@ -226,7 +229,7 @@ function SignInForm({ postLoginUrl, isProd }: { postLoginUrl: string; isProd: bo
                 setError("")
               }}
             >
-              {SIGN_IN_LABELS.action.useDifferentEmail}
+              {labels.action.useDifferentEmail}
             </Button>
           </>
         )
@@ -234,7 +237,7 @@ function SignInForm({ postLoginUrl, isProd }: { postLoginUrl: string; isProd: bo
         <form onSubmit={handleDevSignIn}>
           <FieldGroup>
             <Field>
-              <FieldLabel htmlFor="email">{SIGN_IN_LABELS.field.email}</FieldLabel>
+              <FieldLabel htmlFor="email">{labels.field.email}</FieldLabel>
               <Input
                 id="email"
                 type="email"
@@ -247,7 +250,7 @@ function SignInForm({ postLoginUrl, isProd }: { postLoginUrl: string; isProd: bo
             </Field>
             <Field>
               <Button type="submit" disabled={loading} className="h-10 w-full">
-                {loading ? SIGN_IN_LABELS.action.signingIn : SIGN_IN_LABELS.action.signIn}
+                {loading ? labels.action.signingIn : labels.action.signIn}
               </Button>
             </Field>
           </FieldGroup>
@@ -255,7 +258,7 @@ function SignInForm({ postLoginUrl, isProd }: { postLoginUrl: string; isProd: bo
       )}
 
       <FieldSeparator className="*:data-[slot=field-separator-content]:bg-card">
-        {SIGN_IN_LABELS.action.orContinueWith}
+        {labels.action.orContinueWith}
       </FieldSeparator>
       <Field >
         <Button
@@ -274,29 +277,30 @@ function SignInForm({ postLoginUrl, isProd }: { postLoginUrl: string; isProd: bo
   )
 }
 
-const galleryImages = [
-  { src: "/gallery/collaboration.png", label: SIGN_IN_LABELS.gallery.collaboration },
-  { src: "/gallery/email.png", label: SIGN_IN_LABELS.gallery.emailInbox },
-  { src: "/gallery/issues.png", label: SIGN_IN_LABELS.gallery.kanbanBoard },
-  { src: "/gallery/calendar.png", label: SIGN_IN_LABELS.gallery.calendar },
-  { src: "/gallery/local-agent.png", label: SIGN_IN_LABELS.gallery.localAgent },
-]
-
-function ProductGallery() {
+function ProductGallery({ labels }: { labels: SignInLabels }) {
   const [active, setActive] = useState(0)
+
+  const galleryImages = [
+    { src: "/gallery/collaboration.png", label: labels.gallery.collaboration },
+    { src: "/gallery/email.png", label: labels.gallery.emailInbox },
+    { src: "/gallery/issues.png", label: labels.gallery.kanbanBoard },
+    { src: "/gallery/calendar.png", label: labels.gallery.calendar },
+    { src: "/gallery/local-agent.png", label: labels.gallery.localAgent },
+  ]
 
   useEffect(() => {
     const interval = setInterval(() => {
       setActive((i) => (i + 1) % galleryImages.length)
     }, 3500)
     return () => clearInterval(interval)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   return (
     <div className="flex h-full flex-col justify-between p-5">
       <div className="space-y-1.5">
         <p className="text-xs font-medium text-muted-foreground">
-          {SIGN_IN_LABELS.surface.galleryTitle}
+          {labels.surface.galleryTitle}
         </p>
         <p className="text-lg font-semibold tracking-tight text-foreground">
           {galleryImages[active].label}
@@ -363,13 +367,18 @@ function SurfaceDetail({
   )
 }
 
-export default function SignInPageClient({ isProd }: { isProd: boolean }) {
+function SignInPageClientInner({ isProd }: { isProd: boolean }) {
   const searchParams = useSearchParams()
+  const { locale } = useLandingLocale()
+  const labels = getSignInLabels(locale)
   const postLoginUrl = safeRedirectUrl(searchParams.get("redirect"))
 
   return (
     <div className="relative flex min-h-svh flex-col items-center justify-center p-4 sm:p-6 md:p-10">
       <GradientBackground />
+      <div className="absolute right-4 top-4">
+        <LocaleToggle />
+      </div>
       <div className="w-[calc(100vw-2rem)] max-w-sm md:w-full md:max-w-4xl">
         <div className="mb-5 flex justify-center">
           <Logo size="lg" />
@@ -379,31 +388,39 @@ export default function SignInPageClient({ isProd }: { isProd: boolean }) {
             <div className="flex min-h-107.5 min-w-0 flex-col justify-center p-6 sm:p-8">
               <div className="mb-7 space-y-3">
                 <p className="text-sm font-medium text-muted-foreground">
-                  {SIGN_IN_LABELS.surface.status}
+                  {labels.surface.status}
                 </p>
                 <div className="space-y-2">
                   <h2 className="text-balance text-2xl font-semibold tracking-[-0.02em] font-heading text-foreground">
-                    {SIGN_IN_LABELS.surface.heading}
+                    {labels.surface.heading}
                   </h2>
                   <p className="text-sm leading-7 text-muted-foreground wrap-anywhere">
-                    {SIGN_IN_LABELS.surface.detail}
+                    {labels.surface.detail}
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-2 pt-1">
-                  <SurfaceDetail>{SIGN_IN_LABELS.surface.email}</SurfaceDetail>
-                  <SurfaceDetail>{SIGN_IN_LABELS.surface.local}</SurfaceDetail>
+                  <SurfaceDetail>{labels.surface.email}</SurfaceDetail>
+                  <SurfaceDetail>{labels.surface.local}</SurfaceDetail>
                 </div>
               </div>
               <div className="min-w-0 border-t border-border/70 pt-6">
-                <SignInForm postLoginUrl={postLoginUrl} isProd={isProd} />
+                <SignInForm postLoginUrl={postLoginUrl} isProd={isProd} labels={labels} />
               </div>
             </div>
             <div className="relative hidden min-h-107.5 overflow-hidden border-l border-border/70 bg-muted/55 md:block">
-              <ProductGallery />
+              <ProductGallery labels={labels} />
             </div>
           </CardContent>
         </Card>
       </div>
     </div>
+  )
+}
+
+export default function SignInPageClient({ isProd }: { isProd: boolean }) {
+  return (
+    <LandingLocaleProvider>
+      <SignInPageClientInner isProd={isProd} />
+    </LandingLocaleProvider>
   )
 }

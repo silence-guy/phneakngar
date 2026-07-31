@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import Link from "next/link";
 import { PublicLayout } from "@/components/public-layout";
+import { LocaleToggle } from "@/components/locale-toggle";
+import { LandingLocaleProvider, useLandingLocale } from "@/components/home/use-landing-locale";
 import { TemplateCard } from "./_components/template-card";
 import type { TemplatePreset, TemplateCategory, TemplateFilterId } from "@/lib/templates";
 import {
@@ -11,7 +13,7 @@ import {
 } from "@/lib/templates";
 import { trackTemplatesBrowsed } from "@/lib/analytics";
 import {
-  TEMPLATES_LABELS,
+  getTemplatesLabels,
   templateFilterLabel,
   templateGroupLabel,
   templateGroupBlurb,
@@ -26,6 +28,47 @@ const FILTER_CHIPS: TemplateFilterId[] = [
   "Freelancer",
 ];
 
+function TemplatesHeader({
+  isLoggedIn,
+  locale,
+}: {
+  isLoggedIn: boolean;
+  locale: string | null;
+}) {
+  const labels = getTemplatesLabels(locale);
+  return (
+    <>
+      <Link
+        href="/templates"
+        className="hidden sm:block px-3 py-1.5 text-xs uppercase tracking-widest font-mono transition-opacity hover:opacity-70"
+      >
+        {labels.nav.templates}
+      </Link>
+      <Link
+        href="/blog"
+        className="hidden sm:block px-3 py-1.5 text-xs uppercase tracking-widest font-mono transition-opacity hover:opacity-70"
+      >
+        {labels.nav.blog}
+      </Link>
+      {isLoggedIn ? (
+        <Link
+          href="/workspaces?auto"
+          className="inline-flex items-center gap-1.5 px-4 py-1.5 text-xs uppercase tracking-widest font-mono border border-current transition-opacity hover:opacity-70"
+        >
+          {labels.nav.app}
+        </Link>
+      ) : (
+        <Link
+          href="/sign-in"
+          className="inline-flex items-center gap-1.5 px-4 py-1.5 text-xs uppercase tracking-widest font-mono bg-foreground text-background transition-opacity hover:opacity-70"
+        >
+          {labels.nav.getStarted}
+        </Link>
+      )}
+    </>
+  );
+}
+
 export function TemplatesClient({
   templates,
   categories: _categories, // reserved for future filter-from-server categories
@@ -38,6 +81,28 @@ export function TemplatesClient({
   workspaceId?: string;
 }) {
   void _categories;
+  return (
+    <LandingLocaleProvider>
+      <TemplatesClientInner
+        templates={templates}
+        isLoggedIn={isLoggedIn}
+        workspaceId={workspaceId}
+      />
+    </LandingLocaleProvider>
+  );
+}
+
+function TemplatesClientInner({
+  templates,
+  isLoggedIn,
+  workspaceId,
+}: {
+  templates: TemplatePreset[];
+  isLoggedIn: boolean;
+  workspaceId?: string;
+}) {
+  const { locale } = useLandingLocale();
+  const labels = getTemplatesLabels(locale);
   const [activeFilter, setActiveFilter] = useState<TemplateFilterId>("All");
   const tracked = useRef(false);
 
@@ -62,46 +127,20 @@ export function TemplatesClient({
 
   return (
     <PublicLayout
-      maxWidth="4xl"
       rightSlot={
         <>
-          <Link
-            href="/templates"
-            className="hidden sm:block px-3 py-1.5 text-xs uppercase tracking-widest font-mono transition-opacity hover:opacity-70"
-          >
-            {TEMPLATES_LABELS.nav.templates}
-          </Link>
-          <Link
-            href="/blog"
-            className="hidden sm:block px-3 py-1.5 text-xs uppercase tracking-widest font-mono transition-opacity hover:opacity-70"
-          >
-            {TEMPLATES_LABELS.nav.blog}
-          </Link>
-          {isLoggedIn ? (
-            <Link
-              href="/workspaces?auto"
-              className="inline-flex items-center gap-1.5 px-4 py-1.5 text-xs uppercase tracking-widest font-mono border border-current transition-opacity hover:opacity-70"
-            >
-              {TEMPLATES_LABELS.nav.app}
-            </Link>
-          ) : (
-            <Link
-              href="/sign-in"
-              className="inline-flex items-center gap-1.5 px-4 py-1.5 text-xs uppercase tracking-widest font-mono bg-foreground text-background transition-opacity hover:opacity-70"
-            >
-              {TEMPLATES_LABELS.nav.getStarted}
-            </Link>
-          )}
+          <TemplatesHeader isLoggedIn={isLoggedIn} locale={locale} />
+          <LocaleToggle />
         </>
       }
     >
       {/* Header */}
       <div className="mx-auto max-w-4xl px-6 pt-16 pb-2">
         <h1 className="font-khmer text-3xl font-semibold tracking-normal leading-[1.4]">
-          {TEMPLATES_LABELS.list.title}
+          {labels.list.title}
         </h1>
         <p className="mt-3 max-w-lg text-sm leading-relaxed text-muted-foreground">
-          {TEMPLATES_LABELS.list.subheading}
+          {labels.list.subheading}
         </p>
       </div>
 
@@ -119,7 +158,7 @@ export function TemplatesClient({
                   : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground"
               }`}
             >
-              {templateFilterLabel(filter)}
+              {templateFilterLabel(filter, locale)}
             </button>
           ))}
         </div>
@@ -130,12 +169,12 @@ export function TemplatesClient({
         {activeFilter === "All" ? (
           <div className="space-y-10">
             {groups.map((group) => {
-              const blurb = templateGroupBlurb(group.id);
+              const blurb = templateGroupBlurb(group.id, locale);
               return (
                 <section key={group.id}>
                   <div className="mb-3">
                     <h2 className="text-sm font-semibold tracking-tight text-foreground">
-                      {templateGroupLabel(group.id)}
+                      {templateGroupLabel(group.id, locale)}
                     </h2>
                     {blurb ? (
                       <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
@@ -159,7 +198,7 @@ export function TemplatesClient({
             {groups.length === 0 && (
               <div className="flex flex-col items-center justify-center py-20">
                 <p className="text-sm text-muted-foreground">
-                  {TEMPLATES_LABELS.list.emptyCategory}
+                  {labels.list.emptyCategory}
                 </p>
               </div>
             )}
@@ -179,7 +218,7 @@ export function TemplatesClient({
             {filtered.length === 0 && (
               <div className="flex flex-col items-center justify-center py-20">
                 <p className="text-sm text-muted-foreground">
-                  {TEMPLATES_LABELS.list.emptyCategory}
+                  {labels.list.emptyCategory}
                 </p>
               </div>
             )}
