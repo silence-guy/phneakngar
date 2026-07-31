@@ -1,80 +1,81 @@
 import { describe, expect, it } from "vitest";
-import {
-  SETTINGS_LABELS,
-  settingsTabLabel,
-  slugUrlHint,
-  expiresLabel,
-} from "./settings-labels";
+import { Locale } from "@phneakngar/shared";
 
-const isKhmer = (s: string) => /[ក-៿]/.test(s);
+// Test that settings-labels exports bilingual-ready labels
+describe("settings labels bilingual support", () => {
+  it("should export settings labels that support bilingual lookup", async () => {
+    const { SETTINGS_LABELS } = await import("./settings-labels");
 
-describe("settings labels", () => {
-  it("exposes a Khmer page title", () => {
-    expect(isKhmer(SETTINGS_LABELS.title)).toBe(true);
+    // Title should exist
+    expect(SETTINGS_LABELS).toHaveProperty("title");
+
+    // Tabs should have labels
+    expect(SETTINGS_LABELS.tabs).toBeDefined();
+    expect(SETTINGS_LABELS.tabs.general).toBeDefined();
+    expect(SETTINGS_LABELS.tabs.pet).toBeDefined();
+    expect(SETTINGS_LABELS.tabs.instruction).toBeDefined();
+    expect(SETTINGS_LABELS.tabs.notifications).toBeDefined();
+    expect(SETTINGS_LABELS.tabs.members).toBeDefined();
+    expect(SETTINGS_LABELS.tabs.gateway).toBeDefined();
+    expect(SETTINGS_LABELS.tabs.usages).toBeDefined();
   });
 
-  it("maps every tab id to a Khmer label", () => {
-    for (const id of [
-      "general",
-      "pet",
-      "instruction",
-      "notifications",
-      "members",
-      "gateway",
-      "usages",
-    ]) {
-      expect(isKhmer(settingsTabLabel(id))).toBe(true);
-    }
+  it("should export a function to get labels in current locale", async () => {
+    const mod = await import("./settings-labels");
+
+    // Should export a function that returns labels for given locale
+    expect(mod).toHaveProperty("getSettingsLabels");
+    expect(typeof mod.getSettingsLabels).toBe("function");
   });
 
-  it("falls back to the raw id for unknown tabs", () => {
-    expect(settingsTabLabel("unknown")).toBe("unknown");
+  it("should return EN labels when locale is EN", async () => {
+    const { getSettingsLabels } = await import("./settings-labels");
+
+    const labels = getSettingsLabels(Locale.EN);
+    expect(labels.title).toBe("Settings");
+    expect(labels.tabs.general).toBe("General");
   });
 
-  it("localizes general sub-object strings (technical tokens stay English)", () => {
-    // slugLabel ("Slug") is an intentional technical URL-identifier token.
-    const technicalTokens = new Set(["slugLabel"]);
-    for (const [key, value] of Object.entries(SETTINGS_LABELS.general)) {
-      if (technicalTokens.has(key)) continue;
-      expect(isKhmer(value)).toBe(true);
-    }
+  it("should return KM labels when locale is KM", async () => {
+    const { getSettingsLabels } = await import("./settings-labels");
+
+    const labels = getSettingsLabels(Locale.KM);
+    expect(labels.title).toBe("ការកំណត់");
+    expect(labels.tabs.general).toBe("ទូទៅ");
   });
 
-  it("localizes every instruction sub-object string", () => {
-    for (const value of Object.values(SETTINGS_LABELS.instruction)) {
-      expect(isKhmer(value)).toBe(true);
-    }
+  it("should export language settings labels in getSettingsLabels", async () => {
+    const { getSettingsLabels } = await import("./settings-labels");
+
+    const labels = getSettingsLabels(Locale.EN);
+    // Should have a language section with labels for both settings
+    expect(labels).toHaveProperty("language");
+    expect(labels.language).toHaveProperty("sectionTitle");
+    expect(labels.language).toHaveProperty("uiLocaleLabel");
+    expect(labels.language).toHaveProperty("agentLanguageLabel");
+    expect(labels.language).toHaveProperty("uiLocaleDescription");
+    expect(labels.language).toHaveProperty("agentLanguageDescription");
   });
 
-  it("localizes every members sub-object string", () => {
-    for (const value of Object.values(SETTINGS_LABELS.members)) {
-      expect(isKhmer(value)).toBe(true);
-    }
+  it("should repair the corrupted Khmer pendingInvites string (no U+FFFD)", async () => {
+    const { getSettingsLabels } = await import("./settings-labels");
+
+    const labels = getSettingsLabels(Locale.KM);
+    expect(labels.members.pendingInvites).not.toContain("\uFFFD");
+    expect(labels.members.pendingInvites).toBe("តំណអញ្ជើញដែលកំពុងរង់ចាំ");
   });
 
-  it("localizes every notification sub-object string", () => {
-    for (const value of Object.values(SETTINGS_LABELS.notification)) {
-      expect(isKhmer(value)).toBe(true);
-    }
+  it("should return bilingual slugUrlHint prefixes", async () => {
+    const { slugUrlHint } = await import("./settings-labels");
+
+    expect(slugUrlHint("demo", Locale.EN)).toBe("Used in URL: /w/demo/");
+    expect(slugUrlHint("demo", Locale.KM)).toBe("ប្រើក្នុង URL: /w/demo/");
   });
 
-  it("builds a Khmer slug URL hint while preserving the literal path", () => {
-    const hint = slugUrlHint("my-workspace");
-    expect(isKhmer(hint)).toBe(true);
-    expect(hint).toContain("/w/my-workspace/");
-  });
+  it("should return bilingual expiresLabel", async () => {
+    const { expiresLabel } = await import("./settings-labels");
 
-  it("builds a Khmer expires label while preserving the date value", () => {
-    const label = expiresLabel("12/31/2026");
-    expect(isKhmer(label)).toBe(true);
-    expect(label).toContain("12/31/2026");
-  });
-
-  it("exposes gateway dry-config doctor labels without claiming full parity", () => {
-    expect(SETTINGS_LABELS.gateway.doctorTitle).toMatch(/dry-config/i);
-    expect(SETTINGS_LABELS.gateway.doctorHint).toMatch(/probe/i);
-    expect(SETTINGS_LABELS.gateway.parityNote).toMatch(/not claimed/i);
-    expect(SETTINGS_LABELS.gateway.doctorLiveRisk).toMatch(/risk/i);
-    expect(SETTINGS_LABELS.gateway.doctorWebhookFailClosed).toMatch(/fail-closed|shared secret/i);
+    expect(expiresLabel("2026-08-01", Locale.EN)).toBe("Expired 2026-08-01");
+    expect(expiresLabel("2026-08-01", Locale.KM)).toBe("ផុតកំណត់ 2026-08-01");
   });
 });

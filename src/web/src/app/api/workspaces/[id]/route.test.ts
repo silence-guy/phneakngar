@@ -165,6 +165,30 @@ describe("PATCH /api/workspaces/[id]", () => {
     expect(mockUpdateWorkspace).toHaveBeenCalledWith({}, "w1", { defaultLocale: "en" });
   });
 
+  it("updates workspace agent language mode successfully", async () => {
+    mockUpdateWorkspace.mockResolvedValue({
+      id: "w1",
+      name: "My Workspace",
+      slug: "my-workspace",
+      defaultLocale: "km",
+      agentLanguageMode: "bilingual",
+      createdAt: "2024-01-01T00:00:00Z",
+      updatedAt: "2024-01-02T00:00:00Z",
+    });
+
+    const req = new NextRequest("http://localhost/api/workspaces/w1", {
+      method: "PATCH",
+      body: JSON.stringify({ agent_language_mode: "bilingual" }),
+      headers: { "Content-Type": "application/json" },
+    });
+    const res = await PATCH(req, { params: Promise.resolve({ id: "w1" }) } as any);
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body.agent_language_mode).toBe("bilingual");
+    expect(mockUpdateWorkspace).toHaveBeenCalledWith({}, "w1", { agentLanguageMode: "bilingual" });
+  });
+
   it("returns 404 when workspace not found on update", async () => {
     mockUpdateWorkspace.mockResolvedValue(null);
 

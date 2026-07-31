@@ -98,6 +98,8 @@ The production-readiness audit validated the complete chain from an empty local 
   - `playbook` — versioned SOP definitions (JSON step list), workspace-scoped, optionally agent-bound
   - `playbook_run` — one execution; snapshots the definition at start; all run state durable in D1
   - `playbook_step_run` — per-step records with `unique(run_id, step_id)` for idempotent advance
+- `0056_workspace_agent_language_mode.sql`, which is additive per-workspace agent response language:
+  - `workspace.agent_language_mode` — `auto | bilingual | en | km`, default `auto`; the task payload builder threads this into the runtime language policy as the workspace-level fallback (task/agent/owner locale still take precedence)
 
 
 Before applying `0048_task_message_idempotency.sql` to production, run this read-only preflight against the target D1 database and review any rows it returns:

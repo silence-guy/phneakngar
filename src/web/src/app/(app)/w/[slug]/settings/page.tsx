@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
+import { getSettingsLabels } from "./settings-labels";
 import { GeneralTab } from "./general-tab";
 import { InstructionTab } from "./instruction-tab";
 import { MembersTab } from "./members-tab";
@@ -11,7 +12,7 @@ import { NotificationTab } from "./notification-tab";
 import { PetTab } from "./pet-tab";
 import { UsagesTab } from "./usages-tab";
 import { GatewayTab } from "./gateway-tab";
-import { SETTINGS_LABELS, settingsTabLabel } from "./settings-labels";
+import { SettingsLocaleProvider, useSettingsLocale } from "@/contexts/settings-locale-context";
 
 const TABS = [
   { id: "general" },
@@ -25,14 +26,16 @@ const TABS = [
 
 type TabId = (typeof TABS)[number]["id"];
 
-export default function SettingsPage() {
+function SettingsPageContent() {
   const [activeTab, setActiveTab] = useState<TabId>("general");
+  const { locale } = useSettingsLocale();
+  const labels = getSettingsLabels(locale);
 
   return (
     <>
       <div className="flex items-center justify-between border-b border-border/50 px-3 md:px-5 py-2.5 gap-3">
         <div className="flex items-center gap-3 min-w-0">
-          <h1 className="text-sm font-medium">{SETTINGS_LABELS.title}</h1>
+          <h1 className="text-sm font-medium">{labels.title}</h1>
         </div>
       </div>
 
@@ -50,7 +53,7 @@ export default function SettingsPage() {
                     : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
                 )}
               >
-                {settingsTabLabel(tab.id)}
+                {labels.tabs[tab.id]}
               </button>
             ))}
           </div>
@@ -67,7 +70,7 @@ export default function SettingsPage() {
               <TabsList className="h-auto gap-1">
                 {TABS.map((tab) => (
                   <TabsTrigger key={tab.id} value={tab.id}>
-                    {settingsTabLabel(tab.id)}
+                    {labels.tabs[tab.id]}
                   </TabsTrigger>
                 ))}
               </TabsList>
@@ -101,5 +104,13 @@ export default function SettingsPage() {
         </div>
       </div>
     </>
+  );
+}
+
+export default function SettingsPage() {
+  return (
+    <SettingsLocaleProvider>
+      <SettingsPageContent />
+    </SettingsLocaleProvider>
   );
 }

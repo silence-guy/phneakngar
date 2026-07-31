@@ -30,8 +30,8 @@ export const PATCH = withAuth(async (req: NextRequest, ctx) => {
   const [body, err] = await parseBody(req, UpdateWorkspaceRequestSchema);
   if (err) return err;
 
-  if (!body.name && !body.slug && !body.default_locale) {
-    return writeError("at least one of name, slug, or default_locale is required", 400);
+  if (!body.name && !body.slug && !body.default_locale && !body.agent_language_mode) {
+    return writeError("at least one of name, slug, default_locale, or agent_language_mode is required", 400);
   }
 
   const db = getDb(ctx.env.DB);
@@ -39,6 +39,7 @@ export const PATCH = withAuth(async (req: NextRequest, ctx) => {
     ...(body.name !== undefined ? { name: body.name } : {}),
     ...(body.slug !== undefined ? { slug: body.slug } : {}),
     ...(body.default_locale !== undefined ? { defaultLocale: body.default_locale } : {}),
+    ...(body.agent_language_mode !== undefined ? { agentLanguageMode: body.agent_language_mode } : {}),
   };
 
   try {
@@ -46,6 +47,9 @@ export const PATCH = withAuth(async (req: NextRequest, ctx) => {
     if (!updated) return writeError("workspace not found", 404);
     if (body.default_locale !== undefined) {
       await invalidate(cacheKeys.workspaceDefaultLocale(owner.workspaceId));
+    }
+    if (body.agent_language_mode !== undefined) {
+      await invalidate(cacheKeys.workspaceAgentLanguageMode(owner.workspaceId));
     }
     return writeJSON(workspaceToResponse(updated));
   } catch (err: unknown) {

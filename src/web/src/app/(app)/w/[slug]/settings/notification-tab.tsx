@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
@@ -15,9 +15,12 @@ import {
   NOTIFICATION_EVENT_LABELS,
   type NotificationEvent,
 } from "@/lib/browser-notification";
-import { SETTINGS_LABELS } from "./settings-labels";
+import { getSettingsLabels } from "./settings-labels";
+import { useSettingsLocale } from "@/contexts/settings-locale-context";
 
 export function NotificationTab() {
+  const { locale } = useSettingsLocale();
+  const labels = useMemo(() => getSettingsLabels(locale), [locale]);
   const [notifEnabled, setNotifEnabled] = useState(false);
   const [notifEvents, setNotifEvents] = useState<NotificationEvent[]>([...NOTIFICATION_EVENTS]);
   const [notifSupported, setNotifSupported] = useState(true);
@@ -44,7 +47,7 @@ export function NotificationTab() {
       setNotificationEnabled(true);
     } else {
       setNotifDenied(true);
-      toast.error(SETTINGS_LABELS.notification.permissionDenied);
+      toast.error(labels.notification.permissionDenied);
     }
   };
 
@@ -61,7 +64,7 @@ export function NotificationTab() {
   if (!notifSupported) {
     return (
       <p className="text-sm text-muted-foreground">
-        {SETTINGS_LABELS.notification.notSupported}
+        {labels.notification.notSupported}
       </p>
     );
   }
@@ -69,13 +72,13 @@ export function NotificationTab() {
   return (
     <div className="space-y-6">
       <section className="space-y-4">
-        <h2 className="text-sm font-medium">{SETTINGS_LABELS.notification.sectionTitle}</h2>
+        <h2 className="text-sm font-medium">{labels.notification.sectionTitle}</h2>
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
-              <p className="text-sm">{SETTINGS_LABELS.notification.enable}</p>
+              <p className="text-sm">{labels.notification.enable}</p>
               <p className="text-xs text-muted-foreground">
-                {SETTINGS_LABELS.notification.enableDescription}
+                {labels.notification.enableDescription}
               </p>
             </div>
             <Switch
@@ -86,12 +89,12 @@ export function NotificationTab() {
           </div>
           {notifDenied && !notifEnabled && (
             <p className="text-xs text-destructive">
-              {SETTINGS_LABELS.notification.permissionDeniedHint}
+              {labels.notification.permissionDeniedHint}
             </p>
           )}
           {notifEnabled && (
             <div className="space-y-2 pl-0.5">
-              <p className="text-xs text-muted-foreground">{SETTINGS_LABELS.notification.notifyWhen}</p>
+              <p className="text-xs text-muted-foreground">{labels.notification.notifyWhen}</p>
               {NOTIFICATION_EVENTS.map((event) => (
                 <label key={event} className="flex items-center gap-2 text-sm cursor-pointer select-none">
                   <Checkbox

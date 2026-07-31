@@ -1,13 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useMemo } from "react";
 import { toast } from "sonner";
 import { useWorkspace } from "@/contexts/workspace-context";
 import { getMemberMe, updateMemberMe } from "@/lib/api";
 import { MarkdownEditor } from "@/components/ui/markdown-editor";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { SETTINGS_LABELS } from "./settings-labels";
+import { getSettingsLabels } from "./settings-labels";
+import { useSettingsLocale } from "@/contexts/settings-locale-context";
 
 const MAX_LENGTH = 50_000;
 const DEBOUNCE_MS = 500;
@@ -40,6 +41,9 @@ function UsageRing({ ratio, size = 16, stroke = 1.5 }: { ratio: number; size?: n
 
 export function InstructionTab() {
   const { workspaceId } = useWorkspace();
+  const { locale } = useSettingsLocale();
+  const labels = useMemo(() => getSettingsLabels(locale), [locale]);
+
   const [value, setValue] = useState("");
   const [savedValue, setSavedValue] = useState("");
   const [loading, setLoading] = useState(true);
@@ -62,11 +66,11 @@ export function InstructionTab() {
       setValue(data.global_instruction);
       setSavedValue(data.global_instruction);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : SETTINGS_LABELS.instruction.failedToLoad);
+      toast.error(err instanceof Error ? err.message : labels.instruction.failedToLoad);
     } finally {
       setLoading(false);
     }
-  }, [workspaceId]);
+  }, [workspaceId, labels]);
 
   useEffect(() => {
     fetchInstruction();
@@ -83,14 +87,14 @@ export function InstructionTab() {
       const data = await updateMemberMe(workspaceId, current);
       setSavedValue(data.global_instruction);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : SETTINGS_LABELS.instruction.failedToSave);
+      toast.error(err instanceof Error ? err.message : labels.instruction.failedToSave);
     } finally {
       savingRef.current = false;
       if (valueRef.current !== savedValueRef.current) {
         scheduleSaveRef.current();
       }
     }
-  }, [workspaceId]);
+  }, [workspaceId, labels]);
 
   const scheduleSave = useCallback(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -158,7 +162,7 @@ export function InstructionTab() {
         <MarkdownEditor
           value={value}
           onChange={handleChange}
-          placeholder={SETTINGS_LABELS.instruction.placeholder}
+          placeholder={labels.instruction.placeholder}
           minHeight="calc(100vh - 240px)"
           contentType="markdown"
           variant="seamless"
@@ -167,7 +171,7 @@ export function InstructionTab() {
       <div className="flex items-center gap-2 px-6 py-3">
         <UsageRing ratio={ratio} />
         <p className="text-xs text-muted-foreground">
-          {SETTINGS_LABELS.instruction.footerHelp}
+          {labels.instruction.footerHelp}
         </p>
       </div>
     </div>

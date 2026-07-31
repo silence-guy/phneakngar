@@ -10,6 +10,7 @@ export async function getWorkspace(db: Database, id: string, userId: string) {
       slug: workspace.slug,
       onboarded: workspace.onboarded,
       defaultLocale: workspace.defaultLocale,
+      agentLanguageMode: workspace.agentLanguageMode,
       createdAt: workspace.createdAt,
       updatedAt: workspace.updatedAt,
     })
@@ -35,6 +36,16 @@ export async function getWorkspaceDefaultLocale(db: Database, id: string): Promi
   return rows[0]?.defaultLocale ?? null;
 }
 
+// Workspace-scoped lookup of the agent response language mode (auto | bilingual |
+// en | km). Same ownership assumption as getWorkspaceDefaultLocale.
+export async function getWorkspaceAgentLanguageMode(db: Database, id: string): Promise<string | null> {
+  const rows = await db
+    .select({ agentLanguageMode: workspace.agentLanguageMode })
+    .from(workspace)
+    .where(eq(workspace.id, id));
+  return rows[0]?.agentLanguageMode ?? null;
+}
+
 export async function listWorkspaces(db: Database, userId: string) {
   return db
     .select({
@@ -43,6 +54,7 @@ export async function listWorkspaces(db: Database, userId: string) {
       slug: workspace.slug,
       onboarded: workspace.onboarded,
       defaultLocale: workspace.defaultLocale,
+      agentLanguageMode: workspace.agentLanguageMode,
       createdAt: workspace.createdAt,
       updatedAt: workspace.updatedAt,
     })
@@ -63,7 +75,7 @@ export async function createWorkspace(
   return rows[0]!;
 }
 
-export async function updateWorkspace(db: Database, id: string, data: { name?: string; slug?: string; defaultLocale?: string }) {
+export async function updateWorkspace(db: Database, id: string, data: { name?: string; slug?: string; defaultLocale?: string; agentLanguageMode?: string }) {
   const rows = await db
     .update(workspace)
     .set({ ...data, updatedAt: new Date().toISOString() })

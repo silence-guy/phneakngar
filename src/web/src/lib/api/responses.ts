@@ -37,6 +37,7 @@ export function workspaceToResponse(w: WorkspaceRow) {
     slug: w.slug,
     onboarded: !!w.onboarded,
     default_locale: w.defaultLocale ?? "km",
+    agent_language_mode: w.agentLanguageMode ?? "auto",
     created_at: formatTimestamp(w.createdAt),
     updated_at: formatTimestamp(w.updatedAt),
   };

@@ -9,7 +9,7 @@ export const createWorkspace = (name: string, slug?: string) =>
     body: JSON.stringify({ name, slug: slug || name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "workspace" }),
   });
 
-export const updateWorkspace = (workspaceId: string, data: { name?: string; slug?: string; default_locale?: "km" | "en" }) =>
+export const updateWorkspace = (workspaceId: string, data: { name?: string; slug?: string; default_locale?: "km" | "en"; agent_language_mode?: "km" | "en" | "bilingual" | "auto" }) =>
   apiFetch<Workspace>(`/api/workspaces/${workspaceId}${wsQuery(workspaceId)}`, { method: "PATCH", body: JSON.stringify(data) });
 
 export const deleteWorkspace = (workspaceId: string, confirmName: string) =>
