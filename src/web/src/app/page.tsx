@@ -9,9 +9,9 @@ const HomePage = dynamic(() => import("@/components/home/home-page").then(m => (
 });
 
 export const metadata: Metadata = {
-  title: "ភ្នាក់ងារ — ក្រុមហ៊ុនផ្ទាល់ខ្លួនរបស់អ្នក",
+  title: "Phneakngar — Your Agent. Always Working.",
   description:
-    "ដំណើរការក្រុមហ៊ុនផ្ទាល់ខ្លួនជាមួយភ្នាក់ងារ AI ដែលសហការគ្នា បើកដំណើរការជានិច្ច និងរៀនពីរាល់ភារកិច្ច។ ផ្តល់អ៊ីមែលដល់ភ្នាក់ងារនីមួយៗ កំណត់តួនាទី ហើយឲ្យពួកគេធ្វើការជូនអ្នកពេញម៉ោង។",
+    "Give your AI agents a job and let them handle it. Phneakngar agents work while you rest.",
 };
 
 const faqJsonLd = {
@@ -20,26 +20,26 @@ const faqJsonLd = {
   mainEntity: [
     {
       "@type": "Question",
-      name: "តើ ភ្នាក់ងារ ជាអ្វី?",
+      name: "What is Phneakngar?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "ភ្នាក់ងារ គឺជាស្រទាប់សម្របសម្រួលសម្រាប់ក្រុមហ៊ុនផ្ទាល់ខ្លួន។ វាអនុញ្ញាតឲ្យអ្នកកំណត់តួនាទី ផ្តល់ការងារឲ្យភ្នាក់ងារ AI ហើយរក្សាពួកគេឲ្យសហការ បើកដំណើរការជានិច្ច និងរៀនដោយខ្លួនឯង។",
+        text: "Phneakngar is an AI agent orchestration layer for personal companies. It lets you assign roles, give tasks to AI agents, and keep them collaborating, running continuously, and learning on their own.",
       },
     },
     {
       "@type": "Question",
-      name: "តើខ្ញុំទាក់ទងជាមួយភ្នាក់ងារ AI ដូចម្តេច?",
+      name: "How do I communicate with AI agents?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: `ភ្នាក់ងារនីមួយៗមានអាសយដ្ឋាន @${getPublicEmailDomain()} ផ្ទាល់ខ្លួន។ អ្នកអាចផ្ញើការណែនាំតាមអ៊ីមែល ហើយភ្នាក់ងារនឹងសហការលើភារកិច្ច និងឆ្លើយតប។ អ្នកក៏អាចគ្រប់គ្រងក្រុមហ៊ុនតាមផ្ទាំងគ្រប់គ្រង ភ្នាក់ងារ។`,
+        text: `Each agent gets its own email handle at @${getPublicEmailDomain()}. You can send instructions via email and the agent will collaborate on tasks and respond. You can also manage your company through the agent dashboard.`,
       },
     },
     {
       "@type": "Question",
-      name: "តើ ភ្នាក់ងារ អាចប្រើដោយឥតគិតថ្លៃទេ?",
+      name: "Is Phneakngar free?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "បាន។ ភ្នាក់ងារ មានកម្រិតឥតគិតថ្លៃ ដើម្បីចាប់ផ្តើមក្រុមហ៊ុនផ្ទាល់ខ្លួនរបស់អ្នក។",
+        text: "Yes. Phneakngar offers a free tier to get your personal company started.",
       },
     },
   ],

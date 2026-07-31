@@ -1,11 +1,11 @@
 {
-  "name": "ភ្នាក់ងារ — ក្រុមហ៊ុនផ្ទាល់ខ្លួន",
-  "short_name": "ភ្នាក់ងារ",
-  "description": "ភ្នាក់ងារ AI របស់អ្នក បើកដំណើរការជានិច្ច។ ផ្តល់អ៊ីមែលដល់ពួកគេ ហើយទុកឲ្យពួកគេធ្វើការជូនអ្នកពេញម៉ោង។",
+  "name": "Phneakngar — Your Agent. Always Working.",
+  "short_name": "Phneakngar",
+  "description": "AI agents that work on your behalf, 24/7.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#000000",
+  "theme_color": "#faf9f7",
   "icons": [
     {
       "src": "/logo-mark.svg",

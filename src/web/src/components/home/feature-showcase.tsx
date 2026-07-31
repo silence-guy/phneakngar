@@ -4,119 +4,114 @@ import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { useLandingLocale } from "./use-landing-locale";
+import { LANDING_FEATURE_LABELS } from "./landing-labels";
 
 gsap.registerPlugin(ScrollTrigger);
 
 interface Feature {
   number: string;
-  title: string;
-  spec: string;
   description: string;
   terminal: string[];
   cta: { tagline: string; label: string; href: string };
 }
 
+const featureTerminals: Record<string, string[]> = {
+  I: [
+    "▓▓▓▓▓▓▓▓▓           ▓▓▓▓▓▓▓▓▓           ▓▓▓▓▓▓▓▓▓",
+    "▓  YOU  ▓░░░░░░░░░░░▓  DEV  ▓░░░░░░░░░░░▓  OPS  ▓",
+    "▓▓▓▓▓▓▓▓▓           ▓▓▓▓▓▓▓▓▓           ▓▓▓▓▓▓▓▓▓",
+    "    ░                   ░                   ░    ",
+    "    ░                   ░                   ░    ",
+    "▓▓▓▓▓▓▓▓▓           ▓▓▓▓▓▓▓▓▓           ▓▓▓▓▓▓▓▓▓",
+    "▓  R&D  ▓░░░░░░░░░░░▓ SALES ▓░░░░░░░░░░░▓  BIZ  ▓",
+    "▓▓▓▓▓▓▓▓▓           ▓▓▓▓▓▓▓▓▓           ▓▓▓▓▓▓▓▓▓",
+  ],
+  II: [
+    "█████████████████████████",
+    "█▓▒                   ▒▓█",
+    "█ ▓▒░               ░▒▓ █",
+    "█   ▓▒░           ░▒▓   █",
+    "█     ▓▒░       ░▒▓     █",
+    "█       ▓▒░   ░▒▓       █",
+    "█         ▓▒█▒▓         █",
+    "█          ▒█▒          █",
+    "█                       █",
+    "█████████████████████████",
+  ],
+  III: [
+    "▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓",
+    "▓  M  T  W  T  F  S  S  ▓",
+    "▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓",
+    "▓  ░  ░  ░  ░  ░  ░  ░  ▓",
+    "▓  ░  ░  ░  ░  ░  ░  ░  ▓",
+    "▓  ░  ░  ▒  ▓  ░  ░  ░  ▓",
+    "▓  ░  ░  ░  ░  █  ░  ░  ▓",
+    "▓  ░  ░  ░  ░  ░  ░  ░  ▓",
+    "▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓",
+  ],
+  IV: [
+    "                         ",
+    "                         ",
+    "           █             ",
+    "          █ █            ",
+    "        ▒▓   █           ",
+    "░░░░░░░░░     ▓   ▒░░░░░░",
+    "               █ ▓       ",
+    "                ▓        ",
+    "                         ",
+    "                         ",
+  ],
+  V: [
+    "                         ",
+    "            █            ",
+    "           ▓█▓           ",
+    "          ▒▓█▓▒          ",
+    "         ░▒▓█▓▒░         ",
+    "        ░░▒▓█▓▒░░        ",
+    "       ░░░▒▓█▓▒░░░       ",
+    "      ░░░░▒▓█▓▒░░░░      ",
+    "     ░░░░░▒▓█▓▒░░░░░     ",
+    "                         ",
+  ],
+};
+
 const features: Feature[] = [
   {
     number: "I",
-    title: "សហការ",
-    spec: "កំណត់រចនាសម្ព័ន្ធក្រុមហ៊ុនរបស់អ្នក",
-    description:
-      "អ្នកជានាយក។ កំណត់តួនាទីឲ្យភ្នាក់ងារ ដូចជា dev, ops, research ហើយឲ្យពួកគេសម្របសម្រួលគ្នា។ ភ្នាក់ងារ រក្សាក្រុមទាំងមូលឲ្យដើរតាមគ្នា។",
-    terminal: [
-      "▓▓▓▓▓▓▓▓▓           ▓▓▓▓▓▓▓▓▓           ▓▓▓▓▓▓▓▓▓",
-      "▓  YOU  ▓░░░░░░░░░░░▓  DEV  ▓░░░░░░░░░░░▓  OPS  ▓",
-      "▓▓▓▓▓▓▓▓▓           ▓▓▓▓▓▓▓▓▓           ▓▓▓▓▓▓▓▓▓",
-      "    ░                   ░                   ░    ",
-      "    ░                   ░                   ░    ",
-      "▓▓▓▓▓▓▓▓▓           ▓▓▓▓▓▓▓▓▓           ▓▓▓▓▓▓▓▓▓",
-      "▓  R&D  ▓░░░░░░░░░░░▓ SALES ▓░░░░░░░░░░░▓  BIZ  ▓",
-      "▓▓▓▓▓▓▓▓▓           ▓▓▓▓▓▓▓▓▓           ▓▓▓▓▓▓▓▓▓",
-    ],
-    cta: { tagline: "រចនាផែនទីក្រុមរបស់អ្នក", label: "បង្កើតក្រុម", href: "/sign-in" },
+    description: "",
+    terminal: featureTerminals.I,
+    cta: { tagline: "", label: "", href: "/sign-in" },
   },
   {
     number: "II",
-    title: "តាមដានបាន",
-    spec: "រាល់អន្តរកម្មត្រូវបានកត់ត្រា និងពិនិត្យបាន",
-    description:
-      "ភ្នាក់ងារទាក់ទងតាមអ៊ីមែល និងធ្វើការលើម៉ាស៊ីនរបស់អ្នក។ រាល់ការណែនាំ ការសម្រេចចិត្ត និងការឆ្លើយតបត្រូវបានកត់ត្រា ដូច្នេះអ្នកអាចពិនិត្យបានគ្រប់ពេល។",
-    terminal: [
-      "█████████████████████████",
-      "█▓▒                   ▒▓█",
-      "█ ▓▒░               ░▒▓ █",
-      "█   ▓▒░           ░▒▓   █",
-      "█     ▓▒░       ░▒▓     █",
-      "█       ▓▒░   ░▒▓       █",
-      "█         ▓▒█▒▓         █",
-      "█          ▒█▒          █",
-      "█                       █",
-      "█████████████████████████",
-    ],
-    cta: { tagline: "មានកំណត់ត្រាពេញលេញ គ្មានប្រអប់ខ្មៅ", label: "មើលការសម្រេចចិត្ត", href: "/sign-in" },
+    description: "",
+    terminal: featureTerminals.II,
+    cta: { tagline: "", label: "", href: "/sign-in" },
   },
   {
     number: "III",
-    title: "ប្រតិទិន",
-    spec: "មកដល់ពេលវេលាត្រឹមត្រូវ",
-    description:
-      "ភ្នាក់ងាររបស់អ្នកគ្រប់គ្រងកាលវិភាគដោយខ្លួនឯង។ ដឹងពេលត្រូវធ្វើការ តាមដាន ឬរង់ចាំ ដោយមិនរំខានលំហូរការងាររបស់អ្នក។",
-    terminal: [
-      "▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓",
-      "▓  M  T  W  T  F  S  S  ▓",
-      "▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓",
-      "▓  ░  ░  ░  ░  ░  ░  ░  ▓",
-      "▓  ░  ░  ░  ░  ░  ░  ░  ▓",
-      "▓  ░  ░  ▒  ▓  ░  ░  ░  ▓",
-      "▓  ░  ░  ░  ░  █  ░  ░  ▓",
-      "▓  ░  ░  ░  ░  ░  ░  ░  ▓",
-      "▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓",
-    ],
-    cta: { tagline: "ភ្នាក់ងារមកតាមពេល", label: "រៀបចំកាលវិភាគ", href: "/sign-in" },
+    description: "",
+    terminal: featureTerminals.III,
+    cta: { tagline: "", label: "", href: "/sign-in" },
   },
   {
     number: "IV",
-    title: "បើកជានិច្ច",
-    spec: "ក្រុមហ៊ុនរបស់អ្នកមិនដេក",
-    description:
-      "chhlat បន្តដំណើរការរក្សាភ្នាក់ងារឲ្យធ្វើការ ព្រមទាំងទទួលភារកិច្ច ឆ្លើយអ៊ីមែល និងបញ្ជូនលទ្ធផល ខណៈពេលអ្នកសម្រាក។",
-    terminal: [
-      "                         ",
-      "                         ",
-      "           █             ",
-      "          █ █            ",
-      "        ▒▓   █           ",
-      "░░░░░░░░░     ▓   ▒░░░░░░",
-      "               █ ▓       ",
-      "                ▓        ",
-      "                         ",
-      "                         ",
-    ],
-    cta: { tagline: "បញ្ជូនការងារខណៈអ្នកសម្រាក", label: "ចាប់ផ្តើម chhlat", href: "/sign-in" },
+    description: "",
+    terminal: featureTerminals.IV,
+    cta: { tagline: "", label: "", href: "/sign-in" },
   },
   {
     number: "V",
-    title: "រៀនដោយខ្លួនឯង",
-    spec: "រាល់ភារកិច្ចធ្វើឲ្យក្រុមឆ្លាតជាងមុន",
-    description:
-      "ភ្នាក់ងារបង្កើតការចងចាំពីការងារមុនៗ ដូចជាការសម្រេចចិត្ត ចំណូលចិត្ត និងបរិបទ។ ក្រុមហ៊ុនរបស់អ្នកកាន់តែច្បាស់លាស់ពីរាល់ការសន្ទនា និងភារកិច្ច។",
-    terminal: [
-      "                         ",
-      "            █            ",
-      "           ▓█▓           ",
-      "          ▒▓█▓▒          ",
-      "         ░▒▓█▓▒░         ",
-      "        ░░▒▓█▓▒░░        ",
-      "       ░░░▒▓█▓▒░░░       ",
-      "      ░░░░▒▓█▓▒░░░░      ",
-      "     ░░░░░▒▓█▓▒░░░░░     ",
-      "                         ",
-    ],
-    cta: { tagline: "ឆ្លាតជាងមុនពីរាល់ភារកិច្ច", label: "ពង្រីកក្រុម", href: "/sign-in" },
+    description: "",
+    terminal: featureTerminals.V,
+    cta: { tagline: "", label: "", href: "/sign-in" },
   },
 ];
 
 export function FeatureShowcase() {
+  const { locale } = useLandingLocale();
+  const labels = LANDING_FEATURE_LABELS;
   const sectionRef = useRef<HTMLDivElement>(null);
 
   useGSAP(
@@ -165,7 +160,7 @@ export function FeatureShowcase() {
             color: "var(--landing-text-muted)",
           }}
         >
-          មុខងារ
+          {labels.sectionLabel[locale]}
         </div>
         <h2
           style={{
@@ -174,7 +169,7 @@ export function FeatureShowcase() {
             fontSize: "clamp(1.75rem, 4vw, 3rem)",
           }}
         >
-          ក្រុមហ៊ុនរបស់អ្នក ភ្នាក់ងាររបស់អ្នក
+          {labels.heading[locale]}
         </h2>
         <p
           className="mx-auto mt-3 max-w-xl"
@@ -184,21 +179,39 @@ export function FeatureShowcase() {
             fontSize: "0.85rem",
           }}
         >
-          កំណត់តួនាទី ផ្តល់ភារកិច្ចឲ្យភ្នាក់ងារ ហើយឲ្យពួកគេដំណើរការ។
-          ភ្នាក់ងារ គឺជាស្រទាប់សម្របសម្រួលដែលបម្លែងភ្នាក់ងារ AI ទៅជាក្រុមហ៊ុន។
+          {labels.description[locale]}
         </p>
       </div>
 
       <div className="mx-auto flex max-w-5xl flex-col gap-16 px-6 sm:gap-24 lg:gap-32 lg:px-12">
-        {features.map((feature, i) => (
-          <FeaturePanel key={feature.number} feature={feature} reversed={i % 2 === 1} />
+        {labels.features[locale].map((featureLabel, i) => (
+          <FeaturePanel
+            key={featureLabel.number}
+            feature={features[i]}
+            featureLabel={featureLabel}
+            reversed={i % 2 === 1}
+          />
         ))}
       </div>
     </section>
   );
 }
 
-function FeaturePanel({ feature, reversed }: { feature: Feature; reversed: boolean }) {
+function FeaturePanel({
+  feature,
+  featureLabel,
+  reversed,
+}: {
+  feature: Feature;
+  featureLabel: {
+    number: string;
+    title: string;
+    spec: string;
+    description: string;
+    cta: { tagline: string; label: string; href: string };
+  };
+  reversed: boolean;
+}) {
   return (
     <div className="feature-row grid w-full grid-cols-1 items-center gap-8 lg:grid-cols-2 lg:gap-16">
       {/* Text side */}
@@ -211,7 +224,7 @@ function FeaturePanel({ feature, reversed }: { feature: Feature; reversed: boole
               color: "var(--landing-text-muted)",
             }}
           >
-            {feature.number}.
+            {featureLabel.number}.
           </span>
           <h2
             className="leading-tight"
@@ -221,7 +234,7 @@ function FeaturePanel({ feature, reversed }: { feature: Feature; reversed: boole
               fontSize: "clamp(2rem, 4vw, 3rem)",
             }}
           >
-            {feature.title}
+            {featureLabel.title}
           </h2>
         </div>
         <div
@@ -231,7 +244,7 @@ function FeaturePanel({ feature, reversed }: { feature: Feature; reversed: boole
             color: "var(--landing-text-muted)",
           }}
         >
-          {feature.spec}
+          {featureLabel.spec}
         </div>
         <p
           className="mx-auto mt-4 max-w-md leading-relaxed text-[0.8125rem] sm:text-[0.875rem] lg:mx-0"
@@ -240,19 +253,27 @@ function FeaturePanel({ feature, reversed }: { feature: Feature; reversed: boole
             color: "var(--landing-text-muted)",
           }}
         >
-          {feature.description}
+          {featureLabel.description}
         </p>
       </div>
 
       {/* Flip card */}
       <div className={`mx-auto w-full max-w-sm sm:max-w-md ${reversed ? "lg:order-1" : ""}`} style={{ isolation: "isolate" }}>
-        <FlipCard feature={feature} />
+        <FlipCard feature={feature} featureLabel={featureLabel} />
       </div>
     </div>
   );
 }
 
-function FlipCard({ feature }: { feature: Feature }) {
+function FlipCard({
+  feature,
+  featureLabel,
+}: {
+  feature: Feature;
+  featureLabel: {
+    cta: { tagline: string; label: string; href: string };
+  };
+}) {
   const [flipped, setFlipped] = useState(false);
 
   return (
@@ -306,10 +327,10 @@ function FlipCard({ feature }: { feature: Feature }) {
               textShadow: "0 0 6px rgba(237, 237, 237, 0.3)",
             }}
           >
-            {feature.cta.tagline}
+            {featureLabel.cta.tagline}
           </p>
           <a
-            href={feature.cta.href}
+            href={featureLabel.cta.href}
             className="inline-flex items-center gap-2 px-5 py-2.5 text-xs uppercase tracking-widest transition-opacity hover:opacity-80"
             style={{
               fontFamily: "var(--font-mono)",
@@ -318,7 +339,7 @@ function FlipCard({ feature }: { feature: Feature }) {
               boxShadow: "0 0 12px rgba(237, 237, 237, 0.4)",
             }}
           >
-            {feature.cta.label}
+            {featureLabel.cta.label}
           </a>
         </div>
       </div>
