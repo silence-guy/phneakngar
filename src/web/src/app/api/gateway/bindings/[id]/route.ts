@@ -2,8 +2,8 @@ import { NextRequest } from "next/server";
 import {
   UpdateGatewayBindingRequestSchema,
   queries,
-  sealGatewaySecret,
 } from "@phneakngar/shared";
+import { sealGatewaySecret } from "@phneakngar/shared/gateway-secret";
 import { getDb } from "@/lib/db";
 import { withAuth } from "@/lib/middleware/auth";
 import { withWorkspaceMember, withWorkspaceOwner } from "@/lib/middleware/workspace";

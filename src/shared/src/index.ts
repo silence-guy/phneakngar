@@ -361,7 +361,6 @@ export { parseIcs } from "./lib/ics-parser";
 export type { MeetingInfo } from "./lib/ics-parser";
 export { buildMimeMessage, extractAttachmentMeta, filterDownloadableAttachments } from "./lib/mime";
 export type { MimeAttachment, BuildMimeOptions, InboundAttachmentMeta } from "./lib/mime";
-export { sealGatewaySecret, readGatewaySecret } from "./lib/gateway-secret";
 export { isSafeRedirectPath, safeRedirectPath } from "./lib/redirect";
 export {
   isSenderAuthenticated,

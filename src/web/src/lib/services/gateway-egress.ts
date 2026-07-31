@@ -9,9 +9,9 @@
 import {
   extractChannelDeliveryContent,
   queries,
-  readGatewaySecret,
   type Database,
 } from "@phneakngar/shared";
+import { readGatewaySecret } from "@phneakngar/shared/gateway-secret";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { log } from "@/lib/logger";
 import {
