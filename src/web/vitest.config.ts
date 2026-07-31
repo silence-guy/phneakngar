@@ -11,7 +11,7 @@ export default mergeConfig(shared, defineConfig({
   test: {
     testTimeout: 30_000,
     hookTimeout: 30_000,
-    include: ["src/**/*.test.ts"],
+    include: ["src/**/*.test.{ts,tsx}"],
     exclude: ["src/test/e2e/**"],
   },
 }))
