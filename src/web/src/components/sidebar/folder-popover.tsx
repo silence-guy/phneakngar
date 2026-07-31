@@ -22,7 +22,8 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Popover } from "@base-ui/react/popover";
-import { SIDEBAR_LABELS } from "./sidebar-labels";
+import { useShellLocale } from "@/contexts/shell-locale-context";
+import { getShellLabels } from "@/components/shell/shell-labels";
 
 function SortablePopoverAgent({
   id,
@@ -80,6 +81,8 @@ export function FolderPopover({
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
   );
+  const { locale } = useShellLocale();
+  const labels = getShellLabels(locale);
 
   const folderAgents = folder.agentIds
     .map((id) => agents.find((a) => a.id === id))
@@ -139,7 +142,7 @@ export function FolderPopover({
                             onClick={() => onRemoveFromFolder(agent.id)}
                           >
                             <PinOffIcon className="size-3.5 mr-1.5" />
-                            {SIDEBAR_LABELS.removeFromGroup}
+                            {labels.agent.removeFromGroup}
                           </ContextMenuItem>
                         }
                       />

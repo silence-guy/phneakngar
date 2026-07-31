@@ -14,7 +14,8 @@ import { getInboxFilterTypes } from "@/lib/inbox-filter";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { Inbox, ArrowUpRight } from "lucide-react";
 import Link from "next/link";
-import { COMPONENT_LABELS } from "@/components/component-labels";
+import { useShellLocale } from "@/contexts/shell-locale-context";
+import { getShellLabels } from "@/components/shell/shell-labels";
 
 function InboxPopoverRow({
   item,
@@ -63,6 +64,8 @@ export function InboxPopover({
   const { slug, workspaceId } = useWorkspace();
   const { count: inboxCount, decrement, refresh } = useInboxCount();
   const { openAgentChat } = useAgentChatSheet();
+  const { locale } = useShellLocale();
+  const labels = getShellLabels(locale);
   const [items, setItems] = useState<InboxItem[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
@@ -127,11 +130,11 @@ export function InboxPopover({
             </span>
           )}
         </PopoverTrigger>
-        <TooltipContent side="right">{COMPONENT_LABELS.inbox.unread}</TooltipContent>
+        <TooltipContent side="right">{labels.popover.unread}</TooltipContent>
       </Tooltip>
       <PopoverContent side="right" className="w-80 p-0">
         <div className="flex items-center justify-between px-3 py-2 border-b border-border/50">
-          <span className="text-xs font-medium">{COMPONENT_LABELS.inbox.unread}</span>
+          <span className="text-xs font-medium">{labels.popover.unread}</span>
           <Link
             href={`/w/${slug}/unread`}
             onClick={() => {
@@ -161,7 +164,7 @@ export function InboxPopover({
           ) : !items || items.length === 0 ? (
             <div className="flex flex-col items-center gap-2 py-6 text-muted-foreground">
               <Inbox className="size-6 opacity-30" />
-              <p className="text-xs">{COMPONENT_LABELS.inbox.noUnread}</p>
+              <p className="text-xs">{labels.popover.noUnread}</p>
             </div>
           ) : (
             <div className="max-h-96 overflow-y-auto thin-scrollbar">

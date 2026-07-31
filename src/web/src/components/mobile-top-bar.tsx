@@ -8,7 +8,9 @@ import { useWorkspace } from "@/contexts/workspace-context";
 import { AnimatedAvatar, parseAvatarUrl } from "@/components/avatar";
 import { Logo } from "@/components/logo";
 import { Skeleton } from "@/components/ui/skeleton";
-import { appShellLabel } from "@/lib/locale";
+import { useShellLocale } from "@/contexts/shell-locale-context";
+import { getShellLabels } from "@/components/shell/shell-labels";
+import { ShellLocaleToggle } from "@/components/shell/locale-toggle";
 import { cn } from "@/lib/utils";
 
 export function MobileTopBar() {
@@ -17,6 +19,8 @@ export function MobileTopBar() {
   const openSidebar = useSidebarTrigger();
   const { slug } = useWorkspace();
   const { agents, pins, unpinnedOrder, runtimes, loading } = useAgentContext();
+  const { locale } = useShellLocale();
+  const labels = getShellLabels(locale);
 
   const isHomeActive = pathname === `/w/${slug}/home`;
   const isCalendarActive = pathname.includes("/calendar");
@@ -47,7 +51,7 @@ export function MobileTopBar() {
         <div
           role="button"
           tabIndex={0}
-          aria-label={appShellLabel("openSidebar")}
+          aria-label={labels.actions.openSidebar}
           onClick={openSidebar}
           onKeyDown={(e) => {
             if (e.key === "Enter" || e.key === " ") {
@@ -63,7 +67,7 @@ export function MobileTopBar() {
 
       <button
         onClick={() => router.push(`/w/${slug}/home`)}
-        aria-label={appShellLabel("home")}
+        aria-label={labels.nav.home}
         className={cn(
           "shrink-0 p-1 rounded-md transition-colors",
           isHomeActive
@@ -76,7 +80,7 @@ export function MobileTopBar() {
 
       <button
         onClick={() => router.push(`/w/${slug}/calendar`)}
-        aria-label={appShellLabel("calendar")}
+        aria-label={labels.nav.calendar}
         className={cn(
           "shrink-0 p-1 rounded-md transition-colors",
           isCalendarActive
@@ -89,7 +93,7 @@ export function MobileTopBar() {
 
       <button
         onClick={() => router.push(`/w/${slug}/issues`)}
-        aria-label={appShellLabel("issues")}
+        aria-label={labels.nav.issues}
         className={cn(
           "shrink-0 p-1 rounded-md transition-colors",
           isIssuesActive
@@ -140,6 +144,8 @@ export function MobileTopBar() {
           })
         )}
       </div>
+
+      <ShellLocaleToggle />
     </div>
   );
 }

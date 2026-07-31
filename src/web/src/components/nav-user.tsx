@@ -15,11 +15,15 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import { LogOut, User } from "lucide-react";
+import { useShellLocale } from "@/contexts/shell-locale-context";
+import { getShellLabels } from "@/components/shell/shell-labels";
 
 export function NavUser() {
   const { data: session, isPending } = useSession();
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
+  const { locale } = useShellLocale();
+  const labels = getShellLabels(locale);
 
   useEffect(() => {
     setMounted(true);
@@ -37,7 +41,7 @@ export function NavUser() {
         render={
           <button
             type="button"
-            title={user.name ?? user.email ?? "Account"}
+            title={user.name ?? user.email ?? labels.user.account}
             className="flex items-center justify-center size-10 rounded-xl text-muted-foreground hover:text-foreground hover:bg-accent transition-colors duration-200 cursor-pointer"
           />
         }
@@ -77,7 +81,7 @@ export function NavUser() {
             }}
           >
             <LogOut className="size-4" />
-            Log out
+            {labels.user.logOut}
           </DropdownMenuItem>
         </DropdownMenuGroup>
       </DropdownMenuContent>
