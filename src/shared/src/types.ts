@@ -17,6 +17,7 @@ export interface Workspace {
   slug: string;
   onboarded: boolean;
   default_locale?: "km" | "en";
+  agent_language_mode?: "km" | "en" | "bilingual" | "auto";
   created_at: string;
   updated_at: string;
 }

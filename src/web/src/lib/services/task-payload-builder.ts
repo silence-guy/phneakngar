@@ -50,12 +50,22 @@ export class TaskPayloadBuilder {
 
     // Workspace default locale applies to agent output when no task/agent/owner
     // locale is set. Fetched once per build (cached) and threaded into every
-    // task's language policy below.
-    const workspaceDefaultLocale = await cached(
-      cacheKeys.workspaceDefaultLocale(workspaceId),
-      600,
-      () => queries.workspace.getWorkspaceDefaultLocale(this.db, workspaceId),
-    );
+    // task's language policy below. The workspace agent language mode
+    // (auto | bilingual | en | km) sits above the UI default locale in the
+    // precedence chain, so a configured agent response language actually wins
+    // over the interface-language fallback.
+    const [workspaceDefaultLocale, workspaceAgentLanguageMode] = await Promise.all([
+      cached(
+        cacheKeys.workspaceDefaultLocale(workspaceId),
+        600,
+        () => queries.workspace.getWorkspaceDefaultLocale(this.db, workspaceId),
+      ),
+      cached(
+        cacheKeys.workspaceAgentLanguageMode(workspaceId),
+        600,
+        () => queries.workspace.getWorkspaceAgentLanguageMode(this.db, workspaceId),
+      ),
+    ]);
 
     const memberCache = new Map<string, { globalInstruction: string; preferredLocale: string | null } | null>();
     const userCache = new Map<string, { name: string; email: string } | null>();
@@ -134,19 +144,26 @@ export class TaskPayloadBuilder {
       const ownerPreferredLocale = agent?.ownerId
         ? memberCache.get(agent.ownerId)?.preferredLocale ?? null
         : null;
-      // Precedence: task override > agent locale > owner locale > workspace default.
-      // Owner locale is folded into agentPreferredLocale (as before); the workspace
-      // default is the final fallback so a configured default actually applies
-      // instead of dropping to the hardcoded km default.
+      // Precedence: task override > agent locale > owner locale > workspace agent
+      // language mode > workspace default locale. Owner locale is folded into
+      // agentPreferredLocale (as before); the workspace agent language mode is the
+      // preferred agent-output fallback, and the UI default locale is the final
+      // fallback so a configured default actually applies instead of dropping to
+      // the hardcoded km default.
       const agentPreferredLocale = stringOrNull(agent?.preferredLocale) ?? stringOrNull(ownerPreferredLocale);
       const languagePolicy = buildAgentPromptLanguagePolicy({
         taskLocaleOverride: stringOrNull(task.localeOverride) ?? stringOrNull(taskContext?.taskLocaleOverride),
         agentPreferredLocale,
+        workspaceAgentOutputLocale: stringOrNull(workspaceAgentLanguageMode),
         workspaceDefaultLocale: stringOrNull(workspaceDefaultLocale),
         agentLanguagePolicy: stringOrNull(agent?.languagePolicy),
       });
-      // Resolved locale advertised to the runtime: agent/owner > workspace default.
-      const resolvedPreferredLocale = agentPreferredLocale ?? stringOrNull(workspaceDefaultLocale);
+      // Resolved locale advertised to the runtime: agent/owner > workspace agent
+      // language mode > workspace default.
+      const resolvedPreferredLocale =
+        agentPreferredLocale ??
+        stringOrNull(workspaceAgentLanguageMode) ??
+        stringOrNull(workspaceDefaultLocale);
 
       const rawColleagues = colleaguesByAgent.get(task.agentId) ?? [];
       const colleagues = rawColleagues.map((c) => ({

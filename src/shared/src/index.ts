@@ -134,6 +134,7 @@ export {
   SUPPORTED_LOCALES,
   SUPPORTED_AGENT_LANGUAGE_MODES,
   AgentLanguageMode,
+  agentLanguageModeLabels,
   defaultLocale,
   localeDisplayLabels,
   coreEntityLabels,

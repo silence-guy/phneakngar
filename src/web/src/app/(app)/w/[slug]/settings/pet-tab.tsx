@@ -18,8 +18,12 @@ import {
   writeHomePetSettings,
 } from "@/lib/home-pet-settings";
 import { cn } from "@/lib/utils";
+import { getSettingsLabels } from "./settings-labels";
+import { useSettingsLocale } from "@/contexts/settings-locale-context";
 
 export function PetTab() {
+  const { locale } = useSettingsLocale();
+  const labels = getSettingsLabels(locale);
   const [enabled, setEnabled] = useState(false);
   const [selectedPresetId, setSelectedPresetId] = useState(
     CLOUD_CODE_MONSTER_PET_PRESETS[0]!.id
@@ -62,7 +66,7 @@ export function PetTab() {
   return (
     <div className="space-y-8">
       <section className="space-y-4">
-        <h2 className="text-sm font-medium">Pet</h2>
+        <h2 className="text-sm font-medium">{labels.pet.sectionTitle}</h2>
         <div className="space-y-4">
           <div className="flex items-center justify-between gap-4">
             <div className="space-y-0.5">
@@ -86,7 +90,7 @@ export function PetTab() {
         <section className="space-y-4">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <h2 className="text-sm font-medium">Preset</h2>
+              <h2 className="text-sm font-medium">{labels.pet.preset}</h2>
               <p className="mt-1 text-xs text-muted-foreground">
                 {selectedPreset.name}
               </p>

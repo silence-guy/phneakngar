@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useMemo } from "react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { useWorkspace } from "@/contexts/workspace-context";
@@ -21,12 +21,28 @@ import {
   validateWorkspaceForm,
 } from "@/lib/form-validation";
 import { trackSettingsUpdated } from "@/lib/analytics";
-import { SETTINGS_LABELS, slugUrlHint } from "./settings-labels";
+import {
+  AgentLanguageMode,
+  agentLanguageModeLabels,
+  Locale,
+  SUPPORTED_AGENT_LANGUAGE_MODES,
+} from "@phneakngar/shared";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { getSettingsLabels, slugUrlHint } from "./settings-labels";
+import { useSettingsLocale } from "@/contexts/settings-locale-context";
 
 export function GeneralTab() {
   const { workspaceId, slug } = useWorkspace();
   const session = useSession();
   const router = useRouter();
+  const { locale, setLocale } = useSettingsLocale();
+  const labels = useMemo(() => getSettingsLabels(locale), [locale]);
 
   const [memberRole, setMemberRole] = useState<string>("");
   const [loading, setLoading] = useState(true);
@@ -38,10 +54,24 @@ export function GeneralTab() {
   const [savingWorkspace, setSavingWorkspace] = useState(false);
   const [workspaceErrors, setWorkspaceErrors] = useState<WorkspaceFormErrors>({});
 
+  const [uiLocale, setUiLocale] = useState<Locale>(Locale.KM);
+  const [savedUiLocale, setSavedUiLocale] = useState<Locale>(Locale.KM);
+  const [agentLanguageMode, setAgentLanguageMode] = useState<string>("auto");
+  const [savedAgentLanguageMode, setSavedAgentLanguageMode] = useState<string>("auto");
+
   const [deleteConfirm, setDeleteConfirm] = useState("");
   const [deleting, setDeleting] = useState(false);
 
   const isOwner = memberRole === "owner";
+
+  const isDirty = useMemo(() => {
+    return (
+      workspaceName !== savedWorkspaceName ||
+      workspaceSlug !== savedWorkspaceSlug ||
+      uiLocale !== savedUiLocale ||
+      agentLanguageMode !== savedAgentLanguageMode
+    );
+  }, [workspaceName, workspaceSlug, savedWorkspaceName, savedWorkspaceSlug, uiLocale, savedUiLocale, agentLanguageMode, savedAgentLanguageMode]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -61,20 +91,23 @@ export function GeneralTab() {
         setWorkspaceSlug(ws.slug);
         setSavedWorkspaceName(ws.name);
         setSavedWorkspaceSlug(ws.slug);
+        const resolvedLocale = ws.default_locale as Locale || Locale.KM;
+        setUiLocale(resolvedLocale);
+        setSavedUiLocale(resolvedLocale);
+        const resolvedAgentLanguageMode = ws.agent_language_mode ?? "auto";
+        setAgentLanguageMode(resolvedAgentLanguageMode);
+        setSavedAgentLanguageMode(resolvedAgentLanguageMode);
       }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : SETTINGS_LABELS.general.failedToLoad);
+      toast.error(err instanceof Error ? err.message : labels.general.failedToLoad);
     } finally {
       setLoading(false);
     }
-  }, [workspaceId, session.data?.user?.id]);
+  }, [workspaceId, session.data?.user?.id, labels]);
 
   useEffect(() => {
     if (session.data) fetchData();
   }, [fetchData, session.data]);
-
-  const isWorkspaceDirty =
-    workspaceName !== savedWorkspaceName || workspaceSlug !== savedWorkspaceSlug;
 
   const handleSaveWorkspace = async () => {
     const nextErrors = validateWorkspaceForm({
@@ -89,16 +122,21 @@ export function GeneralTab() {
       const updated = await updateWorkspace(workspaceId, {
         name: workspaceName.trim(),
         slug: workspaceSlug.trim(),
+        default_locale: uiLocale,
+        agent_language_mode: agentLanguageMode as AgentLanguageMode,
       });
       trackSettingsUpdated({ setting_tab: "general" });
       setSavedWorkspaceName(updated.name);
       setSavedWorkspaceSlug(updated.slug);
-      toast.success(SETTINGS_LABELS.general.updated);
+      setSavedUiLocale(uiLocale);
+      setSavedAgentLanguageMode(agentLanguageMode);
+      setLocale(uiLocale);
+      toast.success(labels.general.updated);
       if (updated.slug !== slug) {
         router.replace(`/w/${updated.slug}/settings`);
       }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : SETTINGS_LABELS.general.failedToUpdate);
+      toast.error(err instanceof Error ? err.message : labels.general.failedToUpdate);
     } finally {
       setSavingWorkspace(false);
     }
@@ -109,10 +147,10 @@ export function GeneralTab() {
     setDeleting(true);
     try {
       await deleteWorkspace(workspaceId, savedWorkspaceName);
-      toast.success(SETTINGS_LABELS.general.deleted);
+      toast.success(labels.general.deleted);
       router.replace("/workspaces");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : SETTINGS_LABELS.general.failedToDelete);
+      toast.error(err instanceof Error ? err.message : labels.general.failedToDelete);
     } finally {
       setDeleting(false);
     }
@@ -131,18 +169,55 @@ export function GeneralTab() {
   if (!isOwner) {
     return (
       <p className="text-sm text-muted-foreground">
-        {SETTINGS_LABELS.general.ownerOnly}
+        {labels.general.ownerOnly}
       </p>
     );
   }
 
   return (
     <div className="space-y-10">
+      {/* Language Settings Section */}
       <section className="space-y-4">
-        <h2 className="text-sm font-medium">{SETTINGS_LABELS.general.sectionTitle}</h2>
+        <h2 className="text-sm font-medium">{labels.language.sectionTitle}</h2>
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="ui-locale">{labels.language.uiLocaleLabel}</Label>
+            <p className="text-xs text-muted-foreground">{labels.language.uiLocaleDescription}</p>
+            <Select value={uiLocale} onValueChange={(v) => v && setUiLocale(v as Locale)}>
+              <SelectTrigger id="ui-locale" className="w-48">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={Locale.EN}>English</SelectItem>
+                <SelectItem value={Locale.KM}>Khmer</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="agent-language">{labels.language.agentLanguageLabel}</Label>
+            <p className="text-xs text-muted-foreground">{labels.language.agentLanguageDescription}</p>
+            <Select value={agentLanguageMode} onValueChange={(v) => v && setAgentLanguageMode(v)}>
+              <SelectTrigger id="agent-language" className="w-48">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {SUPPORTED_AGENT_LANGUAGE_MODES.map((mode) => (
+                  <SelectItem key={mode} value={mode}>
+                    {agentLanguageModeLabels[mode][locale]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </section>
+
+      {/* Workspace Settings Section */}
+      <section className="space-y-4">
+        <h2 className="text-sm font-medium">{labels.general.sectionTitle}</h2>
         <div className="space-y-3">
           <div className="space-y-1.5">
-            <Label htmlFor="workspace-name">{SETTINGS_LABELS.general.nameLabel}</Label>
+            <Label htmlFor="workspace-name">{labels.general.nameLabel}</Label>
             <Input
               id="workspace-name"
               value={workspaceName}
@@ -153,7 +228,7 @@ export function GeneralTab() {
                   setWorkspaceErrors((prev) => ({ ...prev, name: undefined }));
                 }
               }}
-              placeholder={SETTINGS_LABELS.general.namePlaceholder}
+              placeholder={labels.general.namePlaceholder}
               aria-invalid={Boolean(workspaceErrors.name)}
               aria-describedby={workspaceErrors.name ? "workspace-name-error" : undefined}
             />
@@ -164,7 +239,7 @@ export function GeneralTab() {
             )}
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="workspace-slug">{SETTINGS_LABELS.general.slugLabel}</Label>
+            <Label htmlFor="workspace-slug">{labels.general.slugLabel}</Label>
             <Input
               id="workspace-slug"
               value={workspaceSlug}
@@ -185,30 +260,31 @@ export function GeneralTab() {
               </p>
             )}
             <p className="text-xs text-muted-foreground/70">
-              {slugUrlHint(workspaceSlug)}
+              {slugUrlHint(workspaceSlug, locale)}
             </p>
           </div>
         </div>
         <Button
           size="sm"
           onClick={handleSaveWorkspace}
-          disabled={!isWorkspaceDirty || savingWorkspace}
+          disabled={!isDirty || savingWorkspace}
         >
-          {savingWorkspace ? SETTINGS_LABELS.general.saving : SETTINGS_LABELS.general.save}
+          {savingWorkspace ? labels.general.saving : labels.general.save}
         </Button>
       </section>
 
+      {/* Danger Zone Section */}
       <section className="space-y-4">
-        <h2 className="text-sm font-medium text-destructive">{SETTINGS_LABELS.general.dangerZone}</h2>
+        <h2 className="text-sm font-medium text-destructive">{labels.general.dangerZone}</h2>
         <div className="rounded-md border border-destructive/30 p-4 space-y-3">
           <p className="text-sm text-muted-foreground">
-            {SETTINGS_LABELS.general.deleteWarning}
+            {labels.general.deleteWarning}
           </p>
           <div className="space-y-1.5">
             <Label htmlFor="delete-confirm" className="text-xs">
-              {SETTINGS_LABELS.general.confirmPrefix}
+              {labels.general.confirmPrefix}
               <span className="font-medium text-foreground">{savedWorkspaceName}</span>
-              {SETTINGS_LABELS.general.confirmSuffix}
+              {labels.general.confirmSuffix}
             </Label>
             <Input
               id="delete-confirm"
@@ -223,7 +299,7 @@ export function GeneralTab() {
             onClick={handleDelete}
             disabled={deleteConfirm !== savedWorkspaceName || deleting}
           >
-            {deleting ? SETTINGS_LABELS.general.deleting : SETTINGS_LABELS.general.delete}
+            {deleting ? labels.general.deleting : labels.general.delete}
           </Button>
         </div>
       </section>

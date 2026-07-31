@@ -23,6 +23,7 @@ const mockClaimMeetingSessions = vi.fn();
 const mockGetAllEmailAccountsForWorkspace = vi.fn();
 const mockGetAllColleaguesForWorkspace = vi.fn();
 const mockGetWorkspaceDefaultLocale = vi.fn().mockResolvedValue(null);
+const mockGetWorkspaceAgentLanguageMode = vi.fn().mockResolvedValue(null);
 const mockInvalidate = vi.fn().mockResolvedValue(undefined);
 const mockKvPut = vi.fn().mockResolvedValue(undefined);
 const mockRouteEnv: Record<string, unknown> = {};
@@ -83,6 +84,7 @@ vi.mock("@phneakngar/shared", async (importOriginal) => {
     },
     workspace: {
       getWorkspaceDefaultLocale: (...args: unknown[]) => mockGetWorkspaceDefaultLocale(...args),
+      getWorkspaceAgentLanguageMode: (...args: unknown[]) => mockGetWorkspaceAgentLanguageMode(...args),
     },
   },
   };
@@ -149,6 +151,7 @@ vi.mock("@/lib/cache", () => ({
     allRuntimes: (wsId: string) => `runtimes:${wsId}`,
     member: (wsId: string, userId: string) => `mem:${wsId}:${userId}`,
     workspaceDefaultLocale: (wsId: string) => `ws_locale:${wsId}`,
+    workspaceAgentLanguageMode: (wsId: string) => `ws_agent_lang:${wsId}`,
     allHandles: (wsId: string) => `handles:${wsId}`,
     allMembers: (wsId: string) => `members:${wsId}`,
     hasPendingFileRequest: (wsId: string) => `fr_p:${wsId}`,

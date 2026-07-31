@@ -166,6 +166,7 @@ export const cacheKeys = {
   machineTokenLastUsed: (token: string) => machineTokenLastUsedCacheKeyFromHash(hashSecret(token)),
   member: (workspaceId: string, userId: string) => `mem:${workspaceId}:${userId}`,
   workspaceDefaultLocale: (workspaceId: string) => `ws_locale:${workspaceId}`,
+  workspaceAgentLanguageMode: (workspaceId: string) => `ws_agent_lang:${workspaceId}`,
   runtimeIds: (workspaceId: string, chhlatId: string) => `rt:${workspaceId}:${chhlatId}`,
   agent: (workspaceId: string, agentId: string) => `ag:${workspaceId}:${agentId}`,
   heartbeat: (workspaceId: string, chhlatId: string) => `hb:${workspaceId}:${chhlatId}`,

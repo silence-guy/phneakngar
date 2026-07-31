@@ -984,6 +984,7 @@ export const UpdateWorkspaceRequestSchema = z.object({
   name: z.string().min(1, "name is required").max(100).trim().optional(),
   slug: z.string().min(1, "slug is required").max(100).trim().toLowerCase().optional(),
   default_locale: PersistedLocaleSchema.optional(),
+  agent_language_mode: AgentLanguageModeSchema.optional(),
 });
 export type UpdateWorkspaceRequest = z.infer<typeof UpdateWorkspaceRequestSchema>;
 

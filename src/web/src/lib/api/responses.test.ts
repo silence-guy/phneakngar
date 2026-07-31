@@ -312,12 +312,18 @@ describe("UserResponse shape", () => {
 });
 
 describe("WorkspaceResponse shape", () => {
-  it("has expected keys: id, name, slug, onboarded, default_locale, created_at, updated_at", () => {
-    const res = workspaceToResponse({ id: "w1", name: "WS", slug: "ws", defaultLocale: "en", ...baseFields() });
+  it("has expected keys: id, name, slug, onboarded, default_locale, agent_language_mode, created_at, updated_at", () => {
+    const res = workspaceToResponse({ id: "w1", name: "WS", slug: "ws", defaultLocale: "en", agentLanguageMode: "bilingual", ...baseFields() });
     expect(Object.keys(res).sort()).toEqual(
-      ["created_at", "default_locale", "id", "name", "onboarded", "slug", "updated_at"]
+      ["agent_language_mode", "created_at", "default_locale", "id", "name", "onboarded", "slug", "updated_at"]
     );
     expect(res.default_locale).toBe("en");
+    expect(res.agent_language_mode).toBe("bilingual");
+  });
+
+  it("defaults agent_language_mode to 'auto' when the row omits it", () => {
+    const res = workspaceToResponse({ id: "w1", name: "WS", slug: "ws", defaultLocale: "en", ...baseFields() });
+    expect(res.agent_language_mode).toBe("auto");
   });
 });
 

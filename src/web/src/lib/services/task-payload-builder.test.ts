@@ -8,6 +8,7 @@ const mockGetUser = vi.fn();
 const mockGetConversation = vi.fn();
 const mockGetConversationsByIds = vi.fn();
 const mockGetWorkspaceDefaultLocale = vi.fn();
+const mockGetWorkspaceAgentLanguageMode = vi.fn();
 
 vi.mock("@phneakngar/shared", async () => {
   const real = await import("@phneakngar/shared");
@@ -38,6 +39,7 @@ vi.mock("@phneakngar/shared", async () => {
       },
       workspace: {
         getWorkspaceDefaultLocale: (...args: unknown[]) => mockGetWorkspaceDefaultLocale(...args),
+        getWorkspaceAgentLanguageMode: (...args: unknown[]) => mockGetWorkspaceAgentLanguageMode(...args),
       },
     },
   };
@@ -52,6 +54,7 @@ vi.mock("@/lib/cache", () => ({
     member: (wsId: string, userId: string) => `mem:${wsId}:${userId}`,
     user: (userId: string) => `usr:${userId}`,
     workspaceDefaultLocale: (wsId: string) => `ws_locale:${wsId}`,
+    workspaceAgentLanguageMode: (wsId: string) => `ws_agent_lang:${wsId}`,
   },
 }));
 
@@ -107,6 +110,7 @@ describe("TaskPayloadBuilder", () => {
     mockGetAllColleaguesForWorkspace.mockResolvedValue([]);
     mockGetConversationsByIds.mockResolvedValue([]);
     mockGetWorkspaceDefaultLocale.mockResolvedValue(null);
+    mockGetWorkspaceAgentLanguageMode.mockResolvedValue(null);
   });
 
   it("returns empty array for empty input", async () => {
@@ -207,6 +211,25 @@ describe("TaskPayloadBuilder", () => {
 
     expect(result[0].language_policy.default_user_facing_language).toBe("en");
     expect(result[0].agent!.preferred_locale).toBe("en");
+  });
+
+  it("uses workspace agent language mode as workspaceAgentOutputLocale when no task/agent/owner locale is set", async () => {
+    mockGetAllAgentsForWorkspace.mockResolvedValue([
+      { id: "a1", ownerId: "owner1", instructions: "agent rules", name: "Bot", runtimeConfig: {} },
+    ]);
+    mockGetAllEmailAccountsForWorkspace.mockResolvedValue([]);
+    mockGetAllColleaguesForWorkspace.mockResolvedValue([]);
+    mockGetMemberByUserAndWorkspace.mockResolvedValue({ globalInstruction: "", preferredLocale: null });
+    mockGetUser.mockResolvedValue({ name: "Owner", email: "owner@ex.com" });
+    mockGetConversationsByIds.mockResolvedValue([]);
+    mockGetWorkspaceDefaultLocale.mockResolvedValue("km");
+    mockGetWorkspaceAgentLanguageMode.mockResolvedValue("bilingual");
+
+    const result = await builder.buildFullPayloads([makeTask()], "w1");
+
+    expect(result[0].language_policy.default_user_facing_language).toBe("bilingual");
+    expect(result[0].agent!.preferred_locale).toBe("bilingual");
+    expect(mockGetWorkspaceAgentLanguageMode).toHaveBeenCalledWith(db, "w1");
   });
 
   it("prefers owner locale over workspace default locale", async () => {

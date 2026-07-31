@@ -70,6 +70,25 @@ export const localeDisplayLabels = {
   },
 } as const satisfies Record<Locale, LocaleLabels>;
 
+export const agentLanguageModeLabels = {
+  [AgentLanguageMode.AUTO]: {
+    [Locale.EN]: "Auto",
+    [Locale.KM]: "ស្វ័យប្រវត្តិ",
+  },
+  [AgentLanguageMode.BILINGUAL]: {
+    [Locale.EN]: "Bilingual",
+    [Locale.KM]: "ពីរភាសា",
+  },
+  [AgentLanguageMode.EN]: {
+    [Locale.EN]: "English",
+    [Locale.KM]: "ភាសាអង់គ្លេស",
+  },
+  [AgentLanguageMode.KM]: {
+    [Locale.EN]: "Khmer",
+    [Locale.KM]: "ភាសាខ្មែរ",
+  },
+} as const satisfies Record<AgentLanguageMode, LocaleLabels>;
+
 export type CoreEntity =
   | "user"
   | "workspace"

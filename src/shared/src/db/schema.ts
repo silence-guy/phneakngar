@@ -79,6 +79,7 @@ export const workspace = sqliteTable("workspace", {
   slug: text("slug").unique().notNull(),
   onboarded: integer("onboarded").notNull().default(0),
   defaultLocale: text("default_locale").notNull().default("km"),
+  agentLanguageMode: text("agent_language_mode").notNull().default("auto"),
   createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
   updatedAt: text("updated_at").notNull().$defaultFn(() => new Date().toISOString()),
 });
