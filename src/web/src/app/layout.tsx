@@ -8,6 +8,7 @@ import { MockNetworkBanner } from "@/components/mock-network-banner";
 import { TauriThemeSync } from "@/components/tauri-theme-sync";
 import { DEFAULT_WEB_LOCALE } from "@/lib/locale";
 import { resolveMetadataBase } from "@/lib/public-site-url";
+import { getPublicMetaLabels } from "@/app/public-meta-labels";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -28,11 +29,11 @@ const notoSansKhmer = Noto_Sans_Khmer({
 
 const METADATA_BASE = resolveMetadataBase();
 const SITE_URL = METADATA_BASE.origin;
-const SITE_TITLE = "ភ្នាក់ងារ — ក្រុមហ៊ុនផ្ទាល់ខ្លួន";
+const EN_META = getPublicMetaLabels("en");
+const SITE_TITLE = EN_META.siteTitle;
 const ENABLE_GTM = process.env.NODE_ENV === "production";
-const SITE_DESCRIPTION =
-  "ភ្នាក់ងារ AI របស់អ្នក ដំណើរការជានិច្ច។ ផ្តល់អ៊ីមែលឱ្យពួកគេ ហើយឱ្យពួកគេធ្វើការជំនួសអ្នកបានពេញមួយថ្ងៃ។";
-const OG_IMAGE_URL = "/og?title=ក្រុមហ៊ុនផ្ទាល់ខ្លួនរបស់អ្នក";
+const SITE_DESCRIPTION = EN_META.siteDescription;
+const OG_IMAGE_URL = "/og?title=Your+Agent.+Always+Working";
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -42,8 +43,8 @@ export const viewport: Viewport = {
   viewportFit: "cover",
   interactiveWidget: "resizes-visual",
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#000000" },
+    { media: "(prefers-color-scheme: light)", color: "#faf9f7" },
+    { media: "(prefers-color-scheme: dark)", color: "#0f0f0e" },
   ],
 };
 
@@ -51,9 +52,15 @@ export const metadata: Metadata = {
   metadataBase: METADATA_BASE,
   title: {
     default: SITE_TITLE,
-    template: "%s — ភ្នាក់ងារ",
+    template: "%s | Phneakngar",
   },
   description: SITE_DESCRIPTION,
+  alternates: {
+    languages: {
+      en: "/",
+      km: "/km",
+    },
+  },
   icons: {
     icon: [
       {
@@ -68,16 +75,18 @@ export const metadata: Metadata = {
   },
   openGraph: {
     type: "website",
-    siteName: "ភ្នាក់ងារ",
+    siteName: "Phneakngar",
     title: SITE_TITLE,
     description: SITE_DESCRIPTION,
     url: SITE_URL,
+    locale: "en_US",
+    alternateLocale: ["km_KH"],
     images: [
       {
         url: OG_IMAGE_URL,
         width: 1200,
         height: 630,
-        alt: "ភ្នាក់ងារ — ក្រុមហ៊ុនផ្ទាល់ខ្លួនរបស់អ្នក",
+        alt: EN_META.ogImageAlt,
       },
     ],
   },
@@ -93,7 +102,7 @@ export const metadata: Metadata = {
 const webApplicationJsonLd = {
   "@context": "https://schema.org",
   "@type": "WebApplication",
-  name: "ភ្នាក់ងារ",
+  name: "Phneakngar",
   url: SITE_URL,
   description: SITE_DESCRIPTION,
   applicationCategory: "DeveloperApplication",
@@ -108,7 +117,7 @@ const webApplicationJsonLd = {
 const organizationJsonLd = {
   "@context": "https://schema.org",
   "@type": "Organization",
-  name: "ភ្នាក់ងារ",
+  name: "Phneakngar",
   url: SITE_URL,
   logo: `${SITE_URL}/logo-mark.svg`,
   contactPoint: {

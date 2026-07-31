@@ -1,31 +1,67 @@
-/** Khmer UI chrome for public blog surfaces. */
+import { Locale, resolveLocale, type Locale as SharedLocale } from "@phneakngar/shared";
+
+type BlogLabels = {
+  nav: {
+    blog: string;
+  };
+  list: {
+    title: string;
+    description: string;
+    latest: string;
+  };
+  detail: {
+    allPosts: string;
+    previous: string;
+    next: string;
+  };
+};
 
 export const BLOG_LABELS = {
-  nav: {
-    blog: "ប្លុក",
+  [Locale.KM]: {
+    nav: {
+      blog: "ប្លុក",
+    },
+    list: {
+      title: "ប្លុក",
+      description:
+        "គំនិតអំពីការកសាងក្រុមហ៊ុន AI ការសហការភ្នាក់ងារ និងអនាគតនៃកម្មវិធីផ្ទាល់ខ្លួន។",
+      latest: "ថ្មីៗ",
+    },
+    detail: {
+      allPosts: "ប្លុកទាំងអស់",
+      previous: "មុន",
+      next: "បន្ទាប់",
+    },
   },
-  list: {
-    title: "ប្លុក",
-    description:
-      "គំនិតអំពីការកសាងក្រុមហ៊ុន AI ការសហការភ្នាក់ងារ និងអនាគតនៃកម្មវិធីផ្ទាល់ខ្លួន។",
-    latest: "ថ្មីៗ",
+  [Locale.EN]: {
+    nav: {
+      blog: "Blog",
+    },
+    list: {
+      title: "Blog",
+      description:
+        "Ideas about building AI companies, agent collaboration, and the future of personal software.",
+      latest: "Latest",
+    },
+    detail: {
+      allPosts: "All posts",
+      previous: "Previous",
+      next: "Next",
+    },
   },
-  detail: {
-    allPosts: "ប្លុកទាំងអស់",
-    previous: "មុន",
-    next: "បន្ទាប់",
-  },
-  footer: {
-    tagline: "ក្រុមហ៊ុនផ្ទាល់ខ្លួនរបស់អ្នក",
-    templates: "គំរូ",
-    blog: "ប្លុក",
-    privacy: "ឯកជនភាព",
-  },
-} as const;
+} as const satisfies Record<SharedLocale, BlogLabels>;
 
-/** Format a post ISO date for Khmer display (e.g. 15 មិថុនា 2026). */
-export function formatBlogDate(date: string): string {
-  return new Date(date).toLocaleDateString("km-KH", {
+export function getBlogLabels(locale?: string | null): BlogLabels {
+  return BLOG_LABELS[resolveLocale(locale)];
+}
+
+/**
+ * Format a post ISO date for display. Defaults to Khmer (km-KH) to match the
+ * landing chrome's default; pass a locale to switch to English (en-US).
+ */
+export function formatBlogDate(date: string, locale?: string | null): string {
+  const resolved = resolveLocale(locale);
+  return new Date(date).toLocaleDateString(resolved === Locale.KM ? "km-KH" : "en-US", {
     year: "numeric",
     month: "long",
     day: "numeric",

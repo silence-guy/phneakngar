@@ -29,12 +29,14 @@ export async function generateMetadata({
     title,
     description: template.description,
     keywords: template.tags,
-    alternates: { canonical: url },
+    alternates: { canonical: url, languages: { en: url, km: `${SITE_URL}/km/templates/${id}` } },
     openGraph: {
       title,
       description: template.description,
       url,
       images: [{ url: ogImage, width: 1200, height: 630 }],
+      locale: "en_US",
+      alternateLocale: ["km_KH"],
     },
     twitter: {
       card: "summary_large_image",

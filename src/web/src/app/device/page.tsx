@@ -8,14 +8,18 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { GradientBackground } from "@/components/gradient-background"
-import { DEVICE_LABELS } from "./device-labels"
+import { LocaleToggle } from "@/components/locale-toggle"
+import { LandingLocaleProvider, useLandingLocale } from "@/components/home/use-landing-locale"
+import { getDeviceLabels } from "./device-labels"
 
 type Step = "loading" | "code" | "approve" | "done" | "denied"
 
 export default function DeviceAuthPage() {
   return (
     <Suspense>
-      <DeviceAuthPageInner />
+      <LandingLocaleProvider>
+        <DeviceAuthPageInner />
+      </LandingLocaleProvider>
     </Suspense>
   )
 }
@@ -24,6 +28,8 @@ function DeviceAuthPageInner() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const { data: session, isPending } = useSession()
+  const { locale } = useLandingLocale()
+  const labels = getDeviceLabels(locale)
 
   const urlCode = searchParams.get("user_code") || ""
   const [userCode, setUserCode] = useState(urlCode)
@@ -47,19 +53,19 @@ function DeviceAuthPageInner() {
       try {
         const res = await authClient.device({ query: { user_code: urlCode.trim() } })
         if (res.error) {
-          setError(res.error.error_description || DEVICE_LABELS.errors.invalidOrExpired)
+          setError(res.error.error_description || labels.errors.invalidOrExpired)
           setStep("code")
         } else {
           setStep("approve")
         }
       } catch {
-        setError(DEVICE_LABELS.errors.verifyFailed)
+        setError(labels.errors.verifyFailed)
         setStep("code")
       }
     }
 
     autoVerify()
-  }, [urlCode, session])
+  }, [urlCode, session, labels])
 
   async function handleVerifyCode(e: React.FormEvent) {
     e.preventDefault()
@@ -68,12 +74,12 @@ function DeviceAuthPageInner() {
     try {
       const res = await authClient.device({ query: { user_code: userCode.trim() } })
       if (res.error) {
-        setError(res.error.error_description || DEVICE_LABELS.errors.invalidOrExpired)
+        setError(res.error.error_description || labels.errors.invalidOrExpired)
       } else {
         setStep("approve")
       }
     } catch {
-      setError(DEVICE_LABELS.errors.verifyFailed)
+      setError(labels.errors.verifyFailed)
     }
     setLoading(false)
   }
@@ -84,12 +90,12 @@ function DeviceAuthPageInner() {
     try {
       const res = await authClient.device.approve({ userCode: userCode.trim() })
       if (res.error) {
-        setError(res.error.error_description || DEVICE_LABELS.errors.approveFailed)
+        setError(res.error.error_description || labels.errors.approveFailed)
       } else {
         setStep("done")
       }
     } catch {
-      setError(DEVICE_LABELS.errors.approveDeviceFailed)
+      setError(labels.errors.approveDeviceFailed)
     }
     setLoading(false)
   }
@@ -101,7 +107,7 @@ function DeviceAuthPageInner() {
       await authClient.device.deny({ userCode: userCode.trim() })
       setStep("denied")
     } catch {
-      setError(DEVICE_LABELS.errors.denyDeviceFailed)
+      setError(labels.errors.denyDeviceFailed)
     }
     setLoading(false)
   }
@@ -113,25 +119,28 @@ function DeviceAuthPageInner() {
   return (
     <div className="relative flex min-h-svh flex-col items-center justify-center p-6 md:p-10">
       <GradientBackground />
+      <div className="absolute right-4 top-4">
+        <LocaleToggle />
+      </div>
       <div className="w-full max-w-sm">
         <Card>
           <CardContent className="p-6">
             <FieldGroup>
               <div className="flex flex-col items-center gap-2 text-center">
-                <h1 className="text-2xl font-bold">{DEVICE_LABELS.heading}</h1>
+                <h1 className="text-2xl font-bold">{labels.heading}</h1>
                 {step === "loading" && (
                   <p className="text-sm text-muted-foreground">
-                    {DEVICE_LABELS.verifying}
+                    {labels.verifying}
                   </p>
                 )}
                 {step === "code" && (
                   <p className="text-sm text-muted-foreground">
-                    {DEVICE_LABELS.enterCode}
+                    {labels.enterCode}
                   </p>
                 )}
                 {step === "approve" && (
                   <p className="text-sm text-muted-foreground">
-                    {DEVICE_LABELS.requestingAccess}
+                    {labels.requestingAccess}
                   </p>
                 )}
               </div>
@@ -148,7 +157,7 @@ function DeviceAuthPageInner() {
                 <form onSubmit={handleVerifyCode}>
                   <FieldGroup>
                     <Field>
-                      <FieldLabel htmlFor="user_code">{DEVICE_LABELS.deviceCode}</FieldLabel>
+                      <FieldLabel htmlFor="user_code">{labels.deviceCode}</FieldLabel>
                       <Input
                         id="user_code"
                         type="text"
@@ -162,7 +171,7 @@ function DeviceAuthPageInner() {
                     </Field>
                     <Field>
                       <Button type="submit" disabled={loading || !userCode.trim()} className="w-full">
-                        {loading ? DEVICE_LABELS.verifying : DEVICE_LABELS.verifyCode}
+                        {loading ? labels.verifying : labels.verifyCode}
                       </Button>
                     </Field>
                   </FieldGroup>
@@ -172,14 +181,14 @@ function DeviceAuthPageInner() {
               {step === "approve" && (
                 <FieldGroup>
                   <p className="text-sm text-center text-muted-foreground">
-                    {DEVICE_LABELS.code}: <strong className="font-mono">{userCode}</strong>
+                    {labels.code}: <strong className="font-mono">{userCode}</strong>
                   </p>
                   <Field className="grid grid-cols-2 gap-4">
                     <Button variant="outline" onClick={handleDeny} disabled={loading}>
-                      {DEVICE_LABELS.deny}
+                      {labels.deny}
                     </Button>
                     <Button onClick={handleApprove} disabled={loading}>
-                      {loading ? DEVICE_LABELS.approving : DEVICE_LABELS.approve}
+                      {loading ? labels.approving : labels.approve}
                     </Button>
                   </Field>
                 </FieldGroup>
@@ -188,16 +197,16 @@ function DeviceAuthPageInner() {
               {step === "done" && (
                 <div className="text-center space-y-4">
                   <div className="space-y-2">
-                    <p className="text-sm font-medium text-green-600">{DEVICE_LABELS.deviceAuthorized}</p>
+                    <p className="text-sm font-medium text-green-600">{labels.deviceAuthorized}</p>
                     <p className="text-sm text-muted-foreground">
-                      {DEVICE_LABELS.doneCli}
+                      {labels.doneCli}
                     </p>
                   </div>
                   <Button
                     className="w-full"
                     onClick={() => router.push("/workspaces")}
                   >
-                    {DEVICE_LABELS.openDashboard}
+                    {labels.openDashboard}
                   </Button>
                 </div>
               )}
@@ -205,7 +214,7 @@ function DeviceAuthPageInner() {
               {step === "denied" && (
                 <div className="text-center space-y-2">
                   <p className="text-sm text-muted-foreground">
-                    {DEVICE_LABELS.accessDenied}
+                    {labels.accessDenied}
                   </p>
                 </div>
               )}

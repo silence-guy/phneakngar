@@ -3,10 +3,18 @@ import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 
 export const metadata: Metadata = {
-  title: "ចូល",
-  description: "ចូលដើម្បីគ្រប់គ្រងក្រុមហ៊ុនផ្ទាល់ខ្លួនរបស់អ្នកលើ ភ្នាក់ងារ។",
+  title: "Sign in",
+  description: "Sign in to manage your company on ភ្នាក់ងារ.",
+  alternates: {
+    languages: {
+      en: "/sign-in",
+      km: "/km/sign-in",
+    },
+  },
   openGraph: {
-    images: [{ url: "/og?title=ចូល", width: 1200, height: 630 }],
+    images: [{ url: "/og?title=Sign in", width: 1200, height: 630 }],
+    locale: "en_US",
+    alternateLocale: ["km_KH"],
   },
 };
 
