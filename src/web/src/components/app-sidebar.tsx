@@ -8,7 +8,9 @@ import type { Agent } from "@phneakngar/shared";
 import { InboxPopover } from "@/components/inbox-popover";
 import { FlagPopover } from "@/components/flag-popover";
 import { Logo } from "@/components/logo";
-import { appShellLabel } from "@/lib/locale";
+import { useShellLocale } from "@/contexts/shell-locale-context";
+import { getShellLabels } from "@/components/shell/shell-labels";
+import { ShellLocaleToggle } from "@/components/shell/locale-toggle";
 import { cn } from "@/lib/utils";
 import { Monitor, SunMoon, Plus, CalendarDays, Settings, ArrowLeftRight, Home, CircleDot, Folder, Ungroup, ArrowRightToLine, ShieldCheck, Repeat, Activity, BookOpenCheck } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -58,6 +60,8 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void } = {}) {
 
   const { resolvedTheme, setTheme } = useTheme();
   const { activeTaskCounts: taskCounts } = useAgentContext();
+  const { locale } = useShellLocale();
+  const labels = getShellLabels(locale);
 
   // --- Folder state (applies to unpinned section only) ---
   const {
@@ -331,7 +335,7 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void } = {}) {
         }}
       >
         <Folder className="size-3.5 mr-1.5" />
-        {appShellLabel("createGroup")}
+        {labels.actions.createGroup}
       </ContextMenuItem>
       {folders.length > 0 && (
         <>
@@ -349,7 +353,7 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void } = {}) {
                 onClick={() => addToFolder(f.id, agentId)}
               >
                 <ArrowRightToLine className="size-3.5 mr-1.5" />
-                {appShellLabel("moveTo")} {label}{folderAgents.length > 2 ? "…" : ""}
+                {labels.actions.moveTo} {label}{folderAgents.length > 2 ? "…" : ""}
               </ContextMenuItem>
             );
           })}
@@ -414,7 +418,7 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void } = {}) {
           }>
             <Home className="size-4" />
           </TooltipTrigger>
-          <TooltipContent side="right">{appShellLabel("home")}</TooltipContent>
+          <TooltipContent side="right">{labels.nav.home}</TooltipContent>
         </Tooltip>
 
         <InboxPopover isActive={isInbox} onNavigate={onNavigate} />
@@ -435,7 +439,7 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void } = {}) {
           }>
             <CircleDot className="size-4" />
           </TooltipTrigger>
-          <TooltipContent side="right">{appShellLabel("issues")}</TooltipContent>
+          <TooltipContent side="right">{labels.nav.issues}</TooltipContent>
         </Tooltip>
 
         <Tooltip>
@@ -452,7 +456,7 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void } = {}) {
           }>
             <CalendarDays className="size-4" />
           </TooltipTrigger>
-          <TooltipContent side="right">{appShellLabel("calendar")}</TooltipContent>
+          <TooltipContent side="right">{labels.nav.calendar}</TooltipContent>
         </Tooltip>
 
         <Tooltip>
@@ -469,7 +473,7 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void } = {}) {
           }>
             <ShieldCheck className="size-4" />
           </TooltipTrigger>
-          <TooltipContent side="right">{appShellLabel("approvals")}</TooltipContent>
+          <TooltipContent side="right">{labels.nav.approvals}</TooltipContent>
         </Tooltip>
 
         <Tooltip>
@@ -486,7 +490,7 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void } = {}) {
           }>
             <Activity className="size-4" />
           </TooltipTrigger>
-          <TooltipContent side="right">{appShellLabel("activity")}</TooltipContent>
+          <TooltipContent side="right">{labels.nav.activity}</TooltipContent>
         </Tooltip>
 
         <Tooltip>
@@ -503,7 +507,7 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void } = {}) {
           }>
             <Repeat className="size-4" />
           </TooltipTrigger>
-          <TooltipContent side="right">{appShellLabel("automations")}</TooltipContent>
+          <TooltipContent side="right">{labels.nav.automations}</TooltipContent>
         </Tooltip>
 
         <Tooltip>
@@ -520,7 +524,7 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void } = {}) {
           }>
             <BookOpenCheck className="size-4" />
           </TooltipTrigger>
-          <TooltipContent side="right">{appShellLabel("playbooks")}</TooltipContent>
+          <TooltipContent side="right">{labels.nav.playbooks}</TooltipContent>
         </Tooltip>
 
       </div>
@@ -583,7 +587,7 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void } = {}) {
                         <ContextMenuContent>
                           <ContextMenuItem onClick={() => dissolveFolder(folder.id)}>
                             <Ungroup className="size-3.5 mr-1.5" />
-                            {appShellLabel("ungroupAgents")}
+                            {labels.actions.ungroupAgents}
                           </ContextMenuItem>
                         </ContextMenuContent>
                       </ContextMenu>
@@ -671,14 +675,14 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void } = {}) {
                   disabled={selectedAgentIds.size < 2}
                   className="flex items-center justify-center h-7 rounded-lg bg-primary text-primary-foreground text-xs font-medium disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
                 >
-                  {appShellLabel("done")} ({selectedAgentIds.size})
+                  {labels.actions.done} ({selectedAgentIds.size})
                 </button>
                 <button
                   type="button"
                   onClick={handleSelectionCancel}
                   className="flex items-center justify-center h-7 rounded-lg bg-secondary text-secondary-foreground text-xs cursor-pointer hover:bg-accent"
                 >
-                  {appShellLabel("cancel")}
+                  {labels.actions.cancel}
                 </button>
               </div>
             )}
@@ -706,7 +710,7 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void } = {}) {
               <Plus className="size-4" />
             </TooltipTrigger>
             <TooltipContent side="right" sideOffset={8}>
-              {appShellLabel("createFirstAgent")}
+              {labels.actions.createFirstAgent}
             </TooltipContent>
           </Tooltip>
         ) : (
@@ -728,7 +732,7 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void } = {}) {
             >
               <Plus className="size-4" />
             </TooltipTrigger>
-            <TooltipContent>{appShellLabel("newAgent")}</TooltipContent>
+            <TooltipContent>{labels.actions.newAgent}</TooltipContent>
           </Tooltip>
         )}
       </div>
@@ -771,7 +775,7 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void } = {}) {
           }>
             <Monitor className="size-4" />
           </TooltipTrigger>
-          <TooltipContent side="right">{appShellLabel("runtimes")}</TooltipContent>
+          <TooltipContent side="right">{labels.nav.runtimes}</TooltipContent>
         </Tooltip>
 
         <Tooltip>
@@ -784,7 +788,7 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void } = {}) {
           }>
             <SunMoon className="size-4" />
           </TooltipTrigger>
-          <TooltipContent side="right">{appShellLabel("toggleTheme")}</TooltipContent>
+          <TooltipContent side="right">{labels.actions.toggleTheme}</TooltipContent>
         </Tooltip>
 
         <Tooltip>
@@ -801,7 +805,7 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void } = {}) {
           }>
             <Settings className="size-4" />
           </TooltipTrigger>
-          <TooltipContent side="right">{appShellLabel("settings")}</TooltipContent>
+          <TooltipContent side="right">{labels.nav.settings}</TooltipContent>
         </Tooltip>
 
         <Tooltip>
@@ -814,8 +818,10 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void } = {}) {
           }>
             <ArrowLeftRight className="size-4" />
           </TooltipTrigger>
-          <TooltipContent side="right">{appShellLabel("switchWorkspace")}</TooltipContent>
+          <TooltipContent side="right">{labels.nav.switchWorkspace}</TooltipContent>
         </Tooltip>
+
+        <ShellLocaleToggle compact />
 
         <NavUser />
       </div>

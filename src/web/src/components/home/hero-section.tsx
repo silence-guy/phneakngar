@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
@@ -8,17 +8,26 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { SplitText } from "gsap/SplitText";
 import { TypewriterVisual } from "@/components/typewriter-visual";
 import { BrandMark } from "@/components/brand-mark";
+import { useLandingLocale } from "./use-landing-locale";
+import { LANDING_HERO_LABELS } from "./landing-labels";
 import { trackLandingCtaClicked } from "@/lib/analytics";
-import { HERO_SECTION_LABELS } from "./hero-section-labels";
 
 gsap.registerPlugin(ScrollTrigger, SplitText);
 
 export function HeroSection({ isLoggedIn }: { isLoggedIn: boolean }) {
+  const { locale } = useLandingLocale();
+  const labels = LANDING_HERO_LABELS[locale];
   const sectionRef = useRef<HTMLDivElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const sublineRef = useRef<HTMLParagraphElement>(null);
   const ctaRef = useRef<HTMLDivElement>(null);
   const [copied, setCopied] = useState(false);
+  const [origin, setOrigin] = useState("");
+
+  // Resolve the browser origin on mount only — `window` is undefined during SSR.
+  useEffect(() => {
+    setOrigin(window.location.origin);
+  }, []);
 
   useGSAP(
     () => {
@@ -88,7 +97,7 @@ export function HeroSection({ isLoggedIn }: { isLoggedIn: boolean }) {
               fontWeight: 700,
             }}
           >
-            ភ្នាក់ងារ
+            {labels.brand}
           </span>
         </div>
 
@@ -111,7 +120,7 @@ export function HeroSection({ isLoggedIn }: { isLoggedIn: boolean }) {
                 opacity: 0,
               }}
             >
-              ដំណើរការក្រុមហ៊ុនផ្ទាល់ខ្លួន
+              {labels.heading}
             </h1>
             <p
               ref={sublineRef}
@@ -123,8 +132,7 @@ export function HeroSection({ isLoggedIn }: { isLoggedIn: boolean }) {
                 opacity: 0,
               }}
             >
-              គំនិតរបស់អ្នកត្រូវការក្រុមមនុស្សដើម្បីសម្រេច។
-              ឥឡូវនេះអ្នកត្រូវការតែខ្លួនឯង និង ភ្នាក់ងារ។
+              {labels.subline}
             </p>
           </div>
 
@@ -143,9 +151,8 @@ export function HeroSection({ isLoggedIn }: { isLoggedIn: boolean }) {
           role="button"
           tabIndex={0}
           onClick={() => {
-            navigator.clipboard.writeText(
-              `អាន ${window.location.origin}/onboard.md ហើយធ្វើតាមការណែនាំ ដើម្បីដំឡើង និងកំណត់រចនាសម្ព័ន្ធ ភ្នាក់ងារ`
-            );
+            const clipboardText = labels.clipboardText.replace("{origin}", origin);
+            navigator.clipboard.writeText(clipboardText);
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
           }}
@@ -164,7 +171,7 @@ export function HeroSection({ isLoggedIn }: { isLoggedIn: boolean }) {
               backgroundColor: "var(--landing-bg)",
             }}
           >
-          ចម្លងទៅក្នុងការជជែករបស់ភ្នាក់ងារដើម្បីចាប់ផ្តើម
+          {labels.clipboardBadge}
           </span>
           {/* Content box */}
           <div
@@ -176,8 +183,7 @@ export function HeroSection({ isLoggedIn }: { isLoggedIn: boolean }) {
             }}
           >
             <span className="flex-1 overflow-hidden whitespace-nowrap text-ellipsis">
-                  អាន{" "}
-              <a
+              {labels.clipboardText.split("{origin}")[0]}{origin}<a
                 href="/onboard.md"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -185,9 +191,8 @@ export function HeroSection({ isLoggedIn }: { isLoggedIn: boolean }) {
                 style={{ color: "var(--landing-text)" }}
                 onClick={(e) => e.stopPropagation()}
               >
-                Onboard.md
-              </a>
-                  {" "}ហើយធ្វើតាមការណែនាំ ដើម្បីដំឡើង និងកំណត់រចនាសម្ព័ន្ធ ភ្នាក់ងារ
+                /onboard.md
+              </a>{labels.clipboardText.split("{origin}")[1]}
             </span>
             <span
               className="shrink-0 p-1"
@@ -246,7 +251,7 @@ export function HeroSection({ isLoggedIn }: { isLoggedIn: boolean }) {
                 <polyline points="10 17 15 12 10 7" />
                 <line x1="15" y1="12" x2="3" y2="12" />
               </svg>
-                  បើកកម្មវិធី
+                  {labels.ctaOpenApp}
             </Link>
           ) : (
             <Link
@@ -265,7 +270,7 @@ export function HeroSection({ isLoggedIn }: { isLoggedIn: boolean }) {
                 <polyline points="10 17 15 12 10 7" />
                 <line x1="15" y1="12" x2="3" y2="12" />
               </svg>
-                  ចាប់ផ្តើម
+                  {labels.ctaGetStarted}
             </Link>
           )}
           <Link
@@ -285,7 +290,7 @@ export function HeroSection({ isLoggedIn }: { isLoggedIn: boolean }) {
               <rect x="3" y="14" width="7" height="7" />
               <rect x="14" y="14" width="7" height="7" />
             </svg>
-              គំរូ
+              {labels.ctaTemplates}
           </Link>
         </div>
 
@@ -299,7 +304,7 @@ export function HeroSection({ isLoggedIn }: { isLoggedIn: boolean }) {
             color: "var(--landing-text-muted)",
           }}
         >
-          {HERO_SECTION_LABELS.mobileExperienceHint}
+          {labels.mobileHint}
         </p>
       </div>
     </section>

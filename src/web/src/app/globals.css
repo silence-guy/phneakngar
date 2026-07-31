@@ -75,99 +75,99 @@
   --radius-4xl: 32px;
 }
 
-/* ── Geist light (#fff canvas, #171717 ink, color reserved for state) ── */
+/* ── Phneakngar Light — Eastern Minimalism (warm off-white, soft black, aged gold) ── */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #faf9f7;
+  --foreground: #1a1a1a;
   --card: #ffffff;
-  --card-foreground: #171717;
+  --card-foreground: #1a1a1a;
   --popover: #ffffff;
-  --popover-foreground: #171717;
-  --primary: #171717;
-  --primary-foreground: #ffffff;
-  --secondary: #fafafa;
-  --secondary-foreground: #171717;
-  --shimmer: rgba(0, 0, 0, 0.06);
-  --shimmer-peak: rgba(0, 0, 0, 0.12);
+  --popover-foreground: #1a1a1a;
+  --primary: #1a1a1a;
+  --primary-foreground: #faf9f7;
+  --secondary: #f5f3f0;
+  --secondary-foreground: #1a1a1a;
+  --shimmer: rgba(26, 26, 26, 0.06);
+  --shimmer-peak: rgba(26, 26, 26, 0.12);
   --bubble-glow: rgba(255, 255, 255, 0.5);
-  --muted: #f2f2f2;
-  --muted-foreground: #4d4d4d;
-  --accent: #f2f2f2;
-  --accent-foreground: #171717;
-  --destructive: #ea001d;
-  --border: rgba(0, 0, 0, 0.08);
-  --input: rgba(0, 0, 0, 0.08);
-  --ring: #006bff;
-  --chart-1: #006bff;
-  --chart-2: #00ac96;
-  --chart-3: #ffae00;
-  --chart-4: #a000f8;
-  --chart-5: #f22782;
+  --muted: #e8e6e3;
+  --muted-foreground: #5c5c5c;
+  --accent: #c4a35a;
+  --accent-foreground: #1a1a1a;
+  --destructive: #c41e3a;
+  --border: rgba(26, 26, 26, 0.1);
+  --input: rgba(26, 26, 26, 0.08);
+  --ring: #c4a35a;
+  --chart-1: #c4a35a;
+  --chart-2: #7a9e7a;
+  --chart-3: #d4a574;
+  --chart-4: #8b7355;
+  --chart-5: #a67c52;
   --radius: 6px;
-  --status-online: #28a948;
-  --status-offline: #8f8f8f;
-  --te: #006bff;
-  --ti: #00ac96;
-  --tc: #ea001d;
-  --tf: #a000f8;
-  --paper: #fafafa;
-  --e1: 0 2px 2px rgba(0, 0, 0, 0.04);
-  --e2: 0 1px 1px rgba(0, 0, 0, 0.02), 0 4px 8px -4px rgba(0, 0, 0, 0.04), 0 16px 24px -8px rgba(0, 0, 0, 0.06);
-  --sidebar: #fafafa;
-  --sidebar-foreground: #171717;
-  --sidebar-primary: #171717;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #f2f2f2;
-  --sidebar-accent-foreground: #171717;
-  --sidebar-border: rgba(0, 0, 0, 0.08);
-  --sidebar-ring: #006bff;
+  --status-online: #5a8a5a;
+  --status-offline: #9a9a9a;
+  --te: #c4a35a;
+  --ti: #7a9e7a;
+  --tc: #c41e3a;
+  --tf: #8b7355;
+  --paper: #f5f3f0;
+  --e1: 0 2px 2px rgba(26, 26, 26, 0.04);
+  --e2: 0 1px 1px rgba(26, 26, 26, 0.02), 0 4px 8px -4px rgba(26, 26, 26, 0.04), 0 16px 24px -8px rgba(26, 26, 26, 0.06);
+  --sidebar: #faf9f7;
+  --sidebar-foreground: #1a1a1a;
+  --sidebar-primary: #1a1a1a;
+  --sidebar-primary-foreground: #faf9f7;
+  --sidebar-accent: #f5f3f0;
+  --sidebar-accent-foreground: #1a1a1a;
+  --sidebar-border: rgba(26, 26, 26, 0.1);
+  --sidebar-ring: #c4a35a;
 }
 
-/* ── Geist dark (pure #000 canvas, #ededed ink, alpha borders) ── */
+/* ── Phneakngar Dark — Warm black, cream text, temple gold accent ── */
 .dark {
-  --background: #000000;
-  --foreground: #ededed;
-  --card: #000000;
-  --card-foreground: #ededed;
-  --popover: #000000;
-  --popover-foreground: #ededed;
-  --primary: #ededed;
-  --primary-foreground: #000000;
-  --secondary: #1a1a1a;
-  --secondary-foreground: #ededed;
-  --shimmer: rgba(255, 255, 255, 0.06);
-  --shimmer-peak: rgba(255, 255, 255, 0.12);
-  --bubble-glow: rgba(255, 255, 255, 0.5);
-  --muted: #1a1a1a;
-  --muted-foreground: #a0a0a0;
-  --accent: #1a1a1a;
-  --accent-foreground: #ededed;
-  --destructive: #e2162a;
-  --border: rgba(255, 255, 255, 0.145);
-  --input: rgba(255, 255, 255, 0.145);
-  --ring: #47a8ff;
-  --chart-1: #0090ff;
-  --chart-2: #009e86;
-  --chart-3: #ffae00;
-  --chart-4: #9440d5;
-  --chart-5: #ff4d8d;
-  --status-online: #00ac3a;
-  --status-offline: #8f8f8f;
-  --te: #47a8ff;
-  --ti: #00cfb7;
-  --tc: #ff565f;
-  --tf: #c472fb;
-  --paper: #1a1a1a;
-  --e1: 0 1px 2px rgba(0, 0, 0, 0.16);
-  --e2: 0 1px 1px rgba(0, 0, 0, 0.02), 0 4px 8px -4px rgba(0, 0, 0, 0.04), 0 16px 24px -8px rgba(0, 0, 0, 0.06);
-  --sidebar: #000000;
-  --sidebar-foreground: #ededed;
-  --sidebar-primary: #ededed;
-  --sidebar-primary-foreground: #000000;
-  --sidebar-accent: #1a1a1a;
-  --sidebar-accent-foreground: #ededed;
-  --sidebar-border: rgba(255, 255, 255, 0.145);
-  --sidebar-ring: #47a8ff;
+  --background: #0f0f0e;
+  --foreground: #f5f4f2;
+  --card: #141413;
+  --card-foreground: #f5f4f2;
+  --popover: #141413;
+  --popover-foreground: #f5f4f2;
+  --primary: #f5f4f2;
+  --primary-foreground: #0f0f0e;
+  --secondary: #1a1a18;
+  --secondary-foreground: #f5f4f2;
+  --shimmer: rgba(245, 244, 242, 0.05);
+  --shimmer-peak: rgba(245, 244, 242, 0.1);
+  --bubble-glow: rgba(245, 244, 242, 0.3);
+  --muted: #1f1f1d;
+  --muted-foreground: #a0a09a;
+  --accent: #d4b96a;
+  --accent-foreground: #0f0f0e;
+  --destructive: #ff4d6a;
+  --border: rgba(245, 244, 242, 0.1);
+  --input: rgba(245, 244, 242, 0.08);
+  --ring: #d4b96a;
+  --chart-1: #d4b96a;
+  --chart-2: #7a9e7a;
+  --chart-3: #d4a574;
+  --chart-4: #a08060;
+  --chart-5: #b08050;
+  --status-online: #6a9a6a;
+  --status-offline: #6a6a6a;
+  --te: #d4b96a;
+  --ti: #7a9e7a;
+  --tc: #ff4d6a;
+  --tf: #a08060;
+  --paper: #1a1a18;
+  --e1: 0 2px 2px rgba(0, 0, 0, 0.3);
+  --e2: 0 1px 1px rgba(0, 0, 0, 0.2), 0 4px 8px -4px rgba(0, 0, 0, 0.3), 0 16px 24px -8px rgba(0, 0, 0, 0.4);
+  --sidebar: #0f0f0e;
+  --sidebar-foreground: #f5f4f2;
+  --sidebar-primary: #d4b96a;
+  --sidebar-primary-foreground: #0f0f0e;
+  --sidebar-accent: #1a1a18;
+  --sidebar-accent-foreground: #f5f4f2;
+  --sidebar-border: rgba(245, 244, 242, 0.1);
+  --sidebar-ring: #d4b96a;
 }
 
 html[lang="km"] body {
@@ -197,33 +197,33 @@ html[lang="km"] .font-khmer {
   letter-spacing: normal;
 }
 
-/* ── Homepage scoped tokens (Geist monochrome) ── */
+/* ── Homepage scoped tokens — Eastern Minimalism typewriter ── */
 .landing {
   --landing-bg: var(--background);
-  --landing-bg-translucent: color-mix(in srgb, var(--background) 90%, transparent);
+  --landing-bg-translucent: color-mix(in srgb, var(--background) 95%, transparent);
   --landing-surface: var(--muted);
   --landing-text: var(--foreground);
   --landing-text-muted: var(--muted-foreground);
-  --landing-accent: var(--foreground);
+  --landing-accent: var(--accent);
   --landing-accent-dim: var(--muted-foreground);
   --landing-border: var(--border);
-  --landing-crt-bg: #000000;
-  --landing-phosphor: #ededed;
+  --landing-crt-bg: #1a1a18;
+  --landing-phosphor: #f5f4f2;
   --font-crt: var(--font-geist-mono);
 
-  /* 3D typewriter tokens — matte graphite monochrome */
-  --tw-body: #262626;
-  --tw-body-hi: #333333;
-  --tw-body-lo: #1a1a1a;
-  --tw-body-top: #2e2e2e;
-  --tw-chrome: #a3a3a3;
-  --tw-chrome-hi: #d4d4d4;
-  --tw-paper: #fafafa;
-  --tw-blob: #e5e5e5;
-  --tw-roller: #171717;
+  /* 3D typewriter tokens — warm matte palette */
+  --tw-body: #2a2926;
+  --tw-body-hi: #3a3936;
+  --tw-body-lo: #1a1918;
+  --tw-body-top: #30302d;
+  --tw-chrome: #8a8878;
+  --tw-chrome-hi: #b0ae9a;
+  --tw-paper: #f5f3f0;
+  --tw-blob: #e8e6e0;
+  --tw-roller: #1a1a18;
 }
 .dark .landing {
-  --landing-crt-bg: #0a0a0a;
+  --landing-crt-bg: #0a0a08;
 }
 
 /* ─── CRT panel reusable styles ─── */
@@ -301,26 +301,26 @@ html[lang="km"] .font-khmer {
   }
 }
 
-/* ─── Use Cases demo panel (pins Geist light regardless of active theme) ─── */
+/* ─── Use Cases demo panel (Eastern Minimalism light) ─── */
 .usecase-demo-panel {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #faf9f7;
+  --foreground: #1a1a1a;
   --card: #ffffff;
-  --primary: #171717;
-  --primary-foreground: #ffffff;
-  --muted: #f2f2f2;
-  --muted-foreground: #4d4d4d;
-  --accent: #f2f2f2;
-  --border: rgba(0, 0, 0, 0.08);
-  background-color: #ffffff;
-  color: #171717;
+  --primary: #1a1a1a;
+  --primary-foreground: #faf9f7;
+  --muted: #f5f3f0;
+  --muted-foreground: #5c5c5c;
+  --accent: #c4a35a;
+  --border: rgba(26, 26, 26, 0.1);
+  background-color: #faf9f7;
+  color: #1a1a1a;
 }
 .usecase-demo-panel .thin-scrollbar,
 .usecase-demo-panel.thin-scrollbar {
-  scrollbar-color: rgba(0, 0, 0, 0.08) transparent;
+  scrollbar-color: rgba(26, 26, 26, 0.08) transparent;
 }
 .usecase-layout .thin-scrollbar {
-  scrollbar-color: rgba(0, 0, 0, 0.3) transparent;
+  scrollbar-color: rgba(26, 26, 26, 0.2) transparent;
 }
 .usecase-anim-item {
   opacity: 0;

@@ -4,17 +4,15 @@ import { useRef } from "react";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { useLandingLocale } from "./use-landing-locale";
+import { LANDING_QUICKSTART_LABELS } from "./landing-labels";
 
 gsap.registerPlugin(ScrollTrigger);
 
-const points = [
-  "ម៉ាស៊ីនរបស់អ្នក ច្បាប់របស់អ្នក",
-  "មិនជាប់អ្នកផ្គត់ផ្គង់ណាមួយ",
-  "ពាក្យបញ្ជាមួយដើម្បីចាប់ផ្តើម",
-];
-
 export function QuickstartSection() {
   const sectionRef = useRef<HTMLDivElement>(null);
+  const { locale } = useLandingLocale();
+  const labels = LANDING_QUICKSTART_LABELS;
 
   useGSAP(
     () => {
@@ -70,7 +68,7 @@ export function QuickstartSection() {
             opacity: 0.6,
           }}
         >
-          បើកចំហ និង host ដោយខ្លួនឯង
+          {labels.sectionLabel[locale]}
         </div>
         <h2
           style={{
@@ -80,7 +78,7 @@ export function QuickstartSection() {
             textShadow: "0 0 12px rgba(237, 237, 237, 0.3)",
           }}
         >
-          គ្រប់គ្រងហេដ្ឋារចនាសម្ព័ន្ធរបស់អ្នក
+          {labels.heading[locale]}
         </h2>
         <p
           className="mx-auto mt-3 max-w-xl"
@@ -91,14 +89,13 @@ export function QuickstartSection() {
             opacity: 0.65,
           }}
         >
-          ភ្នាក់ងារ is fully open source. Self-host the entire platform, keep
-          your data private, and run your AI company on hardware you control.
+          {labels.description[locale]}
         </p>
       </div>
 
       {/* Points */}
       <div className="selfhost-grid relative mx-auto flex max-w-3xl flex-wrap items-center justify-center gap-x-8 gap-y-3">
-        {points.map((point) => (
+        {labels.points[locale].map((point: string) => (
           <span
             key={point}
             className="selfhost-point text-sm"
@@ -148,7 +145,7 @@ export function QuickstartSection() {
             boxShadow: "0 0 20px rgba(237, 237, 237, 0.3)",
           }}
         >
-          ចាប់ផ្តើមក្រុមហ៊ុនរបស់អ្នក
+          {labels.cta[locale]}
         </a>
       </div>
     </section>

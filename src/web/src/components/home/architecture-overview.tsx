@@ -10,6 +10,8 @@ import { DemoTerminal, type TerminalLine } from "./demo-pad/demo-terminal";
 import { DemoMobile } from "./demo-pad/demo-mobile";
 import { useScriptedTimeline, type TimelineStep } from "./demo-pad/use-scripted-timeline";
 import { toPublicPhneakngarAddress } from "@/lib/email-domain";
+import { useLandingLocale } from "./use-landing-locale";
+import { LANDING_ARCH_LABELS } from "./landing-labels";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -173,6 +175,8 @@ const TIMELINE: TimelineStep[] = [
 
 export function ArchitectureOverview() {
   const sectionRef = useRef<HTMLDivElement>(null);
+  const { locale } = useLandingLocale();
+  const labels = LANDING_ARCH_LABELS;
 
   const { visibleCount, isResetting, containerRef, isStepVisible } =
     useScriptedTimeline({ steps: TIMELINE, holdAfterComplete: 3500 });
@@ -253,17 +257,16 @@ export function ArchitectureOverview() {
           className="mb-3 text-xs uppercase tracking-[0.3em]"
           style={{ fontFamily: "var(--font-mono)", color: "var(--landing-text-muted)" }}
         >
-          របៀបដំណើរការ
+          {labels.sectionLabel[locale]}
         </div>
         <h2 style={{ fontFamily: "var(--font-crt)", color: "var(--landing-text)", fontSize: "clamp(1.75rem, 4vw, 3rem)" }}>
-          ភ្នាក់ងារមូលដ្ឋាន ឈានទៅពិភពខាងក្រៅ
+          {labels.heading[locale]}
         </h2>
         <p
           className="mt-2 max-w-2xl mx-auto"
           style={{ fontFamily: "var(--font-mono)", color: "var(--landing-text-muted)", fontSize: "0.85rem" }}
         >
-          ភ្នាក់ងាររត់លើម៉ាស៊ីនរបស់អ្នក និងមានសិទ្ធិប្រើឧបករណ៍របស់អ្នក។
-          ភ្នាក់ងារ ភ្ជាប់វាទៅអ៊ីមែល ផ្ទាំងគ្រប់គ្រង និងពិភពខាងក្រៅ។
+          {labels.description[locale]}
         </p>
       </div>
 
@@ -276,7 +279,7 @@ export function ArchitectureOverview() {
       >
         {/* Desktop — top-left, behind */}
         <div className="absolute top-0 left-0 w-[60%] h-[88%] z-10 hidden md:block">
-          <DemoWindow title="ភ្នាក់ងារ Desktop" className="h-full shadow-[0_28px_70px_rgba(0,0,0,0.14),0_14px_32px_rgba(0,0,0,0.1)]">
+          <DemoWindow title={labels.desktopTitle[locale]} className="h-full shadow-[0_28px_70px_rgba(0,0,0,0.14),0_14px_32px_rgba(0,0,0,0.1)]">
             <DemoDashboard state={dashboardState} config={ARCH_CONFIG} />
           </DemoWindow>
         </div>
@@ -289,7 +292,7 @@ export function ArchitectureOverview() {
               {/* Dynamic Island */}
               <div className="flex justify-center pt-1 shrink-0">
                 <div className="px-2 py-px bg-neutral-800 rounded-full flex items-center justify-center">
-                  <span className="text-[8px] text-neutral-400">ភ្នាក់ងារ Mobile</span>
+                  <span className="text-[8px] text-neutral-400">{labels.mobileTitle[locale]}</span>
                 </div>
               </div>
               <div className="flex-1 min-h-0">
@@ -303,7 +306,7 @@ export function ArchitectureOverview() {
           </div>
           {/* Terminal */}
           <div className="flex-1 min-w-0 h-full">
-            <DemoWindow title="ម៉ាស៊ីនរបស់អ្នក" className="h-full shadow-[0_28px_70px_rgba(0,0,0,0.18),0_14px_32px_rgba(0,0,0,0.12)]">
+            <DemoWindow title={labels.terminalTitle[locale]} className="h-full shadow-[0_28px_70px_rgba(0,0,0,0.18),0_14px_32px_rgba(0,0,0,0.12)]">
               <DemoTerminal lines={TERMINAL_LINES} visibleCount={terminalVisible} />
             </DemoWindow>
           </div>
@@ -314,7 +317,7 @@ export function ArchitectureOverview() {
           <div className="w-65 h-full rounded-[2rem] border-[3px] border-neutral-700 bg-background shadow-lg overflow-hidden flex flex-col dark">
             <div className="flex justify-center pt-2 shrink-0">
               <div className="px-4 py-1 bg-neutral-800 rounded-full flex items-center justify-center">
-                <span className="text-[11px] text-neutral-400 leading-none">ភ្នាក់ងារ Mobile</span>
+                <span className="text-[11px] text-neutral-400 leading-none">{labels.mobileTitle[locale]}</span>
               </div>
             </div>
             <div className="flex-1 min-h-0">

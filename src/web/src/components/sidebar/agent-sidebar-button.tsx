@@ -14,7 +14,8 @@ import { AgentPreviewCard } from "@/components/agent-preview-card";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { parseAvatarUrl } from "@/components/avatar";
 import { AnimatedAvatar } from "@/components/avatar/animated-avatar";
-import { SIDEBAR_LABELS } from "./sidebar-labels";
+import { useShellLocale } from "@/contexts/shell-locale-context";
+import { getShellLabels } from "@/components/shell/shell-labels";
 
 export function AgentSidebarButton({
   agent,
@@ -42,6 +43,8 @@ export function AgentSidebarButton({
   isDragActive?: boolean;
 }) {
   const [previewOpen, setPreviewOpen] = useState(false);
+  const { locale } = useShellLocale();
+  const labels = getShellLabels(locale);
   return (
     <Popover
       open={previewOpen}
@@ -87,12 +90,12 @@ export function AgentSidebarButton({
           {!hidePin && (isPinned ? (
             <ContextMenuItem onClick={onUnpin}>
               <PinOffIcon className="size-3.5 mr-1.5" />
-              {SIDEBAR_LABELS.unpin}
+              {labels.agent.unpin}
             </ContextMenuItem>
           ) : (
             <ContextMenuItem onClick={onPin}>
               <PinIcon className="size-3.5 mr-1.5" />
-              {SIDEBAR_LABELS.pinTop}
+              {labels.agent.pinTop}
             </ContextMenuItem>
           ))}
           {extraContextMenuItems}

@@ -5,33 +5,38 @@ import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { ProviderLogo } from "@/components/provider-logo";
+import { useLandingLocale } from "./use-landing-locale";
+import {
+  LANDING_BYOA_LABELS,
+} from "./landing-labels";
 
 gsap.registerPlugin(ScrollTrigger);
 
 interface Agent {
   name: string;
   provider: string;
-  detail: string;
   comingSoon?: boolean;
 }
 
 /** Keep in sync with supported local runtimes (cli detectRuntimes + README BYOA table). */
 const agents: Agent[] = [
-  { name: "Claude Code", provider: "claude", detail: "ភ្នាក់ងារ CLI របស់ Anthropic" },
-  { name: "Codex", provider: "codex", detail: "ភ្នាក់ងារសរសេរកូដរបស់ OpenAI" },
-  { name: "OpenCode", provider: "opencode", detail: "ភ្នាក់ងារសរសេរកូដបើកចំហ" },
+  { name: "Claude Code", provider: "claude" },
+  { name: "Codex", provider: "codex" },
+  { name: "OpenCode", provider: "opencode" },
   {
     name: "Grok",
     provider: "grok",
-    detail: "ភ្នាក់ងារ CLI របស់ xAI",
   },
-  { name: "Cursor", provider: "cursor", detail: "កម្មវិធីកែសម្រួលកូដដោយ AI", comingSoon: true },
-  { name: "Hermes", provider: "hermes", detail: "ភ្នាក់ងារសរសេរកូដស្វ័យប្រវត្តិ", comingSoon: true },
-  { name: "OpenClaw", provider: "openclaw", detail: "ភ្នាក់ងារ AI បើកចំហ", comingSoon: true },
+  { name: "Cursor", provider: "cursor", comingSoon: true },
+  { name: "Hermes", provider: "hermes", comingSoon: true },
+  { name: "OpenClaw", provider: "openclaw", comingSoon: true },
 ];
 
 function AgentCard({ agent }: { agent: Agent }) {
+  const { locale } = useLandingLocale();
   const dimmed = agent.comingSoon;
+  const detail = LANDING_BYOA_LABELS.agents[locale].find(a => a.name === agent.name)?.detail || "";
+  const comingSoonLabel = LANDING_BYOA_LABELS.comingSoon[locale];
 
   return (
     <div
@@ -70,7 +75,7 @@ function AgentCard({ agent }: { agent: Agent }) {
                       opacity: 0.4,
                     }}
                   >
-                    ឆាប់ៗ
+                    {comingSoonLabel}
                   </span>
                 )}
                 {!dimmed && (
@@ -94,7 +99,7 @@ function AgentCard({ agent }: { agent: Agent }) {
                   opacity: dimmed ? 0.35 : 0.55,
                 }}
               >
-                {agent.detail}
+                {detail}
               </div>
             </div>
           </div>
@@ -104,7 +109,9 @@ function AgentCard({ agent }: { agent: Agent }) {
 }
 
 export function ByoaSection() {
-  const sectionRef = useRef<HTMLDivElement>(null);
+  const sectionRef = useRef<HTMLElement>(null);
+  const { locale } = useLandingLocale();
+  const labels = LANDING_BYOA_LABELS;
 
   useGSAP(
     () => {
@@ -149,7 +156,7 @@ export function ByoaSection() {
             color: "var(--landing-text-muted)",
           }}
         >
-          មិនជាប់នឹងភ្នាក់ងារតែមួយ
+          {labels.sectionLabel[locale]}
         </div>
         <h2
           style={{
@@ -158,7 +165,7 @@ export function ByoaSection() {
             fontSize: "clamp(1.75rem, 4vw, 3rem)",
           }}
         >
-          យកភ្នាក់ងារដែលអ្នកទុកចិត្តមកប្រើ
+          {labels.heading[locale]}
         </h2>
         <p
           className="mx-auto mt-2 max-w-lg"
@@ -168,8 +175,7 @@ export function ByoaSection() {
             fontSize: "0.85rem",
           }}
         >
-          ភ្នាក់ងារ គឺជាស្រទាប់សម្របសម្រួល។ ជ្រើសភ្នាក់ងារដែលអ្នកទុកចិត្ត —
-          យើងផ្តល់តួនាទី ប្រអប់សំបុត្រ និងដំណើរការបើកដំណើរការជានិច្ច។
+          {labels.description[locale]}
         </p>
       </div>
 
