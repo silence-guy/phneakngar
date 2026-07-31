@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getCloudflareContext } from "@opennextjs/cloudflare"
 import { createAuth } from "@/lib/auth"
-import { isSafeRedirectPath } from "@phneakngar/shared"
+import { isSafeRedirectPath } from "@phneakngar/shared/redirect"
 
 const AUTH_REQUIRED_PREFIXES = ["/invite/", "/w/", "/workspaces", "/dashboard"]
 

@@ -66,7 +66,7 @@ vi.mock("@/lib/services/gateway-live-outbound", () => ({
 }));
 
 import { POST } from "./route";
-import { readGatewaySecret } from "@phneakngar/shared";
+import { readGatewaySecret } from "@phneakngar/shared/gateway-secret";
 
 const ROW = {
   id: "gb1",

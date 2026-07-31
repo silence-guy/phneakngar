@@ -5,7 +5,8 @@
  */
 
 import { NextRequest } from "next/server";
-import { queries, readGatewaySecret } from "@phneakngar/shared";
+import { queries } from "@phneakngar/shared";
+import { readGatewaySecret } from "@phneakngar/shared/gateway-secret";
 import { getDb } from "@/lib/db";
 import { withAuth } from "@/lib/middleware/auth";
 import { withWorkspaceOwner } from "@/lib/middleware/workspace";

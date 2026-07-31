@@ -8,6 +8,8 @@
     "./secrets": "./src/utils/secrets.ts",
     "./logger": "./src/logger.ts",
     "./mode": "./src/mode.ts",
+    "./redirect": "./src/lib/redirect.ts",
+    "./gateway-secret": "./src/lib/gateway-secret.ts",
     "./browser": "./src/browser/index.ts"
   },
   "scripts": {
