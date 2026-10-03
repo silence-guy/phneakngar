@@ -19,16 +19,16 @@
     "lint": "eslint src test --config ../../eslint.workers.config.mjs"
   },
   "dependencies": {
-    "drizzle-orm": "^0.45.2",
-    "nanoid": "^5.1.15",
-    "zod": "^4.4"
+    "drizzle-orm": "^0.45.3",
+    "nanoid": "^5.1.16",
+    "zod": "^4.6"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^5.20260722.1",
-    "@types/node": "^25.9.4",
-    "knip": "^6.17.1",
-    "playwright-core": "^1.61.0",
+    "@cloudflare/workers-types": "^5.20260930.2",
+    "@types/node": "^25.9.8",
+    "knip": "^6.39.0",
+    "playwright-core": "^1.63.0",
     "typescript": "^6.0.3",
-    "vitest": "^4.1.9"
+    "vitest": "^4.1.11"
   }
 }
